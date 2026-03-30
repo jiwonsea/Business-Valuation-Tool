@@ -1,0 +1,97 @@
+# 기업가치평가 YAML 프로필 템플릿
+# 이 파일을 복사하여 새 기업 프로필을 작성하세요.
+
+company:
+  name: ""
+  former_name: null
+  legal_status: "비상장"          # "비상장" | "상장"
+  parent_name: null
+  parent_stake_pct: null
+  shares_total: 0                 # 총발행주식수
+  shares_ordinary: 0              # 보통주
+  shares_preferred: 0             # 우선주 (CPS 등)
+  cps_conversion_shares: 0
+  analysis_date: "2026-01-01"
+
+segments:
+  # 부문코드:
+  #   name: "부문명"
+  #   multiple: 0.0               # EV/EBITDA 멀티플
+
+segment_data:
+  # 연도:
+  #   부문코드: {revenue: 0, gross_profit: 0, op: 0, assets: 0}
+
+consolidated:
+  # 연도:
+  #   revenue: 0
+  #   op: 0
+  #   net_income: 0
+  #   assets: 0
+  #   liabilities: 0
+  #   equity: 0
+  #   dep: 0
+  #   amort: 0
+  #   gross_borr: 0
+  #   net_borr: 0
+  #   de_ratio: 0.0
+
+wacc_params:
+  rf: 3.50                        # 무위험이자율 (%)
+  erp: 7.00                       # 주식위험프리미엄 (%)
+  bu: 0.750                       # Unlevered Beta
+  de: 100.0                       # D/E Ratio (%)
+  tax: 22.0                       # 법인세율 (%)
+  kd_pre: 5.00                    # 세전 타인자본비용 (%)
+  eq_w: 50.0                      # 자기자본 비중 (%)
+
+scenarios:
+  Base:
+    name: "Base Case"
+    prob: 50
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0                     # 적용 주식수
+    desc: ""
+  Bull:
+    name: "Bull Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0
+    desc: ""
+  Bear:
+    name: "Bear Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 20
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0
+    desc: ""
+
+dcf_params:
+  ebitda_growth_rates: [0.10, 0.08, 0.06, 0.05, 0.04]
+  tax_rate: 22.0
+  capex_to_da: 1.10
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.5
+
+cps_principal: 0
+cps_years: 0
+net_debt: 0
+eco_frontier: 0
+base_year: 2025
+
+peers: []
+  # - {name: "", segment_code: "", ev_ebitda: 0.0, notes: ""}

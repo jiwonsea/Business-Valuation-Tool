@@ -1,0 +1,155 @@
+"""구조화된 LLM 프롬프트 — 밸류에이션 분석 보조."""
+
+SYSTEM_ANALYST = """당신은 한국 기업 밸류에이션 전문 애널리스트입니다.
+응답 규칙:
+- 한국어로 답변
+- 수치는 백만원 단위, 비율은 % 단위
+- JSON 요청 시 코드블록 없이 순수 JSON만 출력
+- 근거 없는 추정 금지, 불확실한 경우 "확인 필요" 표시"""
+
+
+def prompt_identify_company(user_input: str) -> str:
+    """자연어 → 기업 식별 프롬프트."""
+    return f"""사용자 입력: "{user_input}"
+
+이 입력에서 분석 대상 기업을 식별하세요.
+다음 JSON 형식으로 응답:
+{{
+    "company_name": "정식 회사명",
+    "dart_name": "DART 등록명 (예: 에스케이에코플랜트)",
+    "stock_code": "종목코드 (상장사) 또는 null",
+    "legal_status": "상장" 또는 "비상장",
+    "industry": "업종 분류"
+}}"""
+
+
+def prompt_segment_classification(
+    company_name: str,
+    revenue_breakdown: str,
+) -> str:
+    """부문 분류 프롬프트."""
+    return f"""기업: {company_name}
+매출 구성:
+{revenue_breakdown}
+
+위 매출 구성을 기반으로 밸류에이션에 적합한 부문(segment) 분류를 제안하세요.
+각 부문에 적절한 EV/EBITDA peer 그룹도 함께 제시하세요.
+
+JSON 형식:
+{{
+    "segments": [
+        {{
+            "code": "SEG1",
+            "name": "부문명",
+            "revenue_share_pct": 50.0,
+            "peer_group": "유사기업군 설명",
+            "suggested_multiple_range": "8.0~12.0x"
+        }}
+    ]
+}}"""
+
+
+def prompt_peer_recommendation(
+    company_name: str,
+    segment_code: str,
+    segment_name: str,
+    segment_description: str,
+) -> str:
+    """Peer 기업 및 멀티플 추천 프롬프트."""
+    return f"""기업: {company_name}
+분석 부문: {segment_code} - {segment_name}
+부문 설명: {segment_description}
+
+이 부문에 적합한 국내외 Peer 기업을 5개 이상 추천하고,
+각 기업의 최근 EV/EBITDA 멀티플을 제시하세요.
+최종적으로 적용할 적정 멀티플 범위와 추천값을 제안하세요.
+
+JSON 형식:
+{{
+    "peers": [
+        {{"name": "기업명", "ev_ebitda": 10.0, "notes": "근거"}}
+    ],
+    "recommended_multiple": 10.0,
+    "multiple_range": [8.0, 12.0],
+    "rationale": "추천 근거"
+}}"""
+
+
+def prompt_wacc_suggestion(
+    company_name: str,
+    de_ratio: float,
+    industry: str,
+) -> str:
+    """WACC 초안 프롬프트."""
+    return f"""기업: {company_name}
+부채비율: {de_ratio:.1f}%
+업종: {industry}
+
+이 기업의 WACC 구성요소를 추정하세요.
+한국 시장 기준으로 각 파라미터의 근거를 제시하세요.
+
+JSON 형식:
+{{
+    "rf": 3.5,
+    "rf_source": "국고채 10Y 기준",
+    "erp": 7.0,
+    "erp_source": "한국 시장 ERP 근거",
+    "bu": 0.75,
+    "bu_source": "Peer 평균 Unlevered Beta 근거",
+    "kd_pre": 5.0,
+    "kd_source": "신용등급/스프레드 근거",
+    "tax": 22.0,
+    "wacc_estimate": 8.5,
+    "confidence": "high/medium/low"
+}}"""
+
+
+def prompt_scenario_design(
+    company_name: str,
+    legal_status: str,
+    key_issues: str,
+) -> str:
+    """시나리오 설계 프롬프트."""
+    return f"""기업: {company_name}
+상장여부: {legal_status}
+핵심 이슈:
+{key_issues}
+
+이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
+각 시나리오의 확률, 핵심 가정, DLOM(비상장 할인) 적용 여부를 포함하세요.
+
+JSON 형식:
+{{
+    "scenarios": [
+        {{
+            "code": "A",
+            "name": "시나리오명",
+            "prob": 30,
+            "description": "시나리오 설명",
+            "dlom": 0,
+            "key_assumptions": ["가정1", "가정2"]
+        }}
+    ],
+    "rationale": "시나리오 구성 근거"
+}}"""
+
+
+def prompt_research_note(
+    company_name: str,
+    valuation_summary: str,
+) -> str:
+    """리서치 노트 자동 생성 프롬프트."""
+    return f"""다음 밸류에이션 분석 결과를 기반으로 전문 리서치 노트를 작성하세요.
+
+기업: {company_name}
+분석 결과:
+{valuation_summary}
+
+포함 사항:
+1. 투자 의견 (한 줄 요약)
+2. 핵심 밸류에이션 요약 (SOTP + DCF)
+3. 시나리오별 리스크/기회 요인
+4. 멀티플 정당성 검토
+5. 주요 모니터링 포인트
+
+형식: 마크다운, 전문 애널리스트 톤, 한국어"""

@@ -1,0 +1,159 @@
+# SK에코플랜트 기업가치평가 프로필
+# 출처: SK㈜ 제35기 사업보고서(2026.03.18), 38.co.kr, DART OpenAPI
+# 검증 기준값: 확률가중 주당 가치 39,892원
+
+company:
+  name: "SK에코플랜트"
+  former_name: "SK건설"
+  legal_status: "비상장"
+  parent_name: "SK㈜"
+  parent_stake_pct: 69.05
+  shares_total: 65599748
+  shares_ordinary: 54278993
+  shares_preferred: 11320755   # CPS 전환우선주
+  cps_conversion_shares: 11320755
+  analysis_date: "2026-03-29"
+
+segments:
+  HI:
+    name: "Hi-Tech"
+    multiple: 8.0
+  GAS:
+    name: "Gas & Material"
+    multiple: 10.0
+  ALC:
+    name: "Asset Lifecycle"
+    multiple: 13.0
+  SOL:
+    name: "솔루션"
+    multiple: 5.0
+  ETC:
+    name: "기타"
+    multiple: 0.0
+
+segment_data:
+  2025:
+    HI:  {revenue: 5158561, gross_profit: 271510, op:  74208, assets:  511209}
+    GAS: {revenue:  385640, gross_profit: 121126, op:  79644, assets: 1302785}
+    ALC: {revenue: 2596506, gross_profit: 344714, op: 169356, assets: 1258024}
+    SOL: {revenue: 4050862, gross_profit: 416820, op:  -7264, assets: 1407514}
+    ETC: {revenue:       0, gross_profit:      0, op:      0, assets:   23007}
+  2024:
+    HI:  {revenue: 2802722, gross_profit: 265052, op:  87062, assets:  541910}
+    GAS: {revenue:   56774, gross_profit:  17462, op:  13236, assets:  621236}
+    ALC: {revenue:  722553, gross_profit:  99032, op: -28029, assets: 1558209}
+    SOL: {revenue: 5152513, gross_profit: 430349, op: 153800, assets: 3028124}
+    ETC: {revenue:       0, gross_profit:      0, op:      0, assets:   94647}
+  2023:
+    HI:  {revenue: 2835398, gross_profit: 234940, op: 116399, assets:  570625}
+    GAS: {revenue:       0, gross_profit:      0, op:      0, assets:       0}
+    ALC: {revenue:  471039, gross_profit:  89723, op: -25203, assets: 1348905}
+    SOL: {revenue: 4784893, gross_profit: 364447, op:  39702, assets: 3070705}
+    ETC: {revenue:       0, gross_profit:      0, op:      0, assets:  110755}
+
+consolidated:
+  2025:
+    revenue: 12191569
+    op: 315944
+    net_income: 23149
+    assets: 18008771
+    liabilities: 11841070
+    equity: 6167700
+    dep: 182334
+    amort: 129299
+    gross_borr: 5235258
+    net_borr: 2295568
+    de_ratio: 192.0
+  2024:
+    revenue: 8734562
+    op: 226069
+    net_income: -95856
+    assets: 16855656
+    liabilities: 11794448
+    equity: 5061208
+    dep: 175356
+    amort: 160409
+    gross_borr: 6547289
+    net_borr: 4865076
+    de_ratio: 233.0
+  2023:
+    revenue: 8404454
+    op: 148135
+    net_income: -33646
+    assets: 14916026
+    liabilities: 10486810
+    equity: 4429216
+    dep: 137702
+    amort: 139537
+    gross_borr: 5601800
+    net_borr: 4300000
+    de_ratio: 236.7
+
+wacc_params:
+  rf: 3.50
+  erp: 7.00
+  bu: 0.750
+  de: 192.0
+  tax: 22.0
+  kd_pre: 5.50
+  eq_w: 34.2
+
+scenarios:
+  A:
+    name: "IPO 성공"
+    prob: 20
+    ipo: "성공"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 65599748   # CPS 전환 → 전체 주식
+    desc: "중복상장 예외 인정 → CPS/RCPS 전환, 공모 상장"
+  B:
+    name: "IPO 실패 + FI 우호"
+    prob: 45
+    ipo: "불발"
+    irr: 5.0
+    dlom: 20
+    cps_repay: null     # IRR 기반 자동 계산
+    rcps_repay: 490000
+    buyback: 200000
+    shares: 54278993   # CPS 상환 소멸 → 보통주만
+    desc: "IPO 불발, FI와 IRR 5% 합의 → CPS 상환 + 자회사 매각"
+  C:
+    name: "IPO 실패 + FI 분쟁"
+    prob: 35
+    ipo: "불발"
+    irr: 12.0
+    dlom: 25
+    cps_repay: null     # IRR 기반 자동 계산
+    rcps_repay: 575000
+    buyback: 200000
+    shares: 54278993
+    desc: "IPO 불발, FI 분쟁 → IRR 12% 강제, 드래그얼롱 리스크"
+
+dcf_params:
+  ebitda_growth_rates: [0.10, 0.08, 0.06, 0.05, 0.04]
+  tax_rate: 22.0
+  capex_to_da: 1.10
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.5
+
+cps_principal: 600000
+cps_years: 4
+net_debt: 2295568
+eco_frontier: 94644
+base_year: 2025
+
+peers:
+  - {name: "삼성E&A",        segment_code: "HI",  ev_ebitda: 8.0,  notes: "반도체/화학 EPC, 비화공 10x+, 전체 평균 8x"}
+  - {name: "원익IPS",        segment_code: "HI",  ev_ebitda: 9.5,  notes: "반도체 장비, βu 참조용"}
+  - {name: "에어리퀴드코리아", segment_code: "GAS", ev_ebitda: 12.0, notes: "산업용 가스 (글로벌 peer 15x 대비 할인)"}
+  - {name: "현대건설",        segment_code: "SOL", ev_ebitda: 5.5,  notes: "국내 대형 건설 상단"}
+  - {name: "GS건설",         segment_code: "SOL", ev_ebitda: 4.8,  notes: "건설 중위권"}
+  - {name: "대우건설",        segment_code: "SOL", ev_ebitda: 4.5,  notes: "건설 하단"}
+  - {name: "SK오션플랜트",    segment_code: "ALC", ev_ebitda: 13.0, notes: "해상풍력 EPC (2026E 추정)"}
+  - {name: "씨에스윈드",      segment_code: "ALC", ev_ebitda: 15.0, notes: "풍력 타워, 글로벌 프리미엄"}
+  - {name: "에코비트",        segment_code: "ALC", ev_ebitda: 13.5, notes: "환경 M&A 타겟 (12~15x)"}
+  - {name: "인선이엔티",      segment_code: "ALC", ev_ebitda: 8.0,  notes: "폐기물 처리 베이스"}

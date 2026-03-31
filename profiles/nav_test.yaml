@@ -1,0 +1,113 @@
+# NAV 테스트 프로필 — 가상 지주회사
+# industry: "지주" → method_selector가 NAV 자동 선택
+
+company:
+  name: "테스트지주 (NAV)"
+  legal_status: "상장"
+  market: "KR"
+  currency: "KRW"
+  currency_unit: "백만원"
+  ticker: null
+  shares_total: 100000000
+  shares_ordinary: 100000000
+  shares_preferred: 0
+  analysis_date: "2026-03-31"
+  industry: "지주"
+
+segments:
+  HOLD:
+    name: "지주부문"
+    multiple: 8.0
+
+segment_data:
+  2025:
+    HOLD: {revenue: 5000000, gross_profit: 0, op: 800000, assets: 30000000}
+
+consolidated:
+  2024:
+    revenue: 4500000
+    op: 700000
+    net_income: 550000
+    assets: 28000000
+    liabilities: 12000000
+    equity: 16000000
+    dep: 200000
+    amort: 50000
+    gross_borr: 5000000
+    net_borr: 3000000
+    de_ratio: 75.0
+  2025:
+    revenue: 5000000
+    op: 800000
+    net_income: 620000
+    assets: 30000000
+    liabilities: 13000000
+    equity: 17000000
+    dep: 220000
+    amort: 55000
+    gross_borr: 5500000
+    net_borr: 3200000
+    de_ratio: 76.5
+
+wacc_params:
+  rf: 3.50
+  erp: 7.00
+  bu: 0.70
+  de: 76.5
+  tax: 22.0
+  kd_pre: 4.50
+  eq_w: 56.7
+
+nav_params:
+  revaluation: 2000000  # 자회사 지분 재평가 (공정가치 - 장부가)
+
+scenarios:
+  A:
+    name: "자회사 상장 + 지분가치 재평가"
+    prob: 30
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 100000000
+    desc: "주력 자회사 IPO 성공, 지분가치 공정가치 반영"
+    probability_rationale: "자회사 상장 예비심사 통과, 2025 하반기 상장 목표"
+  B:
+    name: "현행 구조 유지"
+    prob: 50
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 100000000
+    desc: "기존 자회사 배당수익 안정적 수취, 지주 할인 지속"
+    probability_rationale: "지주사 디스카운트 30-40% 수준 유지 전망"
+  C:
+    name: "자회사 실적 악화 + 지분가치 하락"
+    prob: 20
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 100000000
+    desc: "주력 자회사 영업이익 감소, 배당 축소 가능성"
+    probability_rationale: "경기둔화에 따른 자회사 실적 하방 리스크"
+
+dcf_params:
+  ebitda_growth_rates: [0.05, 0.04, 0.03, 0.03, 0.02]
+  tax_rate: 22.0
+  capex_to_da: 1.10
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+
+pbv_multiple: 0.8
+cps_principal: 0
+cps_years: 0
+net_debt: 3200000
+eco_frontier: 0
+base_year: 2025
+
+peers: []

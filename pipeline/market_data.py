@@ -8,6 +8,9 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
+_HEADERS = {"User-Agent": "Mozilla/5.0"}
+_client = httpx.Client(headers=_HEADERS, timeout=15, follow_redirects=True)
+
 
 def get_38_company_info(company_name: str) -> dict | None:
     """38.co.kr에서 비상장 기업 정보 조회.
@@ -21,8 +24,7 @@ def get_38_company_info(company_name: str) -> dict | None:
     params = {"o": "k", "key": company_name}
 
     try:
-        resp = httpx.get(search_url, params=params, timeout=15,
-                         headers={"User-Agent": "Mozilla/5.0"})
+        resp = _client.get(search_url, params=params)
         resp.raise_for_status()
     except httpx.HTTPError:
         return None
@@ -71,8 +73,7 @@ def get_krx_market_cap(stock_code: str) -> dict | None:
     }
 
     try:
-        resp = httpx.post(url, data=payload, timeout=15,
-                          headers={"User-Agent": "Mozilla/5.0"})
+        resp = _client.post(url, data=payload)
         resp.raise_for_status()
         data = resp.json()
     except (httpx.HTTPError, ValueError):

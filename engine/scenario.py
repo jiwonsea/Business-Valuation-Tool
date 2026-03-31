@@ -1,6 +1,6 @@
 """시나리오 분석 엔진."""
 
-from schemas.models import ScenarioParams, ScenarioResult
+from schemas.models import AdjustmentItem, ScenarioParams, ScenarioResult
 from .units import per_share
 
 
@@ -25,8 +25,21 @@ def calc_scenario(
     rcps_repay = sc.rcps_repay
     buyback = sc.buyback
 
+    # 동적 Equity Bridge 조정 항목 구성
+    adjustments: list[AdjustmentItem] = []
+    if net_debt:
+        adjustments.append(AdjustmentItem(name="순차입금", value=net_debt))
+    if cps_repay:
+        adjustments.append(AdjustmentItem(name="CPS 상환", value=cps_repay))
+    if rcps_repay:
+        adjustments.append(AdjustmentItem(name="RCPS 상환", value=rcps_repay))
+    if buyback:
+        adjustments.append(AdjustmentItem(name="자사주 매입", value=buyback))
+    if eco_frontier:
+        adjustments.append(AdjustmentItem(name="기타 차감", value=eco_frontier))
+
     # Equity bridge
-    total_claims = net_debt + cps_repay + rcps_repay + buyback + eco_frontier
+    total_claims = sum(a.value for a in adjustments)
     equity_value = total_ev - total_claims
 
     # 주당 가치
@@ -51,4 +64,5 @@ def calc_scenario(
         pre_dlom=pre_dlom,
         post_dlom=post_dlom,
         weighted=weighted,
+        adjustments=adjustments,
     )

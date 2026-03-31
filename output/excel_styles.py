@@ -12,11 +12,15 @@ YELLOW_FILL = PatternFill("solid", fgColor="F0F2F8")    # 원본 데이터
 GREEN_FILL = PatternFill("solid", fgColor="E8F5E9")     # 양수 결과
 RED_FILL = PatternFill("solid", fgColor="FDE8E8")       # 음수 결과
 GRAY_FILL = PatternFill("solid", fgColor=NAVY)          # 헤더 (네이비)
+DARK_FILL = PatternFill("solid", fgColor="2C3E50")      # 짙은 헤더
 
 # ── Font ──
 HEADER_FONT = Font(bold=True, size=11, color="FFFFFF")
+WHITE_FONT = Font(bold=True, size=11, color="FFFFFF")
 SECTION_FONT = Font(bold=True, size=12, color=NAVY)
 TITLE_FONT = Font(bold=True, size=14, color=NAVY)
+NOTE_FONT = Font(size=9, color="566573")
+RESULT_FONT = Font(bold=True, size=12, color="27AE60")
 
 # ── Number Format ──
 NUM_FMT = '#,##0'

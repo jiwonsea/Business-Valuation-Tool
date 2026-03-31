@@ -1,0 +1,49 @@
+name: Weekly Discovery & Valuation
+
+on:
+  schedule:
+    # 토요일 00:00 UTC = KST 09:00 (서머타임 시 08:00)
+    # 미국 정규장 금요일 종료 후 3시간+ 버퍼
+    - cron: '0 0 * * 6'
+  workflow_dispatch:
+    inputs:
+      markets:
+        description: '대상 시장 (콤마 구분)'
+        default: 'KR,US'
+      max_companies:
+        description: '밸류에이션 최대 기업 수'
+        default: '3'
+      dry_run:
+        description: '발굴만 수행 (밸류에이션 미실행)'
+        type: boolean
+        default: false
+
+jobs:
+  discover-and-value:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e ".[ai,pipeline,db]"
+
+      - name: Run weekly discovery
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python -m scheduler.weekly_run \
+            --markets "${{ inputs.markets || 'KR,US' }}" \
+            --max-companies "${{ inputs.max_companies || '3' }}" \
+            ${{ inputs.dry_run == true && '--dry-run' || '' }}

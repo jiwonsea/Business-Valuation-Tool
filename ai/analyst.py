@@ -9,6 +9,7 @@
 """
 
 import json
+import logging
 from typing import Optional
 
 from .llm_client import ask, ask_structured
@@ -22,6 +23,8 @@ from .prompts import (
     prompt_research_note,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_json(text: str) -> dict:
     """LLM 응답에서 JSON 추출."""
@@ -31,6 +34,15 @@ def _parse_json(text: str) -> dict:
         lines = text.split("\n")
         text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
     return json.loads(text)
+
+
+def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
+    """AI 분석 결과를 Supabase에 저장 (실패 시 무시)."""
+    try:
+        from db.repository import save_ai_analysis
+        save_ai_analysis(company_name, step, result_data, model)
+    except Exception:
+        logger.debug("AI analysis DB save skipped for [%s] %s", step, company_name)
 
 
 class AIAnalyst:
@@ -43,13 +55,17 @@ class AIAnalyst:
         """Step 1: 자연어 → 기업 식별."""
         prompt = prompt_identify_company(user_input)
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
-        return _parse_json(response)
+        result = _parse_json(response)
+        _save_analysis(user_input, "identify", result, self.model)
+        return result
 
     def classify_segments(self, company_name: str, revenue_breakdown: str) -> dict:
         """Step 2: 매출 구성 → 부문 분류."""
         prompt = prompt_segment_classification(company_name, revenue_breakdown)
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
-        return _parse_json(response)
+        result = _parse_json(response)
+        _save_analysis(company_name, "classify", result, self.model)
+        return result
 
     def recommend_peers(
         self,
@@ -63,7 +79,9 @@ class AIAnalyst:
             company_name, segment_code, segment_name, segment_description
         )
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
-        return _parse_json(response)
+        result = _parse_json(response)
+        _save_analysis(company_name, "peers", result, self.model)
+        return result
 
     def suggest_wacc(
         self,
@@ -74,7 +92,9 @@ class AIAnalyst:
         """Step 4: WACC 초안."""
         prompt = prompt_wacc_suggestion(company_name, de_ratio, industry)
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
-        return _parse_json(response)
+        result = _parse_json(response)
+        _save_analysis(company_name, "wacc", result, self.model)
+        return result
 
     def design_scenarios(
         self,
@@ -85,7 +105,9 @@ class AIAnalyst:
         """Step 5: 시나리오 설계."""
         prompt = prompt_scenario_design(company_name, legal_status, key_issues)
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
-        return _parse_json(response)
+        result = _parse_json(response)
+        _save_analysis(company_name, "scenarios", result, self.model)
+        return result
 
     def generate_research_note(
         self,
@@ -94,4 +116,6 @@ class AIAnalyst:
     ) -> str:
         """Step 6: 리서치 노트 생성."""
         prompt = prompt_research_note(company_name, valuation_summary)
-        return ask(prompt, system=SYSTEM_ANALYST, model=self.model, max_tokens=8192)
+        note = ask(prompt, system=SYSTEM_ANALYST, model=self.model, max_tokens=8192)
+        _save_analysis(company_name, "research_note", {"note": note}, self.model)
+        return note

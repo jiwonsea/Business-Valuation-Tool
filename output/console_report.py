@@ -1,12 +1,13 @@
 """콘솔 리포트 출력."""
 
 from schemas.models import ValuationInput, ValuationResult
+from valuation_runner import _seg_names
 
 
 def print_report(vi: ValuationInput, result: ValuationResult):
     """밸류에이션 결과를 콘솔에 출력."""
     by = vi.base_year
-    seg_names = {code: info["name"] for code, info in vi.segments.items()}
+    seg_names = _seg_names(vi)
     unit = vi.company.currency_unit
     currency_sym = "원" if vi.company.market == "KR" else "$"
 
@@ -32,7 +33,8 @@ def print_report(vi: ValuationInput, result: ValuationResult):
 
     # SOTP (있는 경우)
     if result.sotp:
-        print(f"\n[SOTP EV] {result.total_ev:>14,}{unit}")
+        sotp_ev = sum(s.ev for s in result.sotp.values())
+        print(f"\n[SOTP EV] {sotp_ev:>14,}{unit}")
 
     # 시나리오
     if result.scenarios:
@@ -50,18 +52,33 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     if result.ddm:
         d = result.ddm
         print(f"\n[DDM (Gordon Growth)]")
-        print(f"  DPS: {d.dps:,.0f}{currency_sym}, 배당성장률: {d.growth}%, Ke: {d.ke}%")
+        if d.buyback_per_share > 0:
+            print(f"  DPS: {d.dps:,.0f}{currency_sym}, 자사주매입: {d.buyback_per_share:,.0f}{currency_sym}")
+            print(f"  Total Payout: {d.total_payout:,.0f}{currency_sym}, 성장률: {d.growth}%, Ke: {d.ke}%")
+        else:
+            print(f"  DPS: {d.dps:,.0f}{currency_sym}, 배당성장률: {d.growth}%, Ke: {d.ke}%")
         print(f"  주당 내재가치: {d.equity_per_share:,}{currency_sym}")
+
+    # RIM
+    if result.rim:
+        r = result.rim
+        print(f"\n[RIM (잔여이익모델)]")
+        print(f"  장부가치(BV): {r.bv_current:,}{unit}, Ke: {r.ke}%")
+        print(f"  PV(RI): {r.pv_ri_sum:,}{unit}, PV(TV): {r.pv_terminal:,}{unit}")
+        print(f"  자기자본가치: {r.equity_value:,}{unit}")
+        print(f"  주당 내재가치: {r.per_share:,}{currency_sym}")
 
     # DCF
     if result.dcf:
         dcf = result.dcf
         print(f"\n[DCF]")
         print(f"  DCF EV: {dcf.ev_dcf:>12,}{unit}")
-        if result.sotp and result.total_ev > 0:
-            diff_pct = (dcf.ev_dcf - result.total_ev) / result.total_ev * 100
-            print(f"  SOTP EV: {result.total_ev:>12,}{unit}")
-            print(f"  DCF vs SOTP: {diff_pct:>+.1f}%")
+        if result.sotp:
+            sotp_ev = sum(s.ev for s in result.sotp.values())
+            if sotp_ev > 0:
+                diff_pct = (dcf.ev_dcf - sotp_ev) / sotp_ev * 100
+                print(f"  SOTP EV: {sotp_ev:>12,}{unit}")
+                print(f"  DCF vs SOTP: {diff_pct:>+.1f}%")
 
     # 시장가격 비교
     if result.market_comparison:
@@ -93,12 +110,25 @@ def print_report(vi: ValuationInput, result: ValuationResult):
 
     # 멀티플 교차검증
     if result.cross_validations:
+        # Trading Multiple 판별: 시장가와 ±5% 이내이면 Trading
+        market_ps = result.market_comparison.market_price if result.market_comparison else 0
         print(f"\n[멀티플 교차검증]")
-        print(f"{'방법론':<20} {'지표값':>12} {'배수':>8} {'EV':>14} {'Equity':>14} {'주당가치':>10}")
-        print("-" * 82)
+        print(f"{'방법론':<28} {'지표값':>12} {'배수':>8} {'EV':>14} {'Equity':>14} {'주당가치':>10}")
+        print("-" * 90)
         for cv in result.cross_validations:
-            print(f"{cv.method:<20} {cv.metric_value:>12,.0f} {cv.multiple:>7.1f}x "
+            tag = ""
+            if market_ps > 0 and cv.per_share > 0 and cv.method not in ("SOTP (EV/EBITDA)", "DCF (FCFF)"):
+                gap = abs(cv.per_share - market_ps) / market_ps
+                tag = " [T]" if gap < 0.05 else " [P]"
+            label = f"{cv.method}{tag}"
+            print(f"{label:<28} {cv.metric_value:>12,.0f} {cv.multiple:>7.1f}x "
                   f"{cv.enterprise_value:>13,} {cv.equity_value:>13,} {cv.per_share:>9,}")
+        # 범례
+        has_trading = market_ps > 0 and any(
+            cv.method not in ("SOTP (EV/EBITDA)", "DCF (FCFF)") for cv in result.cross_validations
+        )
+        if has_trading:
+            print(f"  [T] Trading Multiple (시장가 역산)  [P] Peer/독립 추정")
 
     print("\n" + "=" * 60)
     print(f"완료! [{result.primary_method.upper()}] 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")

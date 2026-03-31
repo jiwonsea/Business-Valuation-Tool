@@ -25,6 +25,56 @@ _US_QUERIES = [
 ]
 
 
+def summarize_key_issues(
+    news: list[dict],
+    company_name: str,
+    market: str = "KR",
+) -> str:
+    """뉴스 목록에서 밸류에이션 관련 핵심 이슈를 요약.
+
+    Args:
+        news: NewsCollector 출력 형식 [{"title", "description", "pub_date", ...}]
+        company_name: 대상 기업명
+        market: "KR" | "US"
+
+    Returns:
+        bullet-point 형태의 핵심 이슈 텍스트. 실패 시 빈 문자열.
+    """
+    if not news:
+        return ""
+
+    from ai.llm_client import ask
+
+    news_text = "\n".join(
+        f"- [{n['pub_date'][:10]}] {n['title']}: {n.get('description', '')}"
+        for n in news
+    )
+
+    market_label = "한국" if market == "KR" else "미국"
+    prompt = f"""다음은 {company_name}({market_label} 시장) 관련 최근 1개월간 뉴스입니다:
+
+{news_text}
+
+위 뉴스에서 이 기업의 밸류에이션에 영향을 줄 수 있는 핵심 이슈를 요약하세요.
+
+요구사항:
+- 카테고리별 bullet point 형식: [리스크], [기회], [규제], [실적], [산업동향] 등
+- 각 이슈에 관련 뉴스 날짜 포함
+- 밸류에이션과 무관한 뉴스는 제외
+- 5~10개 이내로 핵심만 추출
+- 한국어로 작성
+
+예시 형식:
+- [리스크] 수주 감소로 2025년 매출 하락 전망 (3월 뉴스)
+- [기회] 신규 해외 프로젝트 수주 발표 예정 (3월 뉴스)
+- [규제] ESG 관련 신규 규제안 국회 통과 가능성 (2월 뉴스)"""
+
+    try:
+        return ask(prompt, temperature=0.2)
+    except Exception:
+        return ""
+
+
 class DiscoveryEngine:
     """뉴스 기반 분석 대상 기업 추천 + 시나리오 제안."""
 
@@ -119,9 +169,7 @@ class DiscoveryEngine:
 
     def _analyze_with_ai(self, news: list[dict], market: str) -> dict:
         """Claude API로 뉴스 분석."""
-        from ai.llm_client import LLMClient
-
-        client = LLMClient()
+        from ai.llm_client import ask
 
         # 뉴스 요약 텍스트 구성 (토큰 절약을 위해 제목+설명만)
         news_text = "\n".join(
@@ -151,7 +199,7 @@ class DiscoveryEngine:
 기업 추천은 뉴스에서 주요 이슈가 있어 밸류에이션 분석이 의미 있는 기업을 선택하세요.
 """
 
-        response = client.ask(prompt)
+        response = ask(prompt)
 
         # JSON 파싱 시도
         try:

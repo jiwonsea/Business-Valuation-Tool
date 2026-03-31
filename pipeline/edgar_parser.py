@@ -60,6 +60,9 @@ def _to_millions(val: float | int) -> int:
 def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
     """XBRL facts에서 특정 연도의 연간(10-K) 값 추출.
 
+    10-K filing에는 비교 연도 데이터가 동일 fy로 태깅되므로,
+    end 날짜가 가장 최근인 엔트리를 선택하여 해당 FY의 실제 데이터를 추출.
+
     Args:
         facts: company facts raw JSON
         concepts: 시도할 XBRL 태그 리스트 (우선순위)
@@ -75,18 +78,24 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
         units = concept_data.get("units", {})
         usd_entries = units.get("USD", [])
 
-        for entry in usd_entries:
-            # 연간 데이터만 (fp="FY"), 해당 연도
-            if entry.get("fp") == "FY" and entry.get("fy") == year:
-                # 10-K filing 우선
-                form = entry.get("form", "")
-                if form in ("10-K", "10-K/A"):
-                    return _to_millions(entry["val"])
+        # 해당 FY의 10-K 엔트리 수집 → end 날짜 최신 선택
+        candidates = [
+            e for e in usd_entries
+            if e.get("fp") == "FY" and e.get("fy") == year
+            and e.get("form", "") in ("10-K", "10-K/A")
+        ]
+        if candidates:
+            best = max(candidates, key=lambda e: e.get("end", ""))
+            return _to_millions(best["val"])
 
-        # 10-K가 없으면 FY 아무거나
-        for entry in usd_entries:
-            if entry.get("fp") == "FY" and entry.get("fy") == year:
-                return _to_millions(entry["val"])
+        # 10-K가 없으면 FY 아무거나 (end 최신)
+        fallbacks = [
+            e for e in usd_entries
+            if e.get("fp") == "FY" and e.get("fy") == year
+        ]
+        if fallbacks:
+            best = max(fallbacks, key=lambda e: e.get("end", ""))
+            return _to_millions(best["val"])
 
     return None
 
@@ -156,8 +165,6 @@ def _guess_recent_years(facts: dict, n: int = 3) -> list[int]:
         for e in entries:
             if e.get("fp") == "FY" and e.get("form") in ("10-K", "10-K/A"):
                 fy_set.add(e["fy"])
-        if fy_set:
-            break  # 하나라도 찾으면 중단
 
     return sorted(fy_set, reverse=True)[:n]
 

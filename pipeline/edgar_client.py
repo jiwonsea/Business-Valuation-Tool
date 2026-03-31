@@ -15,6 +15,8 @@ HEADERS = {
     "Accept-Encoding": "gzip, deflate",
 }
 
+_client = httpx.Client(headers=HEADERS, timeout=15, follow_redirects=True)
+
 
 def search_company(query: str) -> list[dict]:
     """기업명 또는 ticker로 SEC 등록 기업 검색.
@@ -22,7 +24,7 @@ def search_company(query: str) -> list[dict]:
     Returns:
         [{"cik": "320193", "ticker": "AAPL", "name": "Apple Inc."}]
     """
-    resp = httpx.get(COMPANY_TICKERS_URL, headers=HEADERS, timeout=15)
+    resp = _client.get(COMPANY_TICKERS_URL)
     resp.raise_for_status()
     data = resp.json()
 
@@ -53,7 +55,7 @@ def get_company_facts(cik: str) -> dict:
     """
     cik_padded = cik.zfill(10)
     url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik_padded}.json"
-    resp = httpx.get(url, headers=HEADERS, timeout=30)
+    resp = _client.get(url, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
@@ -73,7 +75,7 @@ def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
     """
     cik_padded = cik.zfill(10)
     url = f"{EDGAR_BASE}/api/xbrl/companyconcept/CIK{cik_padded}/{taxonomy}/{concept}.json"
-    resp = httpx.get(url, headers=HEADERS, timeout=15)
+    resp = _client.get(url)
     resp.raise_for_status()
     return resp.json()
 
@@ -88,6 +90,6 @@ def get_submissions(cik: str) -> dict:
     """
     cik_padded = cik.zfill(10)
     url = f"{EDGAR_BASE}/submissions/CIK{cik_padded}.json"
-    resp = httpx.get(url, headers=HEADERS, timeout=15)
+    resp = _client.get(url)
     resp.raise_for_status()
     return resp.json()

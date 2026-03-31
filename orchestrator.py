@@ -7,14 +7,33 @@ Phase 4: 밸류에이션 (엔진)
 Phase 5: 출력 (Excel + 리서치 노트)
 """
 
-import sys
+import logging
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-
 from schemas.models import ValuationInput, ValuationResult
-from valuation_runner import load_profile, run_valuation
+from valuation_runner import load_profile, run_valuation, _seg_names
 from output.excel_builder import export
+
+logger = logging.getLogger(__name__)
+
+
+def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str | None = None) -> str | None:
+    """밸류에이션 결과를 Supabase에 저장 (실패 시 무시)."""
+    try:
+        from db.repository import save_valuation, save_profile
+        val_id = save_valuation(vi, result)
+        if val_id and profile_path:
+            yaml_text = Path(profile_path).read_text(encoding="utf-8")
+            save_profile(
+                company_name=vi.company.name,
+                profile_yaml=yaml_text,
+                profile_data=vi.model_dump(mode="json"),
+                file_name=Path(profile_path).name,
+            )
+        return val_id
+    except Exception:
+        logger.debug("DB save skipped (Supabase not configured or unavailable)")
+        return None
 
 
 def run_from_profile(profile_path: str, output_dir: str | None = None) -> tuple[ValuationInput, ValuationResult, str]:
@@ -26,6 +45,7 @@ def run_from_profile(profile_path: str, output_dir: str | None = None) -> tuple[
     vi = load_profile(profile_path)
     result = run_valuation(vi)
     excel_path = export(vi, result, output_dir)
+    _save_to_db(vi, result, profile_path)
     return vi, result, excel_path
 
 
@@ -34,7 +54,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     lines = []
     unit = vi.company.currency_unit
     sym = "원" if vi.company.market == "KR" else "$"
-    seg_names = {code: info["name"] for code, info in vi.segments.items()}
+    seg_names = _seg_names(vi)
 
     lines.append(f"# {vi.company.name} 기업가치평가 요약")
     lines.append(f"분석일: {vi.company.analysis_date}  |  방법론: **{result.primary_method.upper()}**")
@@ -52,6 +72,23 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"## DDM 밸류에이션")
         lines.append(f"- DPS: {ddm.dps:,.0f}{sym}  |  배당성장률: {ddm.growth:.2f}%  |  Ke: {ddm.ke:.2f}%")
         lines.append(f"- **주당 내재가치: {ddm.equity_per_share:,}{sym}**")
+        lines.append("")
+
+    # Multiples Primary (상대가치평가법)
+    if result.multiples_primary:
+        mp = result.multiples_primary
+        lines.append(f"## 상대가치평가 ({mp.primary_multiple_method})")
+        lines.append(f"- 지표값: {mp.metric_value:,.0f}{unit}  |  배수: {mp.multiple:.1f}x")
+        lines.append(f"- **주당 가치: {mp.per_share:,}{sym}**")
+        lines.append("")
+
+    # NAV (순자산가치)
+    if result.nav:
+        nv = result.nav
+        lines.append(f"## 순자산가치(NAV)")
+        lines.append(f"- 총자산: {nv.total_assets:,}{unit}  |  재평가: {nv.revaluation:+,}{unit}")
+        lines.append(f"- 부채: {nv.total_liabilities:,}{unit}  |  NAV: {nv.nav:,}{unit}")
+        lines.append(f"- **주당 NAV: {nv.per_share:,}{sym}**")
         lines.append("")
 
     # SOTP (있는 경우)

@@ -18,8 +18,14 @@ def calc_dcf(
     """
     wacc = wacc_pct / 100
     tg = params.terminal_growth / 100
-    tax = params.tax_rate / 100
+    tax_mult = 1 - params.tax_rate / 100  # 사전 연산: NOPAT 승수
     growth_rates = params.ebitda_growth_rates
+
+    if wacc <= tg:
+        raise ValueError(
+            f"WACC({wacc_pct:.2f}%)가 영구성장률({params.terminal_growth:.2f}%) 이하입니다. "
+            "Terminal Value가 음수/무한대가 되어 DCF 산출이 불가합니다."
+        )
 
     da_to_ebitda = da_base / ebitda_base if ebitda_base > 0 else 0.5
 
@@ -48,7 +54,7 @@ def calc_dcf(
         ebitda = round(prev_ebitda * (1 + g))
         da = round(ebitda * da_to_ebitda)
         op = ebitda - da
-        nopat = round(op * (1 - tax))
+        nopat = round(op * tax_mult)
         capex = round(da * capex_ratio)
         revenue = round(prev_revenue * (1 + g))
 
@@ -72,8 +78,10 @@ def calc_dcf(
 
     # PV of projection period
     pv_fcff = 0
-    for i, p in enumerate(projections):
-        df = (1 + wacc) ** (i + 1)
+    discount = 1 + wacc
+    df = 1.0
+    for p in projections:
+        df *= discount
         p.pv_fcff = round(p.fcff / df)
         pv_fcff += p.pv_fcff
 

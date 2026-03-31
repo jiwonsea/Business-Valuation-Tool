@@ -58,13 +58,18 @@ def run_monte_carlo(
     shares: int,
     irr: float = 5.0,
     unit_multiplier: int = 1_000_000,
+    wacc_for_dcf: float = 0.0,
+    dcf_last_fcff: int = 0,
+    dcf_pv_fcff_sum: int = 0,
+    dcf_n_periods: int = 5,
 ) -> MCResult:
     """Monte Carlo 시뮬레이션 실행.
 
     각 시뮬레이션에서:
     1. 부문별 멀티플을 정규분포에서 샘플링 (하한 0)
     2. SOTP EV = Σ(EBITDA_i × Multiple_i)
-    3. DLOM 적용한 주당 가치 산출
+    3. WACC/TG 샘플링으로 DCF TV 변동 반영 (DCF 정보 제공 시)
+    4. DLOM 적용한 주당 가치 산출
 
     Args:
         mc_input: 시뮬레이션 파라미터
@@ -77,6 +82,10 @@ def run_monte_carlo(
         buyback: 보통주 매입액
         shares: 적용 주식수
         irr: FI IRR (CPS 상환금 계산용)
+        wacc_for_dcf: DCF TV 샘플링용 기준 WACC (%, 0이면 DCF 미적용)
+        dcf_last_fcff: DCF 마지막 연도 FCFF (TV 재계산용)
+        dcf_pv_fcff_sum: DCF 예측기간 PV 합계 (고정)
+        dcf_n_periods: DCF 예측 기간 수
 
     Returns:
         MCResult with distribution statistics
@@ -94,29 +103,52 @@ def run_monte_carlo(
     dlom_samples = rng.normal(mc_input.dlom_mean, mc_input.dlom_std, n)
     dlom_samples = np.clip(dlom_samples, 0, 50)  # 0% ~ 50%
 
+    # WACC / Terminal Growth 샘플링 (DCF TV 변동 반영)
+    wacc_samples = rng.normal(mc_input.wacc_mean, mc_input.wacc_std, n)
+    wacc_samples = np.maximum(wacc_samples, 1.0)  # WACC ≥ 1%
+    tg_samples = rng.normal(mc_input.tg_mean, mc_input.tg_std, n)
+    tg_samples = np.clip(tg_samples, 0, wacc_samples - 0.5)  # TG < WACC - 0.5%
+
+    use_dcf_tv = wacc_for_dcf > 0 and dcf_last_fcff > 0
+
     # CPS 상환금 계산 (IRR 기반)
     cps_repay = round(cps_principal * (1 + irr / 100) ** cps_years) if cps_principal > 0 else 0
 
-    # 시뮬레이션
-    results = np.zeros(n)
+    # 벡터화된 SOTP EV 계산
+    ev = np.zeros(n)
+    for code, ebitda in seg_ebitdas.items():
+        if ebitda > 0 and code in multiples_samples:
+            ev += ebitda * multiples_samples[code]
 
-    for i in range(n):
-        # SOTP EV
-        ev = 0
-        for code, ebitda in seg_ebitdas.items():
-            if ebitda > 0 and code in multiples_samples:
-                ev += ebitda * multiples_samples[code][i]
+    # DCF TV 변동 반영 (벡터화)
+    if use_dcf_tv:
+        w = wacc_samples / 100
+        g = tg_samples / 100
+        valid = w > g
+        tv_sample = np.where(valid, dcf_last_fcff * (1 + g) / (w - g), 0)
+        pv_tv_sample = np.where(valid, tv_sample / (1 + w) ** dcf_n_periods, 0)
+        dcf_ev_sample = dcf_pv_fcff_sum + pv_tv_sample
 
-        # Equity bridge
-        equity = ev - net_debt - cps_repay - rcps_repay - buyback - eco_frontier
+        # 기준 DCF EV (스칼라, 루프 밖에서 1회만 계산)
+        w0 = wacc_for_dcf / 100
+        g0 = mc_input.tg_mean / 100
+        tv_base = dcf_last_fcff * (1 + g0) / (w0 - g0)
+        pv_tv_base = tv_base / (1 + w0) ** dcf_n_periods
+        dcf_ev_base = dcf_pv_fcff_sum + pv_tv_base
 
-        if equity > 0 and shares > 0:
-            ps = equity * unit_multiplier / shares
-            # DLOM 적용
-            ps *= (1 - dlom_samples[i] / 100)
-            results[i] = max(ps, 0)
-        else:
-            results[i] = 0
+        if dcf_ev_base > 0:
+            ev = np.where(valid, ev * (dcf_ev_sample / dcf_ev_base), ev)
+
+    # Equity bridge (벡터화)
+    claims = net_debt + cps_repay + rcps_repay + buyback + eco_frontier
+    equity = ev - claims
+
+    if shares > 0:
+        ps = equity * (unit_multiplier / shares)
+        ps *= (1 - dlom_samples / 100)
+        results = np.maximum(ps, 0)
+    else:
+        results = np.zeros(n)
 
     results_int = np.round(results).astype(int)
 

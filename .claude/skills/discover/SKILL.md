@@ -2,7 +2,7 @@
 
 ## Description
 TRIGGER when: 사용자가 "뉴스 분석", "기업 추천", "시장 동향", "어떤 기업을 분석할까", "--discover" 언급 시.
-DO NOT TRIGGER when: 특정 기업 밸류에이션 실행 요청 시.
+DO NOT TRIGGER when: 특정 기업 밸류에이션 실행 (→ /valuation), 프로필 생성 (→ /profile), 결과 비교 (→ /compare).
 
 ## Overview
 최근 1개월 KR/US 시장 뉴스를 수집하고 AI로 분석하여, 분석 대상 기업과 시나리오를 제안한다.
@@ -15,8 +15,8 @@ DO NOT TRIGGER when: 특정 기업 밸류에이션 실행 요청 시.
 4. 사용자 확인/수정 후 YAML 프로필 생성
 5. 밸류에이션 실행
 
-## News Sources
-상세: [references/news_sources.md](references/news_sources.md)
+## File References
+- [references/news_sources.md](references/news_sources.md) — 뉴스 소스별 API 호출 방법과 제한사항
 
 ## Gotchas
 - 네이버 API는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` 환경변수 필요

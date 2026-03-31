@@ -1,5 +1,5 @@
 [project]
-name = "korean-valuation-tool"
+name = "business-valuation-tool"
 version = "0.1.0"
 description = "AI-assisted Korean corporate valuation platform — SOTP, DCF, scenario analysis"
 requires-python = ">=3.11"
@@ -13,10 +13,14 @@ dependencies = [
 
 [project.optional-dependencies]
 ai = ["anthropic>=0.30", "openai>=1.0"]
-pipeline = ["httpx>=0.27", "beautifulsoup4>=4.12"]
+pipeline = ["httpx>=0.27", "beautifulsoup4>=4.12", "yfinance>=0.2.30"]
 ui = ["streamlit>=1.30", "plotly>=5.18"]
 db = ["supabase>=2.0"]
 dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[tool.setuptools]
+packages = ["engine", "schemas", "pipeline", "ai", "db", "output", "discovery", "scheduler"]
+py-modules = ["cli", "orchestrator", "valuation_runner"]
 
 [project.scripts]
 valuation = "cli:main"

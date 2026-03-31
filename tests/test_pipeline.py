@@ -1,10 +1,5 @@
 """Pipeline unit tests — 거래소 분류, CompanyIdentity, 스키마 모델 검증."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import pytest
 from pipeline.yahoo_finance import classify_exchange
 from pipeline.data_fetcher import CompanyIdentity, _is_korean, _is_likely_ticker

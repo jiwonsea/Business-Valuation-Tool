@@ -3,19 +3,16 @@
 실행: streamlit run app.py
 """
 
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
 
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from valuation_runner import load_profile, run_valuation
+from valuation_runner import load_profile, run_valuation, _seg_names
 from cli import _fetch_and_compare_market_price
-from orchestrator import format_summary
+from orchestrator import format_summary, _save_to_db
 from output.excel_builder import export
 
 st.set_page_config(
@@ -73,12 +70,17 @@ selected = st.sidebar.selectbox(
 
 if st.sidebar.button("분석 실행", type="primary"):
     with st.spinner("밸류에이션 계산 중..."):
-        vi = load_profile(str(profile_names[selected]))
+        profile_path = str(profile_names[selected])
+        vi = load_profile(profile_path)
         result = run_valuation(vi)
         # 상장사 괴리율 자동 비교
         result = _fetch_and_compare_market_price(vi, result)
         st.session_state["vi"] = vi
         st.session_state["result"] = result
+        # DB 저장
+        val_id = _save_to_db(vi, result, profile_path)
+        if val_id:
+            st.toast(f"DB 저장 완료", icon="✅")
 
 if "vi" not in st.session_state:
     st.title("기업가치 분석 플랫폼")
@@ -87,11 +89,13 @@ if "vi" not in st.session_state:
 
 vi = st.session_state["vi"]
 result = st.session_state["result"]
-seg_names = {code: info["name"] for code, info in vi.segments.items()}
+seg_names = _seg_names(vi)
 by = vi.base_year
 unit = _unit_label(vi)
 sym = _currency_sym(vi)
 is_sotp = result.primary_method == "sotp"
+is_nav = result.primary_method == "nav"
+is_multiples = result.primary_method == "multiples"
 
 # ── Header ──
 
@@ -109,6 +113,11 @@ with col1:
 with col2:
     if is_sotp:
         st.metric("SOTP EV", _format_ev(result.total_ev, vi))
+    elif is_nav and result.nav:
+        st.metric("NAV", f"{result.nav.nav:,}{unit}")
+    elif is_multiples and result.multiples_primary:
+        mp = result.multiples_primary
+        st.metric(f"{mp.primary_multiple_method}", f"{mp.per_share:,}{sym}")
     else:
         st.metric("DCF EV", _format_ev(result.total_ev, vi))
 with col3:
@@ -117,6 +126,8 @@ with col3:
             st.metric("DCF EV", _format_ev(result.dcf.ev_dcf, vi))
         else:
             st.metric("WACC", f"{result.wacc.wacc}%")
+    else:
+        st.metric("WACC", f"{result.wacc.wacc}%")
 with col4:
     if result.market_comparison and result.market_comparison.market_price > 0:
         gap = result.market_comparison.gap_ratio
@@ -146,6 +157,10 @@ if result.market_comparison and result.market_comparison.flag:
 tab_names = ["시나리오 분석"]
 if is_sotp:
     tab_names.append("SOTP 분해")
+if is_multiples and result.multiples_primary:
+    tab_names.append("상대가치")
+if is_nav and result.nav:
+    tab_names.append("순자산가치(NAV)")
 tab_names.extend(["DCF 예측", "민감도", "교차검증"])
 if result.peer_stats:
     tab_names.append("Peer 분석")
@@ -253,6 +268,83 @@ if is_sotp:
                     )
             st.divider()
             st.write(f"**Total EV: {result.total_ev:,}{unit} ({_format_ev(result.total_ev, vi)})**")
+
+# ── Tab: 상대가치 (Multiples primary) ──
+
+if is_multiples and result.multiples_primary:
+    with tabs[tab_idx]:
+        tab_idx += 1
+
+        mp = result.multiples_primary
+
+        st.subheader(f"상대가치평가법 — {mp.primary_multiple_method}")
+
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric("적용 지표값", f"{mp.metric_value:,.0f}{unit}")
+        with col_m2:
+            st.metric("적용 배수", f"{mp.multiple:.1f}x")
+        with col_m3:
+            st.metric("주당 가치", f"{mp.per_share:,}{sym}")
+
+        if mp.enterprise_value > 0:
+            st.write(f"**Enterprise Value:** {mp.enterprise_value:,}{unit} ({_format_ev(mp.enterprise_value, vi)})")
+        st.write(f"**Equity Value:** {mp.equity_value:,}{unit}")
+
+        if result.peer_stats:
+            st.divider()
+            st.subheader("Peer 기반 멀티플 근거")
+            for ps in result.peer_stats:
+                name = ps.segment_name or ps.segment_code
+                st.write(
+                    f"- **{name}**: Median {ps.ev_ebitda_median:.1f}x, "
+                    f"Q1-Q3 [{ps.ev_ebitda_q1:.1f}x ~ {ps.ev_ebitda_q3:.1f}x], "
+                    f"적용 {ps.applied_multiple:.1f}x (N={ps.count})"
+                )
+
+# ── Tab: 순자산가치(NAV) ──
+
+if is_nav and result.nav:
+    with tabs[tab_idx]:
+        tab_idx += 1
+
+        nv = result.nav
+
+        st.subheader("순자산가치(NAV) 평가")
+
+        col_n1, col_n2, col_n3 = st.columns(3)
+        with col_n1:
+            st.metric("총자산(장부)", f"{nv.total_assets:,}{unit}")
+        with col_n2:
+            st.metric("재평가 조정", f"{nv.revaluation:+,}{unit}")
+        with col_n3:
+            st.metric("조정 총자산", f"{nv.adjusted_assets:,}{unit}")
+
+        st.divider()
+        col_n4, col_n5, col_n6 = st.columns(3)
+        with col_n4:
+            st.metric("총부채", f"{nv.total_liabilities:,}{unit}")
+        with col_n5:
+            st.metric("순자산가치(NAV)", f"{nv.nav:,}{unit}")
+        with col_n6:
+            st.metric("주당 NAV", f"{nv.per_share:,}{sym}")
+
+        # 워터폴 차트
+        fig_nav = go.Figure(go.Waterfall(
+            name="NAV",
+            orientation="v",
+            measure=["absolute", "relative", "relative", "total"],
+            x=["총자산(장부)", "재평가 조정", "부채 차감", "NAV"],
+            y=[nv.total_assets, nv.revaluation, -nv.total_liabilities, nv.nav],
+            text=[f"{nv.total_assets:,}", f"{nv.revaluation:+,}",
+                  f"-{nv.total_liabilities:,}", f"{nv.nav:,}"],
+            connector={"line": {"color": "rgb(63, 63, 63)"}},
+        ))
+        fig_nav.update_layout(
+            title=f"NAV 산출 과정 ({unit})",
+            yaxis_title=unit,
+        )
+        st.plotly_chart(fig_nav, use_container_width=True)
 
 # ── Tab: DCF 예측 ──
 

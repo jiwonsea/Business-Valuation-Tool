@@ -109,11 +109,46 @@ def prompt_scenario_design(
     legal_status: str,
     key_issues: str,
 ) -> str:
-    """시나리오 설계 프롬프트."""
+    """시나리오 설계 프롬프트.
+
+    key_issues가 비어있으면 범용 프롬프트, 있으면 뉴스 기반 근거 프롬프트 생성.
+    """
+    if key_issues.strip():
+        # 뉴스 기반 시나리오 설계 (근거 강화)
+        return f"""기업: {company_name}
+상장여부: {legal_status}
+
+최근 1개월간 수집된 핵심 이슈:
+{key_issues}
+
+위 이슈들을 반드시 시나리오에 반영하여, 이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
+
+요구사항:
+- 각 시나리오의 확률은 위 이슈들의 실현 가능성과 시장 상황을 근거로 할당
+- key_assumptions에 관련 뉴스 이슈를 구체적으로 명시
+- probability_rationale에 해당 확률을 할당한 근거를 설명
+- DLOM(비상장 할인)은 상장여부와 시나리오별 유동성 리스크를 반영
+
+JSON 형식:
+{{
+    "scenarios": [
+        {{
+            "code": "A",
+            "name": "시나리오명",
+            "prob": 30,
+            "probability_rationale": "이 확률을 할당한 근거 (뉴스/시장 상황 기반)",
+            "description": "시나리오 설명",
+            "dlom": 0,
+            "key_assumptions": ["뉴스 기반 가정1", "가정2"]
+        }}
+    ],
+    "rationale": "전체 시나리오 구성 근거",
+    "news_factors_considered": ["반영된 주요 뉴스 이슈 요약"]
+}}"""
+
+    # 범용 시나리오 설계 (기존 동작 유지)
     return f"""기업: {company_name}
 상장여부: {legal_status}
-핵심 이슈:
-{key_issues}
 
 이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
 각 시나리오의 확률, 핵심 가정, DLOM(비상장 할인) 적용 여부를 포함하세요.

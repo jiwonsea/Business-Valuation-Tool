@@ -18,6 +18,7 @@ company:
 segments:
   BANK:
     name: "은행"
+    multiple: 6.0
 
 segment_data:
   2025:
@@ -64,11 +65,12 @@ consolidated:
 wacc_params:
   rf: 3.50
   erp: 7.00
-  bu: 0.650
+  bu: 0.65          # Equity Beta (시장 관찰값, Hamada 미적용)
   de: 1542.9
   tax: 22.0
   kd_pre: 4.50
-  eq_w: 6.1
+  eq_w: 100.0        # 금융주: Ke = WACC (타인자본비용 별도 불적용)
+  is_financial: true  # Hamada 스킵 → bu를 βL로 직접 사용
 
 # DDM 파라미터 (핵심)
 valuation_method: "ddm"
@@ -87,6 +89,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
+    ddm_growth: 4.0
     desc: "컨센서스 기반 배당성장 4%"
   Bull:
     name: "Bull Case"
@@ -98,6 +101,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
+    ddm_growth: 6.0
     desc: "주주환원 확대, 배당성장 6%"
   Bear:
     name: "Bear Case"
@@ -109,6 +113,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
+    ddm_growth: 2.0
     desc: "경기둔화, 배당성장 2%"
 
 dcf_params:
@@ -118,8 +123,15 @@ dcf_params:
   nwc_to_rev_delta: 0.03
   terminal_growth: 2.0
 
-multiples:
-  BANK: 6.0
+# RIM 파라미터 (DDM과 교차검증용)
+rim_params:
+  roe_forecasts: [11.3, 11.0, 10.5, 10.0, 9.8]  # ROE 점진 안정화
+  terminal_growth: 0.0
+  payout_ratio: 30.0
+
+# 교차검증 멀티플
+pbv_multiple: 0.55      # 국내 은행지주 P/BV 평균
+pe_multiple: 8.5        # 국내 은행지주 P/E 평균
 
 cps_principal: 0
 cps_years: 0

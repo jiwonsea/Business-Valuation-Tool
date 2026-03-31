@@ -44,16 +44,29 @@ def get_corp_info(company_name: str) -> dict | None:
     xml_data = z.read(z.namelist()[0])
     root = ET.fromstring(xml_data)
 
+    # 모든 매칭 후보를 수집한 뒤, 상장사 우선 + 정확매칭 우선으로 정렬
+    candidates = []
     for corp in root.findall(".//list"):
         name = corp.findtext("corp_name", "")
         if company_name in name or name in company_name:
             stock_code = (corp.findtext("stock_code") or "").strip()
-            return {
+            is_exact = (name == company_name)
+            is_listed = bool(stock_code)
+            candidates.append({
                 "corp_code": corp.findtext("corp_code", ""),
                 "stock_code": stock_code if stock_code else None,
-                "is_listed": bool(stock_code),
-            }
-    return None
+                "is_listed": is_listed,
+                "_exact": is_exact,
+            })
+
+    if not candidates:
+        return None
+
+    # 정렬: 정확매칭 > 상장사 > 나머지
+    candidates.sort(key=lambda c: (c["_exact"], c["is_listed"]), reverse=True)
+    best = candidates[0]
+    best.pop("_exact")
+    return best
 
 
 def get_financial_statements(

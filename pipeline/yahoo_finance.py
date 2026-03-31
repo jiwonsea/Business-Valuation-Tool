@@ -5,6 +5,9 @@ yfinance 라이브러리 또는 직접 API 호출.
 
 import httpx
 
+_HEADERS = {"User-Agent": "Mozilla/5.0"}
+_client = httpx.Client(headers=_HEADERS, timeout=10, follow_redirects=True)
+
 
 def get_stock_info(ticker: str) -> dict | None:
     """Yahoo Finance에서 주식 기본 정보 조회.
@@ -14,14 +17,11 @@ def get_stock_info(ticker: str) -> dict | None:
          "beta": float, "currency": str, "name": str} or None
     """
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    headers = {"User-Agent": "Mozilla/5.0"}
 
     try:
-        resp = httpx.get(
+        resp = _client.get(
             url.format(ticker=ticker),
-            headers=headers,
             params={"interval": "1d", "range": "5d"},
-            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -41,6 +41,14 @@ def get_stock_info(ticker: str) -> dict | None:
         "exchange": meta.get("exchangeName", ""),
         "exchange_code": meta.get("exchange", ""),
     }
+
+
+def get_market_cap(ticker: str) -> int | None:
+    """시가총액 조회 (원 또는 USD). 실패 시 None."""
+    summary = get_quote_summary(ticker)
+    if summary and summary.get("market_cap"):
+        return int(summary["market_cap"])
+    return None
 
 
 # OTC Markets 거래소 코드 (Yahoo Finance exchangeName / exchange 기준)
@@ -101,11 +109,9 @@ def get_quote_summary(ticker: str) -> dict | None:
     modules = "defaultKeyStatistics,financialData,summaryDetail,price"
 
     try:
-        resp = httpx.get(
+        resp = _client.get(
             url,
             params={"modules": modules},
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()

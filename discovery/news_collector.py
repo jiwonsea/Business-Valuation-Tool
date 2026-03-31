@@ -140,6 +140,40 @@ class NewsCollector:
         return results
 
 
+    def collect_for_company(
+        self,
+        company_name: str,
+        market: str = "KR",
+        days: int = 30,
+        max_items: int = 50,
+    ) -> list[dict]:
+        """기업명으로 관련 뉴스 수집 (KR/US 자동 분기).
+
+        Args:
+            company_name: 기업명 또는 ticker
+            market: "KR" | "US"
+            days: 수집 기간 (일)
+            max_items: 최대 수집 건수
+
+        Returns:
+            [{"title", "description", "link", "pub_date", "source"}]
+        """
+        if market == "KR":
+            news = self.collect_kr(company_name, days=days, max_items=max_items)
+        else:
+            news = self.collect_us(company_name, days=days, max_items=max_items)
+
+        # 중복 제거 (제목 기준)
+        seen = set()
+        unique = []
+        for n in news:
+            if n["title"] not in seen:
+                seen.add(n["title"])
+                unique.append(n)
+
+        return unique
+
+
 def _strip_html(text: str) -> str:
     """HTML 태그 및 엔티티 제거."""
     import re

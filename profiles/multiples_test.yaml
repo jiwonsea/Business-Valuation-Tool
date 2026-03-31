@@ -1,0 +1,120 @@
+# 현대자동차 — Multiples 밸류에이션 테스트 프로필
+# industry: "자동차" (성숙업종) + has_peers=True → Multiples 자동 선택
+# net_debt: 자동차 사업 only (금융자회사 현대캐피탈 부채 제외)
+
+company:
+  name: "현대자동차 (Multiples)"
+  legal_status: "상장"
+  market: "KR"
+  currency: "KRW"
+  currency_unit: "백만원"
+  ticker: "005380"
+  shares_total: 211531506
+  shares_ordinary: 211531506
+  shares_preferred: 44613930
+  analysis_date: "2026-03-31"
+  industry: "자동차"
+
+segments:
+  AUTO:
+    name: "자동차"
+    multiple: 5.0
+
+segment_data:
+  2025:
+    AUTO: {revenue: 186254472, gross_profit: 0, op: 11467851, assets: 379370028}
+
+consolidated:
+  2024:
+    revenue: 175231153
+    op: 14239592
+    net_income: 11556312
+    assets: 348905000
+    liabilities: 222640000
+    equity: 126265000
+    dep: 8200000
+    amort: 1300000
+    gross_borr: 65000000
+    net_borr: 15000000
+    de_ratio: 176.4
+  2025:
+    revenue: 186254472
+    op: 11467851
+    net_income: 10450000
+    assets: 379370028
+    liabilities: 243910000
+    equity: 135460028
+    dep: 8500000
+    amort: 1500000
+    gross_borr: 25000000
+    net_borr: 12000000    # 자동차 사업만 (현대캐피탈 금융부채 제외)
+    de_ratio: 180.0
+
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 0.80
+  de: 180.0
+  tax: 22.0
+  kd_pre: 5.0
+  eq_w: 35.7
+
+valuation_method: "multiples"
+
+scenarios:
+  A:
+    name: "EV 전환 가속 + 미국 IRA 수혜"
+    prob: 35
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 211531506
+    desc: "아이오닉 판매 호조, 조지아 공장 IRA 보조금 확정. 전기차 부문 흑자전환"
+    probability_rationale: "IRA 최종규칙 확정(2025.5), 조지아 메타플랜트 가동 시작"
+  B:
+    name: "기존 성장 궤도 유지"
+    prob: 40
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 211531506
+    desc: "내연기관 수익성 유지, EV 전환 점진적. 인도시장 점유율 확대"
+    probability_rationale: "2025 글로벌 자동차 수요 완만한 성장세, 인도 공장 증설 효과"
+  C:
+    name: "관세 충격 + EV 수익성 악화"
+    prob: 25
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 211531506
+    desc: "미국 관세 25% 부과, EV 보조금 축소. 원자재 가격 상승"
+    probability_rationale: "트럼프 관세 정책 불확실성, EU 탄소국경세 시행"
+
+dcf_params:
+  ebitda_growth_rates: [0.05, 0.04, 0.03, 0.03, 0.02]
+  tax_rate: 22.0
+  capex_to_da: 1.15
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+
+pe_multiple: 4.5
+ev_revenue_multiple: 0.5
+pbv_multiple: 0.7
+cps_principal: 0
+cps_years: 0
+net_debt: 12000000       # 자동차 사업만 (12조원)
+eco_frontier: 0
+base_year: 2025
+
+peers:
+  - {name: "기아", segment_code: "AUTO", ev_ebitda: 3.8, notes: "국내 자동차 2위"}
+  - {name: "Toyota", segment_code: "AUTO", ev_ebitda: 9.2, notes: "글로벌 1위"}
+  - {name: "Volkswagen", segment_code: "AUTO", ev_ebitda: 4.5, notes: "유럽 1위"}
+  - {name: "GM", segment_code: "AUTO", ev_ebitda: 5.1, notes: "북미 대형"}
+  - {name: "Stellantis", segment_code: "AUTO", ev_ebitda: 2.8, notes: "유럽 대형"}

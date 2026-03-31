@@ -7,11 +7,14 @@ import re
 
 # DART 계정과목 → 내부 키 매핑
 ACCOUNT_MAP = {
-    # IS (손익계산서)
-    "매출액": "revenue",
-    "수익(매출액)": "revenue",
+    # IS (손익계산서) — 매출/수익 (top-line Revenue)
+    "매출액": "revenue",           # 전통 형식: 매출액 → 매출원가 → 매출총이익
+    "수익(매출액)": "revenue",     # 변형 표기
+    "영업수익": "revenue",         # IFRS 기능별 형식: 영업수익 − 영업비용 = 영업이익
+    # IS — 영업이익 (Operating Income, Revenue − Costs)
     "영업이익": "op",
     "영업이익(손실)": "op",
+    # IS — 당기순이익
     "당기순이익": "net_income",
     "당기순이익(손실)": "net_income",
     # BS (재무상태표)

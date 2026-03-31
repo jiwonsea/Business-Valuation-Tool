@@ -1,0 +1,134 @@
+# KB금융지주 — RIM 밸류에이션 테스트 프로필
+# valuation_method: "rim" 명시 지정
+
+company:
+  name: "KB금융지주 (RIM)"
+  legal_status: "상장"
+  market: "KR"
+  currency: "KRW"
+  currency_unit: "백만원"
+  ticker: "105560.KS"
+  shares_total: 378246886
+  shares_ordinary: 378246886
+  shares_preferred: 0
+  analysis_date: "2026-03-31"
+  industry: "은행"
+
+segments:
+  BANK:
+    name: "은행"
+    multiple: 6.0
+
+segment_data:
+  2025:
+    BANK: {revenue: 14200000, gross_profit: 0, op: 5800000, assets: 690000000}
+
+consolidated:
+  2023:
+    revenue: 12987000
+    op: 5210000
+    net_income: 4180000
+    assets: 637000000
+    liabilities: 600800000
+    equity: 36200000
+    dep: 580000
+    amort: 120000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1659.7
+  2024:
+    revenue: 13560000
+    op: 5480000
+    net_income: 4520000
+    assets: 665000000
+    liabilities: 626000000
+    equity: 39000000
+    dep: 610000
+    amort: 130000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1605.1
+  2025:
+    revenue: 14200000
+    op: 5800000
+    net_income: 4750000
+    assets: 690000000
+    liabilities: 648000000
+    equity: 42000000
+    dep: 640000
+    amort: 140000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1542.9
+
+wacc_params:
+  rf: 3.50
+  erp: 7.00
+  bu: 0.65
+  de: 1542.9
+  tax: 22.0
+  kd_pre: 4.50
+  eq_w: 100.0
+  is_financial: true
+
+valuation_method: "rim"
+
+rim_params:
+  roe_forecasts: [11.3, 11.0, 10.5, 10.0, 9.8]
+  terminal_growth: 0.0
+  payout_ratio: 30.0
+
+scenarios:
+  A:
+    name: "밸류업 프로그램 본격 가동"
+    prob: 30
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "기업 밸류업 프로그램으로 주주환원율 40%+ 달성, 자사주 소각 확대"
+    probability_rationale: "금융위 밸류업 가이드라인 발표(2025.3), KB 이사회 주주환원 정책 강화 결의"
+  B:
+    name: "NIM 안정 + 점진적 성장"
+    prob: 45
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "기준금리 인하 영향으로 NIM 소폭 하락, 비이자이익 성장으로 보전"
+    probability_rationale: "한은 기준금리 2.75% 동결, 하반기 1회 인하 컨센서스"
+  C:
+    name: "경기침체 + 부동산 PF 부실"
+    prob: 25
+    ipo: "상장"
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "부동산 PF 추가 충당금, 가계부채 연체율 상승. ROE 8%대 하락"
+    probability_rationale: "부동산 PF 구조조정 지연, 소비자 신용리스크 상승 뉴스 다수"
+
+dcf_params:
+  ebitda_growth_rates: [0.06, 0.05, 0.04, 0.03, 0.03]
+  tax_rate: 22.0
+  capex_to_da: 1.05
+  nwc_to_rev_delta: 0.03
+  terminal_growth: 2.0
+
+pbv_multiple: 0.55
+pe_multiple: 8.5
+cps_principal: 0
+cps_years: 0
+net_debt: 0
+eco_frontier: 0
+base_year: 2025
+
+peers:
+  - {name: "신한지주", segment_code: "BANK", ev_ebitda: 5.8}
+  - {name: "하나금융지주", segment_code: "BANK", ev_ebitda: 5.2}
+  - {name: "우리금융지주", segment_code: "BANK", ev_ebitda: 4.8}

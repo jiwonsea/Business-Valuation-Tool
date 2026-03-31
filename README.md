@@ -1,4 +1,4 @@
-# Korean Valuation Tool
+# Business Valuation Tool
 
 AI-assisted corporate valuation platform for Korean and US companies.
 

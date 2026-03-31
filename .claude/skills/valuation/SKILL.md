@@ -2,23 +2,15 @@
 
 ## Description
 TRIGGER when: 사용자가 "밸류에이션 실행", "기업 분석", "기업가치 평가", "--profile", "--company" 언급 시.
-DO NOT TRIGGER when: 뉴스 분석, 코드 리뷰, 테스트 관련 요청 시.
+DO NOT TRIGGER when: 프로필 생성 (→ /profile), 뉴스 분석 (→ /discover), 결과 검증 (→ /review), 보고서 출력 (→ /report).
 
 ## Overview
 YAML 프로필 또는 기업명 입력으로 밸류에이션을 수행한다. 방법론은 기업 특성에 따라 자동 선택되며, 사용자가 오버라이드 가능.
 
-## Method Selection
-- 다부문 기업 → SOTP (EV/EBITDA) + DCF 교차검증
-- 단일부문 기업 → DCF primary + 멀티플 교차검증
-- 금융회사 → P/BV 또는 DDM
-- 성장/테크 → DCF + EV/Revenue
-
-상세: [references/method_guide.md](references/method_guide.md)
-
-## Unit Rules
-금액 단위는 재무제표 규모에 따라 자동 결정. `engine/units.py`의 `detect_unit()` 사용.
-
-상세: [references/unit_rules.md](references/unit_rules.md)
+## File References
+이 폴더에 상세 가이드가 있다. 필요할 때만 읽을 것:
+- [references/method_guide.md](references/method_guide.md) — 업종별 방법론 선택 기준 + SOTP/DCF/DDM/RIM/NAV 요약
+- [references/unit_rules.md](references/unit_rules.md) — 금액 단위 자동 판단 로직 + 주당가치 변환 규칙
 
 ## Gotchas
 - `* 1_000_000` 하드코딩 절대 금지 → `per_share()` 사용

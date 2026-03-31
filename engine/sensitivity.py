@@ -1,4 +1,4 @@
-"""민감도 분석 엔진 — 방법론별 2-way 테이블."""
+"""Sensitivity analysis engine -- 2-way tables by valuation method."""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ def sensitivity_multiples(
     col_range: list[float] | None = None,
     unit_multiplier: int = 1_000_000,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """민감도: 두 부문 멀티플 변동 → Scenario A 주당 가치."""
-    # 세그먼트 코드 자동 선택 (하드코딩 방지)
+    """Sensitivity: two-segment multiple variation -> Scenario A per-share value."""
+    # Auto-select segment codes (avoid hardcoding)
     seg_codes = list(multiples.keys())
     if row_seg is None:
         row_seg = seg_codes[0] if len(seg_codes) > 0 else ""
@@ -38,7 +38,7 @@ def sensitivity_multiples(
         base_m = multiples.get(col_seg, 13.0)
         col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
-    # 변동하지 않는 세그먼트의 EV를 사전 계산
+    # Pre-compute EV for non-varying segments
     fixed_ev = 0
     for code, alloc in base_ebitda_by_seg.items():
         if code != row_seg and code != col_seg:
@@ -80,7 +80,7 @@ def sensitivity_irr_dlom(
     dlom_range: list[float] | None = None,
     unit_multiplier: int = 1_000_000,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """민감도: FI IRR × DLOM → Scenario B 주당 가치 (확률 미적용)."""
+    """Sensitivity: FI IRR x DLOM -> Scenario B per-share value (pre-probability)."""
     if irr_range is None:
         irr_range = [3.0, 5.0, 8.0, 10.0, 12.0, 15.0]
     if dlom_range is None:
@@ -107,17 +107,17 @@ def sensitivity_dcf(
     wacc_range: list[float] | None = None,
     tg_range: list[float] | None = None,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """민감도: WACC × 영구성장률 → DCF EV (백만원).
+    """Sensitivity: WACC x terminal growth -> DCF EV (in display unit).
 
-    최적화: FCFF projections는 WACC/Tg와 무관하므로 1회만 계산,
-    할인(PV) + Terminal Value만 (WACC, Tg) 조합별로 반복.
+    Optimization: FCFF projections are independent of WACC/Tg, computed once;
+    only discounting (PV) + Terminal Value recalculated per (WACC, Tg) combination.
     """
     if wacc_range is None:
         wacc_range = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
     if tg_range is None:
         tg_range = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
 
-    # FCFF projections 1회 계산 (기본 WACC 사용, projections는 WACC 무관)
+    # Compute FCFF projections once (using base WACC; projections are WACC-independent)
     base_result = calc_dcf(ebitda_base, da_base, revenue_base,
                            wacc_range[0], params, base_year)
     fcffs = [p.fcff for p in base_result.projections]
@@ -155,7 +155,7 @@ def sensitivity_ddm(
     ke_range: list[float] | None = None,
     g_range: list[float] | None = None,
 ) -> list[SensitivityRow]:
-    """민감도: Ke × 배당성장률 → 주당가치."""
+    """Sensitivity: Ke x dividend growth rate -> per-share value."""
     if ke_range is None:
         ke_range = [ke_base + d for d in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]]
     if g_range is None:
@@ -184,7 +184,7 @@ def sensitivity_rim(
     ke_range: list[float] | None = None,
     tg_range: list[float] | None = None,
 ) -> list[SensitivityRow]:
-    """민감도: Ke × 영구성장률 → RIM 주당가치."""
+    """Sensitivity: Ke x terminal growth rate -> RIM per-share value."""
     if ke_range is None:
         ke_range = [ke_base + d for d in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]]
     if tg_range is None:
@@ -214,7 +214,7 @@ def sensitivity_nav(
     reval_range: list[float] | None = None,
     discount_range: list[float] | None = None,
 ) -> list[SensitivityRow]:
-    """민감도: 재평가 조정액 × 지주할인율 → 주당 NAV."""
+    """Sensitivity: revaluation adjustment x holding discount -> NAV per share."""
     if reval_range is None:
         step = max(abs(base_revaluation) // 3, 500_000)
         reval_range = [base_revaluation + step * d for d in [-3, -2, -1, 0, 1, 2, 3]]
@@ -239,7 +239,7 @@ def sensitivity_multiple_range(
     mult_range: list[float] | None = None,
     discount_range: list[float] | None = None,
 ) -> list[SensitivityRow]:
-    """민감도: 적용 멀티플 × 할인율 → 주당가치."""
+    """Sensitivity: applied multiple x discount rate -> per-share value."""
     if mult_range is None:
         mult_range = [round(base_multiple + d * 0.5, 1) for d in range(-4, 5)]
     if discount_range is None:

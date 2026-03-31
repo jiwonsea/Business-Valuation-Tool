@@ -1,24 +1,24 @@
-"""WACC 계산 엔진."""
+"""WACC calculation engine."""
 
 from schemas.models import WACCParams, WACCResult
 
 
 def calc_wacc(p: WACCParams) -> WACCResult:
-    """WACC 산출 (CAPM 기반).
+    """Compute WACC (CAPM-based).
 
-    일반 기업:
-        βL = βu × [1 + (1 - t) × D/E]   (Hamada)
-    금융업종 (is_financial=True):
-        βL = bu (Equity Beta 직접 사용)
-        금융사는 예금 등이 부채에 포함되어 D/E가 1000%+ → Hamada 적용 시 βL 왜곡.
-        실무에서는 시장에서 관찰된 Equity Beta를 그대로 사용.
+    General companies:
+        beta_L = beta_u x [1 + (1 - t) x D/E]   (Hamada)
+    Financial sector (is_financial=True):
+        beta_L = bu (use equity beta directly)
+        Financials include deposits in liabilities, pushing D/E to 1000%+,
+        which distorts beta_L under Hamada. Market-observed equity beta is used instead.
 
-    Ke = Rf + βL × ERP
-    Kd(세후) = Kd(세전) × (1 - t)
-    WACC = Ke × E% + Kd(세후) × D%
+    Ke = Rf + beta_L x ERP
+    Kd(after-tax) = Kd(pre-tax) x (1 - t)
+    WACC = Ke x E% + Kd(after-tax) x D%
     """
     if p.is_financial:
-        bl = p.bu  # Equity Beta 직접 사용
+        bl = p.bu  # Use equity beta directly
     else:
         bl = p.bu * (1 + (1 - p.tax / 100) * p.de / 100)
     ke = p.rf + bl * p.erp

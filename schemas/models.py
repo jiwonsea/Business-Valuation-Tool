@@ -1,4 +1,4 @@
-"""Pydantic 스키마: 기업 프로필, 부문 데이터, 밸류에이션 입출력 모델."""
+"""Pydantic schemas: company profile, segment data, and valuation I/O models."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-# ── 기업 기본 정보 ──
+# ── Company Basic Info ──
 
 class CompanyProfile(BaseModel):
     name: str
@@ -17,23 +17,23 @@ class CompanyProfile(BaseModel):
     market: str = "KR"  # "KR" | "US"
     currency: str = "KRW"  # "KRW" | "USD"
     currency_unit: str = "백만원"  # "백만원" | "억원" | "$K" | "$M" | "$B"
-    unit_multiplier: int = 1_000_000  # 1표시단위 = 몇 원/$? (백만원=1e6, 억원=1e8)
-    ticker: Optional[str] = None  # 상장사 ticker (e.g., "AAPL", "005930")
+    unit_multiplier: int = 1_000_000  # 1 display unit = how many KRW/$? (백만원=1e6, 억원=1e8)
+    ticker: Optional[str] = None  # Listed company ticker (e.g., "AAPL", "005930")
     cik: Optional[str] = None  # SEC CIK (US only)
     corp_code: Optional[str] = None  # DART corp_code (KR only)
     parent_name: Optional[str] = None
     parent_stake_pct: Optional[float] = None
-    shares_total: int  # 총발행주식수 (보통주 + 우선주)
-    shares_ordinary: int  # 보통주 발행주식수
-    shares_preferred: int = 0  # 우선주 발행주식수
-    treasury_shares: int = 0  # 자사주 (보통주 기준)
+    shares_total: int  # Total shares issued (common + preferred)
+    shares_ordinary: int  # Common shares issued
+    shares_preferred: int = 0  # Preferred shares issued
+    treasury_shares: int = 0  # Treasury shares (common basis)
     cps_conversion_shares: int = 0
     analysis_date: date = Field(default_factory=date.today)
     industry: Optional[str] = None
 
     @property
     def shares_outstanding(self) -> int:
-        """유통보통주식수 (보통주 발행 - 자사주). 주당 가치 산출 기준."""
+        """Outstanding common shares (issued common - treasury). Basis for per-share value."""
         return max(self.shares_ordinary - self.treasury_shares, 1)
 
     @field_validator("shares_total")
@@ -52,13 +52,13 @@ class CompanyProfile(BaseModel):
         return self
 
 
-# ── 부문(Segment) 데이터 ──
+# ── Segment Data ──
 
 class SegmentFinancials(BaseModel):
-    revenue: int  # 백만원
+    revenue: int  # In display units
     gross_profit: int = 0
-    op: int  # 영업이익 (백만원)
-    assets: int  # 유무형자산 (백만원)
+    op: int  # Operating profit (in display units)
+    assets: int  # Tangible/intangible assets (in display units)
 
 
 class SegmentInfo(BaseModel):
@@ -67,7 +67,7 @@ class SegmentInfo(BaseModel):
     multiple: float = 0.0  # EV/EBITDA
 
 
-# ── 연결 재무제표 ──
+# ── Consolidated Financial Statements ──
 
 class ConsolidatedFinancials(BaseModel):
     year: int
@@ -77,11 +77,11 @@ class ConsolidatedFinancials(BaseModel):
     assets: int
     liabilities: int
     equity: int
-    dep: int  # 감가상각비
-    amort: int  # 무형자산상각비
-    gross_borr: int = 0  # 총차입금
-    net_borr: int = 0  # 순차입금
-    de_ratio: float = 0.0  # 부채비율 (%)
+    dep: int  # Depreciation
+    amort: int  # Amortization
+    gross_borr: int = 0  # Gross borrowings
+    net_borr: int = 0  # Net borrowings
+    de_ratio: float = 0.0  # Debt-to-equity ratio (%)
 
     @property
     def da(self) -> int:
@@ -95,14 +95,14 @@ class ConsolidatedFinancials(BaseModel):
 # ── WACC ──
 
 class WACCParams(BaseModel):
-    rf: float  # 무위험이자율 (%)
-    erp: float  # 주식위험프리미엄 (%)
-    bu: float  # Unlevered Beta (금융주: Equity Beta로 직접 사용)
+    rf: float  # Risk-free rate (%)
+    erp: float  # Equity risk premium (%)
+    bu: float  # Unlevered Beta (financials: used directly as Equity Beta)
     de: float  # D/E Ratio (%)
-    tax: float  # 법인세율 (%)
-    kd_pre: float  # 세전 타인자본비용 (%)
-    eq_w: float  # 자기자본 비중 (%)
-    is_financial: bool = False  # 금융업종 (True: Hamada 스킵, bu를 βL로 직접 사용)
+    tax: float  # Corporate tax rate (%)
+    kd_pre: float  # Pre-tax cost of debt (%)
+    eq_w: float  # Equity weight (%)
+    is_financial: bool = False  # Financial sector (True: skip Hamada, use bu as βL directly)
 
     @field_validator("bu")
     @classmethod
@@ -121,53 +121,87 @@ class WACCParams(BaseModel):
 
 class WACCResult(BaseModel):
     bl: float  # Levered Beta
-    ke: float  # 자기자본비용 (%)
-    kd_at: float  # 세후 타인자본비용 (%)
+    ke: float  # Cost of equity (%)
+    kd_at: float  # After-tax cost of debt (%)
     wacc: float  # WACC (%)
 
 
-# ── Equity Bridge 조정 항목 ──
+# ── Equity Bridge Adjustment Items ──
 
 class AdjustmentItem(BaseModel):
-    """Equity Bridge 조정 항목.
+    """Equity Bridge adjustment item.
 
-    value > 0: EV에서 차감 (부채, 상환 등)
-    value < 0: EV에 가산 (초과현금, 비영업자산 등)
+    value > 0: deducted from EV (debt, repayment, etc.)
+    value < 0: added to EV (excess cash, non-operating assets, etc.)
     """
     name: str
-    value: int  # 표시 단위 (양수=차감, 음수=가산)
+    value: int  # In display units (positive=deduct, negative=add)
 
 
-# ── 시나리오 ──
+# ── News Drivers (multiple regression independent variables) ──
+
+_DRIVER_FIELDS = frozenset({
+    "growth_adj_pct", "terminal_growth_adj", "wacc_adj",
+    "market_sentiment_pct", "ddm_growth", "rim_roe_adj",
+    "ev_multiple", "nav_discount",
+})
+
+
+class NewsDriver(BaseModel):
+    """News-based independent driver (independent variable in multiple regression).
+
+    Each key in effects corresponds to a driver field name in ScenarioParams;
+    the value is the partial effect (beta). Multiplied by per-scenario weight(X) and summed.
+    """
+    id: str                          # "rate_hike", "tariff_shock"
+    name: str                        # "금리인상 50bp"
+    category: str = ""               # "macro" | "industry" | "company"
+    effects: dict[str, float] = {}   # {"wacc_adj": 0.5, "growth_adj_pct": -10}
+    rationale: str = ""              # Rationale / justification
+    source: str = ""                 # News URL / source
+
+    @field_validator("effects")
+    @classmethod
+    def validate_effect_keys(cls, v: dict[str, float]) -> dict[str, float]:
+        invalid = set(v.keys()) - _DRIVER_FIELDS
+        if invalid:
+            raise ValueError(f"허용되지 않는 effect 키: {invalid}")
+        return v
+
+
+# ── Scenarios ──
 
 class ScenarioParams(BaseModel):
     code: str
     name: str
-    prob: float  # 확률 (%)
+    prob: float  # Probability (%)
     ipo: str  # "성공" | "불발"
     irr: Optional[float] = None  # FI IRR (%)
     dlom: float = 0  # DLOM (%)
-    cps_repay: Optional[int] = None  # 백만원 (None=IRR 기반 계산)
+    cps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
     rcps_repay: int = 0
     buyback: int = 0
-    shares: int  # 적용 주식수
+    shares: int  # Applicable share count
     desc: str = ""
-    probability_rationale: str = ""  # 확률 할당 근거 (AI 생성)
-    ddm_growth: Optional[float] = None  # 시나리오별 DDM 배당성장률 (%, None=기본값 사용)
-    ev_multiple: Optional[float] = None  # 시나리오별 적용 멀티플 (Multiples 방법론)
-    rim_roe_adj: float = 0.0  # ROE %p 조정 (RIM, e.g., -1.0 → 전체 ROE -1%p)
-    nav_discount: float = 0.0  # 지주할인율 (NAV, e.g., 30 → NAV × 0.7)
+    probability_rationale: str = ""  # Probability allocation rationale (AI-generated)
+    ddm_growth: Optional[float] = None  # Per-scenario DDM dividend growth rate (%, None=use default)
+    ev_multiple: Optional[float] = None  # Per-scenario applied multiple (Multiples methodology)
+    rim_roe_adj: float = 0.0  # ROE %p adjustment (RIM, e.g., -1.0 -> all ROE -1%p)
+    nav_discount: float = 0.0  # Holding company discount (NAV, e.g., 30 -> NAV * 0.7)
 
     # DCF driver overrides (per-scenario)
-    growth_adj_pct: float = 0.0  # EBITDA 성장률 % 조정 (e.g., +20 → 각 rate × 1.2)
-    terminal_growth_adj: float = 0.0  # TGR 절대 조정 (e.g., +0.3 → TGR + 0.3%)
-    market_sentiment_pct: float = 0.0  # 시장 심리 프리미엄/디스카운트 (EV % 조정)
+    growth_adj_pct: float = 0.0  # EBITDA growth rate % adjustment (e.g., +20 -> each rate * 1.2)
+    terminal_growth_adj: float = 0.0  # TGR absolute adjustment (e.g., +0.3 -> TGR + 0.3%)
+    market_sentiment_pct: float = 0.0  # Market sentiment premium/discount (EV % adjustment)
 
     # Cross-cutting driver (all discount-rate methods)
-    wacc_adj: float = 0.0  # WACC %p 조정 (e.g., +0.5 → WACC + 0.5%p, DDM/RIM은 Ke에 반영)
+    wacc_adj: float = 0.0  # WACC %p adjustment (e.g., +0.5 -> WACC + 0.5%p; DDM/RIM applied to Ke)
 
-    # AI 분석 근거 (뉴스 → 드라이버 매핑)
-    driver_rationale: dict[str, str] = {}  # {"wacc_adj": "금리인상 50bp 반영", ...}
+    # AI analysis rationale (news -> driver mapping)
+    driver_rationale: dict[str, str] = {}  # {"wacc_adj": "Reflects 50bp rate hike", ...}
+
+    # Multi-variable news drivers (when active_drivers is set, effects are summed via resolve_drivers())
+    active_drivers: Optional[dict[str, float]] = None  # {driver_id: weight(0~1)}, None=direct assignment mode
 
     @field_validator("wacc_adj")
     @classmethod
@@ -203,20 +237,20 @@ class ScenarioResult(BaseModel):
     pre_dlom: int
     post_dlom: int
     weighted: int
-    adjustments: list[AdjustmentItem] = []  # 동적 Equity Bridge (Excel Waterfall용)
+    adjustments: list[AdjustmentItem] = []  # Dynamic Equity Bridge (for Excel Waterfall)
 
 
 # ── DDM ──
 
 class DDMParams(BaseModel):
-    """배당할인모델(DDM) 입력 파라미터."""
-    dps: float  # 주당 배당금 (원 or $)
-    dividend_growth: float = 3.0  # 배당 성장률 (%)
-    buyback_per_share: float = 0.0  # 주당 자사주매입 환원액 (미국 금융주 Total Payout용)
+    """Dividend Discount Model (DDM) input parameters."""
+    dps: float  # Dividend per share (KRW or $)
+    dividend_growth: float = 3.0  # Dividend growth rate (%)
+    buyback_per_share: float = 0.0  # Buyback return per share (for US financial Total Payout)
 
 
 class DDMValuationResult(BaseModel):
-    """DDM 밸류에이션 결과 (Pydantic 직렬화용)."""
+    """DDM valuation result (for Pydantic serialization)."""
     dps: float
     buyback_per_share: float = 0.0
     total_payout: float = 0.0
@@ -225,17 +259,17 @@ class DDMValuationResult(BaseModel):
     equity_per_share: int
 
 
-# ── RIM (잔여이익모델) ──
+# ── RIM (Residual Income Model) ──
 
 class RIMParams(BaseModel):
-    """잔여이익모델(RIM) 입력 파라미터 — 금융업종 특화."""
-    roe_forecasts: list[float]  # 예측기간 ROE (%, e.g. [12.0, 11.5, 11.0])
-    terminal_growth: float = 0.0  # RI 영구성장률 (%, 보수적 0%)
-    payout_ratio: float = 30.0  # 배당성향 (%)
+    """Residual Income Model (RIM) input parameters -- specialized for financials."""
+    roe_forecasts: list[float]  # Forecast-period ROE (%, e.g. [12.0, 11.5, 11.0])
+    terminal_growth: float = 0.0  # RI terminal growth rate (%, conservative 0%)
+    payout_ratio: float = 30.0  # Dividend payout ratio (%)
 
 
 class RIMProjectionResult(BaseModel):
-    """RIM 연도별 예측 (직렬화용)."""
+    """RIM annual projection (for serialization)."""
     year: int
     bv: int
     net_income: int
@@ -245,7 +279,7 @@ class RIMProjectionResult(BaseModel):
 
 
 class RIMValuationResult(BaseModel):
-    """RIM 밸류에이션 결과 (Pydantic 직렬화용)."""
+    """RIM valuation result (for Pydantic serialization)."""
     bv_current: int
     ke: float
     terminal_growth: float
@@ -257,27 +291,27 @@ class RIMValuationResult(BaseModel):
     per_share: int = 0
 
 
-# ── NAV (자산가치평가법) ──
+# ── NAV (Net Asset Value) ──
 
 class NAVParams(BaseModel):
-    """순자산가치(NAV) 입력 파라미터."""
-    revaluation: int = 0  # 투자자산 재평가 조정액 (공정가치 − 장부가, 표시 단위)
+    """Net Asset Value (NAV) input parameters."""
+    revaluation: int = 0  # Investment asset revaluation adjustment (fair value - book value, in display units)
 
 
 class NAVResult(BaseModel):
-    """NAV 밸류에이션 결과."""
+    """NAV valuation result."""
     total_assets: int = 0
     revaluation: int = 0
     adjusted_assets: int = 0
     total_liabilities: int = 0
-    nav: int = 0  # 순자산가치
+    nav: int = 0  # Net asset value
     per_share: int = 0
 
 
-# ── Multiples Primary (상대가치평가법 주방법론) ──
+# ── Multiples Primary (Relative Valuation as primary method) ──
 
 class MultiplesResult(BaseModel):
-    """상대가치평가법이 주방법론일 때의 결과."""
+    """Result when relative valuation (Multiples) is the primary method."""
     primary_multiple_method: str = ""  # "EV/EBITDA" | "P/E" | "P/BV"
     metric_value: float = 0.0
     multiple: float = 0.0
@@ -289,15 +323,15 @@ class MultiplesResult(BaseModel):
 # ── DCF ──
 
 class DCFParams(BaseModel):
-    ebitda_growth_rates: Optional[list[float]] = None  # 예측기간 EBITDA 성장률 (None이면 자동 생성)
+    ebitda_growth_rates: Optional[list[float]] = None  # Forecast-period EBITDA growth rates (None=auto-generate)
     tax_rate: float = 22.0
     capex_to_da: float = 1.10
     nwc_to_rev_delta: float = 0.05
-    terminal_growth: float = 2.5  # 영구성장률 (%)
-    # 실제 Capex/NWC (있으면 ratio 대신 사용)
-    actual_capex: Optional[int] = None  # 실제 Capex (백만원/$M)
-    actual_nwc: Optional[int] = None  # 실제 NWC (백만원/$M)
-    prior_nwc: Optional[int] = None  # 전기 NWC (ΔNWC 계산용)
+    terminal_growth: float = 2.5  # Terminal growth rate (%)
+    # Actual Capex/NWC (used instead of ratios when available)
+    actual_capex: Optional[int] = None  # Actual Capex (in display units)
+    actual_nwc: Optional[int] = None  # Actual NWC (in display units)
+    prior_nwc: Optional[int] = None  # Prior-period NWC (for delta NWC calculation)
 
 
 class DCFProjection(BaseModel):
@@ -330,8 +364,8 @@ class PeerCompany(BaseModel):
     segment_code: str
     ev_ebitda: float
     notes: str = ""
-    ticker: Optional[str] = None  # Yahoo Finance ticker (자동 fetch용)
-    market_cap: Optional[float] = None  # 시가총액 (백만원 or $M)
+    ticker: Optional[str] = None  # Yahoo Finance ticker (for auto-fetch)
+    market_cap: Optional[float] = None  # Market cap (in display units or $M)
     enterprise_value: Optional[float] = None
     trailing_pe: Optional[float] = None
     forward_pe: Optional[float] = None
@@ -342,7 +376,7 @@ class PeerCompany(BaseModel):
 
 
 class PeerSegmentStats(BaseModel):
-    """부문별 Peer 멀티플 통계."""
+    """Per-segment peer multiple statistics."""
     segment_code: str
     segment_name: str = ""
     count: int = 0
@@ -352,50 +386,51 @@ class PeerSegmentStats(BaseModel):
     ev_ebitda_q3: float = 0.0
     ev_ebitda_min: float = 0.0
     ev_ebitda_max: float = 0.0
-    applied_multiple: float = 0.0  # 실제 적용된 멀티플
+    applied_multiple: float = 0.0  # Actually applied multiple
 
 
-# ── 종합 밸류에이션 입출력 ──
+# ── Comprehensive Valuation I/O ──
 
 class ValuationInput(BaseModel):
     company: CompanyProfile
     valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "auto"
-    industry: str = ""  # 업종 힌트 (method_selector 자동 분기용, e.g. "은행", "software")
-    segments: dict[str, dict]  # code → {"name": str, "multiple": float}
-    segment_data: dict[int, dict[str, dict]]  # year → code → {"revenue", "op", "assets", ...}
-    consolidated: dict[int, dict]  # year → {"revenue", "op", "dep", "amort", ...}
+    industry: str = ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
+    segments: dict[str, dict]  # code -> {"name": str, "multiple": float}
+    segment_data: dict[int, dict[str, dict]]  # year -> code -> {"revenue", "op", "assets", ...}
+    consolidated: dict[int, dict]  # year -> {"revenue", "op", "dep", "amort", ...}
     wacc_params: WACCParams
-    multiples: dict[str, float]  # segment code → EV/EBITDA
-    scenarios: dict[str, ScenarioParams]  # scenario code → params
+    multiples: dict[str, float]  # segment code -> EV/EBITDA
+    scenarios: dict[str, ScenarioParams]  # scenario code -> params
+    news_drivers: list[NewsDriver] = []  # News-based independent driver catalog
     dcf_params: DCFParams
-    ddm_params: Optional[DDMParams] = None  # DDM용 (금융업종)
-    rim_params: Optional[RIMParams] = None  # RIM용 (금융업종 — BV 기반)
-    nav_params: Optional[NAVParams] = None  # NAV용 (지주사/리츠/자산중심)
-    cps_principal: int = 0  # 백만원
+    ddm_params: Optional[DDMParams] = None  # For DDM (financial sector)
+    rim_params: Optional[RIMParams] = None  # For RIM (financial sector -- BV-based)
+    nav_params: Optional[NAVParams] = None  # For NAV (holding co./REITs/asset-heavy)
+    cps_principal: int = 0  # In display units
     cps_years: int = 0
-    net_debt: int = 0  # 백만원
-    segment_net_debt: dict[str, int] = {}  # {segment_code: net_debt} — 금융자회사 분리 SOTP용
-    eco_frontier: int = 0  # 백만원
+    net_debt: int = 0  # In display units
+    segment_net_debt: dict[str, int] = {}  # {segment_code: net_debt} -- for financial subsidiary split SOTP
+    eco_frontier: int = 0  # In display units
     peers: list[PeerCompany] = []
     base_year: int = 2025
-    # 교차검증용 멀티플 (0이면 해당 방법론 스킵)
+    # Cross-validation multiples (0 means skip that method)
     ev_revenue_multiple: float = 0.0
     pe_multiple: float = 0.0
     pbv_multiple: float = 0.0
-    ps_multiple: float = 0.0  # P/S (적자 성장주 교차검증)
-    pffo_multiple: float = 0.0  # P/FFO (리츠 교차검증)
-    ffo: int = 0  # Funds From Operations (리츠용, 순이익+감가상각-매각이익)
-    # Monte Carlo 설정
+    ps_multiple: float = 0.0  # P/S (cross-validation for loss-making growth stocks)
+    pffo_multiple: float = 0.0  # P/FFO (cross-validation for REITs)
+    ffo: int = 0  # Funds From Operations (for REITs: net income + depreciation - gain on sale)
+    # Monte Carlo settings
     mc_enabled: bool = False
     mc_sims: int = 10_000
-    mc_multiple_std_pct: float = 15.0  # 멀티플 표준편차 (적용값 대비 %)
-    mc_dlom_mean: float = 0.0  # DLOM 평균 (%)
-    mc_dlom_std: float = 5.0  # DLOM 표준편차 (%)
-    news_key_issues: Optional[str] = None  # 뉴스 기반 핵심 이슈 요약
+    mc_multiple_std_pct: float = 15.0  # Multiple std dev (% of applied value)
+    mc_dlom_mean: float = 0.0  # DLOM mean (%)
+    mc_dlom_std: float = 5.0  # DLOM std dev (%)
+    news_key_issues: Optional[str] = None  # News-based key issues summary
 
     @model_validator(mode="after")
     def validate_inputs(self):
-        # base_year가 consolidated에 존재하는지 확인
+        # Verify base_year exists in consolidated
         if self.base_year not in self.consolidated:
             available = sorted(self.consolidated.keys())
             raise ValueError(
@@ -403,7 +438,7 @@ class ValuationInput(BaseModel):
                 f"사용 가능한 연도: {available}"
             )
 
-        # 시나리오 확률 합계 검증
+        # Validate scenario probability sum
         if self.scenarios:
             total_prob = sum(sc.prob for sc in self.scenarios.values())
             if abs(total_prob - 100.0) > 0.1:
@@ -411,7 +446,7 @@ class ValuationInput(BaseModel):
                     f"시나리오 확률 합계가 100%가 아닙니다: {total_prob:.1f}%"
                 )
 
-        # 멀티플 음수 검증
+        # Validate non-negative multiples
         for code, mult in self.multiples.items():
             if mult < 0:
                 raise ValueError(f"멀티플은 음수일 수 없습니다: {code}={mult}")
@@ -428,7 +463,7 @@ class SOTPSegmentResult(BaseModel):
 
 
 class DAAllocation(BaseModel):
-    asset_share: float  # (%)
+    asset_share: float  # Asset share (%)
     da_allocated: int
     ebitda: int
 
@@ -440,7 +475,7 @@ class SensitivityRow(BaseModel):
 
 
 class MonteCarloResult(BaseModel):
-    """Monte Carlo 시뮬레이션 결과 (직렬화용)."""
+    """Monte Carlo simulation result (for serialization)."""
     n_sims: int = 0
     mean: int = 0
     median: int = 0
@@ -456,30 +491,30 @@ class MonteCarloResult(BaseModel):
 
 
 class MarketComparisonResult(BaseModel):
-    """시장가격 비교 결과."""
-    intrinsic_value: int = 0  # 내재가치 (주당)
-    market_price: float = 0.0  # 현재 시장가
-    gap_ratio: float = 0.0  # (내재 - 시장) / 시장
-    flag: str = ""  # 경고 메시지 (괴리율 ±50% 초과 시)
+    """Market price comparison result."""
+    intrinsic_value: int = 0  # Intrinsic value (per share)
+    market_price: float = 0.0  # Current market price
+    gap_ratio: float = 0.0  # (intrinsic - market) / market
+    flag: str = ""  # Warning message (when gap exceeds +/-50%)
 
 
 class CrossValidationItem(BaseModel):
     method: str  # "SOTP (EV/EBITDA)", "DCF (FCFF)", "EV/Revenue", "P/E", "P/BV"
-    metric_value: float  # 적용 지표값
-    multiple: float  # 적용 배수
+    metric_value: float  # Applied metric value
+    multiple: float  # Applied multiple
     enterprise_value: int  # EV
     equity_value: int  # Equity Value
-    per_share: int  # 주당 가치
+    per_share: int  # Per-share value
 
 
 class ValuationResult(BaseModel):
-    primary_method: str = "sotp"  # 사용된 주 방법론 ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav")
+    primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav")
     wacc: WACCResult
-    da_allocations: dict[int, dict[str, DAAllocation]] = {}  # SOTP용 (빈 dict = 미사용)
-    sotp: dict[str, SOTPSegmentResult] = {}  # SOTP용 (빈 dict = 미사용)
+    da_allocations: dict[int, dict[str, DAAllocation]] = {}  # For SOTP (empty dict = not used)
+    sotp: dict[str, SOTPSegmentResult] = {}  # For SOTP (empty dict = not used)
     total_ev: int = 0
-    scenarios: dict[str, ScenarioResult] = {}  # 시나리오 미사용 시 빈 dict
-    weighted_value: int = 0  # 확률가중 주당 가치
+    scenarios: dict[str, ScenarioResult] = {}  # Empty dict when scenarios not used
+    weighted_value: int = 0  # Probability-weighted per-share value
     dcf: Optional[DCFResult] = None
     ddm: Optional[DDMValuationResult] = None
     rim: Optional[RIMValuationResult] = None
@@ -492,5 +527,5 @@ class ValuationResult(BaseModel):
     sensitivity_multiples: list[SensitivityRow] = []
     sensitivity_irr_dlom: list[SensitivityRow] = []
     sensitivity_dcf: list[SensitivityRow] = []
-    sensitivity_primary: list[SensitivityRow] = []  # 주방법론 전용 민감도
-    sensitivity_primary_label: str = ""  # 민감도 테이블 제목
+    sensitivity_primary: list[SensitivityRow] = []  # Primary method-specific sensitivity
+    sensitivity_primary_label: str = ""  # Sensitivity table title

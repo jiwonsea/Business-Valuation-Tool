@@ -1,7 +1,7 @@
-"""Peer 분석 엔진 — 멀티플 통계 산출 및 자동 조회.
+"""Peer analysis engine -- multiple statistics computation and auto-lookup.
 
-Peer 기업의 EV/EBITDA를 부문별로 집계하여 median, mean, Q1/Q3을 산출한다.
-ticker가 있는 Peer는 Yahoo Finance에서 실시간 멀티플을 조회할 수 있다.
+Aggregates peer companies' EV/EBITDA by segment to compute median, mean, Q1/Q3.
+Peers with tickers can fetch real-time multiples from Yahoo Finance.
 """
 
 from __future__ import annotations
@@ -21,22 +21,22 @@ def calc_peer_stats(
     multiples: dict[str, float],
     seg_names: dict[str, str] | None = None,
 ) -> list[PeerSegmentStats]:
-    """부문별 Peer 멀티플 통계 산출.
+    """Compute per-segment peer multiple statistics.
 
     Args:
-        peers: PeerCompany 리스트
-        multiples: segment code → 적용된 EV/EBITDA 멀티플
-        seg_names: segment code → 부문명 (optional)
+        peers: List of PeerCompany
+        multiples: segment code -> applied EV/EBITDA multiple
+        seg_names: segment code -> segment name (optional)
 
     Returns:
-        부문별 PeerSegmentStats 리스트
+        List of PeerSegmentStats per segment
     """
     from schemas.models import PeerSegmentStats
 
     if not peers:
         return []
 
-    # 부문별 그룹핑
+    # Group by segment
     by_seg: dict[str, list[float]] = {}
     for p in peers:
         if p.ev_ebitda > 0:
@@ -80,10 +80,10 @@ def calc_peer_stats(
 
 
 def fetch_peer_multiples(peers: list[PeerCompany]) -> list[PeerCompany]:
-    """Deprecated: pipeline.peer_fetcher.fetch_peer_multiples()로 이동.
+    """Deprecated: moved to pipeline.peer_fetcher.fetch_peer_multiples().
 
-    engine 모듈의 순수 함수 규칙을 유지하기 위해 IO 로직을 pipeline으로 분리.
-    하위 호환을 위해 re-export만 유지.
+    IO logic separated to pipeline to maintain engine module's pure function rule.
+    Kept as re-export for backward compatibility.
     """
     from pipeline.peer_fetcher import fetch_peer_multiples as _fetch
     return _fetch(peers)

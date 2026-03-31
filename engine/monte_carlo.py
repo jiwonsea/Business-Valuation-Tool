@@ -1,6 +1,7 @@
-"""Monte Carlo 시뮬레이션 — 핵심 변수 랜덤 샘플링 기반 밸류에이션 분포.
+"""Monte Carlo simulation -- valuation distribution via random sampling of key variables.
 
-멀티플, WACC, DLOM 등에 확률분포를 적용하여 주당가치의 분포를 산출한다.
+Applies probability distributions to multiples, WACC, DLOM, etc. to generate
+the distribution of per-share values.
 """
 
 from __future__ import annotations
@@ -12,13 +13,13 @@ import numpy as np
 
 @dataclass
 class MCInput:
-    """Monte Carlo 시뮬레이션 입력 파라미터."""
-    # 부문별 멀티플: {code: (mean, std)}
+    """Monte Carlo simulation input parameters."""
+    # Per-segment multiples: {code: (mean, std)}
     multiple_params: dict[str, tuple[float, float]]
     # WACC: (mean, std)
     wacc_mean: float
     wacc_std: float
-    # DLOM: (mean, std) — 0% ~ 50% 범위 clip
+    # DLOM: (mean, std) -- clipped to 0%~50% range
     dlom_mean: float
     dlom_std: float
     # Terminal growth: (mean, std)
@@ -30,7 +31,7 @@ class MCInput:
 
 @dataclass
 class MCResult:
-    """Monte Carlo 시뮬레이션 결과."""
+    """Monte Carlo simulation result."""
     n_sims: int
     mean: int
     median: int
@@ -41,7 +42,7 @@ class MCResult:
     p95: int
     min_val: int
     max_val: int
-    distribution: list[int] = field(default_factory=list)  # 전체 분포 (히스토그램용)
+    distribution: list[int] = field(default_factory=list)  # Full distribution (for histogram)
     histogram_bins: list[int] = field(default_factory=list)
     histogram_counts: list[int] = field(default_factory=list)
 
@@ -63,29 +64,29 @@ def run_monte_carlo(
     dcf_pv_fcff_sum: int = 0,
     dcf_n_periods: int = 5,
 ) -> MCResult:
-    """Monte Carlo 시뮬레이션 실행.
+    """Run Monte Carlo simulation.
 
-    각 시뮬레이션에서:
-    1. 부문별 멀티플을 정규분포에서 샘플링 (하한 0)
-    2. SOTP EV = Σ(EBITDA_i × Multiple_i)
-    3. WACC/TG 샘플링으로 DCF TV 변동 반영 (DCF 정보 제공 시)
-    4. DLOM 적용한 주당 가치 산출
+    Per simulation:
+    1. Sample per-segment multiples from normal distribution (floor at 0)
+    2. SOTP EV = sum(EBITDA_i x Multiple_i)
+    3. Sample WACC/TG to reflect DCF TV variation (when DCF info provided)
+    4. Compute per-share value with DLOM applied
 
     Args:
-        mc_input: 시뮬레이션 파라미터
-        seg_ebitdas: segment code → EBITDA
-        net_debt: 순차입금
-        eco_frontier: 에코프론티어 파생상품부채
-        cps_principal: CPS 원금
-        cps_years: CPS 잔여연수
-        rcps_repay: RCPS 상환액
-        buyback: 보통주 매입액
-        shares: 적용 주식수
-        irr: FI IRR (CPS 상환금 계산용)
-        wacc_for_dcf: DCF TV 샘플링용 기준 WACC (%, 0이면 DCF 미적용)
-        dcf_last_fcff: DCF 마지막 연도 FCFF (TV 재계산용)
-        dcf_pv_fcff_sum: DCF 예측기간 PV 합계 (고정)
-        dcf_n_periods: DCF 예측 기간 수
+        mc_input: Simulation parameters
+        seg_ebitdas: segment code -> EBITDA
+        net_debt: Net debt
+        eco_frontier: Eco Frontier derivative liability
+        cps_principal: CPS principal
+        cps_years: CPS remaining years
+        rcps_repay: RCPS redemption amount
+        buyback: Common share buyback amount
+        shares: Applied share count
+        irr: FI IRR (for CPS redemption calculation)
+        wacc_for_dcf: Base WACC for DCF TV sampling (%, 0 disables DCF)
+        dcf_last_fcff: Last-year FCFF from DCF (for TV recalculation)
+        dcf_pv_fcff_sum: DCF projection period PV sum (fixed)
+        dcf_n_periods: Number of DCF projection periods
 
     Returns:
         MCResult with distribution statistics
@@ -93,17 +94,17 @@ def run_monte_carlo(
     rng = np.random.default_rng(mc_input.seed)
     n = mc_input.n_sims
 
-    # 샘플링
+    # Sampling
     multiples_samples = {}
     for code, (mu, sigma) in mc_input.multiple_params.items():
         samples = rng.normal(mu, sigma, n)
-        samples = np.maximum(samples, 0)  # 멀티플 ≥ 0
+        samples = np.maximum(samples, 0)  # Multiple >= 0
         multiples_samples[code] = samples
 
     dlom_samples = rng.normal(mc_input.dlom_mean, mc_input.dlom_std, n)
     dlom_samples = np.clip(dlom_samples, 0, 50)  # 0% ~ 50%
 
-    # WACC / Terminal Growth 샘플링 (DCF TV 변동 반영)
+    # WACC / Terminal Growth sampling (reflects DCF TV variation)
     wacc_samples = rng.normal(mc_input.wacc_mean, mc_input.wacc_std, n)
     wacc_samples = np.maximum(wacc_samples, 1.0)  # WACC ≥ 1%
     tg_samples = rng.normal(mc_input.tg_mean, mc_input.tg_std, n)
@@ -111,16 +112,16 @@ def run_monte_carlo(
 
     use_dcf_tv = wacc_for_dcf > 0 and dcf_last_fcff > 0
 
-    # CPS 상환금 계산 (IRR 기반)
+    # CPS redemption calculation (IRR-based)
     cps_repay = round(cps_principal * (1 + irr / 100) ** cps_years) if cps_principal > 0 else 0
 
-    # 벡터화된 SOTP EV 계산
+    # Vectorized SOTP EV calculation
     ev = np.zeros(n)
     for code, ebitda in seg_ebitdas.items():
         if ebitda > 0 and code in multiples_samples:
             ev += ebitda * multiples_samples[code]
 
-    # DCF TV 변동 반영 (벡터화)
+    # DCF TV variation (vectorized)
     if use_dcf_tv:
         w = wacc_samples / 100
         g = tg_samples / 100
@@ -129,7 +130,7 @@ def run_monte_carlo(
         pv_tv_sample = np.where(valid, tv_sample / (1 + w) ** dcf_n_periods, 0)
         dcf_ev_sample = dcf_pv_fcff_sum + pv_tv_sample
 
-        # 기준 DCF EV (스칼라, 루프 밖에서 1회만 계산)
+        # Base DCF EV (scalar, computed once outside loop)
         w0 = wacc_for_dcf / 100
         g0 = mc_input.tg_mean / 100
         tv_base = dcf_last_fcff * (1 + g0) / (w0 - g0)
@@ -139,7 +140,7 @@ def run_monte_carlo(
         if dcf_ev_base > 0:
             ev = np.where(valid, ev * (dcf_ev_sample / dcf_ev_base), ev)
 
-    # Equity bridge (벡터화)
+    # Equity bridge (vectorized)
     claims = net_debt + cps_repay + rcps_repay + buyback + eco_frontier
     equity = ev - claims
 
@@ -152,7 +153,7 @@ def run_monte_carlo(
 
     results_int = np.round(results).astype(int)
 
-    # 히스토그램
+    # Histogram
     n_bins = min(50, max(10, n // 200))
     valid = results_int[results_int > 0]
     if len(valid) > 0:

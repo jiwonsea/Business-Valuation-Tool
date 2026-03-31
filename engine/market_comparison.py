@@ -1,14 +1,14 @@
-"""시장가격 비교 — 내재가치 vs 현재 주가 괴리율 계산. 순수 함수."""
+"""Market price comparison -- intrinsic value vs current price gap calculation. Pure functions."""
 
 from dataclasses import dataclass
 
 
 @dataclass
 class MarketComparison:
-    intrinsic_value: int  # 주당 내재가치
-    market_price: float  # 현재 시장가
+    intrinsic_value: int  # Intrinsic value per share
+    market_price: float  # Current market price
     gap_ratio: float  # (intrinsic - market) / market
-    flag: str  # 경고 메시지 (빈 문자열 = 정상)
+    flag: str  # Warning message (empty string = normal)
 
 
 def compare_to_market(
@@ -16,12 +16,12 @@ def compare_to_market(
     market_price: float,
     threshold: float = 0.5,
 ) -> MarketComparison:
-    """내재가치와 시장가격 비교.
+    """Compare intrinsic value to market price.
 
     Args:
-        intrinsic: 주당 내재가치 (원 or $)
-        market_price: 현재 주가 (원 or $)
-        threshold: 경고 임계값 (기본 0.5 = ±50%)
+        intrinsic: Intrinsic value per share (KRW or $)
+        market_price: Current market price (KRW or $)
+        threshold: Warning threshold (default 0.5 = +/-50%)
 
     Returns:
         MarketComparison with gap_ratio and optional warning flag

@@ -1,7 +1,7 @@
-"""자산가치평가법 (NAV: Net Asset Value) 엔진 — 순수 함수.
+"""Net Asset Value (NAV) engine -- pure functions.
 
-지주사, 리츠, 자산중심 기업에 적용.
-조정 순자산가치 = 총자산 공정가치 − 총부채 (+ 투자자산 재평가 반영).
+Applied to holding companies, REITs, and asset-centric firms.
+Adjusted NAV = total assets at fair value - total liabilities (+ investment asset revaluation).
 """
 
 from dataclasses import dataclass
@@ -11,14 +11,14 @@ from .units import per_share as _per_share
 
 @dataclass
 class NAVRawResult:
-    """calc_nav 반환값."""
-    total_assets: int       # 총자산 (장부)
-    revaluation: int        # 투자자산 재평가 조정액
-    adjusted_assets: int    # 조정 후 총자산
-    total_liabilities: int  # 총부채
-    nav: int                # 순자산가치 (조정 자산 − 부채)
+    """Return value of calc_nav."""
+    total_assets: int       # Total assets (book value)
+    revaluation: int        # Investment asset revaluation adjustment
+    adjusted_assets: int    # Adjusted total assets
+    total_liabilities: int  # Total liabilities
+    nav: int                # Net asset value (adjusted assets - liabilities)
     shares: int
-    per_share: int          # 주당 NAV
+    per_share: int          # NAV per share
 
 
 def calc_nav(
@@ -28,14 +28,14 @@ def calc_nav(
     revaluation: int = 0,
     unit_multiplier: int = 1_000_000,
 ) -> NAVRawResult:
-    """조정 순자산가치(NAV) 계산.
+    """Compute adjusted Net Asset Value (NAV).
 
     Args:
-        total_assets: 총자산 (표시 단위)
-        total_liabilities: 총부채 (표시 단위)
-        shares: 발행주식수
-        revaluation: 투자자산 재평가 조정액 (공정가치 − 장부가, 표시 단위)
-        unit_multiplier: 1표시단위 = 몇 원/$
+        total_assets: Total assets (display unit)
+        total_liabilities: Total liabilities (display unit)
+        shares: Shares outstanding
+        revaluation: Investment asset revaluation adjustment (fair value - book value, display unit)
+        unit_multiplier: KRW/$ per display unit
 
     Returns:
         NAVRawResult

@@ -1,6 +1,6 @@
-"""배당할인모델(DDM) — Gordon Growth Model 기반 순수 함수.
+"""Dividend Discount Model (DDM) -- Gordon Growth Model-based pure functions.
 
-Total Payout DDM: 자사주매입을 포함한 총주주환원 기반 평가 지원.
+Total Payout DDM: supports valuation based on total shareholder return including buybacks.
 """
 
 from dataclasses import dataclass
@@ -8,13 +8,13 @@ from dataclasses import dataclass
 
 @dataclass
 class DDMResult:
-    """DDM 밸류에이션 결과."""
-    dps: float  # 주당 배당금
-    buyback_per_share: float  # 주당 자사주매입 환원액
-    total_payout: float  # 주당 총환원 (DPS + buyback)
-    growth: float  # 성장률 (%)
-    ke: float  # 자기자본비용 (%)
-    equity_per_share: int  # 주당 내재가치
+    """DDM valuation result."""
+    dps: float  # Dividend per share
+    buyback_per_share: float  # Buyback return per share
+    total_payout: float  # Total payout per share (DPS + buyback)
+    growth: float  # Growth rate (%)
+    ke: float  # Cost of equity (%)
+    equity_per_share: int  # Intrinsic value per share
 
 
 def calc_ddm(
@@ -23,19 +23,19 @@ def calc_ddm(
     ke: float,
     buyback_per_share: float = 0.0,
 ) -> DDMResult:
-    """Gordon Growth DDM (Total Payout 지원).
+    """Gordon Growth DDM (Total Payout support).
 
-    주당가치 = TotalPayout × (1+g) / (Ke - g)
-    TotalPayout = DPS + 주당 자사주매입 환원액
+    Per-share value = TotalPayout x (1+g) / (Ke - g)
+    TotalPayout = DPS + buyback return per share
 
-    미국 금융주는 자사주매입 비중이 높아 DPS만으로는 과소평가됨.
-    buyback_per_share > 0이면 Total Shareholder Yield 모델로 작동.
+    US financials have significant buyback portions, making DPS-only DDM undervalue them.
+    When buyback_per_share > 0, operates as a Total Shareholder Yield model.
 
     Args:
-        dps: 주당 배당금 (원 or $)
-        growth: 배당/환원 성장률 (%, e.g., 3.0 = 3%)
-        ke: 자기자본비용 (%, e.g., 10.0 = 10%)
-        buyback_per_share: 주당 자사주매입 환원액 (원 or $, 기본 0)
+        dps: Dividend per share (KRW or $)
+        growth: Dividend/payout growth rate (%, e.g., 3.0 = 3%)
+        ke: Cost of equity (%, e.g., 10.0 = 10%)
+        buyback_per_share: Buyback return per share (KRW or $, default 0)
 
     Returns:
         DDMResult with equity_per_share

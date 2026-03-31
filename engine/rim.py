@@ -1,8 +1,8 @@
-"""잔여이익모델(RIM: Residual Income Model) 엔진 — 순수 함수.
+"""Residual Income Model (RIM) engine — pure functions.
 
-금융업종(은행, 보험, 증권 등) 특화 밸류에이션.
-Value = BV₀ + Σ RIₜ / (1+kₑ)ᵗ
-여기서 RIₜ = (ROE − kₑ) × BVₜ₋₁
+Specialized valuation for financial sector (banks, insurance, securities, etc.).
+Value = BV_0 + sum( RI_t / (1+ke)^t )
+where RI_t = (ROE - ke) x BV_{t-1}
 """
 
 from dataclasses import dataclass
@@ -10,27 +10,27 @@ from dataclasses import dataclass
 
 @dataclass
 class RIMProjection:
-    """연도별 RIM 예측."""
+    """Per-year RIM projection."""
     year: int
-    bv: int          # 기초 장부가치 (표시 단위)
-    net_income: int   # 당기순이익 (표시 단위)
+    bv: int          # Beginning book value (display unit)
+    net_income: int   # Net income (display unit)
     roe: float        # ROE (%)
-    ri: int           # 잔여이익 (표시 단위)
-    pv_ri: int        # 잔여이익 현재가치
+    ri: int           # Residual income (display unit)
+    pv_ri: int        # Present value of residual income
 
 
 @dataclass
 class RIMResult:
-    """RIM 밸류에이션 결과."""
-    bv_current: int           # 현재 장부가치
-    ke: float                 # 자기자본비용 (%)
-    terminal_growth: float    # 영구성장률 (%)
+    """RIM valuation result."""
+    bv_current: int           # Current book value
+    ke: float                 # Cost of equity (%)
+    terminal_growth: float    # Terminal growth rate (%)
     projections: list[RIMProjection]
-    pv_ri_sum: int            # 예측기간 RI 현재가치 합계
-    terminal_ri: int          # 잔여이익 Terminal Value
-    pv_terminal: int          # TV 현재가치
-    equity_value: int         # 총 자기자본가치 (BV + PV(RI) + PV(TV))
-    per_share: int            # 주당 가치
+    pv_ri_sum: int            # Sum of PV of RI over projection period
+    terminal_ri: int          # RI terminal value
+    pv_terminal: int          # PV of terminal value
+    equity_value: int         # Total equity value (BV + PV(RI) + PV(TV))
+    per_share: int            # Per-share value
 
 
 def calc_rim(
@@ -42,16 +42,16 @@ def calc_rim(
     unit_multiplier: int = 1_000_000,
     payout_ratio: float = 0.0,
 ) -> RIMResult:
-    """RIM 밸류에이션 계산.
+    """Compute RIM valuation.
 
     Args:
-        book_value: 현재 자기자본 장부가치 (표시 단위, e.g. 백만원)
-        roe_forecasts: 예측기간 ROE 리스트 (%, e.g. [12.0, 11.5, 11.0, 10.5, 10.0])
-        ke: 자기자본비용 (%, e.g. 10.0)
-        terminal_growth: RI 영구성장률 (%, e.g. 0.0 — 보수적 추정)
-        shares: 발행주식수
-        unit_multiplier: 1표시단위 = 몇 원/$
-        payout_ratio: 배당성향 (%, e.g. 30.0). 0이면 clean surplus 가정 (이익 전액 BV 유보).
+        book_value: Current equity book value (display unit, e.g. millions)
+        roe_forecasts: Forecast-period ROE list (%, e.g. [12.0, 11.5, 11.0, 10.5, 10.0])
+        ke: Cost of equity (%, e.g. 10.0)
+        terminal_growth: RI terminal growth rate (%, e.g. 0.0 -- conservative)
+        shares: Shares outstanding
+        unit_multiplier: 1 display unit = how many KRW/$
+        payout_ratio: Dividend payout ratio (%, e.g. 30.0). 0 assumes clean surplus (all earnings retained in BV).
 
     Returns:
         RIMResult
@@ -87,7 +87,7 @@ def calc_rim(
             pv_ri=pv_ri,
         ))
 
-        # 장부가치 갱신: BV_{t} = BV_{t-1} + NI - Dividends
+        # Update book value: BV_{t} = BV_{t-1} + NI - Dividends
         dividends = round(ni * payout)
         bv = bv + ni - dividends
 

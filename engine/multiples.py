@@ -1,7 +1,7 @@
-"""멀티플 교차검증 엔진 — EV/EBITDA 외 다중 밸류에이션 방법론.
+"""Multiples cross-validation engine -- multiple valuation methods beyond EV/EBITDA.
 
-SOTP(EV/EBITDA) 외에 EV/Revenue, P/E, P/BV로 교차검증하여
-Football Field 범위를 확장한다.
+Cross-validates with EV/Revenue, P/E, P/BV in addition to SOTP (EV/EBITDA)
+to expand the football field range.
 """
 
 from dataclasses import dataclass
@@ -12,11 +12,11 @@ from .units import per_share as _per_share
 @dataclass
 class MultipleValuation:
     method: str  # "EV/EBITDA", "EV/Revenue", "P/E", "P/BV"
-    metric_value: float  # 적용 지표값 (EBITDA, Revenue 등)
-    multiple: float  # 적용 배수
+    metric_value: float  # Applied metric value (EBITDA, Revenue, etc.)
+    multiple: float  # Applied multiple
     enterprise_value: int  # EV (or equity value for P/E, P/BV)
     equity_value: int  # EV - net debt (EV methods) or direct
-    per_share: int  # 주당 가치
+    per_share: int  # Per-share value
 
 
 def calc_ev_revenue(
@@ -26,7 +26,7 @@ def calc_ev_revenue(
     shares: int,
     unit_multiplier: int = 1_000_000,
 ) -> MultipleValuation:
-    """EV/Revenue 방법."""
+    """EV/Revenue method."""
     ev = round(revenue * multiple)
     equity = ev - net_debt
     ps = _per_share(equity, unit_multiplier, shares)
@@ -42,7 +42,7 @@ def calc_pe(
     shares: int,
     unit_multiplier: int = 1_000_000,
 ) -> MultipleValuation:
-    """P/E 방법 (직접 Equity Value)."""
+    """P/E method (direct equity value)."""
     equity = round(net_income * multiple) if net_income > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
@@ -57,7 +57,7 @@ def calc_pbv(
     shares: int,
     unit_multiplier: int = 1_000_000,
 ) -> MultipleValuation:
-    """P/BV 방법 (직접 Equity Value)."""
+    """P/BV method (direct equity value)."""
     equity = round(book_value * multiple)
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
@@ -72,10 +72,10 @@ def calc_ps(
     shares: int,
     unit_multiplier: int = 1_000_000,
 ) -> MultipleValuation:
-    """P/S (Price-to-Sales) 방법 — 적자 성장주 교차검증용.
+    """P/S (Price-to-Sales) method -- cross-validation for loss-making growth stocks.
 
-    초기 단계 기업(이익 미발생)에서 DCF 대안으로 활용.
-    Equity Value = Revenue × P/S multiple.
+    Used as a DCF alternative for early-stage companies (pre-profit).
+    Equity Value = Revenue x P/S multiple.
     """
     equity = round(revenue * multiple) if revenue > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
@@ -91,10 +91,10 @@ def calc_pffo(
     shares: int,
     unit_multiplier: int = 1_000_000,
 ) -> MultipleValuation:
-    """P/FFO (Price to Funds From Operations) 방법 — 리츠(REITs) 특화.
+    """P/FFO (Price to Funds From Operations) method -- REIT-specific.
 
-    FFO = 당기순이익 + 감가상각비 − 부동산매각이익.
-    감가상각비로 왜곡되는 순이익 대신 실제 현금 창출력을 반영.
+    FFO = Net income + Depreciation - Gain on real estate sales.
+    Reflects actual cash generation instead of net income distorted by depreciation.
     """
     equity = round(ffo * multiple) if ffo > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
@@ -121,26 +121,26 @@ def cross_validate(
     ffo: int = 0,
     unit_multiplier: int = 1_000_000,
 ) -> list[MultipleValuation]:
-    """다중 방법론 교차검증 결과 리스트.
+    """Multi-method cross-validation result list.
 
     Args:
-        revenue, ebitda, net_income, book_value: 재무 지표 (단위: 백만원/$M)
-        net_debt: 순차입금
-        shares: 주식수
-        sotp_ev, dcf_ev: 기존 SOTP/DCF EV
-        ev_revenue_multiple: EV/Revenue 배수 (0이면 스킵)
-        pe_multiple: P/E 배수 (0이면 스킵)
-        pbv_multiple: P/BV 배수 (0이면 스킵)
-        ps_multiple: P/S 배수 (0이면 스킵, 적자 성장주 교차검증)
-        pffo_multiple: P/FFO 배수 (0이면 스킵, 리츠 교차검증)
-        ffo: Funds From Operations (리츠용, 0이면 스킵)
+        revenue, ebitda, net_income, book_value: Financial metrics (in display unit)
+        net_debt: Net debt
+        shares: Number of shares
+        sotp_ev, dcf_ev: Existing SOTP/DCF EV
+        ev_revenue_multiple: EV/Revenue multiple (0 to skip)
+        pe_multiple: P/E multiple (0 to skip)
+        pbv_multiple: P/BV multiple (0 to skip)
+        ps_multiple: P/S multiple (0 to skip, for loss-making growth stocks)
+        pffo_multiple: P/FFO multiple (0 to skip, for REITs)
+        ffo: Funds From Operations (for REITs, 0 to skip)
 
     Returns:
-        [MultipleValuation, ...] (SOTP, DCF 포함)
+        [MultipleValuation, ...] (includes SOTP, DCF)
     """
     results = []
 
-    # 1. SOTP (sotp_ev > 0일 때만)
+    # 1. SOTP (only when sotp_ev > 0)
     if sotp_ev > 0:
         sotp_equity = sotp_ev - net_debt
         sotp_ps = _per_share(sotp_equity, unit_multiplier, shares)
@@ -150,7 +150,7 @@ def cross_validate(
             enterprise_value=sotp_ev, equity_value=sotp_equity, per_share=sotp_ps,
         ))
 
-    # 2. DCF (기존)
+    # 2. DCF (existing)
     dcf_equity = dcf_ev - net_debt
     dcf_ps = _per_share(dcf_equity, unit_multiplier, shares)
     results.append(MultipleValuation(
@@ -170,11 +170,11 @@ def cross_validate(
     if pbv_multiple > 0 and book_value > 0:
         results.append(calc_pbv(book_value, pbv_multiple, shares, unit_multiplier))
 
-    # 6. P/S (적자 성장주)
+    # 6. P/S (loss-making growth stocks)
     if ps_multiple > 0 and revenue > 0:
         results.append(calc_ps(revenue, ps_multiple, shares, unit_multiplier))
 
-    # 7. P/FFO (리츠)
+    # 7. P/FFO (REITs)
     if pffo_multiple > 0 and ffo > 0:
         results.append(calc_pffo(ffo, pffo_multiple, shares, unit_multiplier))
 

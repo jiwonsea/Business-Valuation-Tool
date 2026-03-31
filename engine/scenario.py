@@ -1,4 +1,4 @@
-"""시나리오 분석 엔진."""
+"""Scenario analysis engine."""
 
 from schemas.models import AdjustmentItem, ScenarioParams, ScenarioResult
 from .units import per_share
@@ -13,8 +13,8 @@ def calc_scenario(
     cps_years: int,
     unit_multiplier: int = 1_000_000,
 ) -> ScenarioResult:
-    """시나리오별 Equity Value 및 주당 가치 산출."""
-    # CPS 상환액 계산
+    """Compute equity value and per-share value for each scenario."""
+    # Calculate CPS redemption amount
     if sc.cps_repay is not None:
         cps_repay = sc.cps_repay
     elif sc.irr is not None:
@@ -25,7 +25,7 @@ def calc_scenario(
     rcps_repay = sc.rcps_repay
     buyback = sc.buyback
 
-    # 동적 Equity Bridge 조정 항목 구성
+    # Build dynamic equity bridge adjustment items
     adjustments: list[AdjustmentItem] = []
     if net_debt:
         adjustments.append(AdjustmentItem(name="순차입금", value=net_debt))
@@ -38,11 +38,11 @@ def calc_scenario(
     if eco_frontier:
         adjustments.append(AdjustmentItem(name="기타 차감", value=eco_frontier))
 
-    # Equity bridge
+    # Equity bridge calculation
     total_claims = sum(a.value for a in adjustments)
     equity_value = total_ev - total_claims
 
-    # 주당 가치
+    # Per-share value
     if equity_value > 0:
         pre_dlom = per_share(equity_value, unit_multiplier, sc.shares)
         post_dlom = round(pre_dlom * (1 - sc.dlom / 100))

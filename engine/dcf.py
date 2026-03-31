@@ -1,4 +1,4 @@
-"""DCF (Discounted Cash Flow) 엔진 — FCFF 기반."""
+"""DCF (Discounted Cash Flow) engine — FCFF-based."""
 
 from schemas.models import DCFParams, DCFProjection, DCFResult
 
@@ -11,14 +11,14 @@ def calc_dcf(
     params: DCFParams,
     base_year: int = 2025,
 ) -> DCFResult:
-    """EBITDA 기반 간접 FCFF → DCF Enterprise Value 산출.
+    """Compute DCF Enterprise Value via indirect FCFF from EBITDA.
 
-    FCFF = NOPAT + D&A - Capex - ΔNWC
-    여기서 NOPAT = (EBITDA - D&A) × (1 - Tax%)
+    FCFF = NOPAT + D&A - Capex - delta_NWC
+    where NOPAT = (EBITDA - D&A) x (1 - Tax%)
     """
     wacc = wacc_pct / 100
     tg = params.terminal_growth / 100
-    tax_mult = 1 - params.tax_rate / 100  # 사전 연산: NOPAT 승수
+    tax_mult = 1 - params.tax_rate / 100  # Pre-computed NOPAT multiplier
     growth_rates = params.ebitda_growth_rates
 
     if wacc <= tg:
@@ -29,16 +29,16 @@ def calc_dcf(
 
     da_to_ebitda = da_base / ebitda_base if ebitda_base > 0 else 0.5
 
-    # 실제 Capex가 있으면 Capex/D&A 비율을 역산, 없으면 파라미터 사용
+    # If actual Capex available, derive Capex/D&A ratio; otherwise use parameter
     if params.actual_capex is not None and da_base > 0:
         capex_ratio = params.actual_capex / da_base
     else:
         capex_ratio = params.capex_to_da
 
-    # 실제 NWC가 있으면 ΔNWC/ΔRevenue 비율을 역산
+    # If actual NWC available, derive delta_NWC/delta_Revenue ratio
     if params.actual_nwc is not None and params.prior_nwc is not None and revenue_base > 0:
         delta_nwc_actual = params.actual_nwc - params.prior_nwc
-        # 매출 성장률로 implied revenue delta 추정
+        # Estimate implied NWC/revenue ratio from actuals
         nwc_to_rev = params.actual_nwc / revenue_base if revenue_base > 0 else params.nwc_to_rev_delta
         nwc_ratio = nwc_to_rev
     else:
@@ -59,7 +59,7 @@ def calc_dcf(
         revenue = round(prev_revenue * (1 + g))
 
         if params.actual_nwc is not None:
-            # NWC를 매출 비례로 예측
+            # Project NWC proportional to revenue
             nwc_current = round(revenue * nwc_ratio)
             delta_nwc = nwc_current - prev_nwc
             prev_nwc = nwc_current
@@ -76,12 +76,10 @@ def calc_dcf(
         prev_ebitda = ebitda
         prev_revenue = revenue
 
-    # PV of projection period
+    # PV of projection period (power-based for numerical precision)
     pv_fcff = 0
-    discount = 1 + wacc
-    df = 1.0
-    for p in projections:
-        df *= discount
+    for i, p in enumerate(projections):
+        df = (1 + wacc) ** (i + 1)
         p.pv_fcff = round(p.fcff / df)
         pv_fcff += p.pv_fcff
 

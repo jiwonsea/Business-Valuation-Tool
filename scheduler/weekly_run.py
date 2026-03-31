@@ -166,6 +166,22 @@ def run_weekly(
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
 
+    # ── Cost estimation before valuation ──
+    from pipeline.api_guard import ApiGuard, estimate_weekly_cost
+
+    estimate = estimate_weekly_cost(markets, len(targets))
+    total_est = sum(estimate["estimated_api_calls"].values())
+    logger.info(
+        "Estimated API calls: %d, LLM calls: %d, LLM cost: $%.2f",
+        total_est, estimate["estimated_llm_calls"], estimate["estimated_llm_cost_usd"],
+    )
+    low_quota = {
+        k: v for k, v in estimate["remaining_quota"].items()
+        if 0 <= v < estimate["estimated_api_calls"].get(k, 0)
+    }
+    if low_quota:
+        logger.warning("Insufficient quota for: %s", low_quota)
+
     # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
 
@@ -219,6 +235,15 @@ def run_weekly(
     duration = time.time() - start
     _finalize_run(run_id, summary, duration, total_news, scored)
     _print_completion(summary, duration, week_dir)
+
+    # Log API usage summary
+    try:
+        usage = ApiGuard.get().get_usage_summary()
+        active = {k: v for k, v in usage.items() if v["calls"] > 0 or v["cache_hits"] > 0}
+        if active:
+            logger.info("API usage summary: %s", active)
+    except Exception:
+        pass
 
     return summary
 

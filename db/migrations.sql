@@ -142,3 +142,35 @@ CREATE POLICY "service_role_all_profiles" ON profiles
 
 CREATE POLICY "service_role_all_discovery_runs" ON discovery_runs
     FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- 5. delivery_log — Weekly delivery tracking (Gamma + Gmail)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS delivery_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    discovery_run_id UUID REFERENCES discovery_runs(id),
+    week_label TEXT NOT NULL,
+    gamma_urls JSONB DEFAULT '{}',      -- {"company_name": "url", "_summary": "url"}
+    excel_urls JSONB DEFAULT '{}',      -- {"company_name": {"remote_path", "download_url", "expires_at"}}
+    gmail_draft_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_log_week
+    ON delivery_log(week_label);
+CREATE INDEX IF NOT EXISTS idx_delivery_log_created_at
+    ON delivery_log(created_at DESC);
+
+ALTER TABLE delivery_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "service_role_all_delivery_log" ON delivery_log
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- Supabase Storage Bucket (create via Dashboard or API)
+-- ============================================================
+-- Bucket name: "valuation-excels"
+-- Public: false (access via signed URLs)
+-- File size limit: 50MB
+-- Allowed MIME: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet

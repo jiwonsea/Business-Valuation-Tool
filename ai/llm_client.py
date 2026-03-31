@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
-_ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20250414"
+_ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 
 def _get_provider() -> str:

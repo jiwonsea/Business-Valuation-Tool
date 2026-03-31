@@ -112,8 +112,13 @@ def load_profile(path: str) -> ValuationInput:
     if "nav_params" in raw:
         nav_params = NAVParams(**raw["nav_params"])
 
-    # Peers
-    peers = [PeerCompany(**p) for p in raw.get("peers", [])]
+    # Peers (skip entries with non-numeric ev_ebitda from AI output)
+    peers = []
+    for p in raw.get("peers", []):
+        try:
+            peers.append(PeerCompany(**p))
+        except (ValueError, Exception):
+            pass
 
     # Auto-detect unit_multiplier (when not specified in YAML)
     if "unit_multiplier" not in raw.get("company", {}):

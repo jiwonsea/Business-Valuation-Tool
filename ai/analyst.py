@@ -183,7 +183,7 @@ class AIAnalyst:
         if cached:
             return cached
         prompt = prompt_wacc_suggestion(company_name, de_ratio, industry)
-        result = self._ask_json(prompt, system=SYSTEM_ANALYST, max_tokens=512)
+        result = self._ask_json(prompt, system=SYSTEM_ANALYST, max_tokens=1024)
         _set_cached(company_name, "wacc", result)
         _save_analysis(company_name, "wacc", result, self.model)
         return result
@@ -202,7 +202,7 @@ class AIAnalyst:
         prompt = prompt_scenario_design(
             company_name, legal_status, key_issues, valuation_method,
         )
-        result = self._ask_json(prompt, system=SYSTEM_ANALYST, max_tokens=2048)
+        result = self._ask_json(prompt, system=SYSTEM_ANALYST, max_tokens=3072)
         _set_cached(company_name, "scenarios", result, extra=valuation_method)
         _save_analysis(company_name, "scenarios", result, self.model)
         return result

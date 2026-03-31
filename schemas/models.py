@@ -119,6 +119,22 @@ class ScenarioResult(BaseModel):
     weighted: int
 
 
+# ── DDM ──
+
+class DDMParams(BaseModel):
+    """배당할인모델(DDM) 입력 파라미터."""
+    dps: float  # 주당 배당금 (원 or $)
+    dividend_growth: float = 3.0  # 배당 성장률 (%)
+
+
+class DDMValuationResult(BaseModel):
+    """DDM 밸류에이션 결과 (Pydantic 직렬화용)."""
+    dps: float
+    growth: float  # (%)
+    ke: float  # (%)
+    equity_per_share: int
+
+
 # ── DCF ──
 
 class DCFParams(BaseModel):
@@ -201,6 +217,7 @@ class ValuationInput(BaseModel):
     multiples: dict[str, float]  # segment code → EV/EBITDA
     scenarios: dict[str, ScenarioParams]  # scenario code → params
     dcf_params: DCFParams
+    ddm_params: Optional[DDMParams] = None  # DDM용 (금융업종)
     cps_principal: int = 0  # 백만원
     cps_years: int = 0
     net_debt: int = 0  # 백만원
@@ -279,6 +296,7 @@ class ValuationResult(BaseModel):
     scenarios: dict[str, ScenarioResult] = {}  # 시나리오 미사용 시 빈 dict
     weighted_value: int = 0  # 확률가중 주당 가치
     dcf: Optional[DCFResult] = None
+    ddm: Optional[DDMValuationResult] = None
     cross_validations: list[CrossValidationItem] = []
     peer_stats: list[PeerSegmentStats] = []
     monte_carlo: Optional[MonteCarloResult] = None

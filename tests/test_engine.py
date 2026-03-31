@@ -443,7 +443,7 @@ class TestMonteCarlo:
 class TestFullPipeline:
     def test_sk_ecoplant_profile(self):
         """End-to-end: YAML 로드 → SOTP 밸류에이션 → 유효한 결과"""
-        from cli import load_profile, run_valuation
+        from valuation_runner import load_profile, run_valuation
 
         profile_path = str(Path(__file__).parent.parent / "profiles" / "sk_ecoplant.yaml")
         vi = load_profile(profile_path)
@@ -460,7 +460,7 @@ class TestFullPipeline:
 
     def test_sk_ecoplant_mc(self):
         """SK에코플랜트 Monte Carlo 통합"""
-        from cli import load_profile, run_valuation
+        from valuation_runner import load_profile, run_valuation
 
         profile_path = str(Path(__file__).parent.parent / "profiles" / "sk_ecoplant.yaml")
         vi = load_profile(profile_path)

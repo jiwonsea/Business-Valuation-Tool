@@ -1,0 +1,105 @@
+"""콘솔 리포트 출력."""
+
+from schemas.models import ValuationInput, ValuationResult
+
+
+def print_report(vi: ValuationInput, result: ValuationResult):
+    """밸류에이션 결과를 콘솔에 출력."""
+    by = vi.base_year
+    seg_names = {code: info["name"] for code, info in vi.segments.items()}
+    unit = vi.company.currency_unit
+    currency_sym = "원" if vi.company.market == "KR" else "$"
+
+    print("=" * 60)
+    print(f"{vi.company.name} 기업가치평가 모델 [{result.primary_method.upper()}]")
+    print("=" * 60)
+
+    # WACC
+    w = result.wacc
+    print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
+
+    # D&A 배분 (SOTP인 경우만)
+    if result.da_allocations and by in result.da_allocations:
+        total_da = vi.consolidated[by]["dep"] + vi.consolidated[by]["amort"]
+        print(f"\n[D&A 배분] 총 D&A = {total_da:,}{unit}")
+        print(f"{'부문':<20} {'자산비중':>10} {'D&A':>12} {'EBITDA':>14}")
+        print("-" * 60)
+        alloc = result.da_allocations[by]
+        for code in vi.segments:
+            if code in alloc:
+                a = alloc[code]
+                print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+
+    # SOTP (있는 경우)
+    if result.sotp:
+        print(f"\n[SOTP EV] {result.total_ev:>14,}{unit}")
+
+    # 시나리오
+    if result.scenarios:
+        print(f"\n[시나리오 분석]")
+        for code, sc in vi.scenarios.items():
+            if code in result.scenarios:
+                r = result.scenarios[code]
+                print(f"  시나리오 {code} ({sc.name}, {sc.prob}%): "
+                      f"Equity={r.equity_value:>12,}{unit}, "
+                      f"주당(DLOM후)={r.post_dlom:>8,}{currency_sym}, "
+                      f"가중기여={r.weighted:>6,}{currency_sym}")
+        print(f"\n  >> 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")
+
+    # DDM
+    if result.ddm:
+        d = result.ddm
+        print(f"\n[DDM (Gordon Growth)]")
+        print(f"  DPS: {d.dps:,.0f}{currency_sym}, 배당성장률: {d.growth}%, Ke: {d.ke}%")
+        print(f"  주당 내재가치: {d.equity_per_share:,}{currency_sym}")
+
+    # DCF
+    if result.dcf:
+        dcf = result.dcf
+        print(f"\n[DCF]")
+        print(f"  DCF EV: {dcf.ev_dcf:>12,}{unit}")
+        if result.sotp and result.total_ev > 0:
+            diff_pct = (dcf.ev_dcf - result.total_ev) / result.total_ev * 100
+            print(f"  SOTP EV: {result.total_ev:>12,}{unit}")
+            print(f"  DCF vs SOTP: {diff_pct:>+.1f}%")
+
+    # 시장가격 비교
+    if result.market_comparison:
+        mc = result.market_comparison
+        print(f"\n[시장가격 비교]")
+        print(f"  내재가치: {mc.intrinsic_value:,}{currency_sym}")
+        print(f"  현재 주가: {mc.market_price:,.0f}{currency_sym}")
+        print(f"  괴리율: {mc.gap_ratio:+.1%}")
+        if mc.flag:
+            print(f"  ⚠ {mc.flag}")
+
+    # Monte Carlo
+    if result.monte_carlo:
+        mc = result.monte_carlo
+        print(f"\n[Monte Carlo 시뮬레이션 ({mc.n_sims:,}회)]")
+        print(f"  Mean: {mc.mean:>10,}{currency_sym}  |  Median: {mc.median:>10,}{currency_sym}  |  Std: {mc.std:>8,}{currency_sym}")
+        print(f"  5th: {mc.p5:>11,}{currency_sym}  |  25th: {mc.p25:>12,}{currency_sym}")
+        print(f"  75th: {mc.p75:>10,}{currency_sym}  |  95th: {mc.p95:>12,}{currency_sym}")
+
+    # Peer
+    if result.peer_stats:
+        print(f"\n[Peer 멀티플 통계 (EV/EBITDA)]")
+        print(f"{'부문':<20} {'N':>3} {'Median':>8} {'Mean':>8} {'Q1':>8} {'Q3':>8} {'적용':>8}")
+        print("-" * 68)
+        for ps in result.peer_stats:
+            print(f"{ps.segment_name:<20} {ps.count:>3} {ps.ev_ebitda_median:>7.1f}x "
+                  f"{ps.ev_ebitda_mean:>7.1f}x {ps.ev_ebitda_q1:>7.1f}x "
+                  f"{ps.ev_ebitda_q3:>7.1f}x {ps.applied_multiple:>7.1f}x")
+
+    # 멀티플 교차검증
+    if result.cross_validations:
+        print(f"\n[멀티플 교차검증]")
+        print(f"{'방법론':<20} {'지표값':>12} {'배수':>8} {'EV':>14} {'Equity':>14} {'주당가치':>10}")
+        print("-" * 82)
+        for cv in result.cross_validations:
+            print(f"{cv.method:<20} {cv.metric_value:>12,.0f} {cv.multiple:>7.1f}x "
+                  f"{cv.enterprise_value:>13,} {cv.equity_value:>13,} {cv.per_share:>9,}")
+
+    print("\n" + "=" * 60)
+    print(f"완료! [{result.primary_method.upper()}] 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")
+    print("=" * 60)

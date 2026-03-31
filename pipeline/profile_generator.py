@@ -656,4 +656,17 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
 
     # Auto-compare valuation gap for listed companies
     from cli import _fetch_and_compare_market_price
-    result = _fetch_and_compare_market_price(vi, resul
+    result = _fetch_and_compare_market_price(vi, result)
+
+    print_report(vi, result)
+
+    from output.excel_builder import export
+    path = export(vi, result, output_dir)
+    print(f"\n[Excel] 저장 완료: {path}")
+
+    from orchestrator import format_summary
+    return AnalyzeResult(
+        vi=vi, result=result,
+        excel_path=str(path),
+        summary_md=format_summary(vi, result),
+    )

@@ -33,18 +33,25 @@ def _get_api_key() -> str:
 
 def _load_corp_code_xml() -> ET.Element:
     """Load corpCode.xml (disk cache first, re-download on expiry)."""
+    from .api_guard import ApiGuard
+
+    guard = ApiGuard.get()
+
     # Check cache validity
     if _CORP_CODE_CACHE.exists():
         age = time.time() - _CORP_CODE_CACHE.stat().st_mtime
         if age < _CORP_CODE_TTL:
             logger.debug("corpCode.xml 캐시 사용 (age=%.0fs)", age)
+            guard.record_cache_hit("dart")
             return ET.parse(_CORP_CODE_CACHE).getroot()
 
     # No cache or expired -> download
+    guard.check("dart")
     logger.info("corpCode.xml 다운로드 중 (~8MB)...")
     key = _get_api_key()
     resp = httpx.get(f"{DART_BASE}/corpCode.xml", params={"crtfc_key": key}, timeout=30)
     resp.raise_for_status()
+    guard.record_success("dart")
 
     z = zipfile.ZipFile(io.BytesIO(resp.content))
     xml_data = z.read(z.namelist()[0])
@@ -99,6 +106,10 @@ def get_corp_info(company_name: str) -> dict | None:
     return best
 
 
+from .api_guard import api_guard
+
+
+@api_guard("dart")
 def get_financial_statements(
     corp_code: str,
     year: int,
@@ -127,6 +138,7 @@ def get_financial_statements(
     return data.get("list", [])
 
 
+@api_guard("dart")
 def get_report_document(rcept_no: str) -> str:
     """Download annual report body XML.
 
@@ -147,6 +159,7 @@ def get_report_document(rcept_no: str) -> str:
     return xml_data.decode("utf-8", errors="replace")
 
 
+@api_guard("dart")
 def get_single_company_info(corp_code: str) -> dict:
     """Company overview query (company.json).
 
@@ -169,6 +182,7 @@ def _parse_dart_number(s: str) -> int:
     return int(s.replace(",", "").strip())
 
 
+@api_guard("dart")
 def get_stock_total_info(
     corp_code: str,
     year: int,

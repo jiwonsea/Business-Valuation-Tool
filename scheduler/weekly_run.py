@@ -1,14 +1,16 @@
 """Weekly automated news collection + valuation pipeline.
 
 Usage:
-    python -m scheduler.weekly_run                               # KR+US, 3 companies
-    python -m scheduler.weekly_run --markets KR,US --max-companies 5
-    python -m scheduler.weekly_run --dry-run                     # Discovery only
+    python -m scheduler.weekly_run                                # KR+US, 5 per market
+    python -m scheduler.weekly_run --markets KR,US --max-per-market 3
+    python -m scheduler.weekly_run --dry-run                      # Discovery only
 """
 
 from __future__ import annotations
 
 import argparse
+import calendar
+import json
 import logging
 import os
 import time
@@ -38,22 +40,40 @@ def _week_number(dt: datetime) -> int:
     return (dt.day + first_day.weekday()) // 7 + 1
 
 
+def _ordinal(n: int) -> str:
+    """Return ordinal string: 1st, 2nd, 3rd, 4th, 5th."""
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return f"{n}{['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]}"
+
+
+def _week_folder(dt: datetime) -> str:
+    """Folder name: '2026-03-31(Mar 5th week)'."""
+    wn = _week_number(dt)
+    mon = calendar.month_abbr[dt.month]
+    return f"{dt.year}-{dt.month:02d}-{dt.day:02d}({mon} {_ordinal(wn)} week)"
+
+
 def _week_label(dt: datetime) -> str:
-    """'3월 5째주 (3/29)' 형식의 날짜 라벨."""
-    return f"{dt.month}월 {_week_number(dt)}째주 ({dt.month}/{dt.day})"
+    """Human-readable label: 'Mar 5th week (3/31)'."""
+    wn = _week_number(dt)
+    mon = calendar.month_abbr[dt.month]
+    return f"{mon} {_ordinal(wn)} week ({dt.month}/{dt.day})"
 
 
 def run_weekly(
     markets: list[str] | None = None,
-    max_companies: int = 3,
+    max_per_market: int = 5,
     dry_run: bool = False,
 ) -> dict:
     """Execute weekly Discovery + valuation pipeline.
 
     1. Per-market news collection + AI analysis (DiscoveryEngine)
     2. Company importance scoring (news frequency + market cap)
-    3. Auto-valuation for top N companies (auto_analyze)
-    4. DB save
+    3. Auto-valuation for top N per market (auto_analyze)
+    4. Upload Excel to Supabase Storage
+    5. Save JSON summary for downstream delivery (Gamma + Gmail)
+    6. DB save
 
     Returns:
         {"run_date", "markets", "discoveries", "scored_companies", "valuations", "errors"}
@@ -126,37 +146,57 @@ def run_weekly(
     scored = score_companies(unique_companies, all_news)
     summary["scored_companies"] = scored
 
-    targets = scored[:max_companies]
+    # ── Per-market selection: top N per market ──
+    targets: list[dict] = []
+    for market in markets:
+        market_companies = [c for c in scored if c.get("market") == market]
+        actual = market_companies[:max_per_market]
+        targets.extend(actual)
+        if len(actual) < max_per_market:
+            logger.info(
+                "%s: %d/%d companies available (below target)",
+                market, len(actual), max_per_market,
+            )
 
     # ── Print results ──
     _print_summary_header(summary["label"], total_news, scored)
 
     if dry_run:
-        logger.info("Dry run — 밸류에이션 건너뜀.")
+        logger.info("Dry run — skipping valuation.")
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
 
     # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
 
-    # Weekly output folder: valuation-results/2026-03-5째주/
-    week_dir = _RESULTS_BASE / f"{now.year}-{now.month:02d}-{_week_number(now)}째주"
+    week_folder_name = _week_folder(now)
+    week_dir = _RESULTS_BASE / week_folder_name
     week_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Excel 출력 폴더: %s", week_dir)
+    logger.info("Excel output folder: %s", week_dir)
+    summary["folder_name"] = week_folder_name
+    summary["week_dir"] = str(week_dir)
 
     def _run_valuation(co: dict) -> dict:
         name = co.get("name", "")
         try:
-            logger.info("밸류에이션 시작: %s %s", co.get("stars", ""), name)
-            result = auto_analyze(name, output_dir=str(week_dir))
-            status = "success" if result else "no_result"
-            return {"company": name, "status": status}
+            logger.info("Valuation start: %s %s", co.get("stars", ""), name)
+            analyze_result = auto_analyze(name, output_dir=str(week_dir))
+            if analyze_result:
+                return {
+                    "company": name,
+                    "market": co.get("market", ""),
+                    "status": "success",
+                    "excel_path": analyze_result.excel_path,
+                    "summary_md": analyze_result.summary_md,
+                    "market_cap_usd": co.get("market_cap_usd"),
+                }
+            return {"company": name, "market": co.get("market", ""), "status": "no_result"}
         except Exception as e:
-            logger.error("밸류에이션 실패 [%s]: %s", name, e)
-            return {"company": name, "status": "failed", "error": str(e)}
+            logger.error("Valuation failed [%s]: %s", name, e)
+            return {"company": name, "market": co.get("market", ""), "status": "failed", "error": str(e)}
 
     if not targets:
-        logger.warning("밸류에이션 대상 기업이 없습니다.")
+        logger.warning("No target companies for valuation.")
     with ThreadPoolExecutor(max_workers=max(min(len(targets), 3), 1)) as pool:
         futures = {pool.submit(_run_valuation, co): co for co in targets}
         for fut in as_completed(futures):
@@ -169,12 +209,60 @@ def run_weekly(
                     "error": entry.get("error", ""),
                 })
 
+    # ── Phase 3.5: Upload Excel to Supabase Storage ──
+    _upload_excels_to_storage(summary, week_folder_name)
+
+    # ── Phase 3.6: Save JSON summary for delivery agent ──
+    _save_json_summary(summary, week_dir)
+
     # ── Phase 4: Completion ──
     duration = time.time() - start
     _finalize_run(run_id, summary, duration, total_news, scored)
     _print_completion(summary, duration, week_dir)
 
     return summary
+
+
+def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
+    """Upload Excel files to Supabase Storage (best-effort)."""
+    try:
+        from db.storage import upload_and_get_url
+    except ImportError:
+        logger.debug("db.storage not available — skipping upload")
+        return
+
+    for entry in summary["valuations"]:
+        if entry["status"] == "success" and entry.get("excel_path"):
+            try:
+                upload = upload_and_get_url(entry["excel_path"], week_folder_name)
+                if upload:
+                    entry["download_url"] = upload["download_url"]
+                    entry["remote_path"] = upload["remote_path"]
+            except Exception as e:
+                logger.warning("Storage upload failed [%s]: %s", entry["company"], e)
+
+
+def _save_json_summary(summary: dict, week_dir: Path) -> None:
+    """Save JSON summary file for the delivery agent to read."""
+    success_count = sum(1 for v in summary["valuations"] if v["status"] == "success")
+    failed_count = sum(1 for v in summary["valuations"] if v["status"] == "failed")
+
+    summary_json = {
+        **summary,
+        "status_summary": {
+            "total": len(summary["valuations"]),
+            "success": success_count,
+            "failed": failed_count,
+        },
+    }
+
+    summary_path = week_dir / "_weekly_summary.json"
+    try:
+        with open(summary_path, "w", encoding="utf-8") as f:
+            json.dump(summary_json, f, ensure_ascii=False, indent=2, default=str)
+        logger.info("JSON summary saved: %s", summary_path)
+    except Exception as e:
+        logger.warning("Failed to save JSON summary: %s", e)
 
 
 def _print_summary_header(
@@ -261,25 +349,33 @@ def _finalize_run(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="주간 자동 뉴스 수집 + 밸류에이션",
+        description="Weekly automated news collection + valuation",
     )
     parser.add_argument(
         "--markets", default="KR,US",
-        help="대상 시장 (콤마 구분, 기본: KR,US)",
+        help="Target markets (comma-separated, default: KR,US)",
     )
     parser.add_argument(
-        "--max-companies", type=int, default=3,
-        help="밸류에이션 최대 기업 수 (기본: 3)",
+        "--max-per-market", type=int, default=5,
+        help="Max companies per market (default: 5)",
+    )
+    parser.add_argument(
+        "--max-companies", type=int, default=None,
+        help="(deprecated: use --max-per-market)",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
-        help="발굴만 수행, 밸류에이션 미실행",
+        help="Discovery only, skip valuation",
     )
     args = parser.parse_args()
 
+    max_val = args.max_per_market
+    if args.max_companies is not None:
+        max_val = args.max_companies
+
     run_weekly(
         markets=args.markets.split(","),
-        max_companies=args.max_companies,
+        max_per_market=max_val,
         dry_run=args.dry_run,
     )
 

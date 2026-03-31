@@ -21,7 +21,10 @@ HEADERS = {
 
 _client = httpx.Client(headers=HEADERS, timeout=15, follow_redirects=True)
 
+from .api_guard import api_guard
 
+
+@api_guard("edgar")
 def search_company(query: str) -> list[dict]:
     """Search SEC-registered companies by name or ticker.
 
@@ -53,6 +56,7 @@ def _validate_cik(cik: str) -> str:
     return cik
 
 
+@api_guard("edgar")
 def get_company_facts(cik: str) -> dict:
     """Retrieve full XBRL Fact data for a company.
 
@@ -71,6 +75,7 @@ def get_company_facts(cik: str) -> dict:
     return resp.json()
 
 
+@api_guard("edgar")
 def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
     """Retrieve all-period data for a specific XBRL concept.
 
@@ -91,6 +96,7 @@ def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
     return resp.json()
 
 
+@api_guard("edgar")
 def get_submissions(cik: str) -> dict:
     """Retrieve company submission history (filing history).
 

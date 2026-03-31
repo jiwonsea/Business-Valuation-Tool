@@ -9,7 +9,6 @@ Priority:
 import json
 import logging
 import os
-import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -31,6 +30,10 @@ def _get_provider() -> str:
     )
 
 
+from pipeline.api_guard import api_guard
+
+
+@api_guard("anthropic")
 def _ask_anthropic(
     prompt: str,
     system: str = "",
@@ -78,6 +81,7 @@ def _ask_anthropic(
     return response.content[0].text
 
 
+@api_guard("openrouter")
 def _ask_openrouter(
     prompt: str,
     system: str = "",
@@ -112,27 +116,17 @@ def _ask_openrouter(
         "Content-Type": "application/json",
     }
 
-    # 429 rate limit handling: up to 5 retries (Retry-After header first, fallback exponential)
-    max_retries = 5
-    for attempt in range(max_retries + 1):
-        resp = httpx.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=120,
-        )
-        if resp.status_code != 429 or attempt == max_retries:
-            break
-        retry_after = resp.headers.get("retry-after")
-        wait = int(retry_after) if retry_after and retry_after.isdigit() else 10 * (attempt + 1)
-        logger.warning("OpenRouter rate limit — %ds 후 재시도 (%d/%d)", wait, attempt + 1, max_retries)
-        time.sleep(wait)
-
+    resp = httpx.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=headers,
+        json=payload,
+        timeout=120,
+    )
     resp.raise_for_status()
     data = resp.json()
 
     if "error" in data:
-        raise RuntimeError(f"OpenRouter 에러: {data['error']}")
+        raise RuntimeError(f"OpenRouter error: {data['error']}")
 
     return data["choices"][0]["message"]["content"]
 

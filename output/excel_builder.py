@@ -191,35 +191,105 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
         write_cell(ws2, r, 6, sum(alloc[c].da_allocated for c in seg_codes), fmt=NUM_FMT, bold=True)
         write_cell(ws2, r, 7, sum(alloc[c].ebitda for c in seg_codes), fmt=NUM_FMT, bold=True)
 
-    # ── Sheet 3: SOTP Valuation ──
-    ws3 = wb.create_sheet("SOTP Valuation")
-    ws3.sheet_properties.tabColor = "27AE60"
-    ws3.column_dimensions['A'].width = 20
+    # ── Sheet 3: SOTP or DDM Valuation ──
+    is_ddm = result.primary_method == "ddm"
 
-    write_cell(ws3, 1, 1, f"SOTP 밸류에이션 ({by}년 기준, 백만원)", font=TITLE_FONT)
+    if is_ddm and result.ddm:
+        ws3 = wb.create_sheet("DDM Valuation")
+        ws3.sheet_properties.tabColor = "27AE60"
+        ws3.column_dimensions['A'].width = 28
+        ws3.column_dimensions['B'].width = 20
+        ws3.column_dimensions['C'].width = 36
 
-    r = 3
-    write_cell(ws3, r, 1, "유무형자산 비중 D&A 배분", font=SECTION_FONT); r += 1
-    sotp_headers = ["부문", "EBITDA", "멀티플", "Segment EV", "EV 비중"]
-    for c, h in enumerate(sotp_headers, 1):
-        write_cell(ws3, r, c, h)
-        ws3.column_dimensions[get_column_letter(c)].width = 16
-    style_header_row(ws3, r, 5)
+        write_cell(ws3, 1, 1, f"DDM 밸류에이션 — 배당할인모델 (Gordon Growth)", font=TITLE_FONT)
 
-    for code in seg_codes:
+        r = 3
+        write_cell(ws3, r, 1, "DDM 핵심 파라미터", font=SECTION_FONT); r += 1
+        ddm = result.ddm
+        ddm_items = [
+            ("주당 배당금 (DPS)", f"{ddm.dps:,.0f}", "최근 실적 기반"),
+            ("배당 성장률 (g)", f"{ddm.growth:.2f}%", "지속가능 성장률"),
+            ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%", "CAPM: Rf + βL × ERP"),
+            ("", "", ""),
+            ("주당 내재가치", f"{ddm.equity_per_share:,}", "DPS×(1+g) / (Ke-g)"),
+        ]
+        for label, val, note in ddm_items:
+            if not label:
+                r += 1; continue
+            write_cell(ws3, r, 1, label)
+            is_result = "내재가치" in label
+            fill = GREEN_FILL if is_result else BLUE_FILL
+            font = Font(bold=True, size=12, color="27AE60") if is_result else None
+            write_cell(ws3, r, 2, val, fill=fill, font=font)
+            write_cell(ws3, r, 3, note)
+            r += 1
+
+        # DDM 민감도 (Ke × Growth)
         r += 1
-        s = result.sotp[code]
-        write_cell(ws3, r, 1, seg_names[code])
-        write_cell(ws3, r, 2, s.ebitda, fmt=NUM_FMT)
-        write_cell(ws3, r, 3, s.multiple, fmt=MULT_FMT, fill=BLUE_FILL)
-        write_cell(ws3, r, 4, s.ev, fmt=NUM_FMT, fill=GREEN_FILL if s.ev > 0 else None)
-        ev_pct = s.ev / result.total_ev if result.total_ev > 0 else 0
-        write_cell(ws3, r, 5, ev_pct, fmt=PCT_FMT)
-    r += 1
-    write_cell(ws3, r, 1, "합계", bold=True)
-    write_cell(ws3, r, 2, sum(result.sotp[c].ebitda for c in seg_codes), fmt=NUM_FMT, bold=True)
-    write_cell(ws3, r, 4, result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
-    write_cell(ws3, r, 5, 1.0, fmt=PCT_FMT, bold=True)
+        write_cell(ws3, r, 1, "DDM 민감도 — Ke × 배당성장률 → 주당가치 (원)", font=SECTION_FONT); r += 1
+        ke_base = ddm.ke
+        g_base = ddm.growth
+        ke_range = [ke_base + d for d in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]]
+        g_range = [g_base + d for d in [-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]]
+
+        write_cell(ws3, r, 1, "Ke \\ Growth", fill=GRAY_FILL, font=HEADER_FONT)
+        for j, g_val in enumerate(g_range, 2):
+            write_cell(ws3, r, j, f"{g_val:.1f}%", fill=GRAY_FILL, font=HEADER_FONT)
+            ws3.column_dimensions[get_column_letter(j)].width = 12
+
+        from engine.ddm import calc_ddm as _calc_ddm
+        sens_start = r + 1
+        for ke_val in ke_range:
+            r += 1
+            write_cell(ws3, r, 1, f"{ke_val:.1f}%", fill=GRAY_FILL, font=HEADER_FONT)
+            for j, g_val in enumerate(g_range, 2):
+                try:
+                    v = _calc_ddm(ddm.dps, g_val, ke_val).equity_per_share
+                except ValueError:
+                    v = 0  # Ke <= g
+                is_base = abs(ke_val - ke_base) < 0.01 and abs(g_val - g_base) < 0.01
+                fill = GREEN_FILL if is_base else (RED_FILL if v <= 0 else None)
+                write_cell(ws3, r, j, v, fmt=NUM_FMT, fill=fill)
+        sens_end = r
+
+        end_col = get_column_letter(1 + len(g_range))
+        ws3.conditional_formatting.add(
+            f"B{sens_start}:{end_col}{sens_end}", ColorScaleRule(
+            start_type='min', start_color='FADBD8',
+            mid_type='percentile', mid_value=50, mid_color='F5F6FA',
+            end_type='max', end_color='D5F5E3',
+        ))
+
+    else:
+        # 기존 SOTP 시트
+        ws3 = wb.create_sheet("SOTP Valuation")
+        ws3.sheet_properties.tabColor = "27AE60"
+        ws3.column_dimensions['A'].width = 20
+
+        write_cell(ws3, 1, 1, f"SOTP 밸류에이션 ({by}년 기준, 백만원)", font=TITLE_FONT)
+
+        r = 3
+        write_cell(ws3, r, 1, "유무형자산 비중 D&A 배분", font=SECTION_FONT); r += 1
+        sotp_headers = ["부문", "EBITDA", "멀티플", "Segment EV", "EV 비중"]
+        for c, h in enumerate(sotp_headers, 1):
+            write_cell(ws3, r, c, h)
+            ws3.column_dimensions[get_column_letter(c)].width = 16
+        style_header_row(ws3, r, 5)
+
+        for code in seg_codes:
+            r += 1
+            s = result.sotp[code]
+            write_cell(ws3, r, 1, seg_names[code])
+            write_cell(ws3, r, 2, s.ebitda, fmt=NUM_FMT)
+            write_cell(ws3, r, 3, s.multiple, fmt=MULT_FMT, fill=BLUE_FILL)
+            write_cell(ws3, r, 4, s.ev, fmt=NUM_FMT, fill=GREEN_FILL if s.ev > 0 else None)
+            ev_pct = s.ev / result.total_ev if result.total_ev > 0 else 0
+            write_cell(ws3, r, 5, ev_pct, fmt=PCT_FMT)
+        r += 1
+        write_cell(ws3, r, 1, "합계", bold=True)
+        write_cell(ws3, r, 2, sum(result.sotp[c].ebitda for c in seg_codes), fmt=NUM_FMT, bold=True)
+        write_cell(ws3, r, 4, result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
+        write_cell(ws3, r, 5, 1.0, fmt=PCT_FMT, bold=True)
 
     # ── Sheet 4: Peer Comparison ──
     ws4 = wb.create_sheet("Peer Comparison")
@@ -457,7 +527,9 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
         end_type='max', end_color='D5F5E3',
     ))
 
-    write_cell(ws6, r, 1, f"참조: SOTP EV = {result.total_ev:,}백만원",
+    ref_label = "DDM 주당가치" if is_ddm and result.ddm else "SOTP EV"
+    ref_value = f"{result.ddm.equity_per_share:,}원" if is_ddm and result.ddm else f"{result.total_ev:,}백만원"
+    write_cell(ws6, r, 1, f"참조: {ref_label} = {ref_value}",
                font=Font(italic=True, size=9, color="566573"))
 
     # ── Sheet 7: Dashboard ──
@@ -470,7 +542,8 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
 
     write_cell(ws7, 1, 1, f"{vi.company.name} 기업가치평가 Dashboard",
                font=Font(bold=True, size=16, color=NAVY))
-    write_cell(ws7, 2, 1, f"분석일: {vi.company.analysis_date}  |  D&A 배분: 유무형자산 비중 기반",
+    method_desc = "DDM (배당할인모델)" if is_ddm else "D&A 배분: 유무형자산 비중 기반"
+    write_cell(ws7, 2, 1, f"분석일: {vi.company.analysis_date}  |  {method_desc}",
                font=Font(size=10, color="566573"))
 
     # 핵심 결론
@@ -505,19 +578,38 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     write_cell(ws7, r, 3, "100%", bold=True)
     write_cell(ws7, r, 4, result.weighted_value, fmt=NUM_FMT, bold=True)
 
-    # EV Bridge
+    # EV Bridge / DDM Summary
     r += 2
-    write_cell(ws7, r, 1, "Enterprise Value 구성 (백만원)", font=SECTION_FONT); r += 1
-    ev_data_start = r
-    active_segs = [c for c in seg_codes if result.sotp[c].ev > 0]
-    for code in active_segs:
-        s = result.sotp[code]
-        write_cell(ws7, r, 1, f"{seg_names[code]} ({s.multiple:.0f}x)")
-        write_cell(ws7, r, 2, s.ev, fmt=NUM_FMT)
-        r += 1
-    ev_data_end = r - 1
-    write_cell(ws7, r, 1, "Total EV", bold=True)
-    write_cell(ws7, r, 2, result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
+    ev_data_start = None
+    ev_data_end = None
+
+    if is_ddm and result.ddm:
+        write_cell(ws7, r, 1, "DDM 밸류에이션 요약", font=SECTION_FONT); r += 1
+        ddm = result.ddm
+        ddm_summary = [
+            ("주당 배당금 (DPS)", f"{ddm.dps:,.0f}"),
+            ("배당 성장률", f"{ddm.growth:.2f}%"),
+            ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%"),
+            ("주당 내재가치 (DDM)", f"{ddm.equity_per_share:,}"),
+        ]
+        for label, val in ddm_summary:
+            write_cell(ws7, r, 1, label)
+            is_result = "내재가치" in label
+            fill = GREEN_FILL if is_result else BLUE_FILL
+            write_cell(ws7, r, 2, val, fill=fill, bold=is_result)
+            r += 1
+    else:
+        write_cell(ws7, r, 1, "Enterprise Value 구성 (백만원)", font=SECTION_FONT); r += 1
+        ev_data_start = r
+        active_segs = [c for c in seg_codes if result.sotp[c].ev > 0]
+        for code in active_segs:
+            s = result.sotp[code]
+            write_cell(ws7, r, 1, f"{seg_names[code]} ({s.multiple:.0f}x)")
+            write_cell(ws7, r, 2, s.ev, fmt=NUM_FMT)
+            r += 1
+        ev_data_end = r - 1
+        write_cell(ws7, r, 1, "Total EV", bold=True)
+        write_cell(ws7, r, 2, result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
 
     # 핵심 재무지표
     r += 2
@@ -525,17 +617,24 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     total_da = cons_by["dep"] + cons_by["amort"]
     ebitda = cons_by["op"] + total_da
     write_cell(ws7, r, 1, f"핵심 재무지표 ({by})", font=SECTION_FONT); r += 1
+
+    ev_label = "DDM Equity/Share" if is_ddm else "SOTP EV"
+    ev_value = result.ddm.equity_per_share if is_ddm and result.ddm else result.total_ev
+    dcf_ev = result.dcf.ev_dcf if result.dcf else 0
     kpis = [
         ("매출액", cons_by["revenue"]),
         ("영업이익", cons_by["op"]),
         ("EBITDA", ebitda),
         ("순차입금", vi.net_debt),
         ("부채비율", f"{cons_by['de_ratio']:.1f}%"),
-        ("SOTP EV", result.total_ev),
-        ("DCF EV", result.dcf.ev_dcf),
-        ("DCF vs SOTP", f"{(result.dcf.ev_dcf - result.total_ev) / result.total_ev * 100:+.1f}%"),
-        ("EV/EBITDA (implied)", f"{result.total_ev / ebitda:.1f}x" if ebitda > 0 else "N/A"),
+        (ev_label, ev_value),
     ]
+    if result.dcf:
+        kpis.append(("DCF EV", dcf_ev))
+        if result.total_ev > 0:
+            kpis.append(("DCF vs Primary", f"{(dcf_ev - result.total_ev) / result.total_ev * 100:+.1f}%"))
+    if ebitda > 0:
+        kpis.append(("EV/EBITDA (implied)", f"{result.total_ev / ebitda:.1f}x"))
     for label, val in kpis:
         write_cell(ws7, r, 1, label)
         if isinstance(val, str):
@@ -659,36 +758,37 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     r += 2
     ws7.add_chart(chart1, f"A{r}")
 
-    # Chart 2: EV 구성
-    chart2 = BarChart()
-    chart2.type = "col"
-    chart2.style = 10
-    chart2.title = "사업부별 Enterprise Value (백만원)"
-    chart2.y_axis.title = "백만원"
+    # Chart 2: EV 구성 (SOTP only)
+    if ev_data_start is not None and ev_data_end is not None:
+        chart2 = BarChart()
+        chart2.type = "col"
+        chart2.style = 10
+        chart2.title = "사업부별 Enterprise Value (백만원)"
+        chart2.y_axis.title = "백만원"
 
-    cats2 = Reference(ws7, min_col=1, min_row=ev_data_start, max_row=ev_data_end)
-    vals2 = Reference(ws7, min_col=2, min_row=ev_data_start, max_row=ev_data_end)
-    chart2.add_data(vals2, titles_from_data=False)
-    chart2.set_categories(cats2)
-    chart2.shape = 4
-    chart2.width = 18
-    chart2.height = 12
-    chart2.legend = None
+        cats2 = Reference(ws7, min_col=1, min_row=ev_data_start, max_row=ev_data_end)
+        vals2 = Reference(ws7, min_col=2, min_row=ev_data_start, max_row=ev_data_end)
+        chart2.add_data(vals2, titles_from_data=False)
+        chart2.set_categories(cats2)
+        chart2.shape = 4
+        chart2.width = 18
+        chart2.height = 12
+        chart2.legend = None
 
-    seg_colors = ["1B2A4A", "2E86C1", "27AE60", "F39C12", "8E44AD"]
-    s2 = chart2.series[0]
-    for idx, color in enumerate(seg_colors[:len(active_segs)]):
-        pt = DataPoint(idx=idx)
-        pt.graphicalProperties.solidFill = color
-        s2.data_points.append(pt)
+        seg_colors = ["1B2A4A", "2E86C1", "27AE60", "F39C12", "8E44AD"]
+        s2 = chart2.series[0]
+        for idx, color in enumerate(seg_colors[:len(active_segs)]):
+            pt = DataPoint(idx=idx)
+            pt.graphicalProperties.solidFill = color
+            s2.data_points.append(pt)
 
-    s2.dLbls = DataLabelList()
-    s2.dLbls.showVal = True
-    s2.dLbls.showSerName = False
-    s2.dLbls.numFmt = '#,##0'
+        s2.dLbls = DataLabelList()
+        s2.dLbls.showVal = True
+        s2.dLbls.showSerName = False
+        s2.dLbls.numFmt = '#,##0'
 
-    r += 16
-    ws7.add_chart(chart2, f"A{r}")
+        r += 16
+        ws7.add_chart(chart2, f"A{r}")
 
     # ── Chart 3: Football Field ──
     r += 16

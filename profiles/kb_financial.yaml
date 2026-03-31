@@ -1,0 +1,133 @@
+# KB금융지주 — DDM 밸류에이션 샘플 프로필
+# 금융업종: method_selector가 자동으로 DDM 선택
+
+company:
+  name: "KB금융지주"
+  legal_status: "상장"
+  market: "KR"
+  currency: "KRW"
+  currency_unit: "백만원"
+  ticker: "105560.KS"
+  corp_code: null
+  shares_total: 378246886
+  shares_ordinary: 378246886
+  shares_preferred: 0
+  analysis_date: "2026-03-31"
+  industry: "은행"
+
+segments:
+  BANK:
+    name: "은행"
+
+segment_data:
+  2025:
+    BANK: {revenue: 14200000, gross_profit: 0, op: 5800000, assets: 690000000}
+
+consolidated:
+  2023:
+    revenue: 12987000
+    op: 5210000
+    net_income: 4180000
+    assets: 637000000
+    liabilities: 600800000
+    equity: 36200000
+    dep: 580000
+    amort: 120000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1659.7
+  2024:
+    revenue: 13560000
+    op: 5480000
+    net_income: 4520000
+    assets: 665000000
+    liabilities: 626000000
+    equity: 39000000
+    dep: 610000
+    amort: 130000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1605.1
+  2025:
+    revenue: 14200000
+    op: 5800000
+    net_income: 4750000
+    assets: 690000000
+    liabilities: 648000000
+    equity: 42000000
+    dep: 640000
+    amort: 140000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 1542.9
+
+wacc_params:
+  rf: 3.50
+  erp: 7.00
+  bu: 0.650
+  de: 1542.9
+  tax: 22.0
+  kd_pre: 4.50
+  eq_w: 6.1
+
+# DDM 파라미터 (핵심)
+valuation_method: "ddm"
+ddm_params:
+  dps: 3060.0            # 2025년 주당 배당금 (원)
+  dividend_growth: 4.0   # 배당 성장률 (%)
+
+scenarios:
+  Base:
+    name: "Base Case"
+    prob: 50
+    ipo: "상장"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "컨센서스 기반 배당성장 4%"
+  Bull:
+    name: "Bull Case"
+    prob: 25
+    ipo: "상장"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "주주환원 확대, 배당성장 6%"
+  Bear:
+    name: "Bear Case"
+    prob: 25
+    ipo: "상장"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    desc: "경기둔화, 배당성장 2%"
+
+dcf_params:
+  ebitda_growth_rates: [0.06, 0.05, 0.04, 0.03, 0.03]
+  tax_rate: 22.0
+  capex_to_da: 1.05
+  nwc_to_rev_delta: 0.03
+  terminal_growth: 2.0
+
+multiples:
+  BANK: 6.0
+
+cps_principal: 0
+cps_years: 0
+net_debt: 0
+eco_frontier: 0
+base_year: 2025
+
+peers:
+  - {name: "신한지주", segment_code: "BANK", ev_ebitda: 5.8, notes: "국내 1위 은행지주"}
+  - {name: "하나금융지주", segment_code: "BANK", ev_ebitda: 5.2, notes: "국내 3위 은행지주"}
+  - {name: "우리금융지주", segment_code: "BANK", ev_ebitda: 4.8, notes: "국내 4위 은행지주"}

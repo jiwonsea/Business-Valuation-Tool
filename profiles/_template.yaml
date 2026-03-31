@@ -87,6 +87,12 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
 
+# DDM 파라미터 (금융업종용, Optional)
+# valuation_method: "ddm" 설정 또는 금융업종 자동 감지 시 사용
+# ddm_params:
+#   dps: 1000.0                   # 주당 배당금 (원 or $)
+#   dividend_growth: 3.0          # 배당 성장률 (%)
+
 cps_principal: 0
 cps_years: 0
 net_debt: 0

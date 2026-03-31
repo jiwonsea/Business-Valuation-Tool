@@ -397,7 +397,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print(f"  현재 주가: {mc.market_price:,.0f}{currency_sym}")
         print(f"  괴리율: {mc.gap_ratio:+.1%}")
         if mc.flag:
-            print(f"  ⚠ {mc.flag}")
+            print(f"  [!] {mc.flag}")
 
     # Monte Carlo
     if result.monte_carlo:

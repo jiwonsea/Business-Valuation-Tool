@@ -152,6 +152,10 @@ def _scale_value(raw_val, currency: str) -> int:
     return round(float(raw_val) / 1_000_000)
 
 
+from .api_guard import api_guard
+
+
+@api_guard("yfinance")
 def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
     """Collect 3-year financial statements via yfinance.
 
@@ -278,6 +282,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
     return result if result else None
 
 
+@api_guard("yfinance")
 def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
     """Collect market data from yfinance.
 

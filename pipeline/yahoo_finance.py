@@ -13,6 +13,8 @@ _TICKER_RE = re.compile(r"^[A-Za-z0-9.\-^]{1,15}$")
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
 _client = httpx.Client(headers=_HEADERS, timeout=10, follow_redirects=True)
 
+from .api_guard import api_guard
+
 
 def _validate_ticker(ticker: str) -> str:
     """Validate ticker format. Raises ValueError if invalid."""
@@ -21,6 +23,7 @@ def _validate_ticker(ticker: str) -> str:
     return ticker
 
 
+@api_guard("yahoo")
 def get_stock_info(ticker: str) -> dict | None:
     """Fetch basic stock information from Yahoo Finance.
 
@@ -110,6 +113,7 @@ def classify_exchange(exchange_name: str, exchange_code: str = "") -> str:
     return "비상장"
 
 
+@api_guard("yahoo")
 def get_quote_summary(ticker: str) -> dict | None:
     """Yahoo Finance Quote Summary -- detailed information.
 

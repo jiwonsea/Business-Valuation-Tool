@@ -102,11 +102,13 @@ def main():
     parser.add_argument("--market", default="KR", choices=["KR", "US"],
                         help="Discovery 모드 시장 선택 (기본: KR)")
     parser.add_argument("--markets", default="KR,US",
-                        help="주간 모드 시장 선택 (콤마 구분, 기본: KR,US)")
-    parser.add_argument("--max-companies", type=int, default=3,
-                        help="주간 모드 최대 분석 기업 수 (기본: 3)")
+                        help="Weekly mode: target markets (comma-separated, default: KR,US)")
+    parser.add_argument("--max-per-market", type=int, default=5,
+                        help="Weekly mode: max companies per market (default: 5)")
+    parser.add_argument("--max-companies", type=int, default=None,
+                        help="(deprecated: use --max-per-market)")
     parser.add_argument("--dry-run", action="store_true",
-                        help="주간 모드: 발굴만 수행, 밸류에이션 미실행")
+                        help="Weekly mode: discovery only, skip valuation")
     args = parser.parse_args()
 
     # Discovery mode
@@ -118,9 +120,12 @@ def main():
     # Weekly auto-analysis mode
     if args.weekly:
         from scheduler.weekly_run import run_weekly
+        max_val = args.max_per_market
+        if args.max_companies is not None:
+            max_val = args.max_companies
         return run_weekly(
             markets=args.markets.split(","),
-            max_companies=args.max_companies,
+            max_per_market=max_val,
             dry_run=args.dry_run,
         )
 

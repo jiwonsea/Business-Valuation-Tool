@@ -48,6 +48,9 @@ class NewsCollector:
         display = min(max_items, 100)  # Naver API max 100 items/request
 
         try:
+            from pipeline.api_guard import ApiGuard
+
+            ApiGuard.get().check("naver")
             with httpx.Client(timeout=self._timeout) as client:
                 resp = client.get(url, headers=headers, params={
                     "query": query,
@@ -57,6 +60,7 @@ class NewsCollector:
                 })
                 resp.raise_for_status()
                 data = resp.json()
+                ApiGuard.get().record_success("naver")
 
                 cutoff = datetime.now() - timedelta(days=days)
                 for item in data.get("items", []):
@@ -104,9 +108,13 @@ class NewsCollector:
         cutoff = datetime.now() - timedelta(days=days)
 
         try:
+            from pipeline.api_guard import ApiGuard
+
+            ApiGuard.get().check("google_rss")
             with httpx.Client(timeout=self._timeout) as client:
                 resp = client.get(url)
                 resp.raise_for_status()
+                ApiGuard.get().record_success("google_rss")
 
                 root = ET.fromstring(resp.text)
                 for item in root.iter("item"):

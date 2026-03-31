@@ -48,9 +48,13 @@ profiles/     YAML company profiles
 
 The engine is completely decoupled from data sources — the same WACC, SOTP, DCF, and scenario calculations work for any company regardless of market or currency.
 
+## Origin
+
+This project was generalized from the [SK에코플랜트 기업가치평가](../SK에코플랜트%20기업가치평가/) prototype — a 1,500-line monolithic valuation model for a single Korean company. The methodology, calculation logic, and Excel output structure were extracted and parameterized into a reusable platform.
+
 ## Validation
 
-The SK Ecoplant profile (`profiles/sk_ecoplant.yaml`) serves as a regression test. All hardcoded data was migrated from the original 1,533-line model, and the output must match exactly:
+The SK Ecoplant profile (`profiles/sk_ecoplant.yaml`) serves as a regression test. All hardcoded data was migrated from the original model, and the output must match exactly:
 
 ```
 Probability-weighted per-share value: 39,892 KRW

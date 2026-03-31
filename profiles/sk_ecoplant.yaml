@@ -139,12 +139,28 @@ dcf_params:
   capex_to_da: 1.10
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
+  # 실제 Capex/NWC (옵션 — 있으면 ratio 대신 사용)
+  actual_capex: 350000      # 2025년 실제 Capex (백만원) — 사보 현금흐름표 기준
+  actual_nwc: 610000        # 2025년 순운전자본 (백만원) — 유동자산-유동부채
+  prior_nwc: 580000         # 2024년 순운전자본 (백만원)
 
 cps_principal: 600000
 cps_years: 4
 net_debt: 2295568
 eco_frontier: 94644
 base_year: 2025
+
+# 교차검증용 멀티플 (0이면 해당 방법론 스킵)
+ev_revenue_multiple: 0.5    # EV/Revenue: 건설/환경 복합기업 0.4~0.6x
+pe_multiple: 15.0           # P/E: Peer 평균 13~17x
+pbv_multiple: 1.2           # P/BV: 비상장 할인 감안 1.0~1.5x
+
+# Monte Carlo 시뮬레이션
+mc_enabled: true
+mc_sims: 10000
+mc_multiple_std_pct: 15.0   # 멀티플 표준편차 (적용값 ±15%)
+mc_dlom_mean: 20.0          # DLOM 평균 (시나리오 B 기준)
+mc_dlom_std: 5.0            # DLOM 표준편차
 
 peers:
   - {name: "삼성E&A",        segment_code: "HI",  ev_ebitda: 8.0,  notes: "반도체/화학 EPC, 비화공 10x+, 전체 평균 8x"}

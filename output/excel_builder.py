@@ -224,21 +224,62 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     # ── Sheet 4: Peer Comparison ──
     ws4 = wb.create_sheet("Peer Comparison")
     ws4.sheet_properties.tabColor = "17A589"
-    write_cell(ws4, 1, 1, "유사기업 비교분석", font=TITLE_FONT)
+    write_cell(ws4, 1, 1, "유사기업 비교분석 (Comparable Company Analysis)", font=TITLE_FONT)
 
     r = 3
-    peer_headers = ["기업명", "매핑 부문", "EV/EBITDA", "비고"]
+    has_extra = any(p.ticker for p in vi.peers)
+    if has_extra:
+        peer_headers = ["기업명", "Ticker", "매핑 부문", "EV/EBITDA", "P/E (TTM)", "P/BV", "Beta", "출처", "비고"]
+        col_widths = [20, 10, 16, 12, 12, 10, 8, 8, 40]
+    else:
+        peer_headers = ["기업명", "매핑 부문", "EV/EBITDA", "비고"]
+        col_widths = [20, 18, 12, 50]
     for c, h in enumerate(peer_headers, 1):
         write_cell(ws4, r, c, h)
-        ws4.column_dimensions[get_column_letter(c)].width = [20, 18, 12, 50][c - 1]
-    style_header_row(ws4, r, 4)
+        ws4.column_dimensions[get_column_letter(c)].width = col_widths[c - 1]
+    style_header_row(ws4, r, len(peer_headers))
 
     for p in vi.peers:
         r += 1
-        write_cell(ws4, r, 1, p.name)
-        write_cell(ws4, r, 2, seg_names.get(p.segment_code, p.segment_code))
-        write_cell(ws4, r, 3, p.ev_ebitda, fmt=MULT_FMT, fill=YELLOW_FILL)
-        write_cell(ws4, r, 4, p.notes)
+        c = 1
+        write_cell(ws4, r, c, p.name); c += 1
+        if has_extra:
+            write_cell(ws4, r, c, p.ticker or "-"); c += 1
+        write_cell(ws4, r, c, seg_names.get(p.segment_code, p.segment_code)); c += 1
+        write_cell(ws4, r, c, p.ev_ebitda, fmt=MULT_FMT, fill=YELLOW_FILL); c += 1
+        if has_extra:
+            write_cell(ws4, r, c, p.trailing_pe or "-", fmt=MULT_FMT if p.trailing_pe else None); c += 1
+            write_cell(ws4, r, c, p.pbv or "-", fmt=MULT_FMT if p.pbv else None); c += 1
+            write_cell(ws4, r, c, f"{p.beta:.2f}" if p.beta else "-"); c += 1
+            write_cell(ws4, r, c, p.source); c += 1
+        write_cell(ws4, r, c, p.notes)
+
+    # 부문별 멀티플 통계
+    if result.peer_stats:
+        r += 2
+        write_cell(ws4, r, 1, "부문별 EV/EBITDA 멀티플 통계", font=SECTION_FONT); r += 1
+        stat_headers = ["부문", "Peer 수", "Min", "Q1", "Median", "Mean", "Q3", "Max", "적용 멀티플"]
+        for c, h in enumerate(stat_headers, 1):
+            write_cell(ws4, r, c, h)
+            ws4.column_dimensions[get_column_letter(c)].width = max(
+                ws4.column_dimensions[get_column_letter(c)].width or 0, [18, 8, 8, 8, 8, 8, 8, 8, 12][c - 1]
+            )
+        style_header_row(ws4, r, len(stat_headers))
+
+        for ps in result.peer_stats:
+            r += 1
+            write_cell(ws4, r, 1, ps.segment_name)
+            write_cell(ws4, r, 2, ps.count)
+            write_cell(ws4, r, 3, ps.ev_ebitda_min, fmt=MULT_FMT)
+            write_cell(ws4, r, 4, ps.ev_ebitda_q1, fmt=MULT_FMT)
+            write_cell(ws4, r, 5, ps.ev_ebitda_median, fmt=MULT_FMT, fill=GREEN_FILL)
+            write_cell(ws4, r, 6, ps.ev_ebitda_mean, fmt=MULT_FMT)
+            write_cell(ws4, r, 7, ps.ev_ebitda_q3, fmt=MULT_FMT)
+            write_cell(ws4, r, 8, ps.ev_ebitda_max, fmt=MULT_FMT)
+            # 적용 멀티플 vs Median 비교 색상
+            applied = ps.applied_multiple
+            fill = GREEN_FILL if abs(applied - ps.ev_ebitda_median) <= 2.0 else YELLOW_FILL
+            write_cell(ws4, r, 9, applied, fmt=MULT_FMT, fill=fill, bold=True)
 
     # 적용 멀티플 요약
     r += 2
@@ -503,6 +544,88 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
             write_cell(ws7, r, 2, val, fmt=NUM_FMT)
         r += 1
 
+    # 멀티플 교차검증 테이블
+    if result.cross_validations:
+        r += 1
+        write_cell(ws7, r, 1, "멀티플 교차검증 (Cross-Validation)", font=SECTION_FONT); r += 1
+        cv_headers = ["방법론", "지표값", "배수", "EV", "Equity Value", "주당 가치 (원)"]
+        for c, h in enumerate(cv_headers, 1):
+            write_cell(ws7, r, c, h)
+            ws7.column_dimensions[get_column_letter(c)].width = max(
+                ws7.column_dimensions[get_column_letter(c)].width or 0, [20, 16, 10, 16, 16, 16][c - 1]
+            )
+        style_header_row(ws7, r, len(cv_headers))
+        cv_header_row = r
+
+        for cv in result.cross_validations:
+            r += 1
+            write_cell(ws7, r, 1, cv.method)
+            write_cell(ws7, r, 2, cv.metric_value, fmt=NUM_FMT)
+            write_cell(ws7, r, 3, f"{cv.multiple:.1f}x" if cv.multiple > 0 else "-")
+            write_cell(ws7, r, 4, cv.enterprise_value, fmt=NUM_FMT)
+            write_cell(ws7, r, 5, cv.equity_value, fmt=NUM_FMT,
+                       fill=GREEN_FILL if cv.equity_value > 0 else RED_FILL)
+            write_cell(ws7, r, 6, cv.per_share, fmt=NUM_FMT,
+                       fill=GREEN_FILL if cv.per_share > 0 else RED_FILL)
+
+    # Monte Carlo 결과 테이블
+    if result.monte_carlo:
+        mc = result.monte_carlo
+        r += 1
+        write_cell(ws7, r, 1, f"Monte Carlo 시뮬레이션 ({mc.n_sims:,}회)", font=SECTION_FONT); r += 1
+        mc_items = [
+            ("Mean (평균)", mc.mean), ("Median (중위수)", mc.median),
+            ("Std (표준편차)", mc.std),
+            ("5th Percentile", mc.p5), ("25th Percentile", mc.p25),
+            ("75th Percentile", mc.p75), ("95th Percentile", mc.p95),
+            ("Min", mc.min_val), ("Max", mc.max_val),
+        ]
+        mc_data_start = r
+        for label, val in mc_items:
+            write_cell(ws7, r, 1, label)
+            fill = GREEN_FILL if label.startswith("Med") else None
+            write_cell(ws7, r, 2, val, fmt=NUM_FMT, fill=fill)
+            write_cell(ws7, r, 3, "원")
+            r += 1
+
+        # 히스토그램 데이터 (별도 영역)
+        if mc.histogram_bins:
+            r += 1
+            write_cell(ws7, r, 1, "주당가치 분포 (히스토그램)", font=SECTION_FONT); r += 1
+            write_cell(ws7, r, 1, "구간 (원)")
+            write_cell(ws7, r, 2, "빈도")
+            style_header_row(ws7, r, 2)
+            hist_start = r + 1
+            for bin_val, cnt in zip(mc.histogram_bins, mc.histogram_counts):
+                r += 1
+                write_cell(ws7, r, 1, bin_val, fmt=NUM_FMT)
+                write_cell(ws7, r, 2, cnt, fmt=NUM_FMT)
+            hist_end = r
+
+            # 히스토그램 차트
+            hist_chart = BarChart()
+            hist_chart.type = "col"
+            hist_chart.style = 10
+            hist_chart.title = "Monte Carlo — 주당가치 분포"
+            hist_chart.y_axis.title = "빈도"
+            hist_chart.x_axis.title = "주당가치 (원)"
+
+            cats_h = Reference(ws7, min_col=1, min_row=hist_start, max_row=hist_end)
+            vals_h = Reference(ws7, min_col=2, min_row=hist_start, max_row=hist_end)
+            hist_chart.add_data(vals_h, titles_from_data=False)
+            hist_chart.set_categories(cats_h)
+            hist_chart.width = 22
+            hist_chart.height = 13
+            hist_chart.legend = None
+            hist_chart.gapWidth = 10
+
+            s_h = hist_chart.series[0]
+            s_h.graphicalProperties.solidFill = "2E86C1"
+
+            r += 2
+            ws7.add_chart(hist_chart, f"A{r}")
+            r += 16
+
     # ── Charts ──
     # Chart 1: 시나리오별 주당 가치
     chart1 = BarChart()
@@ -566,6 +689,86 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
 
     r += 16
     ws7.add_chart(chart2, f"A{r}")
+
+    # ── Chart 3: Football Field ──
+    r += 16
+    write_cell(ws7, r, 1, "Football Field — 밸류에이션 범위", font=SECTION_FONT); r += 1
+    ff_headers = ["방법론", "하단", "주당가치", "상단", "범위"]
+    for c, h in enumerate(ff_headers, 1):
+        write_cell(ws7, r, c, h)
+    style_header_row(ws7, r, 5)
+    ff_header_row = r
+
+    ff_colors_list = []
+    ff_color_palette = ["1B2A4A", "2E86C1", "27AE60", "F39C12", "E74C3C", "8E44AD", "17A589"]
+
+    # 교차검증 결과를 Football Field에 포함 (역순: 차트 아래→위)
+    ff_entries = []
+    if result.cross_validations:
+        for cv in result.cross_validations:
+            ff_entries.append((cv.method, cv.per_share))
+    else:
+        # fallback: 시나리오 기반
+        for sc_code in sc_codes:
+            sr = result.scenarios[sc_code]
+            sc = vi.scenarios[sc_code]
+            ff_entries.append((f"{sc_code}: {sc.name}", sr.post_dlom))
+
+    for i, (label, val) in enumerate(reversed(ff_entries)):
+        lo = max(round(val * 0.8), 0)
+        hi = round(val * 1.2) if val > 0 else 0
+
+        r += 1
+        write_cell(ws7, r, 1, label)
+        write_cell(ws7, r, 2, lo, fmt=NUM_FMT)
+        write_cell(ws7, r, 3, val, fmt=NUM_FMT, fill=BLUE_FILL)
+        write_cell(ws7, r, 4, hi, fmt=NUM_FMT)
+        write_cell(ws7, r, 5, max(hi - lo, 0), fmt=NUM_FMT)
+        ff_colors_list.append(ff_color_palette[i % len(ff_color_palette)])
+
+    ff_data_end = r
+    ws7.column_dimensions['E'].width = 2
+
+    # Football Field stacked bar chart
+    chart3 = BarChart()
+    chart3.type = "bar"
+    chart3.style = 10
+    chart3.title = "Football Field — 밸류에이션 범위"
+    chart3.x_axis.numFmt = '#,##0'
+
+    cats3 = Reference(ws7, min_col=1, min_row=ff_header_row + 1, max_row=ff_data_end)
+    vals_lo = Reference(ws7, min_col=2, min_row=ff_header_row + 1, max_row=ff_data_end)
+    vals_range = Reference(ws7, min_col=5, min_row=ff_header_row + 1, max_row=ff_data_end)
+
+    chart3.add_data(vals_lo, titles_from_data=False)
+    chart3.add_data(vals_range, titles_from_data=False)
+    chart3.set_categories(cats3)
+    chart3.grouping = "stacked"
+    chart3.width = 20
+    chart3.height = 10
+    chart3.gapWidth = 80
+
+    # 하단 바 (투명 기저)
+    s3_lo = chart3.series[0]
+    s3_lo.graphicalProperties.solidFill = "E8EAED"
+    s3_lo.graphicalProperties.line.solidFill = "D5D8DC"
+
+    # 범위 바 (색상)
+    s3_hi = chart3.series[1]
+    for ci, color in enumerate(ff_colors_list):
+        pt = DataPoint(idx=ci)
+        pt.graphicalProperties.solidFill = color
+        s3_hi.data_points.append(pt)
+
+    s3_hi.dLbls = DataLabelList()
+    s3_hi.dLbls.showVal = True
+    s3_hi.dLbls.showSerName = False
+    s3_hi.dLbls.showCatName = False
+    s3_hi.dLbls.numFmt = '#,##0'
+    chart3.legend = None
+
+    r += 2
+    ws7.add_chart(chart3, f"A{r}")
 
     # ── Save ──
     if output_dir is None:

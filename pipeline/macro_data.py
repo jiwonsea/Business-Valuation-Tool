@@ -52,6 +52,10 @@ def _fetch_fred_breakeven() -> float | None:
     Public API -- no API key required.
     Uses persistent disk cache (TTL 24h) to avoid redundant API calls.
     """
+    from .api_guard import ApiGuard
+
+    guard = ApiGuard.get()
+
     # 1) Check disk cache
     if _FRED_CACHE_PATH.exists():
         try:
@@ -60,11 +64,13 @@ def _fetch_fred_breakeven() -> float | None:
                 cached_val = data.get("value")
                 if cached_val is not None:
                     logger.debug("FRED 캐시 적중: %.2f%%", cached_val)
+                    guard.record_cache_hit("fred")
                     return cached_val
         except (json.JSONDecodeError, OSError):
             pass
 
     # 2) API call with dynamic date window (last 90 days)
+    guard.check("fred")
     url = "https://fred.stlouisfed.org/graph/fredgraph.csv"
     cosd = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
     try:
@@ -82,6 +88,7 @@ def _fetch_fred_breakeven() -> float | None:
         if last_val == ".":
             return None
         rate = float(last_val)
+        guard.record_success("fred")
 
         # 3) Save to disk cache
         try:

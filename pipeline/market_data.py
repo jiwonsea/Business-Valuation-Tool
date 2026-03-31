@@ -11,7 +11,10 @@ from bs4 import BeautifulSoup
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
 _client = httpx.Client(headers=_HEADERS, timeout=15, follow_redirects=True)
 
+from .api_guard import api_guard
 
+
+@api_guard("krx")
 def get_38_company_info(company_name: str) -> dict | None:
     """Fetch unlisted company information from 38.co.kr.
 
@@ -57,6 +60,7 @@ def get_38_company_info(company_name: str) -> dict | None:
     return result if result else None
 
 
+@api_guard("krx")
 def get_krx_market_cap(stock_code: str) -> dict | None:
     """Fetch listed company market cap from KRX.
 

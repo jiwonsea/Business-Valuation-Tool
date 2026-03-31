@@ -321,3 +321,51 @@ def list_discovery_runs(limit: int = 10) -> list[dict]:
     except Exception:
         logger.exception("Failed to list discovery runs")
         return []
+
+
+# ── Delivery Log ──
+
+
+def save_delivery_log(log_data: dict) -> Optional[str]:
+    """Save weekly delivery record (Gamma URLs, Excel URLs, Gmail draft ID).
+
+    Args:
+        log_data: {"week_label", "gamma_urls", "excel_urls", "gmail_draft_id",
+                    "discovery_run_id" (optional)}
+
+    Returns:
+        UUID on success, None on failure.
+    """
+    client = get_client()
+    if not client:
+        return None
+
+    try:
+        resp = client.table("delivery_log").insert(log_data).execute()
+        uid = resp.data[0]["id"]
+        logger.info("Saved delivery log %s for %s", uid, log_data.get("week_label"))
+        return uid
+    except Exception:
+        logger.exception("Failed to save delivery log")
+        return None
+
+
+def get_latest_delivery(week_label: str) -> Optional[dict]:
+    """Get delivery log for a specific week."""
+    client = get_client()
+    if not client:
+        return None
+
+    try:
+        resp = (
+            client.table("delivery_log")
+            .select("*")
+            .eq("week_label", week_label)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return resp.data[0] if resp.data else None
+    except Exception:
+        logger.exception("Failed to get delivery log for %s", week_label)
+        return None

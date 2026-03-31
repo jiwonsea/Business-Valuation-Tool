@@ -1,20 +1,22 @@
 name: Weekly Discovery & Valuation
+# NOTE: Primary trigger is Claude Code scheduled agent (Gamma + Gmail delivery).
+# This workflow serves as a fallback if the scheduled agent fails.
 
 on:
   schedule:
-    # 토요일 00:00 UTC = KST 09:00 (서머타임 시 08:00)
-    # 미국 정규장 금요일 종료 후 3시간+ 버퍼
+    # Saturday 00:00 UTC = KST 09:00 (08:00 during DST)
+    # 3+ hour buffer after US market close on Friday
     - cron: '0 0 * * 6'
   workflow_dispatch:
     inputs:
       markets:
-        description: '대상 시장 (콤마 구분)'
+        description: 'Target markets (comma-separated)'
         default: 'KR,US'
-      max_companies:
-        description: '밸류에이션 최대 기업 수'
-        default: '3'
+      max_per_market:
+        description: 'Max companies per market'
+        default: '5'
       dry_run:
-        description: '발굴만 수행 (밸류에이션 미실행)'
+        description: 'Discovery only, skip valuation'
         type: boolean
         default: false
 
@@ -45,5 +47,5 @@ jobs:
         run: |
           python -m scheduler.weekly_run \
             --markets "${{ inputs.markets || 'KR,US' }}" \
-            --max-companies "${{ inputs.max_companies || '3' }}" \
+            --max-per-market "${{ inputs.max_per_market || '5' }}" \
             ${{ inputs.dry_run == true && '--dry-run' || '' }}

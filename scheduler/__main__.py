@@ -1,4 +1,4 @@
-"""python -m scheduler 진입점."""
+"""python -m scheduler entry point."""
 from .weekly_run import main
 
 main()

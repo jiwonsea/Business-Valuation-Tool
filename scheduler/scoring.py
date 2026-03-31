@@ -1,56 +1,75 @@
-"""중요도 스코어링 — 뉴스 빈도 + 기업 규모 기반.
+"""Importance scoring -- based on news frequency (time-weighted) + company size.
 
-점수 = news_score(0~50) + size_score(0~50)  →  ★ 5단계 등급.
+Score = news_score(0-50) + size_score(0-50) -> 5-level star rating.
 """
 
 from __future__ import annotations
 
 import logging
+import math
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# 시가총액 구간별 점수 (USD 기준, KRW는 환산)
+# Market cap bracket scores (USD basis, KRW converted)
 _LARGE_CAP_USD = 10_000_000_000    # $10B+
 _MID_CAP_USD = 2_000_000_000      # $2B+
-_KRW_TO_USD = 1_350               # 대략적 환율
+_KRW_TO_USD = 1_350               # Approximate exchange rate
 
 
 def _stars(score: int) -> str:
-    """점수 → ★ 5단계 문자열."""
-    if score >= 80:
-        return "★★★★★"
-    if score >= 60:
-        return "★★★★☆"
-    if score >= 40:
-        return "★★★☆☆"
-    if score >= 20:
-        return "★★☆☆☆"
-    return "★☆☆☆☆"
+    """Convert score to 5-level star string."""
+    n = 5 if score >= 80 else 4 if score >= 60 else 3 if score >= 40 else 2 if score >= 20 else 1
+    try:
+        result = "\u2605" * n + "\u2606" * (5 - n)
+        result.encode("utf-8")
+        return result
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return "[" + "*" * n + " " * (5 - n) + "]"
 
 
-def _count_news_mentions(company_name: str, news: list[dict]) -> int:
-    """뉴스 제목+설명에서 기업명 언급 횟수."""
+def _time_decay_weight(pub_date_str: str, now: datetime | None = None) -> float:
+    """Calculate time decay weight: recent news weighs more.
+
+    weight = max(0.1, 1.0 - days_ago / 30)
+    30-day-old news -> 0.1, today's news -> 1.0
+    """
+    now = now or datetime.now()
+    try:
+        pub = datetime.fromisoformat(pub_date_str[:19])
+        days_ago = (now - pub).total_seconds() / 86400
+        return max(0.1, 1.0 - days_ago / 30)
+    except (ValueError, TypeError):
+        return 0.5  # Unparseable date -> neutral weight
+
+
+def _count_news_mentions(company_name: str, news: list[dict]) -> float:
+    """Count company name mentions with time decay weighting.
+
+    Returns weighted mention score (float).
+    """
     name_lower = company_name.lower()
-    count = 0
+    now = datetime.now()
+    score = 0.0
     for n in news:
         text = f"{n.get('title', '')} {n.get('description', '')}".lower()
         if name_lower in text:
-            count += 1
-    return count
+            score += _time_decay_weight(n.get("pub_date", ""), now)
+    return score
 
 
-def _news_score(mention_count: int, max_mentions: int) -> int:
-    """뉴스 언급 비율 → 0~50점."""
+def _news_score(mention_score: float, max_mentions: float) -> int:
+    """News mention ratio -> 0-50 points."""
     if max_mentions <= 0:
-        return 25  # 기본값
-    ratio = mention_count / max_mentions
+        return 25  # Default
+    ratio = mention_score / max_mentions
     return min(50, int(ratio * 50))
 
 
 def _size_score(market_cap_usd: int | None) -> int:
-    """시가총액(USD 환산) → 0~50점."""
+    """Market cap (USD equivalent) -> 0-50 points."""
     if market_cap_usd is None:
-        return 20  # 조회 실패 시 중립 점수
+        return 20  # Neutral score on lookup failure
     if market_cap_usd >= _LARGE_CAP_USD:
         return 50
     if market_cap_usd >= _MID_CAP_USD:
@@ -59,22 +78,26 @@ def _size_score(market_cap_usd: int | None) -> int:
 
 
 def _fetch_market_cap_usd(ticker: str | None, market: str) -> int | None:
-    """시가총액 조회 후 USD로 환산."""
+    """Fetch market cap and convert to USD."""
     if not ticker:
         return None
     try:
         from pipeline.yahoo_finance import get_market_cap
 
-        # KR 티커 보정
+        # KR ticker: use resolve_kr_ticker for proper KOSPI/KOSDAQ detection
         yahoo_ticker = ticker
         if market == "KR" and not ticker.endswith((".KS", ".KQ")):
-            yahoo_ticker = f"{ticker}.KS"
+            try:
+                from pipeline.yfinance_fetcher import resolve_kr_ticker
+                yahoo_ticker = resolve_kr_ticker(ticker)
+            except (ImportError, Exception):
+                yahoo_ticker = f"{ticker}.KS"
 
         cap = get_market_cap(yahoo_ticker)
-        if not cap:
+        if not cap or cap <= 0:
             return None
 
-        # KRW → USD 환산
+        # KRW -> USD conversion
         if market == "KR":
             return int(cap / _KRW_TO_USD)
         return cap
@@ -87,31 +110,31 @@ def score_companies(
     companies: list[dict],
     news: list[dict],
 ) -> list[dict]:
-    """기업별 중요도 스코어 계산 + 내림차순 정렬.
+    """Calculate per-company importance score + sort descending.
 
     Args:
-        companies: DiscoveryEngine 출력 [{"name", "ticker", "reason", "market"}]
-        news: 수집된 뉴스 리스트
+        companies: DiscoveryEngine output [{"name", "ticker", "reason", "market"}]
+        news: Collected news list
 
     Returns:
-        companies에 score, stars, news_count, market_cap 필드 추가 후 score 내림차순 정렬.
+        Companies with score, stars, news_count, market_cap fields added, sorted by score descending.
     """
-    # 1) 뉴스 언급 횟수 집계
-    mention_counts = {}
+    # 1) Count news mentions (time-weighted)
+    mention_scores: dict[str, float] = {}
     for co in companies:
         name = co.get("name", "")
-        mention_counts[name] = _count_news_mentions(name, news)
+        mention_scores[name] = _count_news_mentions(name, news)
 
-    max_mentions = max(mention_counts.values(), default=0)
+    max_mentions = max(mention_scores.values(), default=0)
 
-    # 2) 각 기업 스코어링
+    # 2) Score each company
     scored = []
     for co in companies:
         name = co.get("name", "")
         ticker = co.get("ticker")
         market = co.get("market", "KR")
 
-        mentions = mention_counts.get(name, 0)
+        mentions = mention_scores.get(name, 0)
         ns = _news_score(mentions, max_mentions)
 
         cap_usd = _fetch_market_cap_usd(ticker, market)
@@ -122,11 +145,11 @@ def score_companies(
             **co,
             "score": total,
             "stars": _stars(total),
-            "news_count": mentions,
+            "news_count": round(mentions, 1),
             "market_cap_usd": cap_usd,
         }
         scored.append(co_scored)
 
-    # 3) score 내림차순 정렬
+    # 3) Sort by score descending
     scored.sort(key=lambda x: x["score"], reverse=True)
     return scored

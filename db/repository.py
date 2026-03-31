@@ -1,4 +1,4 @@
-"""Supabase CRUD — 밸류에이션, AI 분석, 프로필 저장/조회."""
+"""Supabase CRUD -- valuation, AI analysis, and profile save/retrieve."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _serialize_date(obj):
-    """date 객체를 ISO 문자열로 변환 (JSON 직렬화용)."""
+    """Convert date objects to ISO string (for JSON serialization)."""
     if isinstance(obj, date):
         return obj.isoformat()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
@@ -26,7 +26,7 @@ def save_valuation(
     vi: ValuationInput,
     result: ValuationResult,
 ) -> Optional[str]:
-    """밸류에이션 입력+결과를 저장. 성공 시 UUID 반환."""
+    """Save valuation input + result. Returns UUID on success."""
     client = get_client()
     if not client:
         return None
@@ -68,7 +68,7 @@ def list_valuations(
     market: Optional[str] = None,
     limit: int = 20,
 ) -> list[dict]:
-    """밸류에이션 목록 조회."""
+    """List valuations."""
     client = get_client()
     if not client:
         return []
@@ -94,7 +94,7 @@ def list_valuations(
 
 
 def get_valuation(valuation_id: str) -> Optional[dict]:
-    """밸류에이션 상세 조회 (input_data, result_data 포함)."""
+    """Get valuation detail (including input_data and result_data)."""
     client = get_client()
     if not client:
         return None
@@ -114,7 +114,7 @@ def get_valuation(valuation_id: str) -> Optional[dict]:
 
 
 def delete_valuation(valuation_id: str) -> bool:
-    """밸류에이션 삭제 (CASCADE로 ai_analyses도 삭제)."""
+    """Delete valuation (CASCADE deletes ai_analyses too)."""
     client = get_client()
     if not client:
         return False
@@ -137,7 +137,7 @@ def save_ai_analysis(
     model: str = "claude-sonnet-4",
     valuation_id: Optional[str] = None,
 ) -> Optional[str]:
-    """AI 분석 단계별 결과 저장."""
+    """Save AI analysis result per step."""
     client = get_client()
     if not client:
         return None
@@ -165,7 +165,7 @@ def list_ai_analyses(
     valuation_id: Optional[str] = None,
     limit: int = 50,
 ) -> list[dict]:
-    """AI 분석 결과 목록 조회."""
+    """List AI analysis results."""
     client = get_client()
     if not client:
         return []
@@ -197,7 +197,7 @@ def save_profile(
     profile_data: dict,
     file_name: Optional[str] = None,
 ) -> Optional[str]:
-    """YAML 프로필 저장."""
+    """Save YAML profile."""
     client = get_client()
     if not client:
         return None
@@ -227,7 +227,7 @@ def list_profiles(
     company_name: Optional[str] = None,
     limit: int = 20,
 ) -> list[dict]:
-    """프로필 목록 조회."""
+    """List profiles."""
     client = get_client()
     if not client:
         return []
@@ -249,7 +249,7 @@ def list_profiles(
 
 
 def get_profile(profile_id: str) -> Optional[dict]:
-    """프로필 상세 조회."""
+    """Get profile detail."""
     client = get_client()
     if not client:
         return None
@@ -272,7 +272,7 @@ def get_profile(profile_id: str) -> Optional[dict]:
 
 
 def save_discovery_run(run_data: dict) -> Optional[str]:
-    """주간 분석 실행 기록 생성. 성공 시 UUID 반환."""
+    """Create weekly analysis run record. Returns UUID on success."""
     client = get_client()
     if not client:
         return None
@@ -288,7 +288,7 @@ def save_discovery_run(run_data: dict) -> Optional[str]:
 
 
 def update_discovery_run(run_id: str, updates: dict) -> bool:
-    """실행 기록 업데이트 (상태, 결과 등)."""
+    """Update run record (status, results, etc.)."""
     client = get_client()
     if not client:
         return False
@@ -302,7 +302,7 @@ def update_discovery_run(run_id: str, updates: dict) -> bool:
 
 
 def list_discovery_runs(limit: int = 10) -> list[dict]:
-    """최근 주간 분석 실행 목록."""
+    """List recent weekly analysis runs."""
     client = get_client()
     if not client:
         return []

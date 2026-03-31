@@ -1,4 +1,4 @@
-"""범용 기업가치 분석 CLI.
+"""General-purpose corporate valuation CLI.
 
 Usage:
     python cli.py --profile profiles/sk_ecoplant.yaml
@@ -9,7 +9,16 @@ Usage:
 
 import argparse
 import logging
+import sys
 from pathlib import Path
+
+from dotenv import load_dotenv
+load_dotenv()
+
+# Prevent Unicode output corruption on Windows cp949 console
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from schemas.models import ValuationInput, ValuationResult, MarketComparisonResult
 from engine.market_comparison import compare_to_market
@@ -21,24 +30,41 @@ logger = logging.getLogger(__name__)
 
 
 def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult) -> ValuationResult:
-    """상장 기업의 시장가격을 조회하고 괴리율을 계산."""
+    """Fetch market price for listed companies and calculate the gap ratio."""
     is_listed = vi.company.legal_status in ("상장", "listed")
     if not is_listed or not vi.company.ticker or result.weighted_value <= 0:
         return result
 
-    price = 0
-    try:
-        from pipeline.yahoo_finance import get_stock_info
-        ticker = vi.company.ticker
-        if vi.company.market == "KR" and not ticker.endswith((".KS", ".KQ")):
-            ticker = f"{ticker}.KS"
-        info = get_stock_info(ticker)
-        if info:
-            price = info.get("price", 0)
-    except Exception as e:
-        logger.debug("Yahoo Finance 조회 실패 (%s): %s", vi.company.ticker, e)
+    import math
 
-    # Yahoo 실패 시 KRX fallback (KR only)
+    price = 0
+    # Primary: yfinance_fetcher (leverages existing _ticker_info_cache)
+    try:
+        from pipeline.yfinance_fetcher import fetch_market_data
+        md = fetch_market_data(vi.company.ticker, vi.company.market)
+        if md:
+            price = md.get("price", 0)
+    except Exception:
+        pass
+
+    # Fallback: yahoo_finance REST
+    if not price:
+        try:
+            from pipeline.yahoo_finance import get_stock_info
+            ticker = vi.company.ticker
+            if vi.company.market == "KR" and not ticker.endswith((".KS", ".KQ")):
+                try:
+                    from pipeline.yfinance_fetcher import resolve_kr_ticker
+                    ticker = resolve_kr_ticker(ticker)
+                except (ImportError, Exception):
+                    ticker = f"{ticker}.KS"
+            info = get_stock_info(ticker)
+            if info:
+                price = info.get("price", 0)
+        except Exception as e:
+            logger.debug("Yahoo Finance 조회 실패 (%s): %s", vi.company.ticker, e)
+
+    # KRX fallback on Yahoo failure (KR only)
     if not price and vi.company.market == "KR":
         try:
             from pipeline.market_data import get_krx_market_cap
@@ -48,7 +74,8 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
         except Exception as e:
             logger.debug("KRX fallback 실패 (%s): %s", vi.company.ticker, e)
 
-    if price and price > 0:
+    # Sanity check: reject invalid price values
+    if price and not math.isnan(price) and price > 0:
         mc = compare_to_market(result.weighted_value, price)
         result.market_comparison = MarketComparisonResult(
             intrinsic_value=mc.intrinsic_value,
@@ -82,13 +109,13 @@ def main():
                         help="주간 모드: 발굴만 수행, 밸류에이션 미실행")
     args = parser.parse_args()
 
-    # Discovery 모드
+    # Discovery mode
     if args.discover:
         from discovery.discovery_engine import DiscoveryEngine
         engine = DiscoveryEngine()
         return engine.discover(market=args.market)
 
-    # 주간 자동 분석 모드
+    # Weekly auto-analysis mode
     if args.weekly:
         from scheduler.weekly_run import run_weekly
         return run_weekly(
@@ -97,14 +124,14 @@ def main():
             dry_run=args.dry_run,
         )
 
-    # 자동 수집 모드
+    # Auto-fetch mode
     if args.company:
         from pipeline.profile_generator import auto_fetch, auto_analyze
         if args.auto:
             return auto_analyze(args.company, args.output_dir)
         return auto_fetch(args.company)
 
-    # 프로필 기반 밸류에이션 모드
+    # Profile-based valuation mode
     profile_path = Path(args.profile).resolve()
     profiles_dir = (Path(__file__).parent / "profiles").resolve()
     if not profile_path.is_relative_to(profiles_dir):
@@ -112,12 +139,12 @@ def main():
     vi = load_profile(str(profile_path))
     result = run_valuation(vi)
 
-    # 상장사 시장가격 비교
+    # Listed company market price comparison
     result = _fetch_and_compare_market_price(vi, result)
 
     print_report(vi, result)
 
-    # DB 저장 (Supabase 설정 시)
+    # Save to DB (when Supabase is configured)
     val_id = _save_to_db(vi, result, args.profile)
     if val_id:
         print(f"\n[DB] Supabase 저장 완료: {val_id}")

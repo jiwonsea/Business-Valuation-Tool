@@ -1,4 +1,4 @@
-"""밸류에이션 실행 엔진 — YAML 로딩 + 방법론별 분기 실행."""
+"""Valuation execution engine -- YAML loading + method-specific dispatch."""
 
 from datetime import date
 from pathlib import Path
@@ -11,7 +11,9 @@ from schemas.models import (
     RIMParams, RIMProjectionResult, RIMValuationResult,
     PeerCompany, ValuationInput, ValuationResult, CrossValidationItem,
     MonteCarloResult, DDMValuationResult, NAVResult, MultiplesResult,
+    NewsDriver,
 )
+from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
 from engine.dcf import calc_dcf
@@ -30,12 +32,12 @@ from engine.method_selector import suggest_method
 
 
 def _seg_names(vi: ValuationInput) -> dict[str, str]:
-    """segments 딕셔너리에서 {code: name} 매핑 추출."""
+    """Extract {code: name} mapping from segments dictionary."""
     return {code: info["name"] for code, info in vi.segments.items()}
 
 
 def _adjust_wacc(base: WACCResult, wacc_adj: float) -> WACCResult:
-    """시나리오별 WACC 조정. wacc_adj는 %p 단위 (e.g., +0.5 → WACC + 0.5%p)."""
+    """Per-scenario WACC adjustment. wacc_adj is in %p (e.g., +0.5 -> WACC + 0.5%p)."""
     if wacc_adj == 0:
         return base
     return WACCResult(
@@ -47,7 +49,7 @@ def _adjust_wacc(base: WACCResult, wacc_adj: float) -> WACCResult:
 
 
 def load_profile(path: str) -> ValuationInput:
-    """YAML 프로필 → ValuationInput 파싱."""
+    """Parse YAML profile into ValuationInput."""
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
@@ -85,12 +87,13 @@ def load_profile(path: str) -> ValuationInput:
 
     # DCF
     dcf_params = DCFParams(**raw["dcf_params"])
-    # ebitda_growth_rates 미지정 시 재무데이터 기반 자동 생성
+    # Auto-generate from financial data when ebitda_growth_rates not specified
     if dcf_params.ebitda_growth_rates is None:
         from engine.growth import generate_growth_rates
+        _industry = raw.get("industry", "") or co_raw.get("industry", "")
         dcf_params = dcf_params.model_copy(update={
             "ebitda_growth_rates": generate_growth_rates(
-                consolidated, market=company.market,
+                consolidated, market=company.market, industry=_industry,
             )
         })
 
@@ -112,7 +115,7 @@ def load_profile(path: str) -> ValuationInput:
     # Peers
     peers = [PeerCompany(**p) for p in raw.get("peers", [])]
 
-    # unit_multiplier 자동 감지 (YAML에 명시되지 않은 경우)
+    # Auto-detect unit_multiplier (when not specified in YAML)
     if "unit_multiplier" not in raw.get("company", {}):
         latest_yr = max(consolidated.keys())
         revenue = consolidated[latest_yr].get("revenue", 0)
@@ -156,21 +159,21 @@ def load_profile(path: str) -> ValuationInput:
 
 
 def run_valuation(vi: ValuationInput) -> ValuationResult:
-    """전체 밸류에이션 파이프라인 실행 — 방법론별 분기."""
-    # 금융업종 자동 감지 → Hamada 스킵
+    """Execute full valuation pipeline -- dispatch by methodology."""
+    # Auto-detect financial sector -> skip Hamada
     from engine.method_selector import _FINANCIAL_KEYWORDS
     industry_lower = vi.industry.lower()
     if any(kw in industry_lower for kw in _FINANCIAL_KEYWORDS):
         vi.wacc_params.is_financial = True
 
-    # 공통: WACC (방법론 판단 전에 필요 — 금융주 DDM/RIM 판단에 Ke 사용)
+    # Common: WACC (needed before method selection -- Ke used for DDM/RIM decision)
     wacc_result = calc_wacc(vi.wacc_params)
     um = vi.company.unit_multiplier
 
-    # 방법론 결정
+    # Determine methodology
     method = vi.valuation_method
     if method == "auto":
-        # 금융주 DDM/RIM 판단용: ROE 계산
+        # Calculate ROE for financial DDM/RIM decision
         by = vi.base_year
         cons = vi.consolidated[by]
         equity_bv = cons.get("equity", 0)
@@ -205,10 +208,10 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
 
 
 def _calc_effective_net_debt(vi: ValuationInput) -> int:
-    """금융자회사 분리 SOTP 시 유효 순차입금 계산.
+    """Calculate effective net debt for financial subsidiary split SOTP.
 
-    금융 세그먼트(method=pbv/pe)의 net_debt는 P/BV에 이미 내재되어 있으므로
-    전체 net_debt에서 차감한다. segment_net_debt가 없으면 net_debt 그대로 반환.
+    Net debt of financial segments (method=pbv/pe) is already embedded in P/BV,
+    so it is deducted from total net_debt. Returns net_debt as-is if segment_net_debt is empty.
     """
     if not vi.segment_net_debt:
         return vi.net_debt
@@ -221,42 +224,43 @@ def _calc_effective_net_debt(vi: ValuationInput) -> int:
 
 
 def _has_mixed_sotp(vi: ValuationInput) -> bool:
-    """금융자회사 분리 SOTP 여부 판단."""
+    """Determine if this is a financial subsidiary split SOTP."""
     return bool(vi.segment_net_debt) and any(
         info.get("method") in ("pbv", "pe") for info in vi.segments.values()
     )
 
 
 def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """SOTP 기반 밸류에이션 (다부문 기업, Mixed Method 지원)."""
+    """SOTP-based valuation (multi-segment companies, Mixed Method support)."""
     by = vi.base_year
     cons = vi.consolidated[by]
 
-    # 금융자회사 분리 SOTP 판단
+    # Financial subsidiary split SOTP check
     is_mixed = _has_mixed_sotp(vi)
     effective_net_debt = _calc_effective_net_debt(vi) if is_mixed else vi.net_debt
 
-    # 세그먼트 method 정보 추출
+    # Extract segment method info
     seg_methods = {c: info.get("method", "ev_ebitda") for c, info in vi.segments.items()}
 
-    # D&A 배분 (전 연도) — 금융 부문 제외
+    # D&A allocation (all years) -- excluding financial segments
     da_allocations = {}
     for yr, segs in vi.segment_data.items():
         c = vi.consolidated[yr]
         total_da = c["dep"] + c["amort"]
         da_allocations[yr] = allocate_da(segs, total_da, seg_methods if is_mixed else None)
 
-    # SOTP (base year) — Mixed Method 지원
+    # SOTP (base year) -- Mixed Method support
     base_alloc = da_allocations[by]
     sotp, total_ev = calc_sotp(
         base_alloc, vi.multiples,
         segments_info=vi.segments if is_mixed else None,
     )
 
-    # 시나리오 — market_sentiment_pct 적용 (SOTP는 DCF driver 미적용)
+    # Scenarios -- apply market_sentiment_pct (SOTP does not apply DCF drivers)
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
+        sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
         sentiment = getattr(sc, "market_sentiment_pct", 0.0)
         if sentiment != 0:
@@ -266,7 +270,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         scenario_results[code] = r
         total_weighted += r.weighted
 
-    # DCF 교차검증 — mixed SOTP면 제조 부문만
+    # DCF cross-validation -- for mixed SOTP, manufacturing segments only
     total_da_base = cons["dep"] + cons["amort"]
     if is_mixed:
         mfg_ebitda = sum(
@@ -294,7 +298,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         wacc_result.wacc, vi.dcf_params, vi.base_year,
     )
 
-    # 민감도
+    # Sensitivity
     sens_mult, _, _ = sensitivity_multiples(
         base_alloc, vi.multiples, effective_net_debt, vi.eco_frontier,
         vi.company.shares_outstanding, unit_multiplier=um,
@@ -313,7 +317,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         vi.dcf_params, vi.base_year,
     )
 
-    # 멀티플 교차검증 — effective_net_debt 적용
+    # Multiple cross-validation -- apply effective_net_debt
     cv_items = _cross_validate_common(
         vi, cons, ebitda_base, total_ev, dcf_result.ev_dcf, um,
         net_debt_override=effective_net_debt if is_mixed else None,
@@ -323,7 +327,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     sotp_seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
     mc_result = _run_monte_carlo(vi, wacc_result, sotp_seg_ebitdas, um, dcf_result=dcf_result)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
@@ -349,12 +353,12 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 def _make_scenario_dcf_params(
     base: DCFParams, sc: ScenarioParams, wacc: float,
 ) -> DCFParams | None:
-    """시나리오별 DCF 파라미터 생성. 조정 없으면 None 반환."""
+    """Generate per-scenario DCF parameters. Returns None if no adjustments."""
     if sc.growth_adj_pct == 0 and sc.terminal_growth_adj == 0:
         return None
     adjusted_rates = [g * (1 + sc.growth_adj_pct / 100) for g in base.ebitda_growth_rates]
     adjusted_tg = base.terminal_growth + sc.terminal_growth_adj
-    # Safety: TGR ≥ WACC 방지 (Gordon Growth Model 전제조건)
+    # Safety: prevent TGR >= WACC (Gordon Growth Model precondition)
     adjusted_tg = min(adjusted_tg, wacc - 0.5)
     return DCFParams(
         ebitda_growth_rates=adjusted_rates,
@@ -369,7 +373,7 @@ def _make_scenario_dcf_params(
 
 
 def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """DCF 기반 밸류에이션 (단일부문 또는 성장 기업)."""
+    """DCF-based valuation (single-segment or growth companies)."""
     by = vi.base_year
     cons = vi.consolidated[by]
 
@@ -383,17 +387,18 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
     total_ev = dcf_result.ev_dcf
 
-    # 시나리오 (DCF EV 기반, per-scenario DCF driver + WACC 조정 적용)
+    # Scenarios (DCF EV-based, per-scenario DCF driver + WACC adjustment applied)
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
-        sc_ev = total_ev  # 기본: base DCF EV
+        sc = resolve_drivers(sc, vi.news_drivers)
+        sc_ev = total_ev  # Default: base DCF EV
 
-        # 시나리오별 WACC 조정
+        # Per-scenario WACC adjustment
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
         effective_wacc = sc_wacc.wacc
 
-        # 시나리오별 DCF driver 조정
+        # Per-scenario DCF driver adjustment
         sc_dcf_params = _make_scenario_dcf_params(vi.dcf_params, sc, effective_wacc)
         if sc_dcf_params is not None:
             sc_dcf = calc_dcf(
@@ -402,14 +407,14 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             )
             sc_ev = sc_dcf.ev_dcf
         elif sc.wacc_adj != 0:
-            # growth 조정 없어도 WACC 변경만으로 DCF 재계산
+            # Recalculate DCF even without growth adjustment (WACC change alone)
             sc_dcf = calc_dcf(
                 ebitda_base, total_da_base, cons["revenue"],
                 effective_wacc, vi.dcf_params, vi.base_year,
             )
             sc_ev = sc_dcf.ev_dcf
 
-        # Market sentiment 후처리
+        # Market sentiment post-processing
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
 
@@ -418,13 +423,13 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         scenario_results[code] = r
         total_weighted += r.weighted
 
-    # DCF 민감도
+    # DCF sensitivity
     sens_dcf_rows, _, _ = sensitivity_dcf(
         ebitda_base, total_da_base, cons["revenue"],
         vi.dcf_params, vi.base_year,
     )
 
-    # SOTP 교차검증 (다부문 기업이면 SOTP도 계산)
+    # SOTP cross-validation (calculate SOTP if multi-segment)
     sotp_ev = 0
     sotp_result = {}
     da_allocations = {}
@@ -434,7 +439,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     cv_items = _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_result.ev_dcf, um)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
@@ -455,7 +460,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
 
 def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """DDM 기반 밸류에이션 (금융업종)."""
+    """DDM-based valuation (financial sector)."""
     if not vi.ddm_params:
         raise ValueError(
             "DDM 방법론이 선택되었으나 ddm_params가 없습니다. "
@@ -466,7 +471,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     buyback_ps = vi.ddm_params.buyback_per_share
     base_growth = vi.ddm_params.dividend_growth
 
-    # Base DDM (기본 성장률)
+    # Base DDM (default growth rate)
     ddm_raw = calc_ddm_engine(
         vi.ddm_params.dps, base_growth, ke,
         buyback_per_share=buyback_ps,
@@ -480,10 +485,11 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         equity_per_share=ddm_raw.equity_per_share,
     )
 
-    # 시나리오별 DDM: ddm_growth + wacc_adj(Ke 조정)로 재계산
+    # Per-scenario DDM: recalculate with ddm_growth + wacc_adj (Ke adjustment)
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
+        sc = resolve_drivers(sc, vi.news_drivers)
         sc_growth = sc.ddm_growth if sc.ddm_growth is not None else base_growth
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
         sc_ke = sc_wacc.ke
@@ -497,29 +503,29 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         scenario_results[code] = r
         total_weighted += r.weighted
 
-    # DDM base EV (교차검증용)
+    # DDM base EV (for cross-validation)
     total_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
 
-    # 시나리오 미설정 시 DDM 값 직접 사용
+    # Use DDM value directly when no scenarios are set
     if not scenario_results:
         total_weighted = ddm_raw.equity_per_share
 
-    # 금융주는 EBITDA 기반 DCF가 무의미 → P/E, P/BV만 교차검증
+    # EBITDA-based DCF is meaningless for financials -> P/E, P/BV cross-validation only
     by = vi.base_year
     cons = vi.consolidated[by]
     cv_items = _cross_validate_financial(vi, cons, um)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
-    # DDM 민감도: Ke × 배당성장률
+    # DDM sensitivity: Ke x dividend growth rate
     sens_ddm = sensitivity_ddm(
         vi.ddm_params.dps, ke, base_growth,
         buyback_per_share=buyback_ps,
     )
 
-    # Monte Carlo (segment EBITDA 기반 — 보조 분포)
+    # Monte Carlo (segment EBITDA-based -- auxiliary distribution)
     mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um)
 
     return ValuationResult(
@@ -538,23 +544,23 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
 
 def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """RIM(잔여이익모델) 기반 밸류에이션 (금융업종 — BV 기반)."""
+    """RIM (Residual Income Model) valuation (financial sector -- BV-based)."""
     by = vi.base_year
     cons = vi.consolidated[by]
     equity_bv = cons.get("equity", 0)
     shares = vi.company.shares_outstanding
     ke = wacc_result.ke
 
-    # RIM 파라미터: 명시적 rim_params 또는 재무제표 기반 자동 생성
+    # RIM parameters: explicit rim_params or auto-generated from financial statements
     if vi.rim_params:
         roe_forecasts = vi.rim_params.roe_forecasts
         tg = vi.rim_params.terminal_growth
         payout = vi.rim_params.payout_ratio
     else:
-        # ROE를 최근 재무제표에서 역산하여 5년 예측 (점진 수렴)
+        # Back-calculate ROE from recent financials for 5-year forecast (gradual convergence)
         net_income = cons.get("net_income", 0)
         current_roe = (net_income / equity_bv * 100) if equity_bv > 0 else ke
-        # ROE가 Ke 방향으로 점진 수렴 (5년)
+        # ROE gradually converges toward Ke (5 years)
         roe_forecasts = [
             round(current_roe + (ke - current_roe) * i / 5, 1)
             for i in range(5)
@@ -588,13 +594,14 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         per_share=rim_raw.per_share,
     )
 
-    # RIM은 Equity Value 직접 산출 → EV 역산
+    # RIM directly yields Equity Value -> reverse-calculate EV
     total_ev = rim_raw.equity_value + vi.net_debt
 
-    # 시나리오 — rim_roe_adj + wacc_adj(Ke 조정)로 RIM 재계산
+    # Scenarios -- recalculate RIM with rim_roe_adj + wacc_adj (Ke adjustment)
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
+        sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
         sc_ke = sc_wacc.ke
@@ -620,14 +627,14 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     if not scenario_results:
         total_weighted = rim_raw.per_share
 
-    # 금융주는 EBITDA 기반 DCF가 무의미 → P/E, P/BV만 교차검증
+    # EBITDA-based DCF is meaningless for financials -> P/E, P/BV cross-validation only
     cv_items = _cross_validate_financial(vi, cons, um)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
-    # RIM 민감도: Ke × Terminal Growth
+    # RIM sensitivity: Ke x Terminal Growth
     sens_rim = sensitivity_rim(
         equity_bv, roe_forecasts, ke, shares,
         terminal_growth_base=tg, payout_ratio=payout,
@@ -653,7 +660,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
 
 def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """상대가치평가법 기반 밸류에이션 (성숙/안정 기업 + Peer 충분)."""
+    """Multiples-based valuation (mature/stable companies with sufficient peers)."""
     by = vi.base_year
     cons = vi.consolidated[by]
 
@@ -663,11 +670,11 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     book_value = cons.get("equity", 0)
     shares = vi.company.shares_outstanding
 
-    # 주방법론 선택: EV/EBITDA → P/E → P/BV 우선순위
-    # Peer 기반 멀티플 또는 YAML에 명시된 멀티플 사용
+    # Primary method selection: EV/EBITDA -> P/E -> P/BV priority
+    # Use peer-based multiples or multiples specified in YAML
     primary_mv = None
 
-    # 1. EV/EBITDA (세그먼트 멀티플 평균)
+    # 1. EV/EBITDA (segment multiple average)
     seg_multiples = [m for m in vi.multiples.values() if m > 0]
     if seg_multiples and ebitda_base > 0:
         avg_multiple = sum(seg_multiples) / len(seg_multiples)
@@ -698,17 +705,18 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
             equity_value=mv.equity_value, per_share=mv.per_share,
         )
     else:
-        # 멀티플 데이터 부족 → DCF fallback
+        # Insufficient multiple data -> DCF fallback
         return _run_dcf_valuation(vi, wacc_result, um)
 
     total_ev = primary_mv.enterprise_value or round(
         primary_mv.equity_value + vi.net_debt
     )
 
-    # 시나리오 — ev_multiple 있으면 멀티플 변경하여 EV 재계산
+    # Scenarios -- recalculate EV with modified multiple when ev_multiple is set
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
+        sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
         if sc.ev_multiple is not None and primary_mv.metric_value > 0:
             sc_ev = round(primary_mv.metric_value * sc.ev_multiple)
@@ -722,7 +730,7 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     if not scenario_results:
         total_weighted = primary_mv.per_share
 
-    # DCF 교차검증
+    # DCF cross-validation
     dcf_result = calc_dcf(
         ebitda_base, total_da_base, cons["revenue"],
         wacc_result.wacc, vi.dcf_params, vi.base_year,
@@ -730,11 +738,11 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
 
     cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_result.ev_dcf, um)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
-    # Multiples 민감도: 적용 멀티플 × 할인율
+    # Multiples sensitivity: applied multiple x discount rate
     sens_mult_primary = sensitivity_multiple_range(
         primary_mv.metric_value, vi.net_debt, shares,
         primary_mv.multiple, unit_multiplier=um,
@@ -760,7 +768,7 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
 
 
 def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
-    """NAV(순자산가치) 기반 밸류에이션 (지주사/리츠/자산중심)."""
+    """NAV (Net Asset Value) valuation (holding companies/REITs/asset-heavy)."""
     by = vi.base_year
     cons = vi.consolidated[by]
 
@@ -785,16 +793,17 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         per_share=nav_raw.per_share,
     )
 
-    # NAV = Equity Value 개념 → EV 역산 (교차검증용)
+    # NAV = Equity Value concept -> reverse-calculate EV (for cross-validation)
     total_ev = nav_raw.nav + vi.net_debt
 
-    # 시나리오 — nav_discount로 지주할인율 적용
+    # Scenarios -- apply holding company discount via nav_discount
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
+        sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
         if sc.nav_discount != 0:
-            # NAV에 지주할인 적용 후 net_debt 다시 더해 EV 역산
+            # Apply holding company discount to NAV then add net_debt back for EV
             discounted_nav = round(nav_raw.nav * (1 - sc.nav_discount / 100))
             sc_ev = discounted_nav + vi.net_debt
         elif sc.market_sentiment_pct != 0:
@@ -807,7 +816,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     if not scenario_results:
         total_weighted = nav_raw.per_share
 
-    # DCF 교차검증
+    # DCF cross-validation
     total_da_base = cons["dep"] + cons["amort"]
     ebitda_base = cons["op"] + total_da_base
     dcf_result = calc_dcf(
@@ -817,11 +826,11 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_result.ev_dcf, um)
 
-    # Peer 통계
+    # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
-    # NAV 민감도: 재평가 × 지주할인율
+    # NAV sensitivity: revaluation x holding company discount
     sens_nav = sensitivity_nav(
         total_assets, total_liabilities, shares,
         base_revaluation=revaluation, unit_multiplier=um,
@@ -847,14 +856,14 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
 
 def _get_reference_scenario(scenarios: dict) -> ScenarioParams | None:
-    """가장 확률 높은 시나리오 반환 (민감도 분석용)."""
+    """Return the highest-probability scenario (for sensitivity analysis)."""
     if not scenarios:
         return None
     return max(scenarios.values(), key=lambda sc: sc.prob)
 
 
 def _cross_validate_financial(vi, cons, um):
-    """금융주 교차검증 — P/E, P/BV만 (EBITDA 기반 DCF/SOTP 무의미)."""
+    """Financial stock cross-validation -- P/E, P/BV only (EBITDA-based DCF/SOTP meaningless)."""
     items = []
     shares = vi.company.shares_outstanding
     net_income = cons.get("net_income", 0)
@@ -877,7 +886,7 @@ def _cross_validate_financial(vi, cons, um):
 
 def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
                            net_debt_override=None):
-    """공통 멀티플 교차검증."""
+    """Common multiples cross-validation."""
     net_debt = net_debt_override if net_debt_override is not None else vi.net_debt
     cv_results = cross_validate(
         revenue=cons["revenue"],
@@ -906,7 +915,7 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
 
 
 def _mc_raw_to_result(mc_raw):
-    """MCResult → MonteCarloResult 변환."""
+    """Convert MCResult to MonteCarloResult."""
     return MonteCarloResult(
         n_sims=mc_raw.n_sims, mean=mc_raw.mean, median=mc_raw.median,
         std=mc_raw.std, p5=mc_raw.p5, p25=mc_raw.p25, p75=mc_raw.p75,
@@ -919,10 +928,10 @@ def _run_monte_carlo(
     vi, wacc_result, seg_ebitdas: dict[str, int], um: int,
     dcf_result=None,
 ) -> MonteCarloResult | None:
-    """Monte Carlo 실행 — SOTP/비SOTP 공통 진입점.
+    """Run Monte Carlo -- common entry point for SOTP/non-SOTP.
 
     Args:
-        seg_ebitdas: {seg_code: ebitda} — SOTP면 allocate_da 결과, 아니면 연결 기반 배분.
+        seg_ebitdas: {seg_code: ebitda} -- allocate_da result for SOTP, or consolidated-based allocation.
     """
     if not vi.mc_enabled:
         return None
@@ -967,7 +976,7 @@ def _run_monte_carlo(
 
 
 def _build_seg_ebitdas_from_consolidated(vi, cons) -> dict[str, int]:
-    """비-SOTP 방법론용: 연결 EBITDA를 세그먼트별로 배분."""
+    """For non-SOTP methods: allocate consolidated EBITDA to segments."""
     total_da = cons.get("dep", 0) + cons.get("amort", 0)
     ebitda = cons.get("op", 0) + total_da
 

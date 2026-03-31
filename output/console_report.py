@@ -1,11 +1,11 @@
-"""콘솔 리포트 출력."""
+"""Console report output."""
 
 from schemas.models import ValuationInput, ValuationResult
 from valuation_runner import _seg_names
 
 
 def print_report(vi: ValuationInput, result: ValuationResult):
-    """밸류에이션 결과를 콘솔에 출력."""
+    """Print valuation results to the console."""
     by = vi.base_year
     seg_names = _seg_names(vi)
     unit = vi.company.currency_unit
@@ -19,12 +19,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     w = result.wacc
     print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
 
-    # Mixed SOTP 판단
+    # Mixed SOTP determination
     is_mixed = bool(vi.segment_net_debt) and any(
         info.get("method") in ("pbv", "pe") for info in vi.segments.values()
     )
 
-    # D&A 배분 (SOTP인 경우만)
+    # D&A allocation (SOTP only)
     if result.da_allocations and by in result.da_allocations:
         total_da = vi.consolidated[by]["dep"] + vi.consolidated[by]["amort"]
         da_note = " (금융 부문 제외)" if is_mixed else ""
@@ -45,7 +45,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 else:
                     print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
 
-    # SOTP (있는 경우)
+    # SOTP (if available)
     if result.sotp:
         sotp_ev = sum(s.ev for s in result.sotp.values())
         if is_mixed:
@@ -78,7 +78,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         else:
             print(f"\n[SOTP EV] {sotp_ev:>14,}{unit}")
 
-    # 시나리오
+    # Scenarios
     if result.scenarios:
         print(f"\n[시나리오 분석]")
         for code, sc in vi.scenarios.items():
@@ -123,7 +123,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 print(f"  SOTP EV: {sotp_ev:>12,}{unit}")
                 print(f"  DCF vs SOTP: {diff_pct:>+.1f}%")
 
-    # 시장가격 비교
+    # Market price comparison
     if result.market_comparison:
         mc = result.market_comparison
         print(f"\n[시장가격 비교]")
@@ -151,9 +151,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                   f"{ps.ev_ebitda_mean:>7.1f}x {ps.ev_ebitda_q1:>7.1f}x "
                   f"{ps.ev_ebitda_q3:>7.1f}x {ps.applied_multiple:>7.1f}x")
 
-    # 멀티플 교차검증
+    # Multiple cross-validation
     if result.cross_validations:
-        # Trading Multiple 판별: 시장가와 ±5% 이내이면 Trading
+        # Trading Multiple detection: Trading if within +/-5% of market price
         market_ps = result.market_comparison.market_price if result.market_comparison else 0
         print(f"\n[멀티플 교차검증]")
         print(f"{'방법론':<28} {'지표값':>12} {'배수':>8} {'EV':>14} {'Equity':>14} {'주당가치':>10}")
@@ -166,7 +166,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             label = f"{cv.method}{tag}"
             print(f"{label:<28} {cv.metric_value:>12,.0f} {cv.multiple:>7.1f}x "
                   f"{cv.enterprise_value:>13,} {cv.equity_value:>13,} {cv.per_share:>9,}")
-        # 범례
+        # Legend
         has_trading = market_ps > 0 and any(
             cv.method not in ("SOTP (EV/EBITDA)", "DCF (FCFF)") for cv in result.cross_validations
         )

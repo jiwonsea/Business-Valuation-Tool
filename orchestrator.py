@@ -1,10 +1,10 @@
-"""전체 워크플로우 오케스트레이터 — 5단계 파이프라인.
+"""Full workflow orchestrator -- 5-phase pipeline.
 
-Phase 1: 데이터 수집 (DART)
-Phase 2: 부문 분석 (AI 보조)
-Phase 3: 가정값 설정 (AI 초안 → 사용자 수정)
-Phase 4: 밸류에이션 (엔진)
-Phase 5: 출력 (Excel + 리서치 노트)
+Phase 1: Data collection (DART)
+Phase 2: Segment analysis (AI-assisted)
+Phase 3: Assumption setup (AI draft -> user revision)
+Phase 4: Valuation (engine)
+Phase 5: Output (Excel + research note)
 """
 
 import logging
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str | None = None) -> str | None:
-    """밸류에이션 결과를 Supabase에 저장 (실패 시 무시)."""
+    """Save valuation result to Supabase (silently ignore on failure)."""
     try:
         from db.repository import save_valuation, save_profile
         val_id = save_valuation(vi, result)
@@ -37,10 +37,10 @@ def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str |
 
 
 def run_from_profile(profile_path: str, output_dir: str | None = None) -> tuple[ValuationInput, ValuationResult, str]:
-    """YAML 프로필 → 밸류에이션 → Excel.
+    """YAML profile -> valuation -> Excel.
 
     Returns:
-        (입력 데이터, 결과, Excel 경로)
+        (input data, result, Excel path)
     """
     vi = load_profile(profile_path)
     result = run_valuation(vi)
@@ -50,7 +50,7 @@ def run_from_profile(profile_path: str, output_dir: str | None = None) -> tuple[
 
 
 def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
-    """결과 요약 텍스트 생성 (리서치 노트/UI 용)."""
+    """Generate result summary text (for research notes / UI)."""
     lines = []
     unit = vi.company.currency_unit
     sym = "원" if vi.company.market == "KR" else "$"
@@ -60,13 +60,13 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     lines.append(f"분석일: {vi.company.analysis_date}  |  방법론: **{result.primary_method.upper()}**")
     lines.append("")
 
-    # WACC
+    # WACC section
     w = result.wacc
     lines.append(f"## WACC: {w.wacc}%")
     lines.append(f"- βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%")
     lines.append("")
 
-    # DDM (금융업종)
+    # DDM (financial sector)
     if result.ddm:
         ddm = result.ddm
         lines.append(f"## DDM 밸류에이션")
@@ -74,7 +74,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- **주당 내재가치: {ddm.equity_per_share:,}{sym}**")
         lines.append("")
 
-    # Multiples Primary (상대가치평가법)
+    # Multiples Primary (relative valuation)
     if result.multiples_primary:
         mp = result.multiples_primary
         lines.append(f"## 상대가치평가 ({mp.primary_multiple_method})")
@@ -82,7 +82,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- **주당 가치: {mp.per_share:,}{sym}**")
         lines.append("")
 
-    # NAV (순자산가치)
+    # NAV (net asset value)
     if result.nav:
         nv = result.nav
         lines.append(f"## 순자산가치(NAV)")
@@ -91,7 +91,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- **주당 NAV: {nv.per_share:,}{sym}**")
         lines.append("")
 
-    # SOTP (있는 경우)
+    # SOTP (if available)
     if result.sotp:
         lines.append(f"## SOTP EV: {result.total_ev:,}{unit}")
         for code, s in result.sotp.items():
@@ -108,7 +108,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
             lines.append(f"- SOTP 대비 {diff:+.1f}%")
         lines.append("")
 
-    # 시나리오
+    # Scenarios
     if result.scenarios:
         lines.append("## 시나리오 분석")
         for code, sc in vi.scenarios.items():
@@ -118,7 +118,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- **확률가중 주당 가치: {result.weighted_value:,}{sym}**")
         lines.append("")
 
-    # 괴리율
+    # Gap ratio
     if result.market_comparison and result.market_comparison.market_price > 0:
         mc = result.market_comparison
         lines.append("## 시장가격 비교")
@@ -128,7 +128,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
             lines.append(f"- ⚠ {mc.flag}")
         lines.append("")
 
-    # 교차검증
+    # Cross-validation
     if result.cross_validations:
         lines.append("## 교차검증")
         for cv in result.cross_validations:

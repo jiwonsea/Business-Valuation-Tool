@@ -1,1 +1,1 @@
-"""Supabase DB 연동 모듈."""
+"""Supabase DB integration module."""

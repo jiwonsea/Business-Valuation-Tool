@@ -1,19 +1,19 @@
-"""Excel 스타일 상수 및 유틸리티 함수."""
+"""Excel style constants and utility functions."""
 
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.comments import Comment
 
-# ── 색상 ──
+# ── Colors ──
 NAVY = "1B2A4A"
 
 # ── Fill ──
-BLUE_FILL = PatternFill("solid", fgColor="E8EDF5")     # 입력 가정값
-YELLOW_FILL = PatternFill("solid", fgColor="F0F2F8")    # 원본 데이터
-GREEN_FILL = PatternFill("solid", fgColor="E8F5E9")     # 양수 결과
-RED_FILL = PatternFill("solid", fgColor="FDE8E8")       # 음수 결과
-GRAY_FILL = PatternFill("solid", fgColor=NAVY)          # 헤더 (네이비)
-DARK_FILL = PatternFill("solid", fgColor="2C3E50")      # 짙은 헤더
-DRIVER_FILL = PatternFill("solid", fgColor="FFF3E0")    # 시나리오 드라이버 (연한 오렌지)
+BLUE_FILL = PatternFill("solid", fgColor="E8EDF5")     # Input assumptions
+YELLOW_FILL = PatternFill("solid", fgColor="F0F2F8")    # Source data
+GREEN_FILL = PatternFill("solid", fgColor="E8F5E9")     # Positive results
+RED_FILL = PatternFill("solid", fgColor="FDE8E8")       # Negative results
+GRAY_FILL = PatternFill("solid", fgColor=NAVY)          # Header (navy)
+DARK_FILL = PatternFill("solid", fgColor="2C3E50")      # Dark header
+DRIVER_FILL = PatternFill("solid", fgColor="FFF3E0")    # Scenario drivers (light orange)
 
 # ── Font ──
 HEADER_FONT = Font(bold=True, size=11, color="FFFFFF")
@@ -45,7 +45,7 @@ BASE_BORDER = Border(
 
 
 def style_header_row(ws, row: int, max_col: int):
-    """헤더 행 스타일 적용."""
+    """Apply header row styling."""
     for c in range(1, max_col + 1):
         cell = ws.cell(row=row, column=c)
         cell.font = HEADER_FONT
@@ -55,7 +55,7 @@ def style_header_row(ws, row: int, max_col: int):
 
 
 def write_cell(ws, row: int, col: int, value, fmt=None, fill=None, font=None, bold=False):
-    """셀 쓰기 + 스타일 적용."""
+    """Write cell value and apply styling."""
     cell = ws.cell(row=row, column=col, value=value)
     if fmt:
         cell.number_format = fmt

@@ -1,9 +1,9 @@
-"""주간 자동 뉴스 수집 + 밸류에이션 파이프라인.
+"""Weekly automated news collection + valuation pipeline.
 
 Usage:
-    python -m scheduler.weekly_run                               # KR+US, 3개
+    python -m scheduler.weekly_run                               # KR+US, 3 companies
     python -m scheduler.weekly_run --markets KR,US --max-companies 5
-    python -m scheduler.weekly_run --dry-run                     # 발굴만
+    python -m scheduler.weekly_run --dry-run                     # Discovery only
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 def _week_number(dt: datetime) -> int:
-    """해당 월의 몇 째 주인지 계산."""
+    """Calculate which week of the month the date falls in."""
     first_day = dt.replace(day=1)
     return (dt.day + first_day.weekday()) // 7 + 1
 
@@ -48,12 +48,12 @@ def run_weekly(
     max_companies: int = 3,
     dry_run: bool = False,
 ) -> dict:
-    """주간 Discovery + 밸류에이션 파이프라인 실행.
+    """Execute weekly Discovery + valuation pipeline.
 
-    1. 시장별 뉴스 수집 + AI 분석 (DiscoveryEngine)
-    2. 기업 중요도 스코어링 (뉴스 빈도 + 시가총액)
-    3. 상위 N개 기업 자동 밸류에이션 (auto_analyze)
-    4. DB 저장
+    1. Per-market news collection + AI analysis (DiscoveryEngine)
+    2. Company importance scoring (news frequency + market cap)
+    3. Auto-valuation for top N companies (auto_analyze)
+    4. DB save
 
     Returns:
         {"run_date", "markets", "discoveries", "scored_companies", "valuations", "errors"}
@@ -74,10 +74,10 @@ def run_weekly(
         "errors": [],
     }
 
-    # DB에 실행 기록 생성
+    # Create run record in DB
     run_id = _save_run_start(markets)
 
-    # ── Phase 1: 시장별 뉴스 수집 + AI 분석 (병렬) ──
+    # ── Phase 1: Per-market news collection + AI analysis (parallel) ──
     engine = DiscoveryEngine()
     all_companies: list[dict] = []
     all_news: list[dict] = []
@@ -101,6 +101,10 @@ def run_weekly(
                 continue
             news_count = result.get("news_count", 0)
             total_news += news_count
+            market_news = result.get("news", [])
+            all_news.extend(market_news)
+            if not market_news:
+                logger.warning("[%s] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요", market)
             for co in result.get("companies", []):
                 co["market"] = market
                 all_companies.append(co)
@@ -110,7 +114,7 @@ def run_weekly(
                 "companies": result.get("companies", []),
             })
 
-    # ── Phase 2: 중복 제거 + 중요도 스코어링 ──
+    # ── Phase 2: Deduplication + importance scoring ──
     seen_names: set[str] = set()
     unique_companies: list[dict] = []
     for co in all_companies:
@@ -124,7 +128,7 @@ def run_weekly(
 
     targets = scored[:max_companies]
 
-    # ── 결과 출력 ──
+    # ── Print results ──
     _print_summary_header(summary["label"], total_news, scored)
 
     if dry_run:
@@ -132,10 +136,10 @@ def run_weekly(
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
 
-    # ── Phase 3: 상위 기업 자동 밸류에이션 ──
+    # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
 
-    # 주차별 출력 폴더: valuation-results/2026-03-5째주/
+    # Weekly output folder: valuation-results/2026-03-5째주/
     week_dir = _RESULTS_BASE / f"{now.year}-{now.month:02d}-{_week_number(now)}째주"
     week_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Excel 출력 폴더: %s", week_dir)
@@ -151,7 +155,9 @@ def run_weekly(
             logger.error("밸류에이션 실패 [%s]: %s", name, e)
             return {"company": name, "status": "failed", "error": str(e)}
 
-    with ThreadPoolExecutor(max_workers=min(len(targets), 3)) as pool:
+    if not targets:
+        logger.warning("밸류에이션 대상 기업이 없습니다.")
+    with ThreadPoolExecutor(max_workers=max(min(len(targets), 3), 1)) as pool:
         futures = {pool.submit(_run_valuation, co): co for co in targets}
         for fut in as_completed(futures):
             entry = fut.result()
@@ -163,7 +169,7 @@ def run_weekly(
                     "error": entry.get("error", ""),
                 })
 
-    # ── Phase 4: 완료 ──
+    # ── Phase 4: Completion ──
     duration = time.time() - start
     _finalize_run(run_id, summary, duration, total_news, scored)
     _print_completion(summary, duration, week_dir)
@@ -176,32 +182,32 @@ def _print_summary_header(
     total_news: int,
     scored: list[dict],
 ) -> None:
-    """주간 분석 결과 헤더 출력."""
-    print(f"\n{'═' * 50}")
+    """Print weekly analysis result header."""
+    print(f"\n{'=' * 50}")
     print(f"[주간 자동 분석] {label}")
-    print(f"{'═' * 50}")
+    print(f"{'=' * 50}")
     print(f"  뉴스 수집: {total_news}건\n")
 
     if scored:
-        print("  [발굴 기업 — 중요도 순]")
+        print("  [발굴 기업 - 중요도 순]")
         for co in scored:
             stars = co.get("stars", "★☆☆☆☆")
             name = co.get("name", "")
             reason = co.get("reason", "")
             news_cnt = co.get("news_count", 0)
-            print(f"  {stars} {name} — {reason} (뉴스 {news_cnt}건)")
+            print(f"  {stars} {name} - {reason} (뉴스 {news_cnt}건)")
     else:
         print("  발굴된 기업이 없습니다.")
     print()
 
 
 def _print_completion(summary: dict, duration: float, output_dir: Path | None = None) -> None:
-    """완료 메시지 출력."""
+    """Print completion message."""
     success = sum(1 for v in summary["valuations"] if v["status"] == "success")
     total = len(summary["valuations"])
     errors = len(summary["errors"])
 
-    print(f"\n{'═' * 50}")
+    print(f"\n{'=' * 50}")
     print(f"[완료] {summary['label']}")
     print(f"  실행 시간: {duration:.0f}초")
     print(f"  밸류에이션: {success}/{total} 성공")
@@ -209,11 +215,11 @@ def _print_completion(summary: dict, duration: float, output_dir: Path | None = 
         print(f"  결과 폴더: {output_dir}")
     if errors:
         print(f"  오류: {errors}건")
-    print(f"{'═' * 50}")
+    print(f"{'=' * 50}")
 
 
 def _save_run_start(markets: list[str]) -> str | None:
-    """DB에 실행 시작 기록."""
+    """Record run start in DB."""
     try:
         from db.repository import save_discovery_run
         return save_discovery_run({
@@ -232,7 +238,7 @@ def _finalize_run(
     total_news: int,
     scored: list[dict],
 ) -> None:
-    """DB에 실행 완료 기록."""
+    """Record run completion in DB."""
     if not run_id:
         return
     try:

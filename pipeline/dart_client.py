@@ -26,6 +26,16 @@ def get_corp_code(company_name: str) -> str | None:
 
     corpCode.xml → 전체 기업코드 ZIP → XML 파싱 → 회사명 매칭
     """
+    result = get_corp_info(company_name)
+    return result["corp_code"] if result else None
+
+
+def get_corp_info(company_name: str) -> dict | None:
+    """회사명으로 DART corp_code + 상장 여부 조회.
+
+    Returns:
+        {"corp_code": str, "stock_code": str|None, "is_listed": bool} or None
+    """
     key = _get_api_key()
     resp = httpx.get(f"{DART_BASE}/corpCode.xml", params={"crtfc_key": key}, timeout=30)
     resp.raise_for_status()
@@ -37,7 +47,12 @@ def get_corp_code(company_name: str) -> str | None:
     for corp in root.findall(".//list"):
         name = corp.findtext("corp_name", "")
         if company_name in name or name in company_name:
-            return corp.findtext("corp_code", "")
+            stock_code = (corp.findtext("stock_code") or "").strip()
+            return {
+                "corp_code": corp.findtext("corp_code", ""),
+                "stock_code": stock_code if stock_code else None,
+                "is_listed": bool(stock_code),
+            }
     return None
 
 

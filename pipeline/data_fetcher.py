@@ -25,8 +25,9 @@ class CompanyIdentity:
 
     def __repr__(self):
         if self.market == "KR":
-            return f"<{self.name} | KR | corp_code={self.corp_code}>"
-        return f"<{self.name} | US | ticker={self.ticker} | CIK={self.cik}>"
+            return f"<{self.name} | KR | {self.legal_status} | corp_code={self.corp_code}>"
+        status = f" | OTC" if self.legal_status == "OTC" else ""
+        return f"<{self.name} | US{status} | ticker={self.ticker} | CIK={self.cik}>"
 
 
 def _is_korean(text: str) -> bool:
@@ -41,6 +42,43 @@ def _is_likely_ticker(text: str) -> bool:
 
 class DataFetcher:
     """통합 데이터 수집기."""
+
+    def __init__(self):
+        self._cache: dict[str, object] = {}
+
+    def fetch_market_price(self, identity: CompanyIdentity) -> float | None:
+        """상장/OTC 기업 현재 주가 조회. 비상장이면 None 반환.
+
+        KR 상장: KRX / Yahoo Finance (.KS)
+        US 상장: Yahoo Finance
+        US OTC: Yahoo Finance (OTC 종목도 커버)
+        비상장: None (시장가 없음)
+        """
+        if identity.legal_status in ("비상장", "unlisted"):
+            return None
+
+        cache_key = f"price:{identity.market}:{identity.ticker or identity.name}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        price = None
+        try:
+            if identity.market == "US" and identity.ticker:
+                from . import yahoo_finance
+                info = yahoo_finance.get_stock_info(identity.ticker)
+                price = info.get("price", 0) if info else None
+            elif identity.market == "KR" and identity.ticker:
+                from . import yahoo_finance
+                # KRX ticker: yahoo finance에서 .KS 접미사 사용
+                kr_ticker = f"{identity.ticker}.KS"
+                info = yahoo_finance.get_stock_info(kr_ticker)
+                price = info.get("price", 0) if info else None
+        except Exception:
+            pass
+
+        if price:
+            self._cache[cache_key] = price
+        return price
 
     def identify(self, query: str) -> CompanyIdentity | None:
         """기업명/ticker → 시장 자동 판별 + 식별.
@@ -70,23 +108,26 @@ class DataFetcher:
         return self._identify_kr(query)
 
     def _identify_kr(self, query: str) -> CompanyIdentity | None:
-        """DART에서 한국 기업 검색."""
+        """DART에서 한국 기업 검색 + 상장 여부 판별."""
         try:
-            corp_code = dart_client.get_corp_code(query)
+            info = dart_client.get_corp_info(query)
         except Exception:
             return None
 
-        if not corp_code:
+        if not info:
             return None
 
+        legal_status = "상장" if info["is_listed"] else "비상장"
         return CompanyIdentity(
             name=query,
             market="KR",
-            corp_code=corp_code,
+            corp_code=info["corp_code"],
+            ticker=info.get("stock_code"),
+            legal_status=legal_status,
         )
 
     def _identify_us(self, query: str) -> CompanyIdentity | None:
-        """SEC EDGAR에서 미국 기업 검색."""
+        """SEC EDGAR에서 미국 기업 검색 + Yahoo Finance로 상장/OTC 구분."""
         try:
             results = edgar_client.search_company(query)
         except Exception:
@@ -96,12 +137,28 @@ class DataFetcher:
             return None
 
         best = results[0]
+        ticker = best["ticker"]
+
+        # Yahoo Finance로 거래소 확인 → 상장/OTC 자동 분류
+        legal_status = "상장"
+        if ticker:
+            try:
+                from . import yahoo_finance
+                info = yahoo_finance.get_stock_info(ticker)
+                if info:
+                    legal_status = yahoo_finance.classify_exchange(
+                        info.get("exchange", ""),
+                        info.get("exchange_code", ""),
+                    )
+            except Exception:
+                pass
+
         return CompanyIdentity(
             name=best["name"],
             market="US",
-            ticker=best["ticker"],
+            ticker=ticker,
             cik=best["cik"],
-            legal_status="상장",
+            legal_status=legal_status,
         )
 
     def fetch_financials(
@@ -180,10 +237,29 @@ class DataFetcher:
         return result
 
     def _fetch_kr_shares(self, identity: CompanyIdentity) -> dict:
-        """38.co.kr / KRX → 주식수."""
-        from . import market_data
-
+        """상장사: Yahoo Finance (.KS) → 비상장: 38.co.kr."""
         result = {"shares_total": 0, "shares_ordinary": 0}
+
+        # 상장사: Yahoo Finance 우선 (시간/비용 최소화)
+        if identity.legal_status in ("상장", "listed") and identity.ticker:
+            try:
+                from . import yahoo_finance
+                kr_ticker = f"{identity.ticker}.KS"
+                info = yahoo_finance.get_stock_info(kr_ticker)
+                if info and info.get("price"):
+                    result["price"] = info["price"]
+                    result["currency"] = "KRW"
+                summary = yahoo_finance.get_quote_summary(kr_ticker)
+                if summary and summary.get("shares_outstanding"):
+                    result["shares_total"] = summary["shares_outstanding"]
+                    result["shares_ordinary"] = summary["shares_outstanding"]
+                if result["shares_total"] > 0:
+                    return result
+            except Exception:
+                pass  # fallback to 38.co.kr
+
+        # 비상장 또는 상장 Yahoo 실패 시: 38.co.kr
+        from . import market_data
         info = market_data.get_38_company_info(identity.name)
         if info:
             result.update(info)

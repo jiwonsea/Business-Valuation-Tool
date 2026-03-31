@@ -39,7 +39,54 @@ def get_stock_info(ticker: str) -> dict | None:
         "currency": meta.get("currency", "USD"),
         "name": meta.get("shortName", ticker),
         "exchange": meta.get("exchangeName", ""),
+        "exchange_code": meta.get("exchange", ""),
     }
+
+
+# OTC Markets 거래소 코드 (Yahoo Finance exchangeName / exchange 기준)
+_OTC_EXCHANGES = {
+    # exchangeName 기준
+    "PNK",        # OTC Pink Sheets
+    "PK",         # OTC Pink
+    "OBB",        # OTC Bulletin Board
+    "OTC",        # OTC 일반
+    "NCM",        # NASDAQ Capital Market (일부 소형주이나 정규 거래소)
+    # exchange 코드 기준
+    "PNK",
+    "OBB",
+    "OQX",        # OTCQX
+    "OQB",        # OTCQB
+}
+
+# 주요 정규 거래소
+_MAJOR_EXCHANGES = {
+    "NYQ", "NYSE", "NMS", "NAS", "NASDAQ", "NGM",  # NYSE, NASDAQ
+    "ASE", "AMEX", "BTS", "BATS",                    # AMEX, BATS
+    "PCX", "ARCA", "NYSEArca",                        # NYSE Arca
+}
+
+
+def classify_exchange(exchange_name: str, exchange_code: str = "") -> str:
+    """Yahoo Finance 거래소 정보 → 상장 구분.
+
+    Returns:
+        "상장" — 주요 거래소 (NYSE, NASDAQ 등)
+        "OTC"  — 장외 거래소 (OTC Pink, OTCQX/QB, OTC BB)
+        "비상장" — 판별 불가
+    """
+    for val in (exchange_name, exchange_code):
+        upper = val.upper().strip()
+        if upper in _MAJOR_EXCHANGES:
+            return "상장"
+        if upper in _OTC_EXCHANGES:
+            return "OTC"
+        # 부분 매칭
+        if any(otc in upper for otc in ("OTC", "PINK", "BULLETIN")):
+            return "OTC"
+        if any(ex in upper for ex in ("NYSE", "NASDAQ", "BATS", "ARCA")):
+            return "상장"
+
+    return "비상장"
 
 
 def get_quote_summary(ticker: str) -> dict | None:

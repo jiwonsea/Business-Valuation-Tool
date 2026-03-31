@@ -1,5 +1,5 @@
-# NAV 테스트 프로필 — 가상 지주회사
-# industry: "지주" → method_selector가 NAV 자동 선택
+# NAV test profile — hypothetical holding company
+# industry: "지주" (holding co.) → method_selector auto-selects NAV
 
 company:
   name: "테스트지주 (NAV)"
@@ -59,7 +59,7 @@ wacc_params:
   eq_w: 56.7
 
 nav_params:
-  revaluation: 2000000  # 자회사 지분 재평가 (공정가치 - 장부가)
+  revaluation: 2000000  # Subsidiary stake revaluation (fair value - book value)
 
 scenarios:
   A:
@@ -71,7 +71,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
-    nav_discount: 10            # 지주할인 10% (IPO로 디스카운트 축소)
+    nav_discount: 10            # Holding co. discount 10% (reduced by IPO)
     desc: "주력 자회사 IPO 성공, 지분가치 공정가치 반영. 지주할인 축소"
     probability_rationale: "자회사 상장 예비심사 통과, 2025 하반기 상장 목표"
   B:
@@ -83,7 +83,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
-    nav_discount: 30            # 지주할인 30% (현행 수준)
+    nav_discount: 30            # Holding co. discount 30% (current level)
     desc: "기존 자회사 배당수익 안정적 수취, 지주 할인 지속"
     probability_rationale: "지주사 디스카운트 30-40% 수준 유지 전망"
   C:
@@ -95,7 +95,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
-    nav_discount: 45            # 지주할인 45% (실적 악화 + 심화된 디스카운트)
+    nav_discount: 45            # Holding co. discount 45% (earnings decline + deepened discount)
     desc: "주력 자회사 영업이익 감소, 배당 축소. 지주할인 심화"
     probability_rationale: "경기둔화에 따른 자회사 실적 하방 리스크"
 

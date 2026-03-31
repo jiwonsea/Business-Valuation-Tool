@@ -1,60 +1,60 @@
-# 비교 지표 목록과 해석
+# Comparison Metrics and Interpretation
 
-## 핵심 비교 지표
+## Core Comparison Metrics
 
-### 가치 지표
-| 지표 | 소스 | 비교 용도 |
-|------|------|----------|
-| `weighted_value` | ValuationResult | 확률가중 주당 가치 (최종 결론) |
-| `total_ev` | ValuationResult | Enterprise Value (자본구조 전 비교) |
-| `dcf.ev_dcf` | DCFResult | DCF 기업가치 |
-| `ddm.equity_per_share` | DDMValuationResult | DDM 주당 가치 (금융주) |
-| `rim.per_share` | RIMValuationResult | RIM 주당 가치 (금융주) |
-| `nav.per_share` | NAVResult | NAV 주당 가치 (지주사/리츠) |
+### Value Metrics
+| Metric | Source | Comparison Purpose |
+|--------|--------|-------------------|
+| `weighted_value` | ValuationResult | Probability-weighted per-share value (final conclusion) |
+| `total_ev` | ValuationResult | Enterprise Value (pre-capital structure comparison) |
+| `dcf.ev_dcf` | DCFResult | DCF enterprise value |
+| `ddm.equity_per_share` | DDMValuationResult | DDM per-share value (financials) |
+| `rim.per_share` | RIMValuationResult | RIM per-share value (financials) |
+| `nav.per_share` | NAVResult | NAV per-share value (holding/REIT) |
 
-### 멀티플 지표
-| 지표 | 해석 |
-|------|------|
-| EV/EBITDA | 영업가치 대비 (업종 비교 핵심) |
-| P/E | 순이익 대비 (적자 기업 불가) |
-| P/BV | 장부가 대비 (금융/자산주 핵심) |
-| EV/Revenue | 매출 대비 (적자 성장주 가능) |
+### Multiple Metrics
+| Metric | Interpretation |
+|--------|---------------|
+| EV/EBITDA | Relative to operating value (key for industry comparison) |
+| P/E | Relative to net income (not applicable for loss-making) |
+| P/BV | Relative to book value (key for financials/asset-heavy) |
+| EV/Revenue | Relative to revenue (works for loss-making growth companies) |
 
-### 수익성 지표 (프로필 `consolidated`에서 계산)
-| 지표 | 계산 |
-|------|------|
-| 영업이익률 | op / revenue |
-| EBITDA 마진 | (op + dep + amort) / revenue |
+### Profitability Metrics (Calculated from profile `consolidated`)
+| Metric | Calculation |
+|--------|------------|
+| Operating margin | op / revenue |
+| EBITDA margin | (op + dep + amort) / revenue |
 | ROE | net_income / equity |
-| D/E Ratio | de_ratio (직접 필드) |
+| D/E Ratio | de_ratio (direct field) |
 
-### WACC 구성요소
-| 지표 | 소스 |
-|------|------|
+### WACC Components
+| Metric | Source |
+|--------|--------|
 | WACC | wacc.wacc |
 | Ke | wacc.ke |
 | βL | wacc.bl |
-| Kd(세후) | wacc.kd_at |
+| Kd (after-tax) | wacc.kd_at |
 
-## 비교 테이블 형식
+## Comparison Table Formats
 
-### 횡단면 (Peer) 비교 예시
+### Cross-Sectional (Peer) Comparison Example
 ```
-| 기업 | EV/EBITDA | P/BV | ROE | WACC | 주당가치 |
-|------|-----------|------|-----|------|---------|
-| A사  | 8.0x      | 1.2x | 12% | 9.5% | 45,000  |
-| B사  | 6.5x      | 0.9x | 10% | 10.2%| 32,000  |
-```
-
-### 시계열 비교 예시
-```
-| 분석일 | WACC | EV | 주당가치 | 괴리율 |
-|--------|------|----|---------|--------|
-| 2025-06| 9.5% | 2.1조 | 45,000 | +15% |
-| 2025-12| 10.2%| 1.9조 | 38,000 | -5%  |
+| Company | EV/EBITDA | P/BV | ROE | WACC | Per-Share Value |
+|---------|-----------|------|-----|------|----------------|
+| Co. A   | 8.0x      | 1.2x | 12% | 9.5% | 45,000         |
+| Co. B   | 6.5x      | 0.9x | 10% | 10.2%| 32,000         |
 ```
 
-## DB 조회 함수
-- `list_valuations(company_name=, market=, limit=)` — 목록 조회
-- `get_valuation(valuation_id)` — 상세 (input_data, result_data JSONB 포함)
-- `list_profiles(company_name=)` — 프로필 목록
+### Time-Series Comparison Example
+```
+| Analysis Date | WACC | EV   | Per-Share Value | Gap Ratio |
+|--------------|------|------|----------------|-----------|
+| 2025-06      | 9.5% | 2.1T | 45,000         | +15%      |
+| 2025-12      | 10.2%| 1.9T | 38,000         | -5%       |
+```
+
+## DB Query Functions
+- `list_valuations(company_name=, market=, limit=)` — list query
+- `get_valuation(valuation_id)` — detail (includes input_data, result_data JSONB)
+- `list_profiles(company_name=)` — profile list

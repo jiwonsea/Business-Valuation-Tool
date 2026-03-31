@@ -117,8 +117,8 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.8
 
-# 교차검증 멀티플 (Trading Multiple — 현재 시장가 기반 역산)
-# Peer 기반 독립 멀티플로 교체 권장
+# Cross-validation multiples (Trading Multiple — reverse-calculated from current market price)
+# Recommend replacing with independent peer-based multiples
 pe_multiple: 27.8
 ev_revenue_multiple: 3.0
 pbv_multiple: 5.2

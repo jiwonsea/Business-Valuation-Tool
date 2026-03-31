@@ -1,5 +1,5 @@
-# KB금융지주 — DDM 밸류에이션 샘플 프로필
-# 금융업종: method_selector가 자동으로 DDM 선택
+# KB Financial Group — DDM valuation sample profile
+# Financial sector: method_selector auto-selects DDM
 
 company:
   name: "KB금융지주"
@@ -65,18 +65,18 @@ consolidated:
 wacc_params:
   rf: 3.50
   erp: 7.00
-  bu: 0.65          # Equity Beta (시장 관찰값, Hamada 미적용)
+  bu: 0.65          # Equity Beta (observed market value, Hamada not applied)
   de: 1542.9
   tax: 22.0
   kd_pre: 4.50
-  eq_w: 100.0        # 금융주: Ke = WACC (타인자본비용 별도 불적용)
-  is_financial: true  # Hamada 스킵 → bu를 βL로 직접 사용
+  eq_w: 100.0        # Financials: Ke = WACC (cost of debt not separately applied)
+  is_financial: true  # Skip Hamada → use bu directly as levered beta
 
-# DDM 파라미터 (핵심)
+# DDM parameters (core)
 valuation_method: "ddm"
 ddm_params:
-  dps: 3060.0            # 2025년 주당 배당금 (원)
-  dividend_growth: 4.0   # 배당 성장률 (%)
+  dps: 3060.0            # 2025 dividend per share (KRW)
+  dividend_growth: 4.0   # Dividend growth rate (%)
 
 scenarios:
   A:
@@ -126,15 +126,15 @@ dcf_params:
   nwc_to_rev_delta: 0.03
   terminal_growth: 2.0
 
-# RIM 파라미터 (DDM과 교차검증용)
+# RIM parameters (for cross-validation with DDM)
 rim_params:
-  roe_forecasts: [11.3, 11.0, 10.5, 10.0, 9.8]  # ROE 점진 안정화
+  roe_forecasts: [11.3, 11.0, 10.5, 10.0, 9.8]  # ROE gradual stabilization
   terminal_growth: 0.0
   payout_ratio: 30.0
 
-# 교차검증 멀티플
-pbv_multiple: 0.55      # 국내 은행지주 P/BV 평균
-pe_multiple: 8.5        # 국내 은행지주 P/E 평균
+# Cross-validation multiples
+pbv_multiple: 0.55      # Domestic bank holding co. average P/BV
+pe_multiple: 8.5        # Domestic bank holding co. average P/E
 
 cps_principal: 0
 cps_years: 0

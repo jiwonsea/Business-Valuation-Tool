@@ -1,5 +1,5 @@
-# KB금융지주 — RIM 밸류에이션 테스트 프로필
-# valuation_method: "rim" 명시 지정
+# KB Financial Group — RIM valuation test profile
+# valuation_method: "rim" explicitly specified
 
 company:
   name: "KB금융지주 (RIM)"
@@ -88,7 +88,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
-    rim_roe_adj: 1.5            # ROE +1.5%p (밸류업 → 자본효율 개선)
+    rim_roe_adj: 1.5            # ROE +1.5%p (value-up program → capital efficiency improvement)
     desc: "기업 밸류업 프로그램으로 주주환원율 40%+ 달성, 자사주 소각으로 ROE 상향"
     probability_rationale: "금융위 밸류업 가이드라인 발표(2025.3), KB 이사회 주주환원 정책 강화 결의"
   B:
@@ -100,7 +100,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
-    rim_roe_adj: 0.0            # 현행 ROE 유지
+    rim_roe_adj: 0.0            # Maintain current ROE
     desc: "기준금리 인하 영향으로 NIM 소폭 하락, 비이자이익 성장으로 보전"
     probability_rationale: "한은 기준금리 2.75% 동결, 하반기 1회 인하 컨센서스"
   C:
@@ -112,7 +112,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 378246886
-    rim_roe_adj: -2.0           # ROE -2.0%p (PF 충당금 → 수익성 하락)
+    rim_roe_adj: -2.0           # ROE -2.0%p (PF provisions → profitability decline)
     desc: "부동산 PF 추가 충당금, 가계부채 연체율 상승. ROE 8%대 하락"
     probability_rationale: "부동산 PF 구조조정 지연, 소비자 신용리스크 상승 뉴스 다수"
 

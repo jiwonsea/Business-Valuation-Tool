@@ -1,4 +1,4 @@
-"""Pipeline unit tests — 거래소 분류, CompanyIdentity, 스키마 모델 검증."""
+"""Pipeline unit tests — exchange classification, CompanyIdentity, schema model validation."""
 
 import pytest
 from pipeline.yahoo_finance import classify_exchange
@@ -19,7 +19,7 @@ from schemas.models import (
 # ═══════════════════════════════════════════════════════════
 
 class TestClassifyExchange:
-    """Yahoo Finance 거래소 코드 → 상장/OTC/비상장 분류."""
+    """Yahoo Finance exchange code -> listed/OTC/unlisted classification."""
 
     def test_nyse(self):
         assert classify_exchange("NYQ") == "상장"
@@ -59,7 +59,7 @@ class TestClassifyExchange:
         assert classify_exchange("pnk") == "OTC"
 
     def test_exchange_code_fallback(self):
-        """exchange_name이 빈 문자열이면 exchange_code로 판별."""
+        """Empty exchange_name falls back to exchange_code."""
         assert classify_exchange("", "PNK") == "OTC"
         assert classify_exchange("", "NYQ") == "상장"
 
@@ -90,7 +90,7 @@ class TestCompanyIdentity:
         assert ci.legal_status == "상장"
 
     def test_us_default_listed(self):
-        """US 기업은 기본값이 상장."""
+        """US companies default to listed."""
         ci = CompanyIdentity("Test", "US")
         assert ci.legal_status == "상장"
 
@@ -109,8 +109,8 @@ class TestHelpers:
         assert _is_likely_ticker("AAPL") is True
         assert _is_likely_ticker("MSFT") is True
         assert _is_likely_ticker("A") is True
-        assert _is_likely_ticker("ABCDEF") is False  # 6자 초과
-        assert _is_likely_ticker("aapl") is False  # 소문자
+        assert _is_likely_ticker("ABCDEF") is False  # exceeds 5 chars
+        assert _is_likely_ticker("aapl") is False  # lowercase
         assert _is_likely_ticker("123") is False
 
 

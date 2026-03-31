@@ -1,68 +1,68 @@
-# 시나리오 설계 패턴
+# Scenario Design Patterns
 
-## 확률 배분 규칙
-- 합계 = 정확히 100% (허용 오차 0.1%p)
-- Base Case를 가장 높은 확률로 (통상 40~60%)
-- 극단 시나리오(Bull/Bear)는 각각 15~30%
+## Probability Allocation Rules
+- Sum = exactly 100% (tolerance 0.1%p)
+- Base Case gets highest probability (typically 40~60%)
+- Extreme scenarios (Bull/Bear) each 15~30%
 
-## 상장사 패턴
+## Listed Company Pattern
 ```yaml
 scenarios:
-  Base:   {prob: 50, ipo: "상장", dlom: 0, shares: <총발행주식수>}
-  Bull:   {prob: 25, ipo: "상장", dlom: 0, shares: <총발행주식수>}
-  Bear:   {prob: 25, ipo: "상장", dlom: 0, shares: <총발행주식수>}
+  Base:   {prob: 50, ipo: "상장", dlom: 0, shares: <total_shares>}
+  Bull:   {prob: 25, ipo: "상장", dlom: 0, shares: <total_shares>}
+  Bear:   {prob: 25, ipo: "상장", dlom: 0, shares: <total_shares>}
 ```
-- 상장사는 `dlom: 0` (유동성 할인 없음)
-- `shares`는 모든 시나리오 동일 (총발행주식수)
-- 시나리오 차이: 멀티플, 성장률 가정 (별도 프로필로 분리 or desc에 기술)
+- Listed companies: `dlom: 0` (no liquidity discount)
+- `shares` is the same across all scenarios (total issued shares)
+- Scenario differences: multiples, growth rate assumptions (separate profile or described in desc)
 
-## 비상장사 패턴 (CPS/RCPS 있는 경우)
+## Unlisted Company Pattern (With CPS/RCPS)
 ```yaml
 scenarios:
-  A:  # IPO 성공
+  A:  # IPO success
     prob: 20
     ipo: "성공"
     dlom: 0
-    shares: <총발행주식수>       # CPS 전환 포함
-    cps_repay: 0                 # 전환되므로 상환 없음
-  B:  # IPO 불발 + FI 우호
+    shares: <total_shares>       # Including CPS conversion
+    cps_repay: 0                 # Converted, so no repayment
+  B:  # IPO failure + FI friendly
     prob: 45
     ipo: "불발"
-    irr: 5.0                    # FI 요구 수익률
+    irr: 5.0                    # FI required return
     dlom: 20
-    shares: <보통주만>           # CPS 상환 소멸
-    cps_repay: null              # null = IRR 기반 자동 계산
+    shares: <ordinary_only>      # CPS redeemed and extinguished
+    cps_repay: null              # null = auto-calculate based on IRR
     rcps_repay: 490000
-  C:  # IPO 불발 + FI 분쟁
+  C:  # IPO failure + FI dispute
     prob: 35
     ipo: "불발"
     irr: 12.0
     dlom: 25
-    shares: <보통주만>
+    shares: <ordinary_only>
     cps_repay: null
     rcps_repay: 575000
 ```
 
-### 핵심 주의사항
-- IPO 성공 시: `shares` = 총발행주식수 (CPS 전환), `cps_repay: 0`
-- IPO 불발 시: `shares` = 보통주만 (CPS 소멸), `cps_repay: null` (IRR 기반 자동계산) 또는 직접 금액
-- `irr` 필드: IPO 불발 시나리오에서만 사용. FI의 요구 수익률.
-- `cps_repay: null` vs `cps_repay: 0`: null=IRR 기반 자동계산, 0=상환 없음
+### Key Notes
+- IPO success: `shares` = total issued shares (CPS converted), `cps_repay: 0`
+- IPO failure: `shares` = ordinary only (CPS extinguished), `cps_repay: null` (IRR-based auto-calc) or direct amount
+- `irr` field: used only in IPO failure scenarios. FI's required return rate.
+- `cps_repay: null` vs `cps_repay: 0`: null = IRR-based auto-calc, 0 = no repayment
 
-## 비상장사 패턴 (CPS 없는 단순 구조)
+## Unlisted Company Pattern (Simple Structure, No CPS)
 ```yaml
 scenarios:
-  Base:  {prob: 50, ipo: "N/A", dlom: 20, shares: <총발행주식수>}
-  Bull:  {prob: 25, ipo: "N/A", dlom: 15, shares: <총발행주식수>}
-  Bear:  {prob: 25, ipo: "N/A", dlom: 25, shares: <총발행주식수>}
+  Base:  {prob: 50, ipo: "N/A", dlom: 20, shares: <total_shares>}
+  Bull:  {prob: 25, ipo: "N/A", dlom: 15, shares: <total_shares>}
+  Bear:  {prob: 25, ipo: "N/A", dlom: 25, shares: <total_shares>}
 ```
-- `dlom`: 비상장 유동성 할인 (통상 15~30%)
-- Bull은 DLOM 낮게, Bear는 DLOM 높게
+- `dlom`: liquidity discount for unlisted (typically 15~30%)
+- Bull has lower DLOM, Bear has higher DLOM
 
-## DLOM 범위 참고
-| 상황 | DLOM 범위 |
-|------|----------|
-| 상장사 | 0% |
-| 비상장 (IPO 가능성 높음) | 10~15% |
-| 비상장 (일반) | 15~25% |
-| 비상장 (유동성 매우 낮음) | 25~35% |
+## DLOM Range Reference
+| Situation | DLOM Range |
+|-----------|-----------|
+| Listed | 0% |
+| Unlisted (high IPO likelihood) | 10~15% |
+| Unlisted (general) | 15~25% |
+| Unlisted (very low liquidity) | 25~35% |

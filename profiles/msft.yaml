@@ -1,5 +1,5 @@
-# Microsoft Corp — DCF 밸류에이션 프로필
-# Source: SEC EDGAR (FY2023-2025) | 시장: US
+# Microsoft Corp — DCF valuation profile
+# Source: SEC EDGAR (FY2023-2025) | Market: US
 
 company:
   name: "MICROSOFT CORP"
@@ -16,7 +16,7 @@ company:
   analysis_date: "2026-03-31"
   industry: "software"
 
-# 3개 사업부문 (10-K 기준)
+# 3 business segments (per 10-K)
 segments:
   PROD:
     name: "Productivity & Business"
@@ -83,11 +83,11 @@ consolidated:
 wacc_params:
   rf: 4.25          # US 10Y Treasury
   erp: 5.50         # Damodaran US ERP
-  bu: 0.90          # Unlevered Beta (소프트웨어 평균)
-  de: 1.0           # Market D/E (시장가 기준: Net Debt $26.6B / Market Cap $2.67T)
-  tax: 18.0         # MSFT 유효세율 (~18%, 글로벌 최저한세 반영)
+  bu: 0.90          # Unlevered Beta (software average)
+  de: 1.0           # Market D/E (market value basis: Net Debt $26.6B / Market Cap $2.67T)
+  tax: 18.0         # MSFT effective tax rate (~18%, reflecting global minimum tax)
   kd_pre: 4.80
-  eq_w: 99.0        # 시장가 Equity 비중 (Market Cap >> Net Debt)
+  eq_w: 99.0        # Market-value equity weight (Market Cap >> Net Debt)
 
 scenarios:
   Base:
@@ -125,14 +125,14 @@ scenarios:
     desc: "클라우드 경쟁 심화, AI 투자 대비 수익화 지연"
 
 dcf_params:
-  ebitda_growth_rates: [0.18, 0.15, 0.12, 0.10, 0.08]  # AI Copilot/Azure 수익화 반영
-  tax_rate: 18.0       # 유효세율
-  capex_to_da: 1.50    # Capex/D&A (AI 투자 피크 이후 정상화 가정)
-  nwc_to_rev_delta: 0.02  # MSFT 낮은 NWC 변동성
-  terminal_growth: 3.0  # US GDP + 테크 프리미엄
+  ebitda_growth_rates: [0.18, 0.15, 0.12, 0.10, 0.08]  # Reflects AI Copilot/Azure monetization
+  tax_rate: 18.0       # Effective tax rate
+  capex_to_da: 1.50    # Capex/D&A (assumes normalization after AI investment peak)
+  nwc_to_rev_delta: 0.02  # MSFT low NWC volatility
+  terminal_growth: 3.0  # US GDP + tech premium
 
-# 교차검증 멀티플
-ev_revenue_multiple: 13.0   # 빅테크 평균 EV/Revenue
+# Cross-validation multiples
+ev_revenue_multiple: 13.0   # Big tech average EV/Revenue
 pe_multiple: 32.0            # Forward P/E
 pbv_multiple: 11.0           # P/BV
 

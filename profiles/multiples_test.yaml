@@ -1,6 +1,6 @@
-# 현대자동차 — Multiples 밸류에이션 테스트 프로필
-# industry: "자동차" (성숙업종) + has_peers=True → Multiples 자동 선택
-# net_debt: 자동차 사업 only (금융자회사 현대캐피탈 부채 제외)
+# Hyundai Motor — Multiples valuation test profile
+# industry: "자동차" (automobile, mature sector) + has_peers=True → Multiples auto-selected
+# net_debt: auto business only (excludes Hyundai Capital financial subsidiary debt)
 
 company:
   name: "현대자동차 (Multiples)"
@@ -47,7 +47,7 @@ consolidated:
     dep: 8500000
     amort: 1500000
     gross_borr: 25000000
-    net_borr: 12000000    # 자동차 사업만 (현대캐피탈 금융부채 제외)
+    net_borr: 12000000    # Auto business only (excludes Hyundai Capital financial debt)
     de_ratio: 180.0
 
 wacc_params:
@@ -71,7 +71,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 211531506
-    ev_multiple: 6.0           # EV/EBITDA 6.0x (글로벌 OEM re-rating)
+    ev_multiple: 6.0           # EV/EBITDA 6.0x (global OEM re-rating)
     desc: "아이오닉 판매 호조, 조지아 공장 IRA 보조금 확정. 전기차 부문 흑자전환으로 멀티플 리레이팅"
     probability_rationale: "IRA 최종규칙 확정(2025.5), 조지아 메타플랜트 가동 시작"
   B:
@@ -83,7 +83,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 211531506
-    ev_multiple: 5.0           # 현행 EV/EBITDA 5.0x 유지
+    ev_multiple: 5.0           # Maintain current EV/EBITDA 5.0x
     desc: "내연기관 수익성 유지, EV 전환 점진적. 인도시장 점유율 확대"
     probability_rationale: "2025 글로벌 자동차 수요 완만한 성장세, 인도 공장 증설 효과"
   C:
@@ -95,7 +95,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 211531506
-    ev_multiple: 3.5           # EV/EBITDA 3.5x (관세 디스카운트)
+    ev_multiple: 3.5           # EV/EBITDA 3.5x (tariff discount)
     desc: "미국 관세 25% 부과, EV 보조금 축소. 원자재 가격 상승으로 수익성 압박"
     probability_rationale: "트럼프 관세 정책 불확실성, EU 탄소국경세 시행"
 
@@ -111,7 +111,7 @@ ev_revenue_multiple: 0.5
 pbv_multiple: 0.7
 cps_principal: 0
 cps_years: 0
-net_debt: 12000000       # 자동차 사업만 (12조원)
+net_debt: 12000000       # Auto business only (KRW 12 trillion)
 eco_frontier: 0
 base_year: 2025
 mc_enabled: true

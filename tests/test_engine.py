@@ -21,10 +21,13 @@ from engine.rim import calc_rim
 from engine.multiples import calc_ps, calc_pffo
 from engine.market_comparison import compare_to_market
 from engine.nav import calc_nav
-from engine.growth import linear_fade, calc_ebitda_cagr, generate_growth_rates
+from engine.growth import linear_fade, calc_ebitda_growth, generate_growth_rates
+from engine.method_selector import classify_industry
+from engine.drivers import resolve_drivers
+from schemas.models import NewsDriver
 
 
-# ── SK에코플랜트 기준 데이터 ──
+# ── SK Ecoplant reference data ──
 
 SK_SEG_DATA_2025 = {
     "HI":  {"revenue": 5_158_561, "gross_profit": 271_510, "op":  74_208, "assets":  511_209},
@@ -78,7 +81,7 @@ class TestUnits:
         assert per_share(-100, 1_000_000, 50_000_000) == 0
 
     def test_per_share_억원_unit(self):
-        """억원 단위: 1억원 equity, 1000만주"""
+        """100M KRW unit: 1 (=100M KRW) equity, 10M shares"""
         assert per_share(1, 100_000_000, 10_000_000) == 10
 
 
@@ -108,7 +111,7 @@ class TestMethodSelector:
         assert suggest_method(1, industry="유통", has_peers=True) == "multiples"
 
     def test_mature_without_peers_dcf(self):
-        """Peer 없으면 성숙 업종도 DCF fallback"""
+        """No peers available: mature industry falls back to DCF"""
         assert suggest_method(1, industry="유통", has_peers=False) == "dcf_primary"
 
 
@@ -123,7 +126,7 @@ class TestDDM:
         assert r.equity_per_share == 14_714
 
     def test_ddm_growth_equals_ke(self):
-        """ke <= growth → ValueError"""
+        """ke <= growth raises ValueError"""
         import pytest
         with pytest.raises(ValueError):
             calc_ddm(dps=1000, growth=10.0, ke=10.0)
@@ -229,16 +232,16 @@ class TestScenario:
         )
         r = calc_scenario(sc, ev, SK_NET_DEBT, SK_ECO_FRONTIER, SK_CPS_PRINCIPAL, SK_CPS_YEARS)
         assert r.post_dlom > 0
-        assert r.post_dlom < r.pre_dlom  # DLOM 적용
+        assert r.post_dlom < r.pre_dlom  # DLOM applied
 
     def test_scenario_with_different_unit_multiplier(self):
-        """억원 단위에서 주당가치가 올바른지"""
+        """Verify per-share value is correct in 100M KRW unit"""
         sc = ScenarioParams(
             code="A", name="Test", prob=100, ipo="N/A",
             dlom=0, shares=10_000_000,
         )
         r = calc_scenario(sc, 100, 0, 0, 0, 0, unit_multiplier=100_000_000)
-        # 100억원 equity / 1000만주 = 1,000원/주
+        # 10B KRW equity / 10M shares = 1,000 KRW/share
         assert r.pre_dlom == 1_000
 
     def test_negative_equity(self):
@@ -307,7 +310,7 @@ class TestSensitivity:
         assert len(rows) == len(hi_r) * len(alc_r)
 
     def test_multiples_auto_segment_selection(self):
-        """row_seg/col_seg 미지정 → 자동 선택"""
+        """row_seg/col_seg not specified: auto-selects segments"""
         alloc = allocate_da(SK_SEG_DATA_2025, SK_DA_2025)
         rows, _, _ = sensitivity_multiples(
             alloc, SK_MULTIPLES, SK_NET_DEBT, SK_ECO_FRONTIER, SK_SHARES_TOTAL,
@@ -467,9 +470,9 @@ class TestNAV:
             revaluation=0,
             unit_multiplier=1_000_000,
         )
-        # NAV = 10,000 - 4,000 = 6,000 (백만원)
+        # NAV = 10,000 - 4,000 = 6,000 (millions KRW)
         assert r.nav == 6_000
-        # 주당 = 6,000 * 1,000,000 / 1,000,000 = 6,000원
+        # per share = 6,000 * 1,000,000 / 1,000,000 = 6,000 KRW
         assert r.per_share == 6_000
 
     def test_nav_with_revaluation(self):
@@ -480,13 +483,13 @@ class TestNAV:
             revaluation=2_000,
             unit_multiplier=1_000_000,
         )
-        # 조정자산 = 10,000 + 2,000 = 12,000
+        # adjusted assets = 10,000 + 2,000 = 12,000
         assert r.adjusted_assets == 12_000
         assert r.nav == 8_000
         assert r.per_share == 8_000
 
     def test_nav_negative(self):
-        """부채 > 자산이면 NAV < 0 → per_share = 0"""
+        """Liabilities > assets: NAV < 0, per_share = 0"""
         r = calc_nav(
             total_assets=3_000,
             total_liabilities=5_000,
@@ -499,14 +502,14 @@ class TestNAV:
 
 class TestFullPipeline:
     def test_sk_ecoplant_profile(self):
-        """End-to-end: YAML 로드 → SOTP 밸류에이션 → 유효한 결과"""
+        """End-to-end: YAML load -> SOTP valuation -> valid result"""
         from valuation_runner import load_profile, run_valuation
 
         profile_path = str(Path(__file__).parent.parent / "profiles" / "sk_ecoplant.yaml")
         vi = load_profile(profile_path)
         result = run_valuation(vi)
 
-        # 구조적 검증 (고정 값 대신)
+        # Structural verification (instead of fixed values)
         assert result.primary_method == "sotp"
         assert result.wacc.wacc == 8.50
         assert 6_300_000 < result.total_ev < 6_400_000
@@ -516,7 +519,7 @@ class TestFullPipeline:
         assert result.dcf.ev_dcf > 0
 
     def test_sk_ecoplant_mc(self):
-        """SK에코플랜트 Monte Carlo 통합"""
+        """SK Ecoplant Monte Carlo integration"""
         from valuation_runner import load_profile, run_valuation
 
         profile_path = str(Path(__file__).parent.parent / "profiles" / "sk_ecoplant.yaml")
@@ -529,7 +532,7 @@ class TestFullPipeline:
         assert mc.p5 < mc.median < mc.p95
 
     def test_ddm_kb_financial(self):
-        """KB금융지주 DDM 통합 테스트"""
+        """KB Financial Group DDM integration test"""
         from valuation_runner import load_profile, run_valuation
 
         profile_path = str(Path(__file__).parent.parent / "profiles" / "kb_financial.yaml")
@@ -541,24 +544,24 @@ class TestFullPipeline:
         assert result.ddm.equity_per_share > 0
         assert result.ddm.dps == 3060.0
         assert result.ddm.growth == 4.0
-        # DDM + 시나리오별 성장률 → weighted_value 양수
+        # DDM + per-scenario growth rates -> positive weighted_value
         assert result.weighted_value > 0
-        # 시나리오별 DDM 값이 달라야 함 (ddm_growth 적용)
+        # Per-scenario DDM values should differ (ddm_growth applied)
         base_ps = result.scenarios["B"].post_dlom
         bull_ps = result.scenarios["A"].post_dlom
         bear_ps = result.scenarios["C"].post_dlom
         assert bull_ps > base_ps > bear_ps
-        # 금융주는 DCF 제외, P/E·P/BV 교차검증만 존재
+        # Financial stocks exclude DCF; only P/E and P/BV cross-validation
         assert result.dcf is None
         assert len(result.cross_validations) >= 2
 
 
 # ═══════════════════════════════════════════════════════════
-# Validation Tests (입력 검증)
+# Validation Tests (Input Validation)
 # ═══════════════════════════════════════════════════════════
 
 class TestValidation:
-    """Pydantic 검증 및 engine 입력 에러 테스트."""
+    """Pydantic validation and engine input error tests."""
 
     def test_shares_total_must_be_positive(self):
         import pytest
@@ -593,7 +596,7 @@ class TestValidation:
             WACCParams(rf=3.5, erp=7.0, bu=0.7, de=100, tax=22, kd_pre=5, eq_w=0)
 
     def test_dcf_wacc_lte_terminal_growth(self):
-        """WACC <= terminal_growth → DCF ValueError."""
+        """WACC <= terminal_growth raises DCF ValueError."""
         import pytest
         params = DCFParams(
             ebitda_growth_rates=[0.05, 0.04, 0.03],
@@ -607,7 +610,7 @@ class TestValidation:
             )
 
     def test_scenario_prob_sum_not_100(self):
-        """시나리오 확률 합 ≠ 100% → ValuationInput 에러."""
+        """Scenario probability sum != 100% raises ValuationInput error."""
         import pytest
         from schemas.models import ValuationInput, CompanyProfile
         with pytest.raises(Exception, match="확률 합계"):
@@ -629,7 +632,7 @@ class TestValidation:
             )
 
     def test_base_year_not_in_consolidated(self):
-        """base_year가 consolidated에 없으면 에러."""
+        """base_year not in consolidated raises error."""
         import pytest
         from schemas.models import ValuationInput, CompanyProfile
         with pytest.raises(Exception, match="base_year"):
@@ -650,7 +653,7 @@ class TestValidation:
             )
 
     def test_negative_multiple_rejected(self):
-        """음수 멀티플 → ValuationInput 에러."""
+        """Negative multiple raises ValuationInput error."""
         import pytest
         from schemas.models import ValuationInput, CompanyProfile
         with pytest.raises(Exception, match="멀티플.*음수"):
@@ -676,10 +679,10 @@ class TestValidation:
 # ═══════════════════════════════════════════════════════════
 
 class TestMonteCarloEnhanced:
-    """Monte Carlo tg/wacc 샘플링 반영 테스트."""
+    """Monte Carlo tg/wacc sampling integration tests."""
 
     def test_tg_variation_affects_distribution(self):
-        """tg_std > 0일 때, DCF TV 정보를 넘기면 분포 폭이 달라져야 한다."""
+        """When tg_std > 0, providing DCF TV info should change the distribution width."""
         mc_params = MCInput(
             multiple_params={"A": (8.0, 1.2)},
             wacc_mean=9.0, wacc_std=1.0,
@@ -689,7 +692,7 @@ class TestMonteCarloEnhanced:
         )
         seg_ebitdas = {"A": 500_000}
 
-        # DCF 정보 없이
+        # Without DCF info
         r1 = run_monte_carlo(
             mc_params, seg_ebitdas,
             net_debt=100_000, eco_frontier=0,
@@ -698,7 +701,7 @@ class TestMonteCarloEnhanced:
             unit_multiplier=1_000_000,
         )
 
-        # DCF 정보 포함 → WACC/TG 변동이 EV에 반영됨
+        # With DCF info: WACC/TG variation reflected in EV
         r2 = run_monte_carlo(
             mc_params, seg_ebitdas,
             net_debt=100_000, eco_frontier=0,
@@ -711,11 +714,11 @@ class TestMonteCarloEnhanced:
             dcf_n_periods=5,
         )
 
-        # DCF TV 변동이 반영되면 분포가 달라져야 함
+        # Distribution should differ when DCF TV variation is reflected
         assert r2.std != r1.std or r2.mean != r1.mean
 
     def test_mc_basic_stats_valid(self):
-        """MC 기본 통계가 정합성을 만족해야 한다."""
+        """MC basic statistics must satisfy consistency constraints."""
         mc_params = MCInput(
             multiple_params={"A": (10.0, 2.0)},
             wacc_mean=9.0, wacc_std=1.0,
@@ -740,7 +743,7 @@ class TestMonteCarloEnhanced:
 # ═══════════════════════════════════════════════════════════
 
 class TestLoadProfile:
-    """YAML 프로필 로딩 테스트."""
+    """YAML profile loading tests."""
 
     def test_load_sk_ecoplant(self):
         from valuation_runner import load_profile
@@ -781,7 +784,7 @@ class TestLoadProfile:
 
 class TestRIM:
     def test_basic_rim(self):
-        """BV=100, ROE=12%, Ke=10% → 양의 잔여이익 → 주당가치 > BV"""
+        """BV=100, ROE=12%, Ke=10%: positive residual income, per-share > BV"""
         r = calc_rim(
             book_value=100_000,
             roe_forecasts=[12.0, 11.5, 11.0, 10.5, 10.0],
@@ -790,14 +793,14 @@ class TestRIM:
             shares=1_000_000,
             unit_multiplier=1_000_000,
         )
-        assert r.equity_value > 100_000  # BV + 양의 RI
+        assert r.equity_value > 100_000  # BV + positive RI
         assert r.per_share > 0
         assert len(r.projections) == 5
-        # 첫 해 RI = BV * (ROE - Ke) = 100,000 * 0.02 = 2,000
+        # Year 1 RI = BV * (ROE - Ke) = 100,000 * 0.02 = 2,000
         assert r.projections[0].ri == 2_000
 
     def test_rim_roe_equals_ke(self):
-        """ROE = Ke → RI = 0 → 주당가치 ≈ BV"""
+        """ROE = Ke: RI = 0, per-share value equals BV"""
         r = calc_rim(
             book_value=50_000,
             roe_forecasts=[10.0, 10.0, 10.0],
@@ -805,10 +808,10 @@ class TestRIM:
             shares=1_000_000,
             unit_multiplier=1_000_000,
         )
-        assert r.equity_value == 50_000  # BV만 (RI=0)
+        assert r.equity_value == 50_000  # BV only (RI=0)
 
     def test_rim_roe_below_ke(self):
-        """ROE < Ke → 음의 잔여이익 → 주당가치 < BV"""
+        """ROE < Ke: negative residual income, per-share < BV"""
         r = calc_rim(
             book_value=50_000,
             roe_forecasts=[8.0, 8.0, 8.0],
@@ -819,7 +822,7 @@ class TestRIM:
         assert r.equity_value < 50_000
 
     def test_rim_ke_lte_growth_raises(self):
-        """ke <= terminal_growth → ValueError"""
+        """ke <= terminal_growth raises ValueError"""
         import pytest
         with pytest.raises(ValueError):
             calc_rim(
@@ -831,7 +834,7 @@ class TestRIM:
             )
 
     def test_rim_with_payout(self):
-        """배당성향 > 0 → BV 증가 속도 둔화"""
+        """Payout ratio > 0 slows BV growth"""
         r_no_payout = calc_rim(
             book_value=100_000,
             roe_forecasts=[12.0, 12.0, 12.0],
@@ -848,7 +851,7 @@ class TestRIM:
             unit_multiplier=1_000_000,
             payout_ratio=50.0,
         )
-        # 배당하면 BV 재투자 줄어 → 향후 RI 감소 → equity_value 낮아짐
+        # Dividends reduce BV reinvestment -> lower future RI -> lower equity_value
         assert r_with_payout.equity_value < r_no_payout.equity_value
 
 
@@ -858,7 +861,7 @@ class TestRIM:
 
 class TestDDMTotalPayout:
     def test_ddm_with_buyback(self):
-        """자사주매입 포함 → 주당가치 증가"""
+        """Including buyback increases per-share value"""
         r_div_only = calc_ddm(dps=1000, growth=3.0, ke=10.0)
         r_total = calc_ddm(dps=1000, growth=3.0, ke=10.0, buyback_per_share=500)
         assert r_total.equity_per_share > r_div_only.equity_per_share
@@ -866,7 +869,7 @@ class TestDDMTotalPayout:
         assert r_total.buyback_per_share == 500
 
     def test_ddm_buyback_zero_backward_compat(self):
-        """buyback=0 → 기존 DDM과 동일"""
+        """buyback=0: identical to standard DDM"""
         r = calc_ddm(dps=1000, growth=3.0, ke=10.0, buyback_per_share=0)
         assert r.equity_per_share == 14_714
         assert r.total_payout == 1000
@@ -898,7 +901,7 @@ class TestNewMultiples:
         assert r.equity_value == 0
 
     def test_cross_validate_includes_ps_pffo(self):
-        """P/S, P/FFO가 교차검증에 포함되는지"""
+        """P/S and P/FFO included in cross-validation"""
         results = cross_validate(
             revenue=500_000, ebitda=100_000, net_income=50_000,
             book_value=300_000, net_debt=100_000, shares=1_000_000,
@@ -917,33 +920,33 @@ class TestNewMultiples:
 
 class TestMethodSelectorFinancial:
     def test_financial_default_ddm(self):
-        """금융주, ROE/Ke 미제공 → DDM (기본)"""
+        """Financial stock, ROE/Ke not provided: defaults to DDM"""
         assert suggest_method(1, industry="은행") == "ddm"
 
     def test_financial_roe_spread_high_rim(self):
-        """금융주, |ROE - Ke| > 2%p → RIM 추천"""
+        """Financial stock, |ROE - Ke| > 2%p: recommends RIM"""
         assert suggest_method(1, industry="은행", roe=15.0, ke=10.0) == "rim"
 
     def test_financial_roe_spread_low_ddm(self):
-        """금융주, |ROE - Ke| <= 2%p → DDM"""
+        """Financial stock, |ROE - Ke| <= 2%p: stays DDM"""
         assert suggest_method(1, industry="은행", roe=11.0, ke=10.0) == "ddm"
 
     def test_financial_rim_params_only(self):
-        """RIM 파라미터만 있으면 → RIM"""
+        """Only RIM params available: selects RIM"""
         assert suggest_method(1, industry="보험", has_rim_params=True) == "rim"
 
     def test_financial_ddm_params_only(self):
-        """DDM 파라미터만 있으면 → DDM"""
+        """Only DDM params available: selects DDM"""
         assert suggest_method(1, industry="보험", has_ddm_params=True) == "ddm"
 
     def test_reit_nav(self):
-        """리츠 → NAV"""
+        """REIT -> NAV"""
         assert suggest_method(1, industry="리츠") == "nav"
         assert suggest_method(1, industry="REIT") == "nav"
         assert suggest_method(1, industry="real estate") == "nav"
 
     def test_holding_nav(self):
-        """지주사 → NAV"""
+        """Holding company -> NAV"""
         assert suggest_method(1, industry="지주") == "nav"
 
 
@@ -956,7 +959,7 @@ class TestMacroData:
         from pipeline.macro_data import get_terminal_growth
         us_tg = get_terminal_growth("US")
         kr_tg = get_terminal_growth("KR")
-        assert 1.5 <= us_tg <= 4.0  # 합리적 범위
+        assert 1.5 <= us_tg <= 4.0  # reasonable range
         assert 1.0 <= kr_tg <= 3.0
 
     def test_effective_tax_rate(self):
@@ -967,7 +970,7 @@ class TestMacroData:
         }
         rate = calc_effective_tax_rate(financials)
         assert rate is not None
-        assert 20 <= rate <= 23  # 22% 근처
+        assert 20 <= rate <= 23  # around 22%
 
     def test_effective_tax_rate_no_data(self):
         from pipeline.macro_data import calc_effective_tax_rate
@@ -981,7 +984,7 @@ class TestMacroData:
 
 class TestRIMEnhanced:
     def test_terminal_growth_increases_value(self):
-        """영구성장률 > 0 → equity_value 증가"""
+        """Terminal growth > 0 increases equity_value"""
         r_zero_g = calc_rim(
             book_value=100_000, roe_forecasts=[12.0, 12.0, 12.0],
             ke=10.0, terminal_growth=0.0, shares=1_000_000,
@@ -995,7 +998,7 @@ class TestRIMEnhanced:
         assert r_pos_g.equity_value > r_zero_g.equity_value
 
     def test_bv_accumulation_clean_surplus(self):
-        """배당=0 → BV 매기 NI만큼 증가 (clean surplus)"""
+        """Payout=0: BV grows by NI each period (clean surplus)"""
         r = calc_rim(
             book_value=100_000, roe_forecasts=[10.0, 10.0],
             ke=10.0, shares=1, unit_multiplier=1,
@@ -1004,7 +1007,7 @@ class TestRIMEnhanced:
         assert r.projections[1].bv == 110_000
 
     def test_bv_accumulation_with_payout(self):
-        """배당성향 40% → BV에 NI의 60%만 유보"""
+        """Payout ratio 40%: only 60% of NI retained in BV"""
         r = calc_rim(
             book_value=100_000, roe_forecasts=[10.0, 10.0],
             ke=8.0, shares=1, unit_multiplier=1, payout_ratio=40.0,
@@ -1021,14 +1024,14 @@ class TestRIMEnhanced:
 
 class TestNAVEnhanced:
     def test_large_revaluation(self):
-        """큰 재평가 조정 → per_share 비례 증가"""
+        """Large revaluation adjustment proportionally increases per_share"""
         r1 = calc_nav(10_000, 4_000, 1_000_000, revaluation=0, unit_multiplier=1_000_000)
         r2 = calc_nav(10_000, 4_000, 1_000_000, revaluation=10_000, unit_multiplier=1_000_000)
         assert r2.per_share > r1.per_share
         assert r2.nav == 16_000  # 10,000 + 10,000 - 4,000
 
     def test_negative_revaluation(self):
-        """음의 재평가 → NAV 감소"""
+        """Negative revaluation decreases NAV"""
         r = calc_nav(10_000, 4_000, 1_000_000, revaluation=-3_000, unit_multiplier=1_000_000)
         assert r.adjusted_assets == 7_000
         assert r.nav == 3_000
@@ -1040,9 +1043,9 @@ class TestNAVEnhanced:
 
 class TestMonteCarloEdgeCases:
     def test_negative_equity_clamped_to_zero(self):
-        """claims > EV → 음수 주당가치는 0으로 clip"""
+        """claims > EV: negative per-share value clipped to 0"""
         mc = MCInput(
-            multiple_params={"A": (2.0, 0.1)},  # 낮은 멀티플
+            multiple_params={"A": (2.0, 0.1)},  # low multiple
             wacc_mean=8.0, wacc_std=0.5,
             dlom_mean=0, dlom_std=0,
             tg_mean=2.0, tg_std=0.3,
@@ -1058,11 +1061,11 @@ class TestMonteCarloEdgeCases:
         assert r.min_val >= 0
 
     def test_dlom_clipped_to_50(self):
-        """DLOM 평균 45%, std 10% → 50% 상한 clip 동작"""
+        """DLOM mean 45%, std 10%: 50% upper-bound clipping"""
         mc = MCInput(
             multiple_params={"A": (10.0, 0.5)},
             wacc_mean=8.0, wacc_std=0.5,
-            dlom_mean=45.0, dlom_std=10.0,  # 상당수가 50% 초과
+            dlom_mean=45.0, dlom_std=10.0,  # many samples exceed 50%
             tg_mean=2.0, tg_std=0.3,
             n_sims=5000, seed=42,
         )
@@ -1073,12 +1076,12 @@ class TestMonteCarloEdgeCases:
             rcps_repay=0, buyback=0, shares=50_000_000,
             unit_multiplier=1_000_000,
         )
-        # DLOM 50% 상한이 적용되므로 주당가치 > 0
+        # DLOM capped at 50%, so per-share value > 0
         assert r.mean > 0
         assert r.p5 >= 0
 
     def test_histogram_generated(self):
-        """시뮬레이션 후 히스토그램 bin/count 생성 확인"""
+        """Histogram bins/counts generated after simulation"""
         mc = MCInput(
             multiple_params={"A": (10.0, 1.5)},
             wacc_mean=9.0, wacc_std=1.0,
@@ -1105,10 +1108,10 @@ class TestMonteCarloEdgeCases:
 class TestSensitivityExtended:
     def test_ddm_grid_size(self):
         rows = sensitivity_ddm(dps=1000, ke_base=10.0, g_base=3.0)
-        assert len(rows) == 7 * 7  # 기본 7×7 그리드
+        assert len(rows) == 7 * 7  # default 7x7 grid
 
     def test_ddm_invalid_combinations_zero(self):
-        """Ke <= g 조합 → value=0"""
+        """Ke <= g combinations yield value=0"""
         rows = sensitivity_ddm(
             dps=1000, ke_base=5.0, g_base=4.5,
             ke_range=[3.0, 4.0, 5.0], g_range=[3.0, 4.0, 5.0],
@@ -1125,7 +1128,7 @@ class TestSensitivityExtended:
         assert len(rows) == 7 * 7
 
     def test_rim_higher_ke_lower_value(self):
-        """Ke 높을수록 주당가치 낮아져야"""
+        """Higher Ke should yield lower per-share value"""
         rows = sensitivity_rim(
             book_value=100_000, roe_forecasts=[12.0, 11.0, 10.5],
             ke_base=10.0, shares=1_000_000,
@@ -1136,10 +1139,10 @@ class TestSensitivityExtended:
 
     def test_nav_grid_size(self):
         rows = sensitivity_nav(10_000, 4_000, 1_000_000, base_revaluation=1_000)
-        assert len(rows) == 7 * 5  # 기본 7×5
+        assert len(rows) == 7 * 5  # default 7x5
 
     def test_nav_discount_reduces_value(self):
-        """할인율 증가 → per_share 감소"""
+        """Higher discount rate reduces per_share"""
         rows = sensitivity_nav(
             10_000, 4_000, 1_000_000,
             reval_range=[0], discount_range=[0, 20, 40],
@@ -1152,10 +1155,10 @@ class TestSensitivityExtended:
             metric_value=500_000, net_debt=100_000,
             shares=50_000_000, base_multiple=10.0,
         )
-        assert len(rows) == 9 * 5  # 기본 9×5
+        assert len(rows) == 9 * 5  # default 9x5
 
     def test_multiple_range_higher_mult_higher_value(self):
-        """멀티플 높을수록 주당가치 증가"""
+        """Higher multiple yields higher per-share value"""
         rows = sensitivity_multiple_range(
             metric_value=500_000, net_debt=100_000,
             shares=50_000_000, base_multiple=10.0,
@@ -1175,7 +1178,7 @@ class TestLinearFade:
         assert result == [0.12, 0.10, 0.08, 0.06, 0.04]
 
     def test_no_fade(self):
-        """시작 == 끝이면 동일 값 반복"""
+        """start == end yields repeated identical values"""
         result = linear_fade(0.05, 0.05, 3)
         assert result == [0.05, 0.05, 0.05]
 
@@ -1188,35 +1191,30 @@ class TestLinearFade:
             linear_fade(0.10, 0.04, 0)
 
 
-class TestCalcEbitdaCagr:
+class TestCalcEbitdaGrowth:
     _CONS = {
         2023: {"op": 100, "dep": 20, "amort": 5},   # EBITDA=125
         2024: {"op": 130, "dep": 22, "amort": 5},   # EBITDA=157
         2025: {"op": 160, "dep": 25, "amort": 5},   # EBITDA=190
     }
 
-    def test_2y_cagr(self):
-        cagr = calc_ebitda_cagr(self._CONS, n_years=2)
-        assert cagr is not None
-        # (190/125)^(1/2) - 1 ≈ 0.2325
-        assert 0.23 < cagr < 0.24
-
-    def test_1y_cagr(self):
-        cagr = calc_ebitda_cagr(self._CONS, n_years=1)
-        assert cagr is not None
+    def test_yoy_growth(self):
+        """Prior year (2024->2025) growth rate"""
+        g = calc_ebitda_growth(self._CONS)
+        assert g is not None
         # 190/157 - 1 ≈ 0.2102
-        assert 0.20 < cagr < 0.22
+        assert 0.20 < g < 0.22
 
     def test_insufficient_data(self):
-        assert calc_ebitda_cagr({2025: {"op": 100, "dep": 10, "amort": 5}}) is None
+        assert calc_ebitda_growth({2025: {"op": 100, "dep": 10, "amort": 5}}) is None
 
     def test_negative_ebitda(self):
+        """Negative prior-year EBITDA returns None"""
         cons = {
-            2023: {"op": -50, "dep": 10, "amort": 5},
-            2024: {"op": 100, "dep": 10, "amort": 5},
+            2024: {"op": -50, "dep": 10, "amort": 5},
             2025: {"op": 120, "dep": 10, "amort": 5},
         }
-        assert calc_ebitda_cagr(cons) is None
+        assert calc_ebitda_growth(cons) is None
 
 
 class TestGenerateGrowthRates:
@@ -1228,17 +1226,17 @@ class TestGenerateGrowthRates:
         }
         rates = generate_growth_rates(cons, market="KR")
         assert len(rates) == 5
-        assert rates[0] > rates[-1]  # 감소 추세
-        assert rates[-1] == 0.03     # KR 수렴치
+        assert rates[0] > rates[-1]  # declining trend
+        assert rates[-1] == 0.03     # KR convergence rate
 
     def test_fallback_when_no_data(self):
         rates = generate_growth_rates({}, market="US")
         assert len(rates) == 5
-        assert rates[0] == 0.10  # fallback
-        assert rates[-1] == 0.04  # US 수렴치
+        assert rates[0] == 0.08  # fallback (default base-rate)
+        assert rates[-1] == 0.04  # US convergence rate
 
     def test_clamping_high_growth(self):
-        """CAGR이 매우 높아도 30%로 클램핑"""
+        """No industry specified: YoY fallback clamped at 30%"""
         cons = {
             2023: {"op": 50, "dep": 10, "amort": 5},
             2024: {"op": 150, "dep": 10, "amort": 5},
@@ -1246,3 +1244,149 @@ class TestGenerateGrowthRates:
         }
         rates = generate_growth_rates(cons, market="KR")
         assert rates[0] <= 0.30
+
+    def test_growth_industry(self):
+        """Growth/tech industry: Y1=10%"""
+        rates = generate_growth_rates({}, market="KR", industry="반도체")
+        assert rates[0] == 0.10
+        assert rates[-1] == 0.03
+
+    def test_mature_industry(self):
+        """Mature/stable industry: Y1=5%"""
+        rates = generate_growth_rates({}, market="KR", industry="화학")
+        assert rates[0] == 0.05
+        assert rates[-1] == 0.03
+
+    def test_default_industry(self):
+        """Unclassified industry: Y1=8%"""
+        rates = generate_growth_rates({}, market="US", industry="기타")
+        assert rates[0] == 0.08
+        assert rates[-1] == 0.04
+
+    def test_industry_overrides_yoy(self):
+        """When industry is provided, ignore YoY and use base-rate"""
+        cons = {
+            2024: {"op": 100, "dep": 10, "amort": 5},
+            2025: {"op": 200, "dep": 10, "amort": 5},  # YoY ~83%
+        }
+        rates = generate_growth_rates(cons, market="KR", industry="semiconductor")
+        assert rates[0] == 0.10  # industry base-rate, not YoY 83%
+
+    def test_no_industry_uses_yoy(self):
+        """No industry: falls back to YoY-based behavior (backward compat)"""
+        cons = {
+            2024: {"op": 100, "dep": 10, "amort": 5},
+            2025: {"op": 120, "dep": 12, "amort": 5},  # EBITDA 137/115 ≈ 19.1%
+        }
+        rates = generate_growth_rates(cons, market="KR")
+        assert rates[0] > 0.10  # YoY-based, so higher than default 8%
+
+
+class TestClassifyIndustry:
+    def test_growth_keywords(self):
+        assert classify_industry("반도체") == "growth"
+        assert classify_industry("Software") == "growth"
+        assert classify_industry("바이오 제약") == "growth"
+
+    def test_mature_keywords(self):
+        assert classify_industry("화학") == "mature"
+        assert classify_industry("유통") == "mature"
+        assert classify_industry("Utility services") == "mature"
+
+    def test_default(self):
+        assert classify_industry("") == "default"
+        assert classify_industry("기타 제조") == "default"
+
+    def test_case_insensitive(self):
+        assert classify_industry("SEMICONDUCTOR") == "growth"
+        assert classify_industry("Chemical") == "mature"
+
+
+# ── Multi-variable news drivers (resolve_drivers) ──
+
+class TestResolveDrivers:
+    """resolve_drivers: Y = sum(beta_i * X_i) multi-regression driver aggregation."""
+
+    _BASE_SC = ScenarioParams(
+        code="Base", name="Base Case", prob=50, ipo="N/A", shares=1_000_000,
+    )
+
+    _DRIVERS = [
+        NewsDriver(
+            id="rate_hike", name="금리인상 50bp", category="macro",
+            effects={"wacc_adj": 0.5, "growth_adj_pct": -10},
+            rationale="한은 기준금리 인상",
+        ),
+        NewsDriver(
+            id="tariff_shock", name="관세충격", category="trade",
+            effects={"growth_adj_pct": -15, "market_sentiment_pct": -5},
+            rationale="미국 25% 관세 부과",
+        ),
+    ]
+
+    def test_none_active_drivers_passthrough(self):
+        """active_drivers=None: returns sc unchanged (backward compat)."""
+        sc = self._BASE_SC
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result is sc  # same object
+
+    def test_empty_active_drivers(self):
+        """active_drivers={}: all drivers inactive (Base Case)."""
+        sc = self._BASE_SC.model_copy(update={"active_drivers": {}})
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result.wacc_adj == 0.0
+        assert result.growth_adj_pct == 0.0
+
+    def test_single_driver_full_weight(self):
+        """Single driver weight=1.0: full effect applied."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 1.0},
+        })
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result.wacc_adj == 0.5
+        assert result.growth_adj_pct == -10
+
+    def test_single_driver_half_weight(self):
+        """weight=0.5: half the effect applied."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 0.5},
+        })
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result.wacc_adj == 0.25
+        assert result.growth_adj_pct == -5.0
+
+    def test_multi_driver_additive(self):
+        """Two drivers additive: growth_adj_pct = -10 + -15 = -25."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 1.0, "tariff_shock": 1.0},
+        })
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result.wacc_adj == 0.5  # rate_hike only
+        assert result.growth_adj_pct == -25  # -10 + -15
+        assert result.market_sentiment_pct == -5  # tariff_shock only
+
+    def test_unknown_driver_id_ignored(self):
+        """Non-existent driver_id is ignored."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"nonexistent": 1.0, "rate_hike": 1.0},
+        })
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert result.wacc_adj == 0.5  # only rate_hike applied
+
+    def test_driver_rationale_generated(self):
+        """driver_rationale auto-generated when active_drivers used."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 1.0, "tariff_shock": 1.0},
+        })
+        result = resolve_drivers(sc, self._DRIVERS)
+        assert "금리인상 50bp" in result.driver_rationale["wacc_adj"]
+        assert "관세충격" in result.driver_rationale["growth_adj_pct"]
+
+    def test_no_drivers_list_with_active_drivers(self):
+        """news_drivers=[] with active_drivers set: zero effect (no drivers)."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 1.0},
+        })
+        result = resolve_drivers(sc, [])
+        assert result.wacc_adj == 0.0
+        assert result.growth_adj_pct == 0.0

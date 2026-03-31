@@ -1,29 +1,29 @@
-# 기업가치평가 YAML 프로필 템플릿
-# 이 파일을 복사하여 새 기업 프로필을 작성하세요.
+# Valuation YAML profile template
+# Copy this file to create a new company profile.
 
 company:
   name: ""
   former_name: null
-  legal_status: "비상장"          # "비상장" | "상장"
+  legal_status: "비상장"          # "비상장" (unlisted) | "상장" (listed)
   parent_name: null
   parent_stake_pct: null
-  shares_total: 0                 # 총발행주식수
-  shares_ordinary: 0              # 보통주
-  shares_preferred: 0             # 우선주 (CPS 등)
+  shares_total: 0                 # Total shares issued
+  shares_ordinary: 0              # Ordinary shares
+  shares_preferred: 0             # Preferred shares (CPS, etc.)
   cps_conversion_shares: 0
   analysis_date: "2026-01-01"
 
 segments:
-  # 부문코드:
-  #   name: "부문명"
-  #   multiple: 0.0               # EV/EBITDA 멀티플
+  # SEGMENT_CODE:
+  #   name: "Segment name"
+  #   multiple: 0.0               # EV/EBITDA multiple
 
 segment_data:
-  # 연도:
-  #   부문코드: {revenue: 0, gross_profit: 0, op: 0, assets: 0}
+  # YEAR:
+  #   SEGMENT_CODE: {revenue: 0, gross_profit: 0, op: 0, assets: 0}
 
 consolidated:
-  # 연도:
+  # YEAR:
   #   revenue: 0
   #   op: 0
   #   net_income: 0
@@ -37,13 +37,13 @@ consolidated:
   #   de_ratio: 0.0
 
 wacc_params:
-  rf: 3.50                        # 무위험이자율 (%)
-  erp: 7.00                       # 주식위험프리미엄 (%)
+  rf: 3.50                        # Risk-free rate (%)
+  erp: 7.00                       # Equity risk premium (%)
   bu: 0.750                       # Unlevered Beta
   de: 100.0                       # D/E Ratio (%)
-  tax: 22.0                       # 법인세율 (%)
-  kd_pre: 5.00                    # 세전 타인자본비용 (%)
-  eq_w: 50.0                      # 자기자본 비중 (%)
+  tax: 22.0                       # Corporate tax rate (%)
+  kd_pre: 5.00                    # Pre-tax cost of debt (%)
+  eq_w: 50.0                      # Equity weight (%)
 
 scenarios:
   Base:
@@ -55,7 +55,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 0                     # 적용 주식수
+    shares: 0                     # Applicable share count
     desc: ""
   Bull:
     name: "Bull Case"
@@ -87,11 +87,11 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
 
-# DDM 파라미터 (금융업종용, Optional)
-# valuation_method: "ddm" 설정 또는 금융업종 자동 감지 시 사용
+# DDM parameters (for financials, optional)
+# Used when valuation_method: "ddm" is set or financial sector is auto-detected
 # ddm_params:
-#   dps: 1000.0                   # 주당 배당금 (원 or $)
-#   dividend_growth: 3.0          # 배당 성장률 (%)
+#   dps: 1000.0                   # Dividend per share (KRW or $)
+#   dividend_growth: 3.0          # Dividend growth rate (%)
 
 cps_principal: 0
 cps_years: 0

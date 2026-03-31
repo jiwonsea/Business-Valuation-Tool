@@ -1,22 +1,22 @@
-# 밸류에이션 방법론 가이드
+# Valuation Methodology Guide
 
-## 방법론 선택 기준
+## Method Selection Criteria
 
-| 기업 유형 | Primary Method | Cross-Validation |
-|-----------|---------------|-----------------|
-| 다부문 (segments > 1) | SOTP (EV/EBITDA) | DCF, EV/Revenue |
-| 단일부문 | DCF (FCFF) | EV/Revenue, P/E, P/BV |
-| 금융회사 | P/BV 또는 DDM | P/E |
-| 성장/테크 | DCF (Revenue-based) | EV/Revenue |
+| Company Type | Primary Method | Cross-Validation |
+|-------------|---------------|-----------------|
+| Multi-segment (segments > 1) | SOTP (EV/EBITDA) | DCF, EV/Revenue |
+| Single-segment | DCF (FCFF) | EV/Revenue, P/E, P/BV |
+| Financials | P/BV or DDM | P/E |
+| Growth/Tech | DCF (Revenue-based) | EV/Revenue |
 
 ## SOTP
-- 부문별 EBITDA x EV/EBITDA. 단일부문에는 부적합.
+- Per-segment EBITDA x EV/EBITDA. Not suitable for single-segment companies.
 
 ## DCF
-- FCFF 5년 추정 + Gordon Growth. 핵심: WACC, 영구성장률, Capex/NWC.
+- 5-year FCFF projection + Gordon Growth. Key inputs: WACC, terminal growth rate, Capex/NWC.
 
 ## DDM
-- 금융주 배당 기반. DPS x (1+g) / (Ke - g).
+- Dividend-based for financials. DPS x (1+g) / (Ke - g).
 
 ## Multiples
-- EV/Revenue (적자 기업 가능), P/E (흑자), P/BV (금융/자산 중심).
+- EV/Revenue (works for loss-making companies), P/E (profitable only), P/BV (financials/asset-heavy).

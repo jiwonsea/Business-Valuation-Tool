@@ -1,15 +1,37 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "Edit",
+      "Read",
+      "Write",
+      "WebFetch",
+      "Grep",
+      "Glob"
+    ]
   },
   "hooks": {
-    "PreToolUse": [
+    "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c \"git diff --cached --name-only 2>/dev/null | grep -qE '^\\.env' && echo 'BLOCKED: .env file is staged. Run: git reset HEAD .env' && exit 1 || exit 0\""
+            "command": "python .claude/scripts/split_gotchas.py",
+            "if": "Edit(.claude/skills/*/SKILL.md)",
+            "statusMessage": "Gotchas 크기 확인 중..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/scripts/split_gotchas.py",
+            "if": "Write(.claude/skills/*/SKILL.md)",
+            "statusMessage": "Gotchas 크기 확인 중..."
           }
         ]
       }

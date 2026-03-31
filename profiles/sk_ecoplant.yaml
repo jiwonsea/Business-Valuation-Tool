@@ -1,6 +1,6 @@
-# SK에코플랜트 기업가치평가 프로필
-# 출처: SK㈜ 제35기 사업보고서(2026.03.18), 38.co.kr, DART OpenAPI
-# 검증 기준값: 확률가중 주당 가치 39,892원
+# SK Ecoplant valuation profile
+# Source: SK Inc. 35th annual report (2026.03.18), 38.co.kr, DART OpenAPI
+# Validation reference: probability-weighted per-share value KRW 39,892
 
 company:
   name: "SK에코플랜트"
@@ -10,7 +10,7 @@ company:
   parent_stake_pct: 69.05
   shares_total: 65599748
   shares_ordinary: 54278993
-  shares_preferred: 11320755   # CPS 전환우선주
+  shares_preferred: 11320755   # CPS convertible preferred shares
   cps_conversion_shares: 11320755
   analysis_date: "2026-03-29"
 
@@ -108,7 +108,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 65599748   # CPS 전환 → 전체 주식
+    shares: 65599748   # CPS converted → all shares
     desc: "중복상장 예외 인정 → CPS/RCPS 전환, 공모 상장"
   B:
     name: "IPO 실패 + FI 우호"
@@ -116,10 +116,10 @@ scenarios:
     ipo: "불발"
     irr: 5.0
     dlom: 20
-    cps_repay: null     # IRR 기반 자동 계산
+    cps_repay: null     # Auto-calculated based on IRR
     rcps_repay: 490000
     buyback: 200000
-    shares: 54278993   # CPS 상환 소멸 → 보통주만
+    shares: 54278993   # CPS redeemed and extinguished → ordinary shares only
     desc: "IPO 불발, FI와 IRR 5% 합의 → CPS 상환 + 자회사 매각"
   C:
     name: "IPO 실패 + FI 분쟁"
@@ -127,7 +127,7 @@ scenarios:
     ipo: "불발"
     irr: 12.0
     dlom: 25
-    cps_repay: null     # IRR 기반 자동 계산
+    cps_repay: null     # Auto-calculated based on IRR
     rcps_repay: 575000
     buyback: 200000
     shares: 54278993
@@ -139,10 +139,10 @@ dcf_params:
   capex_to_da: 1.10
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
-  # 실제 Capex/NWC (옵션 — 있으면 ratio 대신 사용)
-  actual_capex: 350000      # 2025년 실제 Capex (백만원) — 사보 현금흐름표 기준
-  actual_nwc: 610000        # 2025년 순운전자본 (백만원) — 유동자산-유동부채
-  prior_nwc: 580000         # 2024년 순운전자본 (백만원)
+  # Actual Capex/NWC (optional — used instead of ratios if provided)
+  actual_capex: 350000      # 2025 actual Capex (KRW M) — from cash flow statement
+  actual_nwc: 610000        # 2025 net working capital (KRW M) — current assets minus current liabilities
+  prior_nwc: 580000         # 2024 net working capital (KRW M)
 
 cps_principal: 600000
 cps_years: 4
@@ -150,17 +150,17 @@ net_debt: 2295568
 eco_frontier: 94644
 base_year: 2025
 
-# 교차검증용 멀티플 (0이면 해당 방법론 스킵)
-ev_revenue_multiple: 0.5    # EV/Revenue: 건설/환경 복합기업 0.4~0.6x
-pe_multiple: 15.0           # P/E: Peer 평균 13~17x
-pbv_multiple: 1.2           # P/BV: 비상장 할인 감안 1.0~1.5x
+# Cross-validation multiples (0 = skip that method)
+ev_revenue_multiple: 0.5    # EV/Revenue: construction/environmental conglomerate 0.4~0.6x
+pe_multiple: 15.0           # P/E: peer average 13~17x
+pbv_multiple: 1.2           # P/BV: 1.0~1.5x after unlisted discount
 
-# Monte Carlo 시뮬레이션
+# Monte Carlo simulation
 mc_enabled: true
 mc_sims: 10000
-mc_multiple_std_pct: 15.0   # 멀티플 표준편차 (적용값 ±15%)
-mc_dlom_mean: 20.0          # DLOM 평균 (시나리오 B 기준)
-mc_dlom_std: 5.0            # DLOM 표준편차
+mc_multiple_std_pct: 15.0   # Multiple std dev (applied value +/-15%)
+mc_dlom_mean: 20.0          # DLOM mean (based on scenario B)
+mc_dlom_std: 5.0            # DLOM std dev
 
 peers:
   - {name: "삼성E&A",        segment_code: "HI",  ev_ebitda: 8.0,  notes: "반도체/화학 EPC, 비화공 10x+, 전체 평균 8x"}

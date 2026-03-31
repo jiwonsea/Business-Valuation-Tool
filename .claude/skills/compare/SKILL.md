@@ -1,28 +1,28 @@
 # Compare Skill
 
 ## Description
-TRIGGER when: 사용자가 "비교해줘", "A vs B", "peer 대비 어떤지", "업종 평균 대비", "이전 분석과 비교", "멀티플 비교표" 등 기업간 또는 시점간 비교를 요청할 때.
-DO NOT TRIGGER when: 단일 기업 밸류에이션 실행 (→ /valuation), 프로필 생성 (→ /profile).
+TRIGGER when: user mentions "비교해줘", "A vs B", "peer 대비 어떤지", "업종 평균 대비", "이전 분석과 비교", "멀티플 비교표", "compare", "cross-company comparison", "vs previous analysis".
+DO NOT TRIGGER when: single company valuation (→ /valuation), profile creation (→ /profile).
 
 ## Overview
-여러 기업 또는 동일 기업의 시점별 밸류에이션 결과를 비교한다. YAML 프로필, DB 저장 결과, 또는 현재 세션 결과를 비교 소스로 사용.
+Compares valuation results across multiple companies or across time periods for the same company. Uses YAML profiles, DB-stored results, or current session results as comparison sources.
 
 ## Comparison Types
-1. **횡단면 비교** — 동일 시점, 다른 기업 (Peer 비교)
-2. **시계열 비교** — 동일 기업, 다른 시점 (가정 변화 추적)
-3. **방법론 비교** — 동일 기업, 다른 방법론 결과 (교차검증 심화)
+1. **Cross-sectional** — Same period, different companies (Peer comparison)
+2. **Time-series** — Same company, different periods (assumption change tracking)
+3. **Methodology** — Same company, different methodology results (deep cross-validation)
 
 ## Workflow
-1. 비교 대상 확인 (프로필 파일 / DB 조회 / 현재 세션)
-2. 비교 유형 결정 (횡단면 / 시계열 / 방법론)
-3. 핵심 지표 추출 → 비교 테이블 생성
-4. 차이 원인 분석 + 인사이트 제시
+1. Identify comparison targets (profile files / DB query / current session)
+2. Determine comparison type (cross-sectional / time-series / methodology)
+3. Extract key metrics → generate comparison table
+4. Analyze difference drivers + present insights
 
 ## File References
-- [references/comparison_metrics.md](references/comparison_metrics.md) — 비교 가능한 지표 목록과 해석 가이드
+- [references/comparison_metrics.md](references/comparison_metrics.md) — Available metrics list and interpretation guide
 
 ## Gotchas
-- 단위가 다른 기업 비교 시 반드시 단위 통일 후 비교. `currency_unit`이 "백만원" vs "억원"이면 절대값 비교 불가.
-- DB 조회 시 `SUPABASE_URL`/`SUPABASE_KEY` 미설정이면 graceful skip. 에러 내지 말고 "DB 미연결" 안내.
-- Peer 멀티플 비교 시 `peer_stats`의 `applied_multiple`과 `ev_ebitda_median`을 구분. applied는 실제 적용된 값, median은 통계값.
-- 시계열 비교에서 `analysis_date`가 다르면 매크로 환경(금리, ERP)도 달라질 수 있음. WACC 변동 원인을 단순히 기업 요인으로 귀속하지 말 것.
+- When comparing companies with different units, must unify units first. If `currency_unit` is "백만원" vs "억원", absolute value comparison is impossible.
+- If `SUPABASE_URL`/`SUPABASE_KEY` are not set on DB query, graceful skip. Don't throw errors; inform "DB not connected".
+- In peer multiple comparison, distinguish `peer_stats.applied_multiple` from `ev_ebitda_median`. Applied is the actually-used value; median is the statistical value.
+- In time-series comparison, if `analysis_date` differs, macro environment (interest rates, ERP) may also differ. Don't attribute WACC changes solely to company factors.

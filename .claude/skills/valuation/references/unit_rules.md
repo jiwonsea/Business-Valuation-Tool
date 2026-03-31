@@ -1,27 +1,27 @@
-# 금액 단위 선택 규칙
+# Currency Unit Selection Rules
 
-## 자동 판단 로직 (`engine/units.py`)
+## Auto-Detection Logic (`engine/units.py`)
 
-### 한국 (KR)
-| 매출 규모 (백만원 기준) | 표시 단위 | unit_multiplier |
-|------------------------|----------|----------------|
-| < 10,000 (100억 미만) | 백만원 | 1,000,000 |
-| 10,000 ~ 1,000,000 (100억~1조) | 억원 | 100,000,000 |
-| > 1,000,000 (1조 초과) | 백만원 | 1,000,000 |
+### Korea (KR)
+| Revenue Scale (in millions KRW) | Display Unit | unit_multiplier |
+|--------------------------------|-------------|----------------|
+| < 10,000 (under 10B KRW) | 백만원 | 1,000,000 |
+| 10,000 ~ 1,000,000 (10B~1T KRW) | 억원 | 100,000,000 |
+| > 1,000,000 (over 1T KRW) | 백만원 | 1,000,000 |
 
-> 1조 초과 대기업은 재무제표 관행상 백만원 단위 사용
+> Large-cap companies (over 1T KRW) conventionally use millions KRW in financial statements
 
-### 미국 (US)
+### US
 | Revenue Scale | Display Unit | unit_multiplier |
 |--------------|-------------|----------------|
 | All | $M | 1,000,000 |
 
-> 미국은 관행상 항상 $M (millions)
+> US convention always uses $M (millions)
 
-## 주당가치 변환
+## Per-Share Conversion
 ```python
 per_share = equity * unit_multiplier / shares
 ```
 
-## YAML 오버라이드
-프로필에서 `unit_multiplier` 직접 지정 가능 (자동 판단 무시).
+## YAML Override
+Profile can directly specify `unit_multiplier` (overrides auto-detection).

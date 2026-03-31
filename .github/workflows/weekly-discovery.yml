@@ -39,13 +39,26 @@ jobs:
       - name: Run weekly discovery
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: meta-llama/llama-3.3-70b-instruct:free
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_RECIPIENT: ${{ secrets.GMAIL_RECIPIENT }}
         run: |
           python -m scheduler.weekly_run \
             --markets "${{ inputs.markets || 'KR,US' }}" \
             --max-per-market "${{ inputs.max_per_market || '5' }}" \
             ${{ inputs.dry_run == true && '--dry-run' || '' }}
+
+      - name: Upload results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-valuation-${{ github.run_number }}
+          path: valuation-results/
+          retention-days: 30
+          if-no-files-found: ignore

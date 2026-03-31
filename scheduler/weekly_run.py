@@ -231,6 +231,13 @@ def run_weekly(
     # ── Phase 3.6: Save JSON summary for delivery agent ──
     _save_json_summary(summary, week_dir)
 
+    # ── Phase 5: Send email notification (best-effort) ──
+    try:
+        from .email_sender import send_weekly_email
+        send_weekly_email(summary)
+    except Exception as e:
+        logger.warning("Email notification failed: %s", e)
+
     # ── Phase 4: Completion ──
     duration = time.time() - start
     _finalize_run(run_id, summary, duration, total_news, scored)

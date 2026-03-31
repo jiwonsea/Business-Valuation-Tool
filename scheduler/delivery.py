@@ -211,7 +211,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
       분석 완료: <strong>{status.get('success', 0)}</strong>개 기업
       {f" · 실패: {status.get('failed', 0)}개" if status.get('failed', 0) else ""}
     </p>
-    {f'<p style="margin:12px 0 0;text-align:center;">{summary_link}</p>' if summary_link else ''}
+    {f'<p style="margin:12px 0 0;text-align:center;">{summary_link}</p>' if summary_gamma else ''}
   </div>
 
   <table style="width:100%;border-collapse:collapse;background:white;">

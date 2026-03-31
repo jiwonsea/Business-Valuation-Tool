@@ -152,10 +152,13 @@ def _sheet_assumptions(ctx: _Ctx):
     r += 1
 
     if ctx.method == "sotp":
-        # 부문별 멀티플
-        write_cell(ws, r, 1, "부문별 EV/EBITDA 멀티플", font=SECTION_FONT); r += 1
+        # 부문별 멀티플 (Mixed SOTP 대응)
+        write_cell(ws, r, 1, "부문별 적용 멀티플", font=SECTION_FONT); r += 1
         for code in ctx.seg_codes:
-            write_cell(ws, r, 1, ctx.seg_names[code])
+            seg_info = ctx.vi.segments.get(code, {})
+            method = seg_info.get("method", "ev_ebitda")
+            method_label = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+            write_cell(ws, r, 1, f"{ctx.seg_names[code]} ({method_label})")
             write_cell(ws, r, 2, f"{ctx.vi.multiples[code]:.1f}x", fill=BLUE_FILL)
             r += 1
 
@@ -255,8 +258,21 @@ def _sheet_assumptions(ctx: _Ctx):
     # ── 기타 파라미터 ──
     r += 1
     write_cell(ws, r, 1, "기타 파라미터", font=SECTION_FONT); r += 1
-    others = [
-        ("순차입금", f"{ctx.vi.net_debt:,}{ctx.unit}"),
+    # Mixed SOTP: 유효 순차입금 표시
+    _is_mixed = bool(ctx.vi.segment_net_debt) and any(
+        info.get("method") in ("pbv", "pe") for info in ctx.vi.segments.values()
+    )
+    others = [("순차입금 (연결)", f"{ctx.vi.net_debt:,}{ctx.unit}")]
+    if _is_mixed:
+        fin_debt = sum(
+            ctx.vi.segment_net_debt[c]
+            for c, info in ctx.vi.segments.items()
+            if info.get("method") in ("pbv", "pe") and c in ctx.vi.segment_net_debt
+        )
+        eff_nd = ctx.vi.net_debt - fin_debt
+        others.append(("(-) 금융부문 부채 (PBV 내재)", f"{fin_debt:,}{ctx.unit}"))
+        others.append(("유효 순차입금", f"{eff_nd:,}{ctx.unit}"))
+    others += [
         ("보통주 발행주식수", f"{ctx.vi.company.shares_ordinary:,}"),
         ("총발행주식수", f"{ctx.vi.company.shares_total:,}"),
     ]
@@ -310,40 +326,71 @@ def _sheet_financials(ctx: _Ctx):
     # 부문별 D&A 배분 (SOTP인 경우만)
     if ctx.method == "sotp" and ctx.result.da_allocations:
         r += 2
-        write_cell(ws, r, 1, "부문별 재무 — 유무형자산 비중 D&A 배분", font=TITLE_FONT); r += 1
+        # Mixed SOTP 여부
+        _has_mixed_fs = any(
+            info.get("method") in ("pbv", "pe") for info in ctx.vi.segments.values()
+        )
+        fs_title = "부문별 재무 — D&A 배분 (금융 부문 제외)" if _has_mixed_fs else "부문별 재무 — 유무형자산 비중 D&A 배분"
+        write_cell(ws, r, 1, fs_title, font=TITLE_FONT); r += 1
 
         for yr in reversed(years):
             if yr not in ctx.result.da_allocations:
                 continue
             r += 1
             write_cell(ws, r, 1, f"── {yr}년 ──", font=SECTION_FONT); r += 1
-            seg_headers = ["부문", "매출", "영업이익", "유무형자산", "자산비중", "D&A 배분", "EBITDA"]
+            if _has_mixed_fs:
+                seg_headers = ["부문", "Method", "매출", "영업이익", "유무형자산", "자산비중", "D&A 배분", "EBITDA"]
+                ncols_fs = 8
+            else:
+                seg_headers = ["부문", "매출", "영업이익", "유무형자산", "자산비중", "D&A 배분", "EBITDA"]
+                ncols_fs = 7
             for c, h in enumerate(seg_headers, 1):
                 write_cell(ws, r, c, h)
-            style_header_row(ws, r, 7)
+            style_header_row(ws, r, ncols_fs)
 
             alloc = ctx.result.da_allocations[yr]
             for code in ctx.seg_codes:
                 r += 1
                 s = ctx.vi.segment_data[yr][code]
                 a = alloc[code]
-                write_cell(ws, r, 1, ctx.seg_names[code])
-                write_cell(ws, r, 2, s["revenue"], fmt=NUM_FMT, fill=YELLOW_FILL)
-                write_cell(ws, r, 3, s["op"], fmt=NUM_FMT, fill=YELLOW_FILL)
-                write_cell(ws, r, 4, s["assets"], fmt=NUM_FMT, fill=YELLOW_FILL)
-                write_cell(ws, r, 5, a.asset_share / 100, fmt=PCT_FMT)
-                write_cell(ws, r, 6, a.da_allocated, fmt=NUM_FMT)
-                write_cell(ws, r, 7, a.ebitda, fmt=NUM_FMT,
-                           fill=GREEN_FILL if a.ebitda > 0 else RED_FILL)
+                if _has_mixed_fs:
+                    seg_method = ctx.vi.segments.get(code, {}).get("method", "ev_ebitda")
+                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(seg_method, seg_method)
+                    write_cell(ws, r, 1, ctx.seg_names[code])
+                    write_cell(ws, r, 2, m_lbl)
+                    write_cell(ws, r, 3, s["revenue"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 4, s["op"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 5, s["assets"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 6, a.asset_share / 100, fmt=PCT_FMT)
+                    write_cell(ws, r, 7, a.da_allocated, fmt=NUM_FMT)
+                    write_cell(ws, r, 8, a.ebitda, fmt=NUM_FMT,
+                               fill=GREEN_FILL if a.ebitda > 0 else RED_FILL)
+                else:
+                    write_cell(ws, r, 1, ctx.seg_names[code])
+                    write_cell(ws, r, 2, s["revenue"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 3, s["op"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 4, s["assets"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(ws, r, 5, a.asset_share / 100, fmt=PCT_FMT)
+                    write_cell(ws, r, 6, a.da_allocated, fmt=NUM_FMT)
+                    write_cell(ws, r, 7, a.ebitda, fmt=NUM_FMT,
+                               fill=GREEN_FILL if a.ebitda > 0 else RED_FILL)
 
             r += 1
             write_cell(ws, r, 1, "합계", bold=True)
-            write_cell(ws, r, 2, sum(ctx.vi.segment_data[yr][c]["revenue"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
-            write_cell(ws, r, 3, sum(ctx.vi.segment_data[yr][c]["op"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
-            write_cell(ws, r, 4, sum(ctx.vi.segment_data[yr][c]["assets"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
-            write_cell(ws, r, 5, 1.0, fmt=PCT_FMT, bold=True)
-            write_cell(ws, r, 6, sum(alloc[c].da_allocated for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
-            write_cell(ws, r, 7, sum(alloc[c].ebitda for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+            if _has_mixed_fs:
+                write_cell(ws, r, 3, sum(ctx.vi.segment_data[yr][c]["revenue"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 4, sum(ctx.vi.segment_data[yr][c]["op"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 5, sum(ctx.vi.segment_data[yr][c]["assets"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 6, 1.0, fmt=PCT_FMT, bold=True)
+                write_cell(ws, r, 7, sum(alloc[c].da_allocated for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 8, sum(alloc[c].ebitda for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+            else:
+                write_cell(ws, r, 2, sum(ctx.vi.segment_data[yr][c]["revenue"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 3, sum(ctx.vi.segment_data[yr][c]["op"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 4, sum(ctx.vi.segment_data[yr][c]["assets"] for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 5, 1.0, fmt=PCT_FMT, bold=True)
+                write_cell(ws, r, 6, sum(alloc[c].da_allocated for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
+                write_cell(ws, r, 7, sum(alloc[c].ebitda for c in ctx.seg_codes), fmt=NUM_FMT, bold=True)
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -360,29 +407,89 @@ def _valuation_sotp(ctx: _Ctx):
 
     r = 3
     if ctx.result.sotp:
-        write_cell(ws, r, 1, "부문별 EV/EBITDA", font=SECTION_FONT); r += 1
-        sotp_headers = ["부문", "EBITDA", "멀티플", "Segment EV", "EV 비중"]
+        # Mixed SOTP 여부 판단
+        has_mixed = any(
+            getattr(s, "method", "ev_ebitda") != "ev_ebitda"
+            for s in ctx.result.sotp.values()
+        )
+        if has_mixed:
+            write_cell(ws, r, 1, "부문별 SOTP (Mixed Method)", font=SECTION_FONT); r += 1
+            sotp_headers = ["부문", "Method", "지표값", "멀티플", "Segment Value", "비중"]
+            ncols = 6
+        else:
+            write_cell(ws, r, 1, "부문별 EV/EBITDA", font=SECTION_FONT); r += 1
+            sotp_headers = ["부문", "EBITDA", "멀티플", "Segment EV", "EV 비중"]
+            ncols = 5
         for c, h in enumerate(sotp_headers, 1):
             write_cell(ws, r, c, h)
             ws.column_dimensions[get_column_letter(c)].width = 16
-        style_header_row(ws, r, 5)
+        style_header_row(ws, r, ncols)
 
         for code in ctx.seg_codes:
             if code not in ctx.result.sotp:
                 continue
             r += 1
             s = ctx.result.sotp[code]
-            write_cell(ws, r, 1, ctx.seg_names[code])
-            write_cell(ws, r, 2, s.ebitda, fmt=NUM_FMT)
-            write_cell(ws, r, 3, s.multiple, fmt=MULT_FMT, fill=BLUE_FILL)
-            write_cell(ws, r, 4, s.ev, fmt=NUM_FMT, fill=GREEN_FILL if s.ev > 0 else None)
             ev_pct = s.ev / ctx.result.total_ev if ctx.result.total_ev > 0 else 0
-            write_cell(ws, r, 5, ev_pct, fmt=PCT_FMT)
+            if has_mixed:
+                method = getattr(s, "method", "ev_ebitda")
+                method_label = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+                # 지표값: EV/EBITDA→EBITDA, P/BV→Book Equity, P/E→Net Income
+                seg_info = ctx.vi.segments.get(code, {})
+                if method == "pbv":
+                    metric_val = seg_info.get("book_equity", 0)
+                elif method == "pe":
+                    metric_val = seg_info.get("net_income_segment", 0)
+                else:
+                    metric_val = s.ebitda
+                write_cell(ws, r, 1, ctx.seg_names[code])
+                write_cell(ws, r, 2, method_label)
+                write_cell(ws, r, 3, metric_val, fmt=NUM_FMT)
+                write_cell(ws, r, 4, s.multiple, fmt=MULT_FMT, fill=BLUE_FILL)
+                write_cell(ws, r, 5, s.ev, fmt=NUM_FMT, fill=GREEN_FILL if s.ev > 0 else None)
+                write_cell(ws, r, 6, ev_pct, fmt=PCT_FMT)
+            else:
+                write_cell(ws, r, 1, ctx.seg_names[code])
+                write_cell(ws, r, 2, s.ebitda, fmt=NUM_FMT)
+                write_cell(ws, r, 3, s.multiple, fmt=MULT_FMT, fill=BLUE_FILL)
+                write_cell(ws, r, 4, s.ev, fmt=NUM_FMT, fill=GREEN_FILL if s.ev > 0 else None)
+                write_cell(ws, r, 5, ev_pct, fmt=PCT_FMT)
         r += 1
         write_cell(ws, r, 1, "합계", bold=True)
-        write_cell(ws, r, 2, sum(ctx.result.sotp[c].ebitda for c in ctx.seg_codes if c in ctx.result.sotp), fmt=NUM_FMT, bold=True)
-        write_cell(ws, r, 4, ctx.result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
-        write_cell(ws, r, 5, 1.0, fmt=PCT_FMT, bold=True)
+        if has_mixed:
+            write_cell(ws, r, 5, ctx.result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
+            write_cell(ws, r, 6, 1.0, fmt=PCT_FMT, bold=True)
+        else:
+            write_cell(ws, r, 2, sum(ctx.result.sotp[c].ebitda for c in ctx.seg_codes if c in ctx.result.sotp), fmt=NUM_FMT, bold=True)
+            write_cell(ws, r, 4, ctx.result.total_ev, fmt=NUM_FMT, bold=True, fill=GREEN_FILL)
+            write_cell(ws, r, 5, 1.0, fmt=PCT_FMT, bold=True)
+
+        # Mixed SOTP: Equity Bridge 표시
+        if has_mixed:
+            r += 2
+            write_cell(ws, r, 1, "Equity Bridge (Mixed SOTP)", font=SECTION_FONT); r += 1
+            ev_segs_val = sum(s.ev for s in ctx.result.sotp.values() if not getattr(s, "is_equity_based", False))
+            eq_segs_val = sum(s.ev for s in ctx.result.sotp.values() if getattr(s, "is_equity_based", False))
+            fin_debt = sum(
+                ctx.vi.segment_net_debt.get(c, 0)
+                for c, info in ctx.vi.segments.items()
+                if info.get("method") in ("pbv", "pe")
+            )
+            eff_nd = ctx.vi.net_debt - fin_debt
+            bridge_items = [
+                ("제조 부문 EV (EV/EBITDA)", ev_segs_val),
+                ("(-) 유효 순차입금 (제조)", eff_nd),
+                ("제조 부문 Equity", ev_segs_val - eff_nd),
+                ("(+) 금융 부문 Equity (P/BV)", eq_segs_val),
+                ("Total Equity", ev_segs_val - eff_nd + eq_segs_val),
+            ]
+            for label, val in bridge_items:
+                is_total = label == "Total Equity"
+                write_cell(ws, r, 1, label, bold=is_total)
+                write_cell(ws, r, 2, val, fmt=NUM_FMT, bold=is_total,
+                           fill=GREEN_FILL if is_total else YELLOW_FILL)
+                write_cell(ws, r, 3, ctx.unit)
+                r += 1
 
 
 def _valuation_dcf(ctx: _Ctx):
@@ -1152,15 +1259,22 @@ def _sheet_dashboard(ctx: _Ctx):
             r += 1
 
     else:
-        # SOTP (기본)
-        write_cell(ws, r, 1, f"Enterprise Value 구성 ({ctx.unit})", font=SECTION_FONT); r += 1
+        # SOTP (기본) — Mixed Method 대응
+        has_mixed_dash = ctx.result.sotp and any(
+            getattr(s, "method", "ev_ebitda") != "ev_ebitda"
+            for s in ctx.result.sotp.values()
+        )
+        section_title = "SOTP 밸류에이션 구성 (Mixed)" if has_mixed_dash else f"Enterprise Value 구성 ({ctx.unit})"
+        write_cell(ws, r, 1, section_title, font=SECTION_FONT); r += 1
         ev_data_start = r
         active_segs = []
         if ctx.result.sotp:
             active_segs = [c for c in ctx.seg_codes if ctx.result.sotp.get(c) and ctx.result.sotp[c].ev > 0]
             for code in active_segs:
                 s = ctx.result.sotp[code]
-                write_cell(ws, r, 1, f"{ctx.seg_names[code]} ({s.multiple:.0f}x)")
+                method = getattr(s, "method", "ev_ebitda")
+                m_label = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, "")
+                write_cell(ws, r, 1, f"{ctx.seg_names[code]} ({m_label} {s.multiple:.1f}x)")
                 write_cell(ws, r, 2, s.ev, fmt=NUM_FMT)
                 r += 1
         ev_data_end = r - 1
@@ -1174,13 +1288,27 @@ def _sheet_dashboard(ctx: _Ctx):
     ebitda = cons_by["op"] + total_da
     write_cell(ws, r, 1, f"핵심 재무지표 ({ctx.by})", font=SECTION_FONT); r += 1
 
+    # Mixed SOTP: 유효 순차입금 표시
+    _is_mixed_dash = bool(ctx.vi.segment_net_debt) and any(
+        info.get("method") in ("pbv", "pe") for info in ctx.vi.segments.values()
+    )
     kpis = [
         ("매출액", cons_by["revenue"]),
         ("영업이익", cons_by["op"]),
         ("EBITDA", ebitda),
-        ("순차입금", ctx.vi.net_debt),
-        ("부채비율", f"{cons_by['de_ratio']:.1f}%"),
     ]
+    if _is_mixed_dash:
+        fin_debt_d = sum(
+            ctx.vi.segment_net_debt[c]
+            for c, info in ctx.vi.segments.items()
+            if info.get("method") in ("pbv", "pe") and c in ctx.vi.segment_net_debt
+        )
+        eff_nd_d = ctx.vi.net_debt - fin_debt_d
+        kpis.append(("순차입금 (연결)", ctx.vi.net_debt))
+        kpis.append(("유효 순차입금 (제조)", eff_nd_d))
+    else:
+        kpis.append(("순차입금", ctx.vi.net_debt))
+    kpis.append(("부채비율", f"{cons_by['de_ratio']:.1f}%"))
     if ctx.result.dcf:
         kpis.append(("DCF EV", ctx.result.dcf.ev_dcf))
     if ebitda > 0 and ctx.result.total_ev > 0:

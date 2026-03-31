@@ -71,7 +71,8 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
-    desc: "주력 자회사 IPO 성공, 지분가치 공정가치 반영"
+    nav_discount: 10            # 지주할인 10% (IPO로 디스카운트 축소)
+    desc: "주력 자회사 IPO 성공, 지분가치 공정가치 반영. 지주할인 축소"
     probability_rationale: "자회사 상장 예비심사 통과, 2025 하반기 상장 목표"
   B:
     name: "현행 구조 유지"
@@ -82,6 +83,7 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
+    nav_discount: 30            # 지주할인 30% (현행 수준)
     desc: "기존 자회사 배당수익 안정적 수취, 지주 할인 지속"
     probability_rationale: "지주사 디스카운트 30-40% 수준 유지 전망"
   C:
@@ -93,7 +95,8 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 100000000
-    desc: "주력 자회사 영업이익 감소, 배당 축소 가능성"
+    nav_discount: 45            # 지주할인 45% (실적 악화 + 심화된 디스카운트)
+    desc: "주력 자회사 영업이익 감소, 배당 축소. 지주할인 심화"
     probability_rationale: "경기둔화에 따른 자회사 실적 하방 리스크"
 
 dcf_params:
@@ -109,5 +112,9 @@ cps_years: 0
 net_debt: 3200000
 eco_frontier: 0
 base_year: 2025
+mc_enabled: true
 
-peers: []
+peers:
+  - {name: "LG", segment_code: "HOLD", ev_ebitda: 7.5, notes: "국내 대표 지주사, 지주할인 35%"}
+  - {name: "SK", segment_code: "HOLD", ev_ebitda: 6.0, notes: "복합지주, 에너지/반도체 계열"}
+  - {name: "두산", segment_code: "HOLD", ev_ebitda: 5.5, notes: "지주사 전환 완료, 로봇/에너지"}

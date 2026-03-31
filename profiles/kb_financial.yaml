@@ -79,21 +79,9 @@ ddm_params:
   dividend_growth: 4.0   # 배당 성장률 (%)
 
 scenarios:
-  Base:
-    name: "Base Case"
-    prob: 50
-    ipo: "상장"
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 378246886
-    ddm_growth: 4.0
-    desc: "컨센서스 기반 배당성장 4%"
-  Bull:
-    name: "Bull Case"
-    prob: 25
+  A:
+    name: "밸류업 + 주주환원 강화"
+    prob: 30
     ipo: "상장"
     irr: null
     dlom: 0
@@ -102,9 +90,23 @@ scenarios:
     buyback: 0
     shares: 378246886
     ddm_growth: 6.0
-    desc: "주주환원 확대, 배당성장 6%"
-  Bear:
-    name: "Bear Case"
+    desc: "기업 밸류업 프로그램 본격 시행, 배당성향 40%+ 및 자사주 소각 확대"
+    probability_rationale: "금융위 밸류업 가이드라인 발표(2025.3), KB 이사회 주주환원 정책 강화 결의"
+  B:
+    name: "NIM 안정 + 점진적 배당 성장"
+    prob: 45
+    ipo: "상장"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 378246886
+    ddm_growth: 4.0
+    desc: "기준금리 인하 영향으로 NIM 소폭 하락하나, 비이자이익 성장으로 보전. 배당 4% 성장 유지"
+    probability_rationale: "한은 기준금리 2.75% 동결, 하반기 1회 인하 컨센서스. 안정적 이익체력"
+  C:
+    name: "경기침체 + PF 부실 확대"
     prob: 25
     ipo: "상장"
     irr: null
@@ -114,7 +116,8 @@ scenarios:
     buyback: 0
     shares: 378246886
     ddm_growth: 2.0
-    desc: "경기둔화, 배당성장 2%"
+    desc: "부동산 PF 추가 충당금 적립, 가계부채 연체율 상승으로 배당성장 둔화"
+    probability_rationale: "부동산 PF 구조조정 지연, 소비자 신용리스크 상승 뉴스 다수"
 
 dcf_params:
   ebitda_growth_rates: [0.06, 0.05, 0.04, 0.03, 0.03]
@@ -138,6 +141,7 @@ cps_years: 0
 net_debt: 0
 eco_frontier: 0
 base_year: 2025
+mc_enabled: true
 
 peers:
   - {name: "신한지주", segment_code: "BANK", ev_ebitda: 5.8, notes: "국내 1위 은행지주"}

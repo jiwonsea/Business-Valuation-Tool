@@ -277,12 +277,28 @@ class DataFetcher:
                 result["shares_total"] = shares
                 result["shares_ordinary"] = shares
 
-        # Yahoo Finance에서 시장 데이터
+        # 시장 데이터: yfinance 우선, Yahoo Finance fallback
         if identity.ticker:
-            info = yahoo_finance.get_stock_info(identity.ticker)
-            if info:
-                result["price"] = info.get("price", 0)
-                result["currency"] = info.get("currency", "USD")
+            if yfinance_fetcher:
+                try:
+                    mkt = yfinance_fetcher.fetch_market_data(identity.ticker, "US")
+                    if mkt:
+                        result["price"] = mkt.get("price", 0)
+                        result["currency"] = mkt.get("currency", "USD")
+                        if mkt.get("beta") is not None:
+                            result["beta"] = mkt["beta"]
+                        if mkt.get("market_cap"):
+                            result["market_cap"] = mkt["market_cap"]
+                        if mkt.get("shares_outstanding") and not result["shares_total"]:
+                            result["shares_total"] = mkt["shares_outstanding"]
+                            result["shares_ordinary"] = mkt["shares_outstanding"]
+                except Exception:
+                    pass
+            if not result.get("price"):
+                info = yahoo_finance.get_stock_info(identity.ticker)
+                if info:
+                    result["price"] = info.get("price", 0)
+                    result["currency"] = info.get("currency", "USD")
 
         return result
 
@@ -301,6 +317,10 @@ class DataFetcher:
                         result["currency"] = "KRW"
                         result["shares_total"] = mkt["shares_outstanding"]
                         result["shares_ordinary"] = mkt["shares_outstanding"]
+                        if mkt.get("beta") is not None:
+                            result["beta"] = mkt["beta"]
+                        if mkt.get("market_cap"):
+                            result["market_cap"] = mkt["market_cap"]
                         return result
                 except Exception as e:
                     logger.debug("yfinance KR 주식수 조회 실패 (%s): %s", identity.ticker, e)

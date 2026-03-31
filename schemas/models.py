@@ -148,6 +148,14 @@ class ScenarioParams(BaseModel):
     desc: str = ""
     probability_rationale: str = ""  # 확률 할당 근거 (AI 생성)
     ddm_growth: Optional[float] = None  # 시나리오별 DDM 배당성장률 (%, None=기본값 사용)
+    ev_multiple: Optional[float] = None  # 시나리오별 적용 멀티플 (Multiples 방법론)
+    rim_roe_adj: float = 0.0  # ROE %p 조정 (RIM, e.g., -1.0 → 전체 ROE -1%p)
+    nav_discount: float = 0.0  # 지주할인율 (NAV, e.g., 30 → NAV × 0.7)
+
+    # DCF driver overrides (per-scenario)
+    growth_adj_pct: float = 0.0  # EBITDA 성장률 % 조정 (e.g., +20 → 각 rate × 1.2)
+    terminal_growth_adj: float = 0.0  # TGR 절대 조정 (e.g., +0.3 → TGR + 0.3%)
+    market_sentiment_pct: float = 0.0  # 시장 심리 프리미엄/디스카운트 (EV % 조정)
 
     @field_validator("prob")
     @classmethod

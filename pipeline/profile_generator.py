@@ -75,6 +75,98 @@ def auto_fetch(company_query: str) -> dict:
     }
 
 
+def _estimate_wacc_params(
+    cons: dict, shares_info: dict, market: str, identity
+) -> dict:
+    """데이터 기반 WACC 파라미터 자동 추정.
+
+    핵심 원칙:
+    - D/E: 이자발생부채(gross_borr) / 시장자본(market_cap) (총부채/장부자본 아님)
+    - Tax: min(max(effective_tax, 0), statutory_max)
+    - Beta: yfinance → Hamada unlever
+    - Kd: |interest_expense| / gross_borr
+    - Equity weight: market_cap / (market_cap + gross_borr)
+    """
+    is_us = market == "US"
+    # 시장별 기본값
+    rf = 4.25 if is_us else 3.50
+    erp = 5.50 if is_us else 7.00
+    statutory_tax = 21.0 if is_us else 25.0
+    default_bu = 1.0 if is_us else 0.75
+    default_kd = rf + 2.0
+
+    market_price = shares_info.get("price", 0)
+    shares_total = shares_info.get("shares_total", 0)
+    gross_borr = cons.get("gross_borr", 0)
+    interest_expense = cons.get("interest_expense", 0)
+
+    # yfinance beta 수집
+    levered_beta = shares_info.get("beta")  # fetch_shares에서 전달
+    if levered_beta is None:
+        # yfinance_fetcher에서 직접 시도
+        try:
+            from pipeline.yfinance_fetcher import fetch_market_data
+            if identity.ticker:
+                md = fetch_market_data(identity.ticker, market)
+                if md:
+                    levered_beta = md.get("beta")
+        except Exception:
+            pass
+
+    # 시장자본 계산 (재무제표와 동일 단위: 백만원/$M)
+    # price * shares = raw currency → ÷ 1,000,000 → 재무제표 단위
+    market_cap = 0.0
+    if market_price > 0 and shares_total > 0:
+        market_cap = market_price * shares_total / 1_000_000
+
+    # --- Tax rate: 실효세율 클램핑 ---
+    from pipeline.macro_data import calc_effective_tax_rate
+    effective_tax = calc_effective_tax_rate({0: cons})  # dummy year key
+    if effective_tax is not None:
+        tax = min(max(effective_tax, 0.0), statutory_tax)
+    else:
+        tax = statutory_tax * 0.85  # 보수적 기본값
+
+    # --- D/E: gross_borr / market_cap ---
+    if market_cap > 0 and gross_borr > 0:
+        de_ratio = round(gross_borr / market_cap * 100, 1)
+    elif market_cap > 0:
+        de_ratio = 0.0
+    else:
+        # 비상장: 장부가 기반 fallback
+        equity_bv = cons.get("equity", 0)
+        liabilities = cons.get("liabilities", 0)
+        de_ratio = round(liabilities / equity_bv * 100, 1) if equity_bv > 0 else 100.0
+
+    # --- Equity weight ---
+    if market_cap > 0:
+        eq_w = round(market_cap / (market_cap + max(gross_borr, 0)) * 100, 1)
+    else:
+        eq_w = round(100 / (1 + de_ratio / 100), 1)
+
+    # --- Unlevered beta (Hamada) ---
+    if levered_beta and levered_beta > 0 and market_cap > 0:
+        hamada_de = gross_borr / market_cap if market_cap > 0 else 0
+        bu = round(levered_beta / (1 + (1 - tax / 100) * hamada_de), 3)
+        bu = max(bu, 0.1)  # 비현실적 값 방지
+    else:
+        bu = default_bu
+
+    # --- Kd_pre: |interest_expense| / gross_borr ---
+    if gross_borr > 0 and interest_expense != 0:
+        kd_pre = round(abs(interest_expense) / gross_borr * 100, 2)
+        # 범위 제한: [rf, rf + 5%]
+        kd_pre = max(rf, min(kd_pre, rf + 5.0))
+    else:
+        kd_pre = default_kd
+
+    return {
+        "rf": rf, "erp": erp, "bu": bu,
+        "de": de_ratio, "tax": round(tax, 1),
+        "kd_pre": kd_pre, "eq_w": eq_w,
+    }
+
+
 def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> str | None:
     """수집된 데이터로 draft YAML 프로필 자동 생성."""
     years = sorted(financials.keys())
@@ -91,29 +183,20 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     shares_total = shares_info.get("shares_total", 0)
     shares_ordinary = shares_info.get("shares_ordinary", shares_total)
 
-    # D/E ratio — 상장사는 시장가 기준, 비상장은 장부가
     equity_bv = cons.get("equity", 0)
     liabilities = cons.get("liabilities", 0)
     net_debt = cons.get("net_borr", 0)
     market_price = shares_info.get("price", 0)
 
-    if market_price > 0 and shares_total > 0:
-        # 시장가 기반 D/E (상장사)
-        market_cap = market_price * shares_total
-        if is_us:
-            market_cap /= 1_000_000  # $M 단위로 변환
-        de_ratio = round(net_debt / market_cap * 100, 1) if market_cap > 0 and net_debt > 0 else 0.0
-        eq_w = round(market_cap / (market_cap + max(net_debt, 0)) * 100, 1) if market_cap > 0 else 50.0
-    else:
-        # 비상장: 장부가 기반
-        de_ratio = round(liabilities / equity_bv * 100, 1) if equity_bv > 0 else 100.0
-        eq_w = round(100 / (1 + de_ratio / 100), 1)
-
-    # WACC defaults by market
-    if is_us:
-        rf, erp, bu, tax, kd_pre = 4.25, 5.50, 1.0, 21.0, 5.50
-    else:
-        rf, erp, bu, tax, kd_pre = 3.50, 7.00, 0.75, 22.0, 5.50
+    # WACC 자동 추정
+    wacc_est = _estimate_wacc_params(cons, shares_info, identity.market, identity)
+    rf = wacc_est["rf"]
+    erp = wacc_est["erp"]
+    bu = wacc_est["bu"]
+    tax = wacc_est["tax"]
+    kd_pre = wacc_est["kd_pre"]
+    de_ratio = wacc_est["de"]
+    eq_w = wacc_est["eq_w"]
 
     # 파일명 생성
     safe_name = re.sub(r"[^\w\-]", "_", identity.name.lower().replace(" ", "_"))
@@ -142,11 +225,9 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     net_debt = cons.get("net_borr", 0)
 
     # 매크로 데이터 자동 수집
-    from pipeline.macro_data import get_terminal_growth, calc_effective_tax_rate, get_diluted_shares
+    from pipeline.macro_data import get_terminal_growth, get_diluted_shares
     terminal_growth = get_terminal_growth(identity.market)
-    effective_tax = calc_effective_tax_rate(financials)
-    if effective_tax is not None:
-        tax = effective_tax
+    # Note: tax rate는 _estimate_wacc_params()에서 클램핑 적용 완료
 
     # 희석주식수 (SBC/스톡옵션 반영)
     if identity.ticker:
@@ -160,9 +241,7 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     ev_revenue_multiple = 0.0
     pbv_multiple = 0.0
     if market_price > 0 and shares_total > 0:
-        mcap = market_price * shares_total
-        if is_us:
-            mcap /= 1_000_000  # $M 단위
+        mcap = market_price * shares_total / 1_000_000  # 백만원/$M 단위
         net_inc = cons.get("net_income", 0)
         revenue = cons.get("revenue", 0)
         if net_inc > 0:
@@ -173,9 +252,21 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
         if equity_bv > 0:
             pbv_multiple = round(mcap / equity_bv, 1)
 
+    # 금융자회사 보유 가능성 경고
+    fin_subsidiary_warn = ""
+    if not is_us and de_ratio > 150:
+        industry = getattr(identity, "industry", "") or ""
+        warn_keywords = ["자동차", "건설", "지주", "종합상사", "금융"]
+        if any(kw in identity.name or kw in industry for kw in warn_keywords):
+            fin_subsidiary_warn = (
+                "\n# ⚠ WARNING: D/E > 150% + 금융자회사 보유 가능 업종."
+                "\n#   부문 분리 SOTP(Mixed Method) 검토 필요."
+                "\n#   segments에 method: pbv, segment_net_debt 추가 고려."
+            )
+
     content = f"""# {identity.name} — Auto-generated draft profile
 # Source: {'SEC EDGAR' if is_us else 'DART'} | Generated by valuation-tool
-# TODO: Add segment data, multiples, and scenario parameters
+# TODO: Add segment data, multiples, and scenario parameters{fin_subsidiary_warn}
 
 company:
   name: "{identity.name}"
@@ -226,6 +317,8 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: {shares_total}
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
     desc: "Base case with consensus estimates"
   Bull:
     name: "Bull Case"
@@ -237,6 +330,8 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: {shares_total}
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
     desc: "Upside scenario"
   Bear:
     name: "Bear Case"
@@ -248,6 +343,8 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: {shares_total}
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
     desc: "Downside scenario"
 
 dcf_params:

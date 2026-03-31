@@ -540,9 +540,9 @@ class TestFullPipeline:
         # DDM + 시나리오별 성장률 → weighted_value 양수
         assert result.weighted_value > 0
         # 시나리오별 DDM 값이 달라야 함 (ddm_growth 적용)
-        base_ps = result.scenarios["Base"].post_dlom
-        bull_ps = result.scenarios["Bull"].post_dlom
-        bear_ps = result.scenarios["Bear"].post_dlom
+        base_ps = result.scenarios["B"].post_dlom
+        bull_ps = result.scenarios["A"].post_dlom
+        bear_ps = result.scenarios["C"].post_dlom
         assert bull_ps > base_ps > bear_ps
         # 금융주는 DCF 제외, P/E·P/BV 교차검증만 존재
         assert result.dcf is None

@@ -19,22 +19,64 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     w = result.wacc
     print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
 
+    # Mixed SOTP 판단
+    is_mixed = bool(vi.segment_net_debt) and any(
+        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
+    )
+
     # D&A 배분 (SOTP인 경우만)
     if result.da_allocations and by in result.da_allocations:
         total_da = vi.consolidated[by]["dep"] + vi.consolidated[by]["amort"]
-        print(f"\n[D&A 배분] 총 D&A = {total_da:,}{unit}")
-        print(f"{'부문':<20} {'자산비중':>10} {'D&A':>12} {'EBITDA':>14}")
-        print("-" * 60)
+        da_note = " (금융 부문 제외)" if is_mixed else ""
+        print(f"\n[D&A 배분{da_note}] 총 D&A = {total_da:,}{unit}")
+        if is_mixed:
+            print(f"{'부문':<18} {'Method':<10} {'자산비중':>8} {'D&A':>12} {'EBITDA':>14}")
+        else:
+            print(f"{'부문':<20} {'자산비중':>10} {'D&A':>12} {'EBITDA':>14}")
+        print("-" * 65)
         alloc = result.da_allocations[by]
         for code in vi.segments:
             if code in alloc:
                 a = alloc[code]
-                print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+                if is_mixed:
+                    method = vi.segments[code].get("method", "ev_ebitda")
+                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+                    print(f"{seg_names.get(code, code):<18} {m_lbl:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+                else:
+                    print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
 
     # SOTP (있는 경우)
     if result.sotp:
         sotp_ev = sum(s.ev for s in result.sotp.values())
-        print(f"\n[SOTP EV] {sotp_ev:>14,}{unit}")
+        if is_mixed:
+            print(f"\n[SOTP (Mixed Method)]")
+            for code in vi.segments:
+                if code in result.sotp:
+                    s = result.sotp[code]
+                    method = getattr(s, "method", "ev_ebitda")
+                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+                    eq_tag = " [Equity]" if getattr(s, "is_equity_based", False) else " [EV]"
+                    print(f"  {seg_names.get(code, code):<18} {m_lbl:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
+            print(f"  {'합계':<30} {sotp_ev:>14,}{unit}")
+            # Equity Bridge
+            fin_debt = sum(
+                vi.segment_net_debt.get(c, 0)
+                for c, info in vi.segments.items()
+                if info.get("method") in ("pbv", "pe")
+            )
+            eff_nd = vi.net_debt - fin_debt
+            ev_part = sum(s.ev for s in result.sotp.values() if not getattr(s, "is_equity_based", False))
+            eq_part = sum(s.ev for s in result.sotp.values() if getattr(s, "is_equity_based", False))
+            print(f"\n[Equity Bridge]")
+            print(f"  연결 순차입금:     {vi.net_debt:>14,}{unit}")
+            print(f"  (-) 금융부문 부채: {fin_debt:>14,}{unit}")
+            print(f"  유효 순차입금:     {eff_nd:>14,}{unit}")
+            print(f"  제조 EV:           {ev_part:>14,}{unit}")
+            print(f"  제조 Equity:       {ev_part - eff_nd:>14,}{unit}")
+            print(f"  (+) 금융 Equity:   {eq_part:>14,}{unit}")
+            print(f"  Total Equity:      {ev_part - eff_nd + eq_part:>14,}{unit}")
+        else:
+            print(f"\n[SOTP EV] {sotp_ev:>14,}{unit}")
 
     # 시나리오
     if result.scenarios:
@@ -71,7 +113,8 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     # DCF
     if result.dcf:
         dcf = result.dcf
-        print(f"\n[DCF]")
+        dcf_note = " (제조 부문 기준)" if is_mixed else ""
+        print(f"\n[DCF{dcf_note}]")
         print(f"  DCF EV: {dcf.ev_dcf:>12,}{unit}")
         if result.sotp:
             sotp_ev = sum(s.ev for s in result.sotp.values())

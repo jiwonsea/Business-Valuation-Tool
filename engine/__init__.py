@@ -4,13 +4,15 @@ from .dcf import calc_dcf
 from .scenario import calc_scenario
 from .sensitivity import sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf
 from .multiples import cross_validate, calc_ev_revenue, calc_pe, calc_pbv, calc_ps, calc_pffo
-from .peer_analysis import calc_peer_stats, fetch_peer_multiples
+from .peer_analysis import calc_peer_stats
+from pipeline.peer_fetcher import fetch_peer_multiples
 from .units import detect_unit, per_share
 from .method_selector import suggest_method
 from .ddm import calc_ddm
 from .rim import calc_rim
 from .nav import calc_nav
 from .market_comparison import compare_to_market
+from .growth import linear_fade, calc_ebitda_cagr, generate_growth_rates
 
 __all__ = [
     "calc_wacc",
@@ -36,4 +38,7 @@ __all__ = [
     "calc_rim",
     "calc_nav",
     "compare_to_market",
+    "linear_fade",
+    "calc_ebitda_cagr",
+    "generate_growth_rates",
 ]

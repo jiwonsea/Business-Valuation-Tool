@@ -4,7 +4,11 @@
 https://www.sec.gov/edgar/sec-api-documentation
 """
 
+import re
+
 import httpx
+
+_CIK_RE = re.compile(r"^\d{1,10}$")
 
 EDGAR_BASE = "https://data.sec.gov"
 EDGAR_FULL_TEXT = "https://efts.sec.gov/LATEST"
@@ -42,6 +46,13 @@ def search_company(query: str) -> list[dict]:
     return results[:10]
 
 
+def _validate_cik(cik: str) -> str:
+    """CIK 번호 형식 검증. 유효하지 않으면 ValueError."""
+    if not _CIK_RE.match(cik):
+        raise ValueError(f"유효하지 않은 CIK 형식: {cik!r}")
+    return cik
+
+
 def get_company_facts(cik: str) -> dict:
     """기업의 전체 XBRL Fact 데이터 조회.
 
@@ -53,7 +64,7 @@ def get_company_facts(cik: str) -> dict:
     Returns:
         Raw JSON (매우 큰 dict — 필요한 항목만 파싱하여 사용)
     """
-    cik_padded = cik.zfill(10)
+    cik_padded = _validate_cik(cik).zfill(10)
     url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik_padded}.json"
     resp = _client.get(url, timeout=30)
     resp.raise_for_status()
@@ -73,7 +84,7 @@ def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
     Returns:
         {"units": {"USD": [{"val": ..., "fy": ..., "fp": ...}]}}
     """
-    cik_padded = cik.zfill(10)
+    cik_padded = _validate_cik(cik).zfill(10)
     url = f"{EDGAR_BASE}/api/xbrl/companyconcept/CIK{cik_padded}/{taxonomy}/{concept}.json"
     resp = _client.get(url)
     resp.raise_for_status()
@@ -88,7 +99,7 @@ def get_submissions(cik: str) -> dict:
     Returns:
         {"name": str, "tickers": list, "filings": {"recent": {...}}}
     """
-    cik_padded = cik.zfill(10)
+    cik_padded = _validate_cik(cik).zfill(10)
     url = f"{EDGAR_BASE}/submissions/CIK{cik_padded}.json"
     resp = _client.get(url)
     resp.raise_for_status()

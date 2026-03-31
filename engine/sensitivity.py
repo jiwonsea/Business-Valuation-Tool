@@ -1,5 +1,7 @@
 """민감도 분석 엔진 — 방법론별 2-way 테이블."""
 
+from __future__ import annotations
+
 from schemas.models import DAAllocation, DCFParams, SensitivityRow
 from .sotp import calc_sotp
 from .dcf import calc_dcf
@@ -36,22 +38,32 @@ def sensitivity_multiples(
         base_m = multiples.get(col_seg, 13.0)
         col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
+    # 변동하지 않는 세그먼트의 EV를 사전 계산
+    fixed_ev = 0
+    for code, alloc in base_ebitda_by_seg.items():
+        if code != row_seg and code != col_seg:
+            m = multiples.get(code, 0)
+            fixed_ev += round(alloc.ebitda * m) if alloc.ebitda > 0 else 0
+    deductions = net_debt + eco_frontier
+
     rows = []
     orig_row = multiples.get(row_seg)
     orig_col = multiples.get(col_seg)
-    for row_m in row_range:
-        multiples[row_seg] = row_m
-        for col_m in col_range:
-            multiples[col_seg] = col_m
-            _, ev = calc_sotp(base_ebitda_by_seg, multiples)
-            eq = ev - net_debt - eco_frontier
-            ps = per_share(eq, unit_multiplier, shares)
-            rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
-    # 원래 값 복원
-    if orig_row is not None:
-        multiples[row_seg] = orig_row
-    if orig_col is not None:
-        multiples[col_seg] = orig_col
+    row_alloc = base_ebitda_by_seg.get(row_seg)
+    col_alloc = base_ebitda_by_seg.get(col_seg)
+    try:
+        for row_m in row_range:
+            row_ev = round(row_alloc.ebitda * row_m) if row_alloc and row_alloc.ebitda > 0 else 0
+            for col_m in col_range:
+                col_ev = round(col_alloc.ebitda * col_m) if col_alloc and col_alloc.ebitda > 0 else 0
+                eq = fixed_ev + row_ev + col_ev - deductions
+                ps = per_share(eq, unit_multiplier, shares)
+                rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
+    finally:
+        if orig_row is not None:
+            multiples[row_seg] = orig_row
+        if orig_col is not None:
+            multiples[col_seg] = orig_col
     return rows, row_range, col_range
 
 
@@ -79,11 +91,9 @@ def sensitivity_irr_dlom(
         cps_r = round(cps_principal * (1 + irr / 100) ** cps_years)
         claims = net_debt + cps_r + rcps_repay + buyback + eco_frontier
         eq = total_ev - claims
+        base_ps = per_share(eq, unit_multiplier, shares) if eq > 0 else 0
         for dlom in dlom_range:
-            if eq > 0:
-                ps = round(per_share(eq, unit_multiplier, shares) * (1 - dlom / 100))
-            else:
-                ps = 0
+            ps = round(base_ps * (1 - dlom / 100)) if base_ps > 0 else 0
             rows.append(SensitivityRow(row_val=irr, col_val=dlom, value=ps))
     return rows, irr_range, dlom_range
 
@@ -97,18 +107,43 @@ def sensitivity_dcf(
     wacc_range: list[float] | None = None,
     tg_range: list[float] | None = None,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """민감도: WACC × 영구성장률 → DCF EV (백만원)."""
+    """민감도: WACC × 영구성장률 → DCF EV (백만원).
+
+    최적화: FCFF projections는 WACC/Tg와 무관하므로 1회만 계산,
+    할인(PV) + Terminal Value만 (WACC, Tg) 조합별로 반복.
+    """
     if wacc_range is None:
         wacc_range = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
     if tg_range is None:
         tg_range = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
 
+    # FCFF projections 1회 계산 (기본 WACC 사용, projections는 WACC 무관)
+    base_result = calc_dcf(ebitda_base, da_base, revenue_base,
+                           wacc_range[0], params, base_year)
+    fcffs = [p.fcff for p in base_result.projections]
+    n = len(fcffs)
+    last_fcff = fcffs[-1]
+
     rows = []
     for w in wacc_range:
+        wacc = w / 100
+        # PV of projection period
+        discount = 1 + wacc
+        pv_fcff = 0
+        df = 1.0
+        for fcff in fcffs:
+            df *= discount
+            pv_fcff += round(fcff / df)
         for tg in tg_range:
-            p = params.model_copy(update={"terminal_growth": tg})
-            r = calc_dcf(ebitda_base, da_base, revenue_base, w, p, base_year)
-            rows.append(SensitivityRow(row_val=w, col_val=tg, value=r.ev_dcf))
+            tg_dec = tg / 100
+            if wacc <= tg_dec:
+                rows.append(SensitivityRow(row_val=w, col_val=tg, value=0))
+                continue
+            terminal_fcff = round(last_fcff * (1 + tg_dec))
+            tv = round(terminal_fcff / (wacc - tg_dec))
+            pv_tv = round(tv / (1 + wacc) ** n)
+            ev = pv_fcff + pv_tv
+            rows.append(SensitivityRow(row_val=w, col_val=tg, value=ev))
     return rows, wacc_range, tg_range
 
 

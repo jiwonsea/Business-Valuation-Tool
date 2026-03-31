@@ -105,7 +105,11 @@ def main():
         return auto_fetch(args.company)
 
     # 프로필 기반 밸류에이션 모드
-    vi = load_profile(args.profile)
+    profile_path = Path(args.profile).resolve()
+    profiles_dir = (Path(__file__).parent / "profiles").resolve()
+    if not profile_path.is_relative_to(profiles_dir):
+        parser.error(f"프로필은 profiles/ 디렉토리 내부만 허용됩니다: {args.profile}")
+    vi = load_profile(str(profile_path))
     result = run_valuation(vi)
 
     # 상장사 시장가격 비교

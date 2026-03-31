@@ -80,29 +80,10 @@ def calc_peer_stats(
 
 
 def fetch_peer_multiples(peers: list[PeerCompany]) -> list[PeerCompany]:
-    """ticker가 있는 Peer의 멀티플을 Yahoo Finance에서 자동 조회.
+    """Deprecated: pipeline.peer_fetcher.fetch_peer_multiples()로 이동.
 
-    원본 리스트를 변경하지 않고, 업데이트된 새 리스트를 반환한다.
-    조회 실패 시 기존 수동 데이터를 유지한다.
+    engine 모듈의 순수 함수 규칙을 유지하기 위해 IO 로직을 pipeline으로 분리.
+    하위 호환을 위해 re-export만 유지.
     """
-    from pipeline.yahoo_finance import get_quote_summary
-
-    updated = []
-    for p in peers:
-        if p.ticker:
-            try:
-                data = get_quote_summary(p.ticker)
-                if data:
-                    p = p.model_copy(update={
-                        "ev_ebitda": data.get("ev_ebitda") or p.ev_ebitda,
-                        "market_cap": data.get("market_cap"),
-                        "enterprise_value": data.get("enterprise_value"),
-                        "trailing_pe": data.get("trailing_pe"),
-                        "forward_pe": data.get("forward_pe"),
-                        "beta": data.get("beta"),
-                        "source": "yahoo",
-                    })
-            except Exception as e:
-                logger.debug("Peer 멀티플 조회 실패 (%s): %s", p.ticker, e)
-        updated.append(p)
-    return updated
+    from pipeline.peer_fetcher import fetch_peer_multiples as _fetch
+    return _fetch(peers)

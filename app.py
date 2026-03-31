@@ -10,10 +10,22 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from valuation_runner import load_profile, run_valuation, _seg_names
+from valuation_runner import load_profile as _load_profile, run_valuation as _run_valuation, _seg_names
 from cli import _fetch_and_compare_market_price
 from orchestrator import format_summary, _save_to_db
 from output.excel_builder import export
+
+
+@st.cache_data(show_spinner=False)
+def _cached_load_profile(path: str):
+    return _load_profile(path)
+
+
+@st.cache_data(show_spinner=False)
+def _cached_run_valuation(_vi_hash: str, path: str):
+    """프로필 경로 기반 캐싱 — 동일 프로필 재실행 방지."""
+    vi = _load_profile(path)
+    return vi, _run_valuation(vi)
 
 st.set_page_config(
     page_title="기업가치 분석 플랫폼",
@@ -71,9 +83,9 @@ selected = st.sidebar.selectbox(
 if st.sidebar.button("분석 실행", type="primary"):
     with st.spinner("밸류에이션 계산 중..."):
         profile_path = str(profile_names[selected])
-        vi = load_profile(profile_path)
-        result = run_valuation(vi)
-        # 상장사 괴리율 자동 비교
+        # 캐싱: 동일 프로필은 재계산 없이 즉시 반환
+        vi, result = _cached_run_valuation(profile_path, profile_path)
+        # 상장사 괴리율 자동 비교 (시장가는 실시간이므로 캐싱 미적용)
         result = _fetch_and_compare_market_price(vi, result)
         st.session_state["vi"] = vi
         st.session_state["result"] = result
@@ -400,6 +412,24 @@ with tabs[tab_idx]:
 with tabs[tab_idx]:
     tab_idx += 1
 
+    def _render_heatmap(data, title, x_label, y_label, row_fmt=".1f", col_fmt=".1f",
+                        row_suffix="%", col_suffix="%"):
+        """민감도 히트맵 공통 렌더링."""
+        row_vals = sorted(set(r.row_val for r in data))
+        col_vals = sorted(set(r.col_val for r in data))
+        lookup = {(r.row_val, r.col_val): r.value for r in data}
+        z_data = [[lookup.get((rv, cv), 0) for cv in col_vals] for rv in row_vals]
+        fig = go.Figure(data=go.Heatmap(
+            z=z_data,
+            x=[f"{cv:{col_fmt}}{col_suffix}" for cv in col_vals],
+            y=[f"{rv:{row_fmt}}{row_suffix}" for rv in row_vals],
+            colorscale='RdYlGn',
+            text=[[f"{v:,.0f}" for v in row] for row in z_data],
+            texttemplate="%{text}",
+        ))
+        fig.update_layout(title=title, xaxis_title=x_label, yaxis_title=y_label)
+        st.plotly_chart(fig, use_container_width=True)
+
     sens_tabs = []
     sens_names = []
     if result.sensitivity_dcf:
@@ -416,75 +446,31 @@ with tabs[tab_idx]:
         if result.sensitivity_dcf:
             with sub_tabs[sub_idx]:
                 sub_idx += 1
-                wacc_vals = sorted(set(r.row_val for r in result.sensitivity_dcf))
-                tg_vals = sorted(set(r.col_val for r in result.sensitivity_dcf))
-                dcf_lookup = {(r.row_val, r.col_val): r.value for r in result.sensitivity_dcf}
-
-                z_data = []
-                for w in wacc_vals:
-                    row = [dcf_lookup.get((w, tg), 0) for tg in tg_vals]
-                    z_data.append(row)
-
-                fig_heat = go.Figure(data=go.Heatmap(
-                    z=z_data,
-                    x=[f"{tg:.1f}%" for tg in tg_vals],
-                    y=[f"{w:.1f}%" for w in wacc_vals],
-                    colorscale='RdYlGn',
-                    text=[[f"{v:,.0f}" for v in row] for row in z_data],
-                    texttemplate="%{text}",
-                ))
-                fig_heat.update_layout(
-                    title=f"WACC × 영구성장률 → DCF EV ({unit})",
-                    xaxis_title="영구성장률",
-                    yaxis_title="WACC",
+                _render_heatmap(
+                    result.sensitivity_dcf,
+                    f"WACC × 영구성장률 → DCF EV ({unit})",
+                    "영구성장률", "WACC",
                 )
-                st.plotly_chart(fig_heat, use_container_width=True)
 
         if result.sensitivity_multiples:
             with sub_tabs[sub_idx]:
                 sub_idx += 1
-                row_vals = sorted(set(r.row_val for r in result.sensitivity_multiples))
-                col_vals = sorted(set(r.col_val for r in result.sensitivity_multiples))
-                lookup = {(r.row_val, r.col_val): r.value for r in result.sensitivity_multiples}
-
-                z_data = [[lookup.get((rv, cv), 0) for cv in col_vals] for rv in row_vals]
-                fig_mult = go.Figure(data=go.Heatmap(
-                    z=z_data,
-                    x=[f"{cv:.1f}x" for cv in col_vals],
-                    y=[f"{rv:.1f}x" for rv in row_vals],
-                    colorscale='RdYlGn',
-                    text=[[f"{v:,.0f}" for v in row] for row in z_data],
-                    texttemplate="%{text}",
-                ))
-                fig_mult.update_layout(
-                    title=f"멀티플 민감도 → 주당가치 ({sym})",
-                    xaxis_title="부문2 멀티플",
-                    yaxis_title="부문1 멀티플",
+                _render_heatmap(
+                    result.sensitivity_multiples,
+                    f"멀티플 민감도 → 주당가치 ({sym})",
+                    "부문2 멀티플", "부문1 멀티플",
+                    row_suffix="x", col_suffix="x",
                 )
-                st.plotly_chart(fig_mult, use_container_width=True)
 
         if result.sensitivity_irr_dlom:
             with sub_tabs[sub_idx]:
                 sub_idx += 1
-                row_vals = sorted(set(r.row_val for r in result.sensitivity_irr_dlom))
-                col_vals = sorted(set(r.col_val for r in result.sensitivity_irr_dlom))
-                lookup = {(r.row_val, r.col_val): r.value for r in result.sensitivity_irr_dlom}
-
-                z_data = [[lookup.get((rv, cv), 0) for cv in col_vals] for rv in row_vals]
-                fig_irr = go.Figure(data=go.Heatmap(
-                    z=z_data,
-                    x=[f"{cv:.0f}%" for cv in col_vals],
-                    y=[f"{rv:.1f}%" for rv in row_vals],
-                    colorscale='RdYlGn',
-                    text=[[f"{v:,.0f}" for v in row] for row in z_data],
-                    texttemplate="%{text}",
-                ))
-                fig_irr.update_layout(
-                    title=f"FI IRR × DLOM → 주당가치 ({sym})",
-                    xaxis_title="DLOM (%)",
-                    yaxis_title="FI IRR (%)",
+                _render_heatmap(
+                    result.sensitivity_irr_dlom,
+                    f"FI IRR × DLOM → 주당가치 ({sym})",
+                    "DLOM (%)", "FI IRR (%)",
+                    col_fmt=".0f",
                 )
-                st.plotly_chart(fig_irr, use_container_width=True)
     else:
         st.info("민감도 분석 결과 없음")
 

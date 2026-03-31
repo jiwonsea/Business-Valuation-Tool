@@ -7,7 +7,10 @@ from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
 from engine.dcf import calc_dcf
 from engine.scenario import calc_scenario
-from engine.sensitivity import sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf
+from engine.sensitivity import (
+    sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf,
+    sensitivity_ddm, sensitivity_rim, sensitivity_nav, sensitivity_multiple_range,
+)
 from engine.multiples import cross_validate, calc_ev_revenue, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
 from engine.monte_carlo import MCInput, run_monte_carlo
@@ -18,6 +21,7 @@ from engine.rim import calc_rim
 from engine.multiples import calc_ps, calc_pffo
 from engine.market_comparison import compare_to_market
 from engine.nav import calc_nav
+from engine.growth import linear_fade, calc_ebitda_cagr, generate_growth_rates
 
 
 # ── SK에코플랜트 기준 데이터 ──
@@ -969,3 +973,276 @@ class TestMacroData:
         from pipeline.macro_data import calc_effective_tax_rate
         rate = calc_effective_tax_rate({})
         assert rate is None
+
+
+# ═══════════════════════════════════════════════════════════
+# RIM Enhanced Tests
+# ═══════════════════════════════════════════════════════════
+
+class TestRIMEnhanced:
+    def test_terminal_growth_increases_value(self):
+        """영구성장률 > 0 → equity_value 증가"""
+        r_zero_g = calc_rim(
+            book_value=100_000, roe_forecasts=[12.0, 12.0, 12.0],
+            ke=10.0, terminal_growth=0.0, shares=1_000_000,
+            unit_multiplier=1_000_000,
+        )
+        r_pos_g = calc_rim(
+            book_value=100_000, roe_forecasts=[12.0, 12.0, 12.0],
+            ke=10.0, terminal_growth=2.0, shares=1_000_000,
+            unit_multiplier=1_000_000,
+        )
+        assert r_pos_g.equity_value > r_zero_g.equity_value
+
+    def test_bv_accumulation_clean_surplus(self):
+        """배당=0 → BV 매기 NI만큼 증가 (clean surplus)"""
+        r = calc_rim(
+            book_value=100_000, roe_forecasts=[10.0, 10.0],
+            ke=10.0, shares=1, unit_multiplier=1,
+        )
+        # BV₁ = 100,000 + NI₁(=10,000) = 110,000
+        assert r.projections[1].bv == 110_000
+
+    def test_bv_accumulation_with_payout(self):
+        """배당성향 40% → BV에 NI의 60%만 유보"""
+        r = calc_rim(
+            book_value=100_000, roe_forecasts=[10.0, 10.0],
+            ke=8.0, shares=1, unit_multiplier=1, payout_ratio=40.0,
+        )
+        # NI₁ = 100,000 × 10% = 10,000
+        # Div₁ = 10,000 × 40% = 4,000
+        # BV₁ = 100,000 + 10,000 - 4,000 = 106,000
+        assert r.projections[1].bv == 106_000
+
+
+# ═══════════════════════════════════════════════════════════
+# NAV Enhanced Tests
+# ═══════════════════════════════════════════════════════════
+
+class TestNAVEnhanced:
+    def test_large_revaluation(self):
+        """큰 재평가 조정 → per_share 비례 증가"""
+        r1 = calc_nav(10_000, 4_000, 1_000_000, revaluation=0, unit_multiplier=1_000_000)
+        r2 = calc_nav(10_000, 4_000, 1_000_000, revaluation=10_000, unit_multiplier=1_000_000)
+        assert r2.per_share > r1.per_share
+        assert r2.nav == 16_000  # 10,000 + 10,000 - 4,000
+
+    def test_negative_revaluation(self):
+        """음의 재평가 → NAV 감소"""
+        r = calc_nav(10_000, 4_000, 1_000_000, revaluation=-3_000, unit_multiplier=1_000_000)
+        assert r.adjusted_assets == 7_000
+        assert r.nav == 3_000
+
+
+# ═══════════════════════════════════════════════════════════
+# Monte Carlo Enhanced Edge Cases
+# ═══════════════════════════════════════════════════════════
+
+class TestMonteCarloEdgeCases:
+    def test_negative_equity_clamped_to_zero(self):
+        """claims > EV → 음수 주당가치는 0으로 clip"""
+        mc = MCInput(
+            multiple_params={"A": (2.0, 0.1)},  # 낮은 멀티플
+            wacc_mean=8.0, wacc_std=0.5,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.0, tg_std=0.3,
+            n_sims=1000, seed=42,
+        )
+        r = run_monte_carlo(
+            mc, {"A": 10_000},
+            net_debt=500_000,  # EV(~20,000) << claims(500,000)
+            eco_frontier=0, cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=1_000_000,
+            unit_multiplier=1_000_000,
+        )
+        assert r.min_val >= 0
+
+    def test_dlom_clipped_to_50(self):
+        """DLOM 평균 45%, std 10% → 50% 상한 clip 동작"""
+        mc = MCInput(
+            multiple_params={"A": (10.0, 0.5)},
+            wacc_mean=8.0, wacc_std=0.5,
+            dlom_mean=45.0, dlom_std=10.0,  # 상당수가 50% 초과
+            tg_mean=2.0, tg_std=0.3,
+            n_sims=5000, seed=42,
+        )
+        r = run_monte_carlo(
+            mc, {"A": 500_000},
+            net_debt=100_000, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+        )
+        # DLOM 50% 상한이 적용되므로 주당가치 > 0
+        assert r.mean > 0
+        assert r.p5 >= 0
+
+    def test_histogram_generated(self):
+        """시뮬레이션 후 히스토그램 bin/count 생성 확인"""
+        mc = MCInput(
+            multiple_params={"A": (10.0, 1.5)},
+            wacc_mean=9.0, wacc_std=1.0,
+            dlom_mean=10.0, dlom_std=3.0,
+            tg_mean=2.0, tg_std=0.5,
+            n_sims=2000, seed=42,
+        )
+        r = run_monte_carlo(
+            mc, {"A": 500_000},
+            net_debt=100_000, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+        )
+        assert len(r.histogram_bins) > 0
+        assert len(r.histogram_counts) == len(r.histogram_bins)
+        assert sum(r.histogram_counts) > 0
+
+
+# ═══════════════════════════════════════════════════════════
+# Sensitivity — DDM/RIM/NAV/Multiple Range Tests
+# ═══════════════════════════════════════════════════════════
+
+class TestSensitivityExtended:
+    def test_ddm_grid_size(self):
+        rows = sensitivity_ddm(dps=1000, ke_base=10.0, g_base=3.0)
+        assert len(rows) == 7 * 7  # 기본 7×7 그리드
+
+    def test_ddm_invalid_combinations_zero(self):
+        """Ke <= g 조합 → value=0"""
+        rows = sensitivity_ddm(
+            dps=1000, ke_base=5.0, g_base=4.5,
+            ke_range=[3.0, 4.0, 5.0], g_range=[3.0, 4.0, 5.0],
+        )
+        # ke=3%, g=5% → invalid → 0
+        invalid = [r for r in rows if r.row_val <= r.col_val]
+        assert all(r.value == 0 for r in invalid)
+
+    def test_rim_grid_size(self):
+        rows = sensitivity_rim(
+            book_value=100_000, roe_forecasts=[12.0, 11.0],
+            ke_base=10.0, shares=1_000_000,
+        )
+        assert len(rows) == 7 * 7
+
+    def test_rim_higher_ke_lower_value(self):
+        """Ke 높을수록 주당가치 낮아져야"""
+        rows = sensitivity_rim(
+            book_value=100_000, roe_forecasts=[12.0, 11.0, 10.5],
+            ke_base=10.0, shares=1_000_000,
+            ke_range=[8.0, 10.0, 12.0], tg_range=[0.0],
+        )
+        vals = [r.value for r in rows]
+        assert vals[0] > vals[1] > vals[2]
+
+    def test_nav_grid_size(self):
+        rows = sensitivity_nav(10_000, 4_000, 1_000_000, base_revaluation=1_000)
+        assert len(rows) == 7 * 5  # 기본 7×5
+
+    def test_nav_discount_reduces_value(self):
+        """할인율 증가 → per_share 감소"""
+        rows = sensitivity_nav(
+            10_000, 4_000, 1_000_000,
+            reval_range=[0], discount_range=[0, 20, 40],
+        )
+        vals = [r.value for r in rows]
+        assert vals[0] > vals[1] > vals[2]
+
+    def test_multiple_range_grid_size(self):
+        rows = sensitivity_multiple_range(
+            metric_value=500_000, net_debt=100_000,
+            shares=50_000_000, base_multiple=10.0,
+        )
+        assert len(rows) == 9 * 5  # 기본 9×5
+
+    def test_multiple_range_higher_mult_higher_value(self):
+        """멀티플 높을수록 주당가치 증가"""
+        rows = sensitivity_multiple_range(
+            metric_value=500_000, net_debt=100_000,
+            shares=50_000_000, base_multiple=10.0,
+            mult_range=[8.0, 10.0, 12.0], discount_range=[0],
+        )
+        vals = [r.value for r in rows]
+        assert vals[0] < vals[1] < vals[2]
+
+
+# ═══════════════════════════════════════════════════════════
+# Growth — Linear Fade & CAGR Tests
+# ═══════════════════════════════════════════════════════════
+
+class TestLinearFade:
+    def test_basic_5y(self):
+        result = linear_fade(0.12, 0.04, 5)
+        assert result == [0.12, 0.10, 0.08, 0.06, 0.04]
+
+    def test_no_fade(self):
+        """시작 == 끝이면 동일 값 반복"""
+        result = linear_fade(0.05, 0.05, 3)
+        assert result == [0.05, 0.05, 0.05]
+
+    def test_single_year(self):
+        assert linear_fade(0.10, 0.04, 1) == [0.10]
+
+    def test_invalid_n(self):
+        import pytest
+        with pytest.raises(ValueError):
+            linear_fade(0.10, 0.04, 0)
+
+
+class TestCalcEbitdaCagr:
+    _CONS = {
+        2023: {"op": 100, "dep": 20, "amort": 5},   # EBITDA=125
+        2024: {"op": 130, "dep": 22, "amort": 5},   # EBITDA=157
+        2025: {"op": 160, "dep": 25, "amort": 5},   # EBITDA=190
+    }
+
+    def test_2y_cagr(self):
+        cagr = calc_ebitda_cagr(self._CONS, n_years=2)
+        assert cagr is not None
+        # (190/125)^(1/2) - 1 ≈ 0.2325
+        assert 0.23 < cagr < 0.24
+
+    def test_1y_cagr(self):
+        cagr = calc_ebitda_cagr(self._CONS, n_years=1)
+        assert cagr is not None
+        # 190/157 - 1 ≈ 0.2102
+        assert 0.20 < cagr < 0.22
+
+    def test_insufficient_data(self):
+        assert calc_ebitda_cagr({2025: {"op": 100, "dep": 10, "amort": 5}}) is None
+
+    def test_negative_ebitda(self):
+        cons = {
+            2023: {"op": -50, "dep": 10, "amort": 5},
+            2024: {"op": 100, "dep": 10, "amort": 5},
+            2025: {"op": 120, "dep": 10, "amort": 5},
+        }
+        assert calc_ebitda_cagr(cons) is None
+
+
+class TestGenerateGrowthRates:
+    def test_kr_market(self):
+        cons = {
+            2023: {"op": 100, "dep": 20, "amort": 5},
+            2024: {"op": 150, "dep": 22, "amort": 5},
+            2025: {"op": 200, "dep": 25, "amort": 5},
+        }
+        rates = generate_growth_rates(cons, market="KR")
+        assert len(rates) == 5
+        assert rates[0] > rates[-1]  # 감소 추세
+        assert rates[-1] == 0.03     # KR 수렴치
+
+    def test_fallback_when_no_data(self):
+        rates = generate_growth_rates({}, market="US")
+        assert len(rates) == 5
+        assert rates[0] == 0.10  # fallback
+        assert rates[-1] == 0.04  # US 수렴치
+
+    def test_clamping_high_growth(self):
+        """CAGR이 매우 높아도 30%로 클램핑"""
+        cons = {
+            2023: {"op": 50, "dep": 10, "amort": 5},
+            2024: {"op": 150, "dep": 10, "amort": 5},
+            2025: {"op": 300, "dep": 10, "amort": 5},
+        }
+        rates = generate_growth_rates(cons, market="KR")
+        assert rates[0] <= 0.30

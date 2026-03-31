@@ -12,13 +12,17 @@ import argparse
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
 from .scoring import score_companies
 
 _RESULTS_BASE = Path(
-    os.environ.get("VALUATION_RESULTS_DIR", r"G:\내 드라이브\포트폴리오\valuation-results")
+    os.environ.get(
+        "VALUATION_RESULTS_DIR",
+        Path(__file__).resolve().parent.parent / "valuation-results",
+    )
 )
 
 logging.basicConfig(
@@ -73,15 +77,28 @@ def run_weekly(
     # DB에 실행 기록 생성
     run_id = _save_run_start(markets)
 
-    # ── Phase 1: 시장별 뉴스 수집 + AI 분석 ──
+    # ── Phase 1: 시장별 뉴스 수집 + AI 분석 (병렬) ──
     engine = DiscoveryEngine()
     all_companies: list[dict] = []
     all_news: list[dict] = []
     total_news = 0
 
-    for market in markets:
+    def _discover_market(market: str) -> tuple[str, dict | None, str | None]:
         try:
-            result = engine.discover(market=market)
+            return market, engine.discover(market=market), None
+        except Exception as e:
+            return market, None, str(e)
+
+    with ThreadPoolExecutor(max_workers=len(markets)) as pool:
+        futures = {pool.submit(_discover_market, m): m for m in markets}
+        for fut in as_completed(futures):
+            market, result, error = fut.result()
+            if error:
+                logger.error("Discovery 실패 [%s]: %s", market, error)
+                summary["errors"].append({
+                    "phase": "discovery", "market": market, "error": error,
+                })
+                continue
             news_count = result.get("news_count", 0)
             total_news += news_count
             for co in result.get("companies", []):
@@ -91,13 +108,6 @@ def run_weekly(
                 "market": market,
                 "news_count": news_count,
                 "companies": result.get("companies", []),
-            })
-            # 뉴스 원문은 scoring에 필요 — DiscoveryEngine 내부에서 수집한 뉴스 재활용
-            # discover()는 뉴스 원문을 반환하지 않으므로 제목 기반 스코어링용으로 companies의 reason 활용
-        except Exception as e:
-            logger.error("Discovery 실패 [%s]: %s", market, e)
-            summary["errors"].append({
-                "phase": "discovery", "market": market, "error": str(e),
             })
 
     # ── Phase 2: 중복 제거 + 중요도 스코어링 ──
@@ -130,21 +140,28 @@ def run_weekly(
     week_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Excel 출력 폴더: %s", week_dir)
 
-    for co in targets:
+    def _run_valuation(co: dict) -> dict:
         name = co.get("name", "")
         try:
             logger.info("밸류에이션 시작: %s %s", co.get("stars", ""), name)
             result = auto_analyze(name, output_dir=str(week_dir))
             status = "success" if result else "no_result"
-            summary["valuations"].append({"company": name, "status": status})
+            return {"company": name, "status": status}
         except Exception as e:
             logger.error("밸류에이션 실패 [%s]: %s", name, e)
-            summary["errors"].append({
-                "phase": "valuation", "company": name, "error": str(e),
-            })
-            summary["valuations"].append({
-                "company": name, "status": "failed", "error": str(e),
-            })
+            return {"company": name, "status": "failed", "error": str(e)}
+
+    with ThreadPoolExecutor(max_workers=min(len(targets), 3)) as pool:
+        futures = {pool.submit(_run_valuation, co): co for co in targets}
+        for fut in as_completed(futures):
+            entry = fut.result()
+            summary["valuations"].append(entry)
+            if entry.get("status") == "failed":
+                summary["errors"].append({
+                    "phase": "valuation",
+                    "company": entry["company"],
+                    "error": entry.get("error", ""),
+                })
 
     # ── Phase 4: 완료 ──
     duration = time.time() - start

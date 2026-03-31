@@ -3,10 +3,22 @@
 yfinance 라이브러리 또는 직접 API 호출.
 """
 
+import re
+
 import httpx
+
+# ticker: 영문/숫자/점/하이픈/캐럿, 1~15자 (KR: 005930.KS 등 포함)
+_TICKER_RE = re.compile(r"^[A-Za-z0-9.\-^]{1,15}$")
 
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
 _client = httpx.Client(headers=_HEADERS, timeout=10, follow_redirects=True)
+
+
+def _validate_ticker(ticker: str) -> str:
+    """ticker 형식 검증. 유효하지 않으면 ValueError."""
+    if not _TICKER_RE.match(ticker):
+        raise ValueError(f"유효하지 않은 ticker 형식: {ticker!r}")
+    return ticker
 
 
 def get_stock_info(ticker: str) -> dict | None:
@@ -16,6 +28,7 @@ def get_stock_info(ticker: str) -> dict | None:
         {"price": float, "market_cap": int, "shares_outstanding": int,
          "beta": float, "currency": str, "name": str} or None
     """
+    ticker = _validate_ticker(ticker)
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
 
     try:
@@ -105,6 +118,7 @@ def get_quote_summary(ticker: str) -> dict | None:
          "enterprise_value": int, "trailing_pe": float, "forward_pe": float,
          "ev_ebitda": float, "price": float} or None
     """
+    ticker = _validate_ticker(ticker)
     url = f"https://query2.finance.yahoo.com/v10/finance/quoteSummary/{ticker}"
     modules = "defaultKeyStatistics,financialData,summaryDetail,price"
 

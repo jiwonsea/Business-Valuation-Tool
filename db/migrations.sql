@@ -58,9 +58,13 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE INDEX IF NOT EXISTS idx_valuations_company ON valuations(company_name);
 CREATE INDEX IF NOT EXISTS idx_valuations_ticker ON valuations(ticker);
 CREATE INDEX IF NOT EXISTS idx_valuations_date ON valuations(analysis_date DESC);
+CREATE INDEX IF NOT EXISTS idx_valuations_created_at ON valuations(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_valuations_market ON valuations(market);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_valuation ON ai_analyses(valuation_id);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_company ON ai_analyses(company_name);
+CREATE INDEX IF NOT EXISTS idx_ai_analyses_created_at ON ai_analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_profiles_company ON profiles(company_name);
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
 
 -- updated_at 자동 갱신 트리거
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -111,6 +115,8 @@ CREATE TABLE IF NOT EXISTS discovery_runs (
 
 CREATE INDEX IF NOT EXISTS idx_discovery_runs_date
     ON discovery_runs(run_date DESC);
+CREATE INDEX IF NOT EXISTS idx_discovery_runs_created_at
+    ON discovery_runs(created_at DESC);
 
 -- ============================================================
 -- Row Level Security (RLS)

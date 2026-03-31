@@ -36,7 +36,8 @@ def allocate_da(
             ebitda = s["op"] + da
         else:
             # 금융 부문: D&A 미배분, EBITDA = OP (P/BV에서는 사용 안 함)
-            share = s["assets"] / sum(d["assets"] for d in seg_data.values()) if sum(d["assets"] for d in seg_data.values()) > 0 else 0
+            all_total_assets = sum(d["assets"] for d in seg_data.values())
+            share = s["assets"] / all_total_assets if all_total_assets > 0 else 0
             da = 0
             ebitda = s["op"]
 

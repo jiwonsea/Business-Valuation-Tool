@@ -1,6 +1,6 @@
-"""AI 기반 Discovery 엔진 — 뉴스 분석 → 기업 추천 → 시나리오 제안.
+"""AI-powered Discovery engine -- news analysis -> company recommendation -> scenario suggestion.
 
-사용자가 확인/수정한 후 밸류에이션을 실행한다.
+The user reviews/modifies the output before running valuation.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import json
 from .news_collector import NewsCollector
 
 
-# 시장별 검색 키워드
+# Per-market search keywords
 _KR_QUERIES = [
     "코스피 실적 발표",
     "한국 주식시장 이슈",
@@ -30,15 +30,15 @@ def summarize_key_issues(
     company_name: str,
     market: str = "KR",
 ) -> str:
-    """뉴스 목록에서 밸류에이션 관련 핵심 이슈를 요약.
+    """Summarize valuation-relevant key issues from a news list.
 
     Args:
-        news: NewsCollector 출력 형식 [{"title", "description", "pub_date", ...}]
-        company_name: 대상 기업명
+        news: NewsCollector output format [{"title", "description", "pub_date", ...}]
+        company_name: Target company name
         market: "KR" | "US"
 
     Returns:
-        bullet-point 형태의 핵심 이슈 텍스트. 실패 시 빈 문자열.
+        Bullet-point key issues text. Empty string on failure.
     """
     if not news:
         return ""
@@ -75,17 +75,17 @@ def summarize_key_issues(
 
 
 class DiscoveryEngine:
-    """뉴스 기반 분석 대상 기업 추천 + 시나리오 제안."""
+    """News-based target company recommendation + scenario suggestion."""
 
     def __init__(self):
         self.collector = NewsCollector()
 
     def discover(self, market: str = "KR") -> dict:
-        """Discovery 워크플로 실행.
+        """Execute Discovery workflow.
 
-        1. 뉴스 수집 (최근 1개월)
-        2. AI 분석: 이슈 요약 + 기업 추천 + 시나리오/확률 제안
-        3. 결과 출력 (사용자 확인용)
+        1. Collect news (past 1 month)
+        2. AI analysis: issue summary + company recommendation + scenario/probability suggestion
+        3. Output results (for user review)
 
         Returns:
             {"news_count": int, "analysis": str, "companies": list, "scenarios": list}
@@ -94,7 +94,7 @@ class DiscoveryEngine:
         print(f"[Discovery Mode] {market} 시장 뉴스 분석")
         print(f"{'='*60}")
 
-        # Step 1: 뉴스 수집
+        # Step 1: Collect news
         queries = _KR_QUERIES if market == "KR" else _US_QUERIES
         all_news = []
         for q in queries:
@@ -106,7 +106,7 @@ class DiscoveryEngine:
             all_news.extend(items)
             print(f"    → {len(items)}건")
 
-        # 중복 제거 (제목 기준)
+        # Deduplicate (by title)
         seen = set()
         unique_news = []
         for n in all_news:
@@ -118,9 +118,9 @@ class DiscoveryEngine:
 
         if not unique_news:
             print("[WARN] 수집된 뉴스가 없습니다.")
-            return {"news_count": 0, "analysis": "", "companies": [], "scenarios": []}
+            return {"news_count": 0, "analysis": "", "companies": [], "scenarios": [], "news": []}
 
-        # Step 2: AI 분석
+        # Step 2: AI analysis
         print(f"\n[AI 분석 시작]")
         try:
             analysis = self._analyze_with_ai(unique_news, market)
@@ -134,9 +134,10 @@ class DiscoveryEngine:
                 "analysis": "",
                 "companies": [],
                 "scenarios": [],
+                "news": unique_news,
             }
 
-        # Step 3: 결과 출력
+        # Step 3: Output results
         print(f"\n{'='*60}")
         print("[분석 결과]")
         print(f"{'='*60}")
@@ -164,15 +165,16 @@ class DiscoveryEngine:
             "analysis": analysis.get("summary", ""),
             "companies": analysis.get("companies", []),
             "scenarios": analysis.get("scenarios", []),
+            "news": unique_news,
         }
 
     def _analyze_with_ai(self, news: list[dict], market: str) -> dict:
-        """Claude API로 뉴스 분석."""
+        """Analyze news via Claude API."""
         from ai.llm_client import ask
         from ai.analyst import _parse_json
         from ai.prompts import SYSTEM_DISCOVERY
 
-        # 뉴스 요약 텍스트 구성 (토큰 절약: 제목만 전송)
+        # Compose news summary text (token-efficient: titles only)
         news_text = "\n".join(
             f"- [{n['pub_date'][:10]}] {n['title']}"
             for n in news[:30]  # 최대 30건 (토큰 절약)

@@ -1,6 +1,6 @@
-"""시장 데이터 수집 — 주식수, 시가총액, 장외시세.
+"""Market data collection -- shares, market cap, OTC prices.
 
-KRX, 38.co.kr 등에서 데이터 수집.
+Data collected from KRX, 38.co.kr, etc.
 """
 
 import re
@@ -13,13 +13,13 @@ _client = httpx.Client(headers=_HEADERS, timeout=15, follow_redirects=True)
 
 
 def get_38_company_info(company_name: str) -> dict | None:
-    """38.co.kr에서 비상장 기업 정보 조회.
+    """Fetch unlisted company information from 38.co.kr.
 
     Returns:
         {"shares_total": int, "par_value": int, "capital": int,
          "otc_price": int, "otc_volume_avg": int} or None
     """
-    # 검색
+    # Search
     search_url = "https://www.38.co.kr/html/fund/index.htm"
     params = {"o": "k", "key": company_name}
 
@@ -33,7 +33,7 @@ def get_38_company_info(company_name: str) -> dict | None:
 
     result = {}
 
-    # 테이블에서 주요 정보 추출
+    # Extract key information from table
     for row in soup.find_all("tr"):
         cells = row.find_all(["td", "th"])
         if len(cells) < 2:
@@ -58,10 +58,10 @@ def get_38_company_info(company_name: str) -> dict | None:
 
 
 def get_krx_market_cap(stock_code: str) -> dict | None:
-    """KRX에서 상장기업 시가총액 조회.
+    """Fetch listed company market cap from KRX.
 
     Args:
-        stock_code: 종목코드 (예: "005930")
+        stock_code: Stock code (e.g., "005930")
 
     Returns:
         {"market_cap": int, "price": int, "shares": int} or None

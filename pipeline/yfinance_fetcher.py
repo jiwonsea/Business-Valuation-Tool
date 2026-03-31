@@ -1,17 +1,17 @@
-"""yfinance 기반 재무제표 및 시장 데이터 수집.
+"""yfinance-based financial statement and market data collection.
 
-KOSPI(.KS) / KOSDAQ(.KQ) 자동 감지, 3개년 재무제표, 시장 데이터를 제공한다.
-engine/ 와 달리 IO를 수행하는 pipeline 모듈이므로 httpx/yfinance 사용 가능.
+Auto-detects KOSPI (.KS) / KOSDAQ (.KQ), provides 3-year financials and market data.
+Unlike engine/, this is a pipeline module that performs IO, so httpx/yfinance usage is allowed.
 """
 
 import logging
 import os
 import shutil
 
-# ── Windows 한글 사용자명 SSL 인증서 경로 문제 해결 ──
-# yfinance(curl_cffi 기반)가 유니코드 경로의 CA cert를 읽지 못하는 이슈.
-# os.environ 설정만으로는 이미 로드된 네이티브 curl 라이브러리에 전달되지 않으므로,
-# ctypes로 Win32 API SetEnvironmentVariableW를 직접 호출한다.
+# ── Fix Windows unicode username SSL certificate path issue ──
+# yfinance (curl_cffi-based) cannot read CA cert from unicode paths.
+# Setting os.environ alone doesn't propagate to the already-loaded native curl library,
+# so we call Win32 API SetEnvironmentVariableW directly via ctypes.
 _CA_BUNDLE_PATH = "C:/ProgramData/yfinance_cacert.pem"
 
 if os.name == "nt":
@@ -22,7 +22,7 @@ if os.name == "nt":
             os.makedirs(os.path.dirname(_CA_BUNDLE_PATH), exist_ok=True)
             if not os.path.exists(_CA_BUNDLE_PATH):
                 shutil.copy2(ca_src, _CA_BUNDLE_PATH)
-            # Python os.environ + Win32 API 양쪽 설정
+            # Set both Python os.environ and Win32 API
             os.environ["CURL_CA_BUNDLE"] = _CA_BUNDLE_PATH
             import ctypes
             ctypes.windll.kernel32.SetEnvironmentVariableW("CURL_CA_BUNDLE", _CA_BUNDLE_PATH)
@@ -33,14 +33,14 @@ import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
-# ── 캐시 ──
+# ── Cache ──
 _kr_ticker_cache: dict[str, str] = {}
 _kr_exchange_cache: dict[str, str] = {}  # ticker → "KOSPI" | "KOSDAQ"
 _ticker_info_cache: dict[str, dict] = {}  # resolved_ticker → yf.Ticker().info
 
 
 def _get_ticker_info(resolved: str) -> dict:
-    """yf.Ticker().info 캐시 조회 (동일 세션 내 1회만 호출)."""
+    """Cached yf.Ticker().info lookup (called only once per session)."""
     if resolved in _ticker_info_cache:
         return _ticker_info_cache[resolved]
     t = yf.Ticker(resolved)
@@ -50,7 +50,7 @@ def _get_ticker_info(resolved: str) -> dict:
 
 
 def _get_ticker_obj(resolved: str) -> yf.Ticker:
-    """yf.Ticker 객체 반환 + info 캐시 부수 효과."""
+    """Return yf.Ticker object + cache info as side effect."""
     t = yf.Ticker(resolved)
     if resolved not in _ticker_info_cache:
         _ticker_info_cache[resolved] = t.info or {}
@@ -58,33 +58,33 @@ def _get_ticker_obj(resolved: str) -> yf.Ticker:
 
 
 def _is_valid_yf_ticker(info: dict, raw_ticker: str) -> bool:
-    """yfinance info가 유효한 종목 데이터인지 검증.
+    """Validate whether yfinance info contains valid ticker data.
 
-    잘못된 suffix(.KS/.KQ)로 조회하면 price가 나오더라도
-    longName이 깨진 문자열("247540.KS,0P0001GZPV,...")로 반환됨.
+    When queried with an incorrect suffix (.KS/.KQ), the price may still appear
+    but longName returns a corrupted string (e.g., "247540.KS,0P0001GZPV,...").
     """
     price = info.get("currentPrice") or info.get("regularMarketPrice")
     if not price or price <= 0:
         return False
     name = info.get("longName") or info.get("shortName") or ""
-    # 이름이 raw ticker로 시작하면 깨진 데이터
+    # Name starting with raw ticker indicates corrupted data
     if name.startswith(raw_ticker):
         return False
     return True
 
 
 def resolve_kr_ticker(ticker: str) -> str:
-    """한국 종목 코드 → yfinance 티커 변환 (KOSPI .KS / KOSDAQ .KQ 자동 감지).
+    """Convert Korean stock code to yfinance ticker (auto-detect KOSPI .KS / KOSDAQ .KQ).
 
-    감지 전략:
-      1) .KS로 조회 → price + 유효한 longName 있으면 KOSPI
-      2) .KQ로 조회 → price + 유효한 longName 있으면 KOSDAQ
-      3) 양쪽 실패 → .KS fallback
+    Detection strategy:
+      1) Query with .KS -> if price + valid longName, it's KOSPI
+      2) Query with .KQ -> if price + valid longName, it's KOSDAQ
+      3) Both fail -> .KS fallback
     """
     if ticker in _kr_ticker_cache:
         return _kr_ticker_cache[ticker]
 
-    # KOSPI (.KS) 시도
+    # Try KOSPI (.KS)
     ks = f"{ticker}.KS"
     try:
         info = _get_ticker_info(ks)
@@ -95,7 +95,7 @@ def resolve_kr_ticker(ticker: str) -> str:
     except Exception:
         pass
 
-    # KOSDAQ (.KQ) 시도
+    # Try KOSDAQ (.KQ)
     kq = f"{ticker}.KQ"
     try:
         info = _get_ticker_info(kq)
@@ -113,19 +113,19 @@ def resolve_kr_ticker(ticker: str) -> str:
 
 
 def get_exchange_segment(ticker: str) -> str:
-    """캐시에서 exchange segment 반환 (resolve_kr_ticker 호출 후 사용)."""
+    """Return exchange segment from cache (use after calling resolve_kr_ticker)."""
     return _kr_exchange_cache.get(ticker, "")
 
 
 def _resolve_ticker(ticker: str, market: str) -> str:
-    """시장에 따라 yfinance 티커 형식으로 변환."""
+    """Convert to yfinance ticker format based on market."""
     if market == "KR":
         return resolve_kr_ticker(ticker)
-    return ticker  # US: 그대로
+    return ticker  # US: as-is
 
 
 def _safe_get(df, row_labels: list[str], col_idx: int = 0):
-    """DataFrame에서 여러 후보 행 이름 중 첫 매칭 값을 반환."""
+    """Return the first matching value from multiple candidate row labels in a DataFrame."""
     if df is None or df.empty:
         return None
     for label in row_labels:
@@ -140,12 +140,12 @@ def _safe_get(df, row_labels: list[str], col_idx: int = 0):
 
 
 def _scale_value(raw_val, currency: str) -> int:
-    """raw 통화 값 → 백만원($M) 단위로 변환.
+    """Convert raw currency value to million KRW / $M unit.
 
-    yfinance는 해당 통화의 기본 단위(KRW, USD 등)로 반환.
-    KRW: ÷ 1,000,000 → 백만원
-    USD: ÷ 1,000,000 → $M
-    기타: ÷ 1,000,000 (기본)
+    yfinance returns values in the base currency unit (KRW, USD, etc.).
+    KRW: / 1,000,000 -> million KRW
+    USD: / 1,000,000 -> $M
+    Other: / 1,000,000 (default)
     """
     if raw_val is None:
         return 0
@@ -153,12 +153,12 @@ def _scale_value(raw_val, currency: str) -> int:
 
 
 def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
-    """yfinance로 3개년 재무제표 수집.
+    """Collect 3-year financial statements via yfinance.
 
     Returns:
         {year: {revenue, op, net_income, assets, liabilities, equity,
                 dep, amort, gross_borr, net_borr, de_ratio, interest_expense}}
-        KR=백만원, US=$M. None if fetch fails.
+        KR=million KRW, US=$M. None if fetch fails.
     """
     resolved = _resolve_ticker(ticker, market)
     try:
@@ -166,7 +166,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         info = _ticker_info_cache.get(resolved, {})
         currency = info.get("currency", "USD" if market == "US" else "KRW")
 
-        # 연간 재무제표 (DataFrame, columns = 날짜)
+        # Annual financial statements (DataFrame, columns = dates)
         inc = t.financials  # Income Statement
         bs = t.balance_sheet  # Balance Sheet
         cf = t.cashflow  # Cashflow
@@ -180,7 +180,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         return None
 
     result = {}
-    # 각 컬럼(날짜)별로 처리 — 최대 3개년
+    # Process each column (date) -- up to 3 years
     for col_idx in range(min(3, inc.shape[1] if inc is not None else 0)):
         try:
             col_date = inc.columns[col_idx]
@@ -211,7 +211,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
                                "Total Liab", "Total Liabilities"])
         equity = _get_bs(["Stockholders Equity", "Total Equity Gross Minority Interest",
                           "Common Stock Equity", "Total Stockholder Equity"])
-        total_debt = _get_bs(["Total Debt", "Net Debt"])  # 이자발생부채
+        total_debt = _get_bs(["Total Debt", "Net Debt"])  # Interest-bearing debt
         long_term_debt = _get_bs(["Long Term Debt", "Long Term Debt And Capital Lease Obligation"])
         short_term_debt = _get_bs(["Current Debt", "Current Debt And Capital Lease Obligation",
                                    "Short Long Term Debt"])
@@ -224,7 +224,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         dep_only = _get_cf(["Depreciation"])
         amort_only = _get_cf(["Amortization Of Intangibles", "Amortization"])
 
-        # 스케일링
+        # Scaling
         s = lambda v: _scale_value(v, currency)  # noqa: E731
 
         revenue_s = s(revenue)
@@ -235,7 +235,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         equity_s = s(equity)
         interest_expense_s = s(interest_expense) if interest_expense else 0
 
-        # D&A 분리
+        # Separate D&A
         if dep_only is not None and amort_only is not None:
             dep_s = s(dep_only)
             amort_s = s(amort_only)
@@ -246,7 +246,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
             dep_s = 0
             amort_s = 0
 
-        # 이자발생부채 (gross_borr)
+        # Interest-bearing debt (gross_borr)
         if total_debt is not None and total_debt > 0:
             gross_borr_s = s(total_debt)
         elif long_term_debt is not None or short_term_debt is not None:
@@ -257,7 +257,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         cash_s = s(cash) if cash else 0
         net_borr_s = gross_borr_s - cash_s
 
-        # D/E ratio (이자발생부채 / 장부자본)
+        # D/E ratio (interest-bearing debt / book equity)
         de_ratio = round(gross_borr_s / equity_s * 100, 1) if equity_s > 0 else 0.0
 
         result[year] = {
@@ -279,7 +279,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
 
 
 def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
-    """yfinance에서 시장 데이터 수집.
+    """Collect market data from yfinance.
 
     Returns:
         {price, market_cap, beta, industry, shares_outstanding,
@@ -296,12 +296,12 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
         market_cap_raw = info.get("marketCap", 0)
         currency = info.get("currency", "USD" if market == "US" else "KRW")
 
-        # market_cap: 백만원 또는 $M 단위로 변환
+        # market_cap: convert to million KRW or $M
         market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
 
         return {
             "price": price,
-            "market_cap": market_cap,  # 백만원 / $M
+            "market_cap": market_cap,  # million KRW / $M
             "beta": info.get("beta"),
             "industry": info.get("industry", ""),
             "shares_outstanding": info.get("sharesOutstanding", 0),

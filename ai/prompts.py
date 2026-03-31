@@ -1,52 +1,85 @@
-"""구조화된 LLM 프롬프트 — 밸류에이션 분석 보조."""
+"""Structured LLM prompts for valuation analysis."""
 
-SYSTEM_ANALYST = """당신은 한국 기업 밸류에이션 전문 애널리스트입니다.
-응답 규칙:
-- 한국어로 답변
-- 수치는 백만원 단위, 비율은 % 단위
-- JSON 요청 시 코드블록 없이 순수 JSON만 출력
-- 근거 없는 추정 금지, 불확실한 경우 "확인 필요" 표시"""
+SYSTEM_ANALYST = """\
+<role>
+Expert analyst specializing in KR/US company valuations.
+Expertise: SOTP, DCF, DDM, RIM, NAV, relative valuation.
+Markets: Korea (KOSPI/KOSDAQ, DART filings) and global peer comparison.
+</role>
+
+<response_rules>
+- Respond in Korean. Target the level of reports directly used by Korean financial professionals.
+- Amounts in millions KRW, ratios in %. This follows standard valuation report formatting.
+- When JSON is requested, output pure JSON only. No code blocks (```) or explanation text. Downstream code parses the output directly.
+- Cite evidence for all figures. Mark uncertain items as "확인 필요". Audit trails are essential for valuation decisions.
+- For complex judgments, reason step-by-step before concluding.
+</response_rules>"""
+
+SYSTEM_DISCOVERY = """\
+<role>
+Financial market news analysis expert. Extracts key information from news that impacts company valuations.
+</role>
+<response_rules>
+- Write in Korean. Use original names for English proper nouns.
+- Include news source dates in all judgments.
+- When JSON is requested, output pure JSON only. No code blocks or explanation text.
+</response_rules>"""
 
 
 def prompt_identify_company(user_input: str) -> str:
-    """자연어 → 기업 식별 프롬프트."""
-    return f"""사용자 입력: "{user_input}"
+    """Natural language → company identification prompt."""
+    return f"""\
+<user_input>{user_input}</user_input>
 
-이 입력에서 분석 대상 기업을 식별하세요.
-다음 JSON 형식으로 응답:
+Identify the target company for analysis from the input above.
+First extract identification clues (company name, ticker, industry) from the input, then determine the official company name and DART registration name.
+If the input uses abbreviations or is ambiguous, select the most widely known company.
+
+<example>
+Input: "에코플랜트"
+Output: {{"company_name": "SK에코플랜트", "dart_name": "에스케이에코플랜트", "stock_code": null, "legal_status": "비상장", "industry": "환경/에너지 플랜트"}}
+</example>
+
+<output_format>
 {{
-    "company_name": "정식 회사명",
-    "dart_name": "DART 등록명 (예: 에스케이에코플랜트)",
-    "stock_code": "종목코드 (상장사) 또는 null",
-    "legal_status": "상장" 또는 "비상장",
-    "industry": "업종 분류"
-}}"""
+    "company_name": "Official company name",
+    "dart_name": "DART registration name (e.g., 에스케이에코플랜트)",
+    "stock_code": "Stock code (listed) or null",
+    "legal_status": "상장 or 비상장",
+    "industry": "Industry classification"
+}}
+</output_format>"""
 
 
 def prompt_segment_classification(
     company_name: str,
     revenue_breakdown: str,
 ) -> str:
-    """부문 분류 프롬프트."""
-    return f"""기업: {company_name}
-매출 구성:
+    """Segment classification prompt."""
+    return f"""\
+<company>{company_name}</company>
+<revenue_data>
 {revenue_breakdown}
+</revenue_data>
 
-위 매출 구성을 기반으로 밸류에이션에 적합한 부문(segment) 분류를 제안하세요.
-각 부문에 적절한 EV/EBITDA peer 그룹도 함께 제시하세요.
+Based on the revenue breakdown above, propose segment classifications suitable for valuation.
+Classify by revenue share, profitability differences, and applicable peer groups.
+Consolidate items with similar business characteristics into a single segment.
+Also suggest an appropriate EV/EBITDA peer group for each segment.
 
-JSON 형식:
+<output_format>
 {{
     "segments": [
         {{
             "code": "SEG1",
-            "name": "부문명",
+            "name": "Segment name",
             "revenue_share_pct": 50.0,
-            "peer_group": "유사기업군 설명",
+            "peer_group": "Comparable company group description",
             "suggested_multiple_range": "8.0~12.0x"
         }}
     ]
-}}"""
+}}
+</output_format>"""
 
 
 def prompt_peer_recommendation(
@@ -55,24 +88,30 @@ def prompt_peer_recommendation(
     segment_name: str,
     segment_description: str,
 ) -> str:
-    """Peer 기업 및 멀티플 추천 프롬프트."""
-    return f"""기업: {company_name}
-분석 부문: {segment_code} - {segment_name}
-부문 설명: {segment_description}
+    """Peer company and multiple recommendation prompt."""
+    return f"""\
+<company>{company_name}</company>
+<segment>
+Code: {segment_code}
+Segment: {segment_name}
+Description: {segment_description}
+</segment>
 
-이 부문에 적합한 국내외 Peer 기업을 5개 이상 추천하고,
-각 기업의 최근 EV/EBITDA 멀티플을 제시하세요.
-최종적으로 적용할 적정 멀티플 범위와 추천값을 제안하세요.
+Recommend 5+ domestic and international peer companies suitable for this segment.
+Select peers by industry classification, revenue scale, and business structure similarity (in that order).
+Prioritize Korean listed companies; include international peers when business structure is highly similar.
+Since peer multiples are a critical input for SOTP valuation, verify that each EV/EBITDA is realistic.
 
-JSON 형식:
+<output_format>
 {{
     "peers": [
-        {{"name": "기업명", "ev_ebitda": 10.0, "notes": "근거"}}
+        {{"name": "Company name", "ev_ebitda": 10.0, "notes": "Selection rationale and multiple source"}}
     ],
     "recommended_multiple": 10.0,
     "multiple_range": [8.0, 12.0],
-    "rationale": "추천 근거"
-}}"""
+    "rationale": "Recommendation rationale"
+}}
+</output_format>"""
 
 
 def prompt_wacc_suggestion(
@@ -80,57 +119,68 @@ def prompt_wacc_suggestion(
     de_ratio: float,
     industry: str,
 ) -> str:
-    """WACC 초안 프롬프트."""
-    return f"""기업: {company_name}
-부채비율: {de_ratio:.1f}%
-업종: {industry}
+    """WACC draft suggestion prompt."""
+    return f"""\
+<company>{company_name}</company>
+<financial_context>
+D/E ratio: {de_ratio:.1f}%
+Industry: {industry}
+</financial_context>
 
-이 기업의 WACC 구성요소를 추정하세요.
-한국 시장 기준으로 각 파라미터의 근거를 제시하세요.
+Estimate the WACC components for this company.
+Reason step-by-step in the following order:
+1) Risk-free rate (Rf): Based on Korea 10Y government bond yield
+2) Equity risk premium (ERP): Based on Damodaran or Korea market empirical data
+3) Unlevered beta (Bu): Based on peer average unlevered beta in the same industry
+4) Cost of debt (Kd): Based on credit rating and spread
+5) Final WACC calculation
 
-JSON 형식:
+Cite Korea market-based evidence for each parameter.
+
+<output_format>
 {{
     "rf": 3.5,
-    "rf_source": "국고채 10Y 기준",
+    "rf_source": "Based on 10Y govt bond",
     "erp": 7.0,
-    "erp_source": "한국 시장 ERP 근거",
+    "erp_source": "Korea market ERP rationale",
     "bu": 0.75,
-    "bu_source": "Peer 평균 Unlevered Beta 근거",
+    "bu_source": "Peer avg unlevered beta rationale",
     "kd_pre": 5.0,
-    "kd_source": "신용등급/스프레드 근거",
+    "kd_source": "Credit rating/spread rationale",
     "tax": 22.0,
     "wacc_estimate": 8.5,
     "confidence": "high/medium/low"
-}}"""
+}}
+</output_format>"""
 
 
 _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "dcf_primary": {
-        "growth_adj_pct": "EBITDA 성장률 % 조정 (e.g., +20 → 기본 성장률 × 1.2, -25 → × 0.75)",
-        "terminal_growth_adj": "영구성장률 절대 조정 %p (e.g., +0.3 → TGR + 0.3%p)",
-        "wacc_adj": "WACC %p 조정 (e.g., +0.5 → WACC + 0.5%p)",
-        "market_sentiment_pct": "시장 심리 EV % 조정 (e.g., +5 → EV × 1.05)",
+        "growth_adj_pct": "EBITDA growth rate % adjustment (e.g., +20 → base growth × 1.2, -25 → × 0.75)",
+        "terminal_growth_adj": "Terminal growth rate absolute adjustment %p (e.g., +0.3 → TGR + 0.3%p)",
+        "wacc_adj": "WACC %p adjustment (e.g., +0.5 → WACC + 0.5%p)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)",
     },
     "sotp": {
-        "market_sentiment_pct": "시장 심리 EV % 조정 (e.g., +5 → EV × 1.05)",
-        "wacc_adj": "WACC %p 조정 (교차검증 DCF에 반영)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)",
+        "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
     },
     "ddm": {
-        "ddm_growth": "배당성장률 override (%, 절대값. e.g., 4.0 → 4% 성장)",
-        "wacc_adj": "Ke %p 조정 (e.g., +0.5 → Ke + 0.5%p)",
+        "ddm_growth": "Dividend growth rate override (%, absolute. e.g., 4.0 → 4% growth)",
+        "wacc_adj": "Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)",
     },
     "rim": {
-        "rim_roe_adj": "ROE %p 조정 (e.g., -1.0 → 전체 ROE -1%p)",
-        "wacc_adj": "Ke %p 조정 (e.g., +0.5 → Ke + 0.5%p)",
+        "rim_roe_adj": "ROE %p adjustment (e.g., -1.0 → all ROE -1%p)",
+        "wacc_adj": "Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)",
     },
     "nav": {
-        "nav_discount": "지주할인율 (%, e.g., 30 → NAV × 0.7)",
-        "market_sentiment_pct": "시장 심리 EV % 조정",
+        "nav_discount": "Holding company discount (%, e.g., 30 → NAV × 0.7)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment",
     },
     "multiples": {
-        "ev_multiple": "적용 멀티플 override (절대값, e.g., 8.5)",
-        "market_sentiment_pct": "시장 심리 EV % 조정",
-        "wacc_adj": "WACC %p 조정 (교차검증 DCF에 반영)",
+        "ev_multiple": "Applied multiple override (absolute, e.g., 8.5)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment",
+        "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
     },
 }
 
@@ -141,108 +191,142 @@ def prompt_scenario_design(
     key_issues: str,
     valuation_method: str = "dcf_primary",
 ) -> str:
-    """시나리오 설계 프롬프트.
+    """Scenario design prompt.
 
-    key_issues가 비어있으면 범용 프롬프트, 있으면 뉴스 기반 근거 프롬프트 생성.
-    valuation_method에 따라 AI가 설정할 수 있는 드라이버 목록이 달라짐.
+    If key_issues is empty, generates a generic prompt; otherwise generates a news-driven prompt.
+    Available driver list varies by valuation_method.
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
     driver_desc = "\n".join(f"  - {k}: {v}" for k, v in drivers_info.items())
     driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
-    rationale_json = ", ".join(f'"{k}": "근거"' for k in drivers_info)
+    rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
 
     if key_issues.strip():
-        # 뉴스 기반 시나리오 설계 (멀티 드라이버)
-        return f"""기업: {company_name}
-상장여부: {legal_status}
-적용 밸류에이션 방법론: {valuation_method}
+        # News-driven scenario design (multi-variable news drivers)
+        effect_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+        return f"""\
+<company>{company_name}</company>
+<context>
+Listed status: {legal_status}
+Valuation method: {valuation_method}
+</context>
 
-최근 1개월간 수집된 핵심 이슈:
+<news_issues>
 {key_issues}
+</news_issues>
 
-위 이슈들을 반드시 시나리오에 반영하여, 이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
+Design 2-4 valuation scenarios for this company reflecting the news issues above.
 
-요구사항:
-- 각 시나리오의 확률은 위 이슈들의 실현 가능성과 시장 상황을 근거로 할당
-- key_assumptions에 관련 뉴스 이슈를 구체적으로 명시
-- probability_rationale에 해당 확률을 할당한 근거를 설명
-- DLOM(비상장 할인)은 상장여부와 시나리오별 유동성 리스크를 반영
-- **중요 — 멀티 드라이버**: 각 시나리오에 정량적 drivers를 설정하세요.
-  하나의 뉴스 이벤트가 여러 드라이버에 동시에 영향을 줄 수 있습니다.
-  예시: "금리 인상" → wacc_adj: +0.5, growth_adj_pct: -10, terminal_growth_adj: -0.3
-  Base Case는 drivers를 모두 0으로, Bull/Bear는 방향성에 맞게 설정하세요.
-- driver_rationale에 각 드라이버 값의 근거를 뉴스 이슈와 연결하여 설명
+<instructions>
+Design using multi-variable news drivers (multiple regression approach):
+Step 1: Extract 2-5 independent news_drivers from the key news issues
+Step 2: Quantify the partial effect of each driver on financial variables
+Step 3: For each scenario, decide which drivers to apply at what intensity (weight, 0~1)
 
-사용 가능한 드라이버 ({valuation_method} 방법론):
+When allocating probabilities, separate macro, industry, and company-specific factors and assess each factor's likelihood.
+Specify related news issues concretely in key_assumptions.
+DLOM (liquidity discount) should reflect listed status and per-scenario liquidity risk.
+</instructions>
+
+<example>
+"50bp rate hike" driver → effects: {{wacc_adj: +0.5, growth_adj_pct: -10}}
+"Tariff shock" driver → effects: {{growth_adj_pct: -15, market_sentiment_pct: -5}}
+Bear scenario: both drivers at weight 1.0 → combined effects applied
+Base scenario: rate hike only at weight 0.5 → half effect applied
+</example>
+
+<available_drivers>
+Available effect keys ({valuation_method} method):
 {driver_desc}
+</available_drivers>
 
-JSON 형식:
+<output_format>
+{{
+    "news_drivers": [
+        {{
+            "id": "driver_id",
+            "name": "News event name",
+            "category": "macro | industry | company",
+            "effects": {{{effect_json}}},
+            "rationale": "Rationale for this driver's partial effects"
+        }}
+    ],
+    "scenarios": [
+        {{
+            "code": "A",
+            "name": "Scenario name",
+            "prob": 30,
+            "probability_rationale": "Rationale for this probability allocation",
+            "description": "Scenario description",
+            "dlom": 0,
+            "key_assumptions": ["News-based assumption 1", "Assumption 2"],
+            "active_drivers": {{"driver_id": 1.0}}
+        }}
+    ],
+    "rationale": "Overall scenario design rationale",
+    "news_factors_considered": ["Summary of key news issues reflected"]
+}}
+</output_format>"""
+
+    # Generic scenario design (multi-driver)
+    return f"""\
+<company>{company_name}</company>
+<context>
+Listed status: {legal_status}
+Valuation method: {valuation_method}
+</context>
+
+Design 2-4 valuation scenarios suitable for this company.
+Include probability, key assumptions, and DLOM (liquidity discount) applicability for each scenario.
+
+<instructions>
+Set quantitative drivers for each scenario.
+Base Case: all drivers at 0. Bull/Bear: adjust in appropriate direction.
+When allocating probabilities, separate macro, industry, and company-specific factors and cite rationale.
+</instructions>
+
+<available_drivers>
+Available drivers ({valuation_method} method):
+{driver_desc}
+</available_drivers>
+
+<output_format>
 {{
     "scenarios": [
         {{
             "code": "A",
-            "name": "시나리오명",
+            "name": "Scenario name",
             "prob": 30,
-            "probability_rationale": "이 확률을 할당한 근거 (뉴스/시장 상황 기반)",
-            "description": "시나리오 설명",
+            "description": "Scenario description",
             "dlom": 0,
-            "key_assumptions": ["뉴스 기반 가정1", "가정2"],
+            "key_assumptions": ["Assumption 1", "Assumption 2"],
             "drivers": {{{driver_json}}},
             "driver_rationale": {{{rationale_json}}}
         }}
     ],
-    "rationale": "전체 시나리오 구성 근거",
-    "news_factors_considered": ["반영된 주요 뉴스 이슈 요약"]
-}}"""
-
-    # 범용 시나리오 설계 (멀티 드라이버)
-    return f"""기업: {company_name}
-상장여부: {legal_status}
-적용 밸류에이션 방법론: {valuation_method}
-
-이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
-각 시나리오의 확률, 핵심 가정, DLOM(비상장 할인) 적용 여부를 포함하세요.
-
-**중요 — 멀티 드라이버**: 각 시나리오에 정량적 drivers를 설정하세요.
-Base Case는 drivers를 모두 0으로, Bull/Bear는 방향성에 맞게 설정하세요.
-
-사용 가능한 드라이버 ({valuation_method} 방법론):
-{driver_desc}
-
-JSON 형식:
-{{
-    "scenarios": [
-        {{
-            "code": "A",
-            "name": "시나리오명",
-            "prob": 30,
-            "description": "시나리오 설명",
-            "dlom": 0,
-            "key_assumptions": ["가정1", "가정2"],
-            "drivers": {{{driver_json}}},
-            "driver_rationale": {{{rationale_json}}}
-        }}
-    ],
-    "rationale": "시나리오 구성 근거"
-}}"""
+    "rationale": "Scenario design rationale"
+}}
+</output_format>"""
 
 
 def prompt_research_note(
     company_name: str,
     valuation_summary: str,
 ) -> str:
-    """리서치 노트 자동 생성 프롬프트."""
-    return f"""다음 밸류에이션 분석 결과를 기반으로 전문 리서치 노트를 작성하세요.
-
-기업: {company_name}
-분석 결과:
+    """Research note auto-generation prompt."""
+    return f"""\
+<company>{company_name}</company>
+<valuation_data>
 {valuation_summary}
+</valuation_data>
 
-포함 사항:
-1. 투자 의견 (한 줄 요약)
-2. 핵심 밸류에이션 요약 (SOTP + DCF)
-3. 시나리오별 리스크/기회 요인
-4. 멀티플 정당성 검토
-5. 주요 모니터링 포인트
+Based on the valuation analysis results above, write a professional research note.
+Write in Korean markdown format with the professional tone of a securities analyst research note.
 
-형식: 마크다운, 전문 애널리스트 톤, 한국어"""
+<output_structure>
+1. Investment opinion (one-line summary)
+2. Key valuation summary (SOTP + DCF)
+3. Risk/opportunity factors by scenario
+4. Multiple justification review
+5. Key monitoring points
+</output_structure>"""

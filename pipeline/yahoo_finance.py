@@ -1,13 +1,13 @@
-"""Yahoo Finance 시장 데이터 — 주가, 시가총액, beta.
+"""Yahoo Finance market data -- stock price, market cap, beta.
 
-yfinance 라이브러리 또는 직접 API 호출.
+Via yfinance library or direct API calls.
 """
 
 import re
 
 import httpx
 
-# ticker: 영문/숫자/점/하이픈/캐럿, 1~15자 (KR: 005930.KS 등 포함)
+# ticker: alphanumeric/dot/hyphen/caret, 1-15 chars (includes KR: 005930.KS etc.)
 _TICKER_RE = re.compile(r"^[A-Za-z0-9.\-^]{1,15}$")
 
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -15,14 +15,14 @@ _client = httpx.Client(headers=_HEADERS, timeout=10, follow_redirects=True)
 
 
 def _validate_ticker(ticker: str) -> str:
-    """ticker 형식 검증. 유효하지 않으면 ValueError."""
+    """Validate ticker format. Raises ValueError if invalid."""
     if not _TICKER_RE.match(ticker):
         raise ValueError(f"유효하지 않은 ticker 형식: {ticker!r}")
     return ticker
 
 
 def get_stock_info(ticker: str) -> dict | None:
-    """Yahoo Finance에서 주식 기본 정보 조회.
+    """Fetch basic stock information from Yahoo Finance.
 
     Returns:
         {"price": float, "market_cap": int, "shares_outstanding": int,
@@ -57,29 +57,29 @@ def get_stock_info(ticker: str) -> dict | None:
 
 
 def get_market_cap(ticker: str) -> int | None:
-    """시가총액 조회 (원 또는 USD). 실패 시 None."""
+    """Fetch market cap (KRW or USD). Returns None on failure."""
     summary = get_quote_summary(ticker)
     if summary and summary.get("market_cap"):
         return int(summary["market_cap"])
     return None
 
 
-# OTC Markets 거래소 코드 (Yahoo Finance exchangeName / exchange 기준)
+# OTC Markets exchange codes (based on Yahoo Finance exchangeName / exchange)
 _OTC_EXCHANGES = {
-    # exchangeName 기준
+    # By exchangeName
     "PNK",        # OTC Pink Sheets
     "PK",         # OTC Pink
     "OBB",        # OTC Bulletin Board
-    "OTC",        # OTC 일반
-    "NCM",        # NASDAQ Capital Market (일부 소형주이나 정규 거래소)
-    # exchange 코드 기준
+    "OTC",        # OTC general
+    "NCM",        # NASDAQ Capital Market (some small-caps, but regulated exchange)
+    # By exchange code
     "PNK",
     "OBB",
     "OQX",        # OTCQX
     "OQB",        # OTCQB
 }
 
-# 주요 정규 거래소
+# Major regulated exchanges
 _MAJOR_EXCHANGES = {
     "NYQ", "NYSE", "NMS", "NAS", "NASDAQ", "NGM",  # NYSE, NASDAQ
     "ASE", "AMEX", "BTS", "BATS",                    # AMEX, BATS
@@ -88,12 +88,12 @@ _MAJOR_EXCHANGES = {
 
 
 def classify_exchange(exchange_name: str, exchange_code: str = "") -> str:
-    """Yahoo Finance 거래소 정보 → 상장 구분.
+    """Yahoo Finance exchange info -> listing classification.
 
     Returns:
-        "상장" — 주요 거래소 (NYSE, NASDAQ 등)
-        "OTC"  — 장외 거래소 (OTC Pink, OTCQX/QB, OTC BB)
-        "비상장" — 판별 불가
+        "상장" -- Major exchange (NYSE, NASDAQ, etc.)
+        "OTC"  -- Over-the-counter (OTC Pink, OTCQX/QB, OTC BB)
+        "비상장" -- Cannot determine
     """
     for val in (exchange_name, exchange_code):
         upper = val.upper().strip()
@@ -101,7 +101,7 @@ def classify_exchange(exchange_name: str, exchange_code: str = "") -> str:
             return "상장"
         if upper in _OTC_EXCHANGES:
             return "OTC"
-        # 부분 매칭
+        # Partial matching
         if any(otc in upper for otc in ("OTC", "PINK", "BULLETIN")):
             return "OTC"
         if any(ex in upper for ex in ("NYSE", "NASDAQ", "BATS", "ARCA")):
@@ -111,7 +111,7 @@ def classify_exchange(exchange_name: str, exchange_code: str = "") -> str:
 
 
 def get_quote_summary(ticker: str) -> dict | None:
-    """Yahoo Finance Quote Summary — 상세 정보.
+    """Yahoo Finance Quote Summary -- detailed information.
 
     Returns:
         {"market_cap": int, "shares_outstanding": int, "beta": float,

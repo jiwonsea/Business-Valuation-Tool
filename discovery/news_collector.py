@@ -1,7 +1,7 @@
-"""뉴스 수집 — 네이버 뉴스 API (KR) + Google News RSS (US).
+"""News collection -- Naver News API (KR) + Google News RSS (US).
 
-네이버 API: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET 환경변수 필요.
-Google RSS: API Key 불필요.
+Naver API: Requires NAVER_CLIENT_ID and NAVER_CLIENT_SECRET environment variables.
+Google RSS: No API key required.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import httpx
 
 
 class NewsCollector:
-    """뉴스 수집기."""
+    """News collector."""
 
     def __init__(self, timeout: float = 10.0):
         self._timeout = timeout
@@ -26,7 +26,7 @@ class NewsCollector:
         days: int = 30,
         max_items: int = 100,
     ) -> list[dict]:
-        """네이버 뉴스 검색 API로 한국 뉴스 수집.
+        """Collect Korean news via Naver News Search API.
 
         Returns:
             [{"title", "description", "link", "pub_date", "source"}]
@@ -45,7 +45,7 @@ class NewsCollector:
         url = "https://openapi.naver.com/v1/search/news.json"
 
         results = []
-        display = min(max_items, 100)  # 네이버 API 최대 100건/요청
+        display = min(max_items, 100)  # Naver API max 100 items/request
 
         try:
             with httpx.Client(timeout=self._timeout) as client:
@@ -60,7 +60,7 @@ class NewsCollector:
 
                 cutoff = datetime.now() - timedelta(days=days)
                 for item in data.get("items", []):
-                    # 날짜 파싱 (네이버: "Mon, 31 Mar 2025 10:00:00 +0900")
+                    # Date parsing (Naver: "Mon, 31 Mar 2025 10:00:00 +0900")
                     try:
                         pub = datetime.strptime(
                             item["pubDate"], "%a, %d %b %Y %H:%M:%S %z"
@@ -89,7 +89,7 @@ class NewsCollector:
         days: int = 30,
         max_items: int = 50,
     ) -> list[dict]:
-        """Google News RSS로 미국 뉴스 수집.
+        """Collect US news via Google News RSS.
 
         Returns:
             [{"title", "description", "link", "pub_date", "source"}]
@@ -115,7 +115,7 @@ class NewsCollector:
                     pub_str = item.findtext("pubDate", "")
                     description = item.findtext("description", "")
 
-                    # 날짜 파싱 (RSS: "Mon, 31 Mar 2025 10:00:00 GMT")
+                    # Date parsing (RSS: "Mon, 31 Mar 2025 10:00:00 GMT")
                     try:
                         pub = datetime.strptime(pub_str, "%a, %d %b %Y %H:%M:%S %Z")
                     except ValueError:
@@ -147,13 +147,13 @@ class NewsCollector:
         days: int = 30,
         max_items: int = 50,
     ) -> list[dict]:
-        """기업명으로 관련 뉴스 수집 (KR/US 자동 분기).
+        """Collect related news by company name (auto-dispatch KR/US).
 
         Args:
-            company_name: 기업명 또는 ticker
+            company_name: Company name or ticker
             market: "KR" | "US"
-            days: 수집 기간 (일)
-            max_items: 최대 수집 건수
+            days: Collection period (days)
+            max_items: Maximum items to collect
 
         Returns:
             [{"title", "description", "link", "pub_date", "source"}]
@@ -163,7 +163,7 @@ class NewsCollector:
         else:
             news = self.collect_us(company_name, days=days, max_items=max_items)
 
-        # 중복 제거 (제목 기준)
+        # Deduplicate (by title)
         seen = set()
         unique = []
         for n in news:
@@ -175,7 +175,7 @@ class NewsCollector:
 
 
 def _strip_html(text: str) -> str:
-    """HTML 태그 및 엔티티 제거."""
+    """Remove HTML tags and entities."""
     import re
     clean = re.sub(r"<[^>]+>", "", text)
     return unescape(clean).strip()

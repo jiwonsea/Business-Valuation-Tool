@@ -1,6 +1,6 @@
-"""SEC EDGAR API 클라이언트 — 미국 기업 재무제표 조회.
+"""SEC EDGAR API client -- US company financial statement retrieval.
 
-무료, API Key 불필요. User-Agent 헤더 필수 (SEC 정책).
+Free, no API key required. User-Agent header mandatory (SEC policy).
 https://www.sec.gov/edgar/sec-api-documentation
 """
 
@@ -23,7 +23,7 @@ _client = httpx.Client(headers=HEADERS, timeout=15, follow_redirects=True)
 
 
 def search_company(query: str) -> list[dict]:
-    """기업명 또는 ticker로 SEC 등록 기업 검색.
+    """Search SEC-registered companies by name or ticker.
 
     Returns:
         [{"cik": "320193", "ticker": "AAPL", "name": "Apple Inc."}]
@@ -47,22 +47,22 @@ def search_company(query: str) -> list[dict]:
 
 
 def _validate_cik(cik: str) -> str:
-    """CIK 번호 형식 검증. 유효하지 않으면 ValueError."""
+    """Validate CIK number format. Raises ValueError if invalid."""
     if not _CIK_RE.match(cik):
         raise ValueError(f"유효하지 않은 CIK 형식: {cik!r}")
     return cik
 
 
 def get_company_facts(cik: str) -> dict:
-    """기업의 전체 XBRL Fact 데이터 조회.
+    """Retrieve full XBRL Fact data for a company.
 
-    SEC Company Facts API: 모든 재무 항목의 전 기간 데이터.
+    SEC Company Facts API: all financial items across all periods.
 
     Args:
-        cik: CIK 번호 (zero-padded 불필요, 자동 처리)
+        cik: CIK number (zero-padding not required, handled automatically)
 
     Returns:
-        Raw JSON (매우 큰 dict — 필요한 항목만 파싱하여 사용)
+        Raw JSON (very large dict -- parse only needed items)
     """
     cik_padded = _validate_cik(cik).zfill(10)
     url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik_padded}.json"
@@ -72,14 +72,14 @@ def get_company_facts(cik: str) -> dict:
 
 
 def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
-    """특정 XBRL concept의 전 기간 데이터 조회.
+    """Retrieve all-period data for a specific XBRL concept.
 
-    예: get_company_concept("320193", "us-gaap", "Revenues")
+    Example: get_company_concept("320193", "us-gaap", "Revenues")
 
     Args:
-        cik: CIK 번호
+        cik: CIK number
         taxonomy: "us-gaap" | "dei" | "ifrs-full"
-        concept: XBRL 태그명 (e.g., "Revenues", "NetIncomeLoss")
+        concept: XBRL tag name (e.g., "Revenues", "NetIncomeLoss")
 
     Returns:
         {"units": {"USD": [{"val": ..., "fy": ..., "fp": ...}]}}
@@ -92,9 +92,9 @@ def get_company_concept(cik: str, taxonomy: str, concept: str) -> dict:
 
 
 def get_submissions(cik: str) -> dict:
-    """기업의 제출 이력 조회 (filing history).
+    """Retrieve company submission history (filing history).
 
-    10-K, 10-Q 등 filing 목록 + 기본 기업정보.
+    10-K, 10-Q filing list + basic company info.
 
     Returns:
         {"name": str, "tickers": list, "filings": {"recent": {...}}}

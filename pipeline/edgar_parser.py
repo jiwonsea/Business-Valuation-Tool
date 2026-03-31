@@ -1,14 +1,14 @@
-"""SEC EDGAR XBRL 응답 → 구조화된 재무 데이터 변환.
+"""SEC EDGAR XBRL response -> structured financial data conversion.
 
-Company Facts API의 us-gaap 태그를 파싱하여
-연결 재무제표(consolidated) dict로 변환한다.
-금액 단위: USD millions ($M)
+Parses us-gaap tags from the Company Facts API
+and converts them into a consolidated financial statement dict.
+Amount unit: USD millions ($M)
 """
 
 from .edgar_client import get_company_facts
 
-# XBRL us-gaap 태그 → 내부 키 매핑
-# 기업마다 사용하는 태그가 다를 수 있으므로 fallback 리스트 제공
+# XBRL us-gaap tag -> internal key mapping
+# Companies may use different tags, so fallback lists are provided
 CONCEPT_MAP = {
     "revenue": [
         "Revenues",
@@ -58,18 +58,18 @@ def _to_millions(val: float | int) -> int:
 
 
 def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
-    """XBRL facts에서 특정 연도의 연간(10-K) 값 추출.
+    """Extract the annual (10-K) value for a specific year from XBRL facts.
 
-    10-K filing에는 비교 연도 데이터가 동일 fy로 태깅되므로,
-    end 날짜가 가장 최근인 엔트리를 선택하여 해당 FY의 실제 데이터를 추출.
+    10-K filings tag comparative year data with the same fy,
+    so we select the entry with the latest end date to extract actual FY data.
 
     Args:
         facts: company facts raw JSON
-        concepts: 시도할 XBRL 태그 리스트 (우선순위)
+        concepts: List of XBRL tags to try (in priority order)
         year: fiscal year
 
     Returns:
-        USD millions 정수 or None
+        USD millions integer or None
     """
     us_gaap = facts.get("facts", {}).get("us-gaap", {})
 
@@ -78,7 +78,7 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
         units = concept_data.get("units", {})
         usd_entries = units.get("USD", [])
 
-        # 해당 FY의 10-K 엔트리 수집 → end 날짜 최신 선택
+        # Collect 10-K entries for the target FY -> select latest end date
         candidates = [
             e for e in usd_entries
             if e.get("fp") == "FY" and e.get("fy") == year
@@ -88,7 +88,7 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
             best = max(candidates, key=lambda e: e.get("end", ""))
             return _to_millions(best["val"])
 
-        # 10-K가 없으면 FY 아무거나 (end 최신)
+        # If no 10-K, use any FY entry (latest end date)
         fallbacks = [
             e for e in usd_entries
             if e.get("fp") == "FY" and e.get("fy") == year
@@ -101,20 +101,20 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
 
 
 def parse_financials(cik: str, years: list[int] | None = None) -> dict[int, dict]:
-    """CIK → 연도별 연결 재무제표 dict.
+    """CIK -> annual consolidated financial statement dict.
 
     Args:
-        cik: SEC CIK 번호
-        years: 조회할 연도 리스트 (None이면 최근 3년)
+        cik: SEC CIK number
+        years: List of years to query (None for most recent 3 years)
 
     Returns:
         {2024: {"revenue": int, "op": int, ..., "de_ratio": float}, ...}
-        금액 단위: USD millions
+        Amount unit: USD millions
     """
     facts = get_company_facts(cik)
 
     if years is None:
-        # 최근 filing에서 연도 추정
+        # Estimate years from recent filings
         years = _guess_recent_years(facts)
 
     result = {}
@@ -124,14 +124,14 @@ def parse_financials(cik: str, years: list[int] | None = None) -> dict[int, dict
             val = _extract_annual(facts, concepts, year)
             row[internal_key] = val if val is not None else 0
 
-        # D&A fallback: dep+amort가 없으면 DDA에서 추정
+        # D&A fallback: estimate from DDA if dep+amort are missing
         if row.get("dep", 0) == 0 and row.get("amort", 0) == 0:
             dda = _extract_annual(facts, ["DepreciationDepletionAndAmortization"], year)
             if dda:
                 row["dep"] = dda
                 row["amort"] = 0
 
-        # Net debt 계산
+        # Net debt calculation
         cash = row.pop("cash", 0)
         row["net_borr"] = row.get("gross_borr", 0) - cash
         row["gross_borr"] = row.get("gross_borr", 0)
@@ -147,10 +147,10 @@ def parse_financials(cik: str, years: list[int] | None = None) -> dict[int, dict
 
 
 def _guess_recent_years(facts: dict, n: int = 3) -> list[int]:
-    """XBRL facts에서 최근 n개 fiscal year 추정."""
+    """Estimate the most recent n fiscal years from XBRL facts."""
     us_gaap = facts.get("facts", {}).get("us-gaap", {})
 
-    # 여러 revenue 태그를 순서대로 시도
+    # Try multiple revenue tags in order
     revenue_tags = [
         "RevenueFromContractWithCustomerExcludingAssessedTax",
         "Revenues",
@@ -170,10 +170,10 @@ def _guess_recent_years(facts: dict, n: int = 3) -> list[int]:
 
 
 def get_shares_outstanding(cik: str, year: int | None = None) -> int | None:
-    """발행주식수 조회 (XBRL dei 태그).
+    """Query shares outstanding (XBRL dei tag).
 
     Returns:
-        주식수 (shares) or None
+        Number of shares or None
     """
     facts = get_company_facts(cik)
     dei = facts.get("facts", {}).get("dei", {})
@@ -181,7 +181,7 @@ def get_shares_outstanding(cik: str, year: int | None = None) -> int | None:
     concept = dei.get("EntityCommonStockSharesOutstanding", {})
     entries = concept.get("units", {}).get("shares", [])
 
-    # 최신 filing 기준
+    # Based on latest filing
     if not entries:
         return None
 
@@ -190,5 +190,5 @@ def get_shares_outstanding(cik: str, year: int | None = None) -> int | None:
             if e.get("fy") == year:
                 return int(e["val"])
 
-    # 가장 최근 값
+    # Most recent value
     return int(entries[-1]["val"])

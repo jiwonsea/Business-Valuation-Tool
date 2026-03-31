@@ -1,9 +1,9 @@
-"""LLM 클라이언트 래퍼 — Anthropic API / OpenRouter 지원.
+"""LLM client wrapper -- Anthropic API / OpenRouter support.
 
-우선순위:
-1. OPENROUTER_API_KEY 설정 시 → OpenRouter (다양한 모델 선택 가능)
-2. ANTHROPIC_API_KEY 설정 시 → Anthropic 직접 호출
-3. 둘 다 없으면 → RuntimeError
+Priority:
+1. OPENROUTER_API_KEY set -> OpenRouter (various model selection)
+2. ANTHROPIC_API_KEY set -> Direct Anthropic call
+3. Neither set -> RuntimeError
 """
 
 import json
@@ -14,13 +14,13 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# OpenRouter 기본 모델 (무료/저가 모델로 시작, 필요 시 변경)
+# OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20250414"
 
 
 def _get_provider() -> str:
-    """사용 가능한 LLM 프로바이더 판별."""
+    """Determine the available LLM provider."""
     if os.getenv("OPENROUTER_API_KEY"):
         return "openrouter"
     if os.getenv("ANTHROPIC_API_KEY"):
@@ -38,7 +38,7 @@ def _ask_anthropic(
     max_tokens: int = 4096,
     temperature: float = 0.3,
 ) -> str:
-    """Anthropic API 직접 호출 (프롬프트 캐싱 자동 적용)."""
+    """Direct Anthropic API call (automatic prompt caching)."""
     import anthropic
 
     key = os.getenv("ANTHROPIC_API_KEY")
@@ -55,7 +55,7 @@ def _ask_anthropic(
         "messages": messages,
     }
     if system:
-        # 프롬프트 캐싱: 동일 시스템 프롬프트 반복 시 입력 비용 90% 절감
+        # Prompt caching: 90% input cost reduction when reusing system prompts
         kwargs["system"] = [
             {
                 "type": "text",
@@ -66,7 +66,7 @@ def _ask_anthropic(
 
     response = client.messages.create(**kwargs)
 
-    # Usage 로깅 — 토큰 사용량 + 캐시 적중 추적
+    # Usage logging -- token usage + cache hit tracking
     usage = response.usage
     cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
     cache_create = getattr(usage, "cache_creation_input_tokens", 0) or 0
@@ -85,14 +85,14 @@ def _ask_openrouter(
     max_tokens: int = 4096,
     temperature: float = 0.3,
 ) -> str:
-    """OpenRouter API 호출 (OpenAI 호환 형식)."""
+    """OpenRouter API call (OpenAI-compatible format)."""
     import httpx
 
     key = os.getenv("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    # Anthropic 직접 모델 ID가 넘어오면 무시 → OpenRouter 기본 모델 사용
+    # Ignore direct Anthropic model IDs -> use OpenRouter default model
     if not model or model.startswith("claude-"):
         model = os.getenv("OPENROUTER_MODEL", _OPENROUTER_DEFAULT_MODEL)
 
@@ -112,7 +112,7 @@ def _ask_openrouter(
         "Content-Type": "application/json",
     }
 
-    # 429 rate limit 대응: 최대 5회 재시도 (Retry-After 헤더 우선, fallback exponential)
+    # 429 rate limit handling: up to 5 retries (Retry-After header first, fallback exponential)
     max_retries = 5
     for attempt in range(max_retries + 1):
         resp = httpx.post(
@@ -144,17 +144,17 @@ def ask(
     max_tokens: int = 4096,
     temperature: float = 0.3,
 ) -> str:
-    """단일 프롬프트 → 텍스트 응답. 프로바이더 자동 선택.
+    """Single prompt -> text response. Auto-selects provider.
 
     Args:
-        prompt: 사용자 메시지
-        system: 시스템 프롬프트
-        model: 모델 ID (비어있으면 프로바이더별 기본값)
-        max_tokens: 최대 토큰
-        temperature: 온도
+        prompt: User message
+        system: System prompt
+        model: Model ID (uses provider default if empty)
+        max_tokens: Maximum tokens
+        temperature: Temperature
 
     Returns:
-        응답 텍스트
+        Response text
     """
     provider = _get_provider()
 
@@ -171,9 +171,9 @@ def ask_structured(
     model: str = "",
     max_tokens: int = 4096,
 ) -> str:
-    """구조화된 응답 요청 (JSON 등).
+    """Request structured response (JSON, etc.).
 
-    temperature=0으로 고정하여 결정론적 출력.
+    Fixed temperature=0 for deterministic output.
     """
     return ask(prompt, system=system, model=model,
                max_tokens=max_tokens, temperature=0)

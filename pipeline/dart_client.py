@@ -1,7 +1,7 @@
-"""DART OpenAPI 클라이언트 — 재무제표, 사업보고서, 기업코드 조회.
+"""DART OpenAPI client -- financial statements, annual reports, and corporate code lookup.
 
-DART API Key 필요: https://opendart.fss.or.kr/
-환경변수: DART_API_KEY
+Requires DART API Key: https://opendart.fss.or.kr/
+Environment variable: DART_API_KEY
 """
 
 import io
@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 DART_BASE = "https://opendart.fss.or.kr/api"
 
-# corpCode.xml 디스크 캐시 (8MB ZIP → 매번 다운로드 방지)
+# corpCode.xml disk cache (8MB ZIP -> avoid re-downloading each time)
 _CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
 _CORP_CODE_CACHE = _CACHE_DIR / "corpCode.xml"
-_CORP_CODE_TTL = 86400  # 24시간
+_CORP_CODE_TTL = 86400  # 24 hours
 
 
 def _get_api_key() -> str:
@@ -32,15 +32,15 @@ def _get_api_key() -> str:
 
 
 def _load_corp_code_xml() -> ET.Element:
-    """corpCode.xml 로드 (디스크 캐시 우선, 만료 시 재다운로드)."""
-    # 캐시 유효성 확인
+    """Load corpCode.xml (disk cache first, re-download on expiry)."""
+    # Check cache validity
     if _CORP_CODE_CACHE.exists():
         age = time.time() - _CORP_CODE_CACHE.stat().st_mtime
         if age < _CORP_CODE_TTL:
             logger.debug("corpCode.xml 캐시 사용 (age=%.0fs)", age)
             return ET.parse(_CORP_CODE_CACHE).getroot()
 
-    # 캐시 없거나 만료 → 다운로드
+    # No cache or expired -> download
     logger.info("corpCode.xml 다운로드 중 (~8MB)...")
     key = _get_api_key()
     resp = httpx.get(f"{DART_BASE}/corpCode.xml", params={"crtfc_key": key}, timeout=30)
@@ -49,7 +49,7 @@ def _load_corp_code_xml() -> ET.Element:
     z = zipfile.ZipFile(io.BytesIO(resp.content))
     xml_data = z.read(z.namelist()[0])
 
-    # 디스크에 저장
+    # Save to disk
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
     _CORP_CODE_CACHE.write_bytes(xml_data)
     logger.info("corpCode.xml 캐시 저장 완료 (%s)", _CORP_CODE_CACHE)
@@ -58,23 +58,23 @@ def _load_corp_code_xml() -> ET.Element:
 
 
 def get_corp_code(company_name: str) -> str | None:
-    """회사명으로 DART corp_code 조회.
+    """Look up DART corp_code by company name.
 
-    corpCode.xml → 전체 기업코드 ZIP → XML 파싱 → 회사명 매칭
+    corpCode.xml -> full corporate code ZIP -> XML parsing -> company name matching
     """
     result = get_corp_info(company_name)
     return result["corp_code"] if result else None
 
 
 def get_corp_info(company_name: str) -> dict | None:
-    """회사명으로 DART corp_code + 상장 여부 조회.
+    """Look up DART corp_code + listing status by company name.
 
     Returns:
         {"corp_code": str, "stock_code": str|None, "is_listed": bool} or None
     """
     root = _load_corp_code_xml()
 
-    # 모든 매칭 후보를 수집한 뒤, 상장사 우선 + 정확매칭 우선으로 정렬
+    # Collect all matching candidates, then sort by listed first + exact match first
     candidates = []
     for corp in root.findall(".//list"):
         name = corp.findtext("corp_name", "")
@@ -92,7 +92,7 @@ def get_corp_info(company_name: str) -> dict | None:
     if not candidates:
         return None
 
-    # 정렬: 정확매칭 > 상장사 > 나머지
+    # Sort: exact match > listed > others
     candidates.sort(key=lambda c: (c["_exact"], c["is_listed"]), reverse=True)
     best = candidates[0]
     best.pop("_exact")
@@ -102,10 +102,10 @@ def get_corp_info(company_name: str) -> dict | None:
 def get_financial_statements(
     corp_code: str,
     year: int,
-    report_code: str = "11011",  # 11011=사업보고서
-    fs_div: str = "CFS",  # CFS=연결, OFS=개별
+    report_code: str = "11011",  # 11011=Annual Report
+    fs_div: str = "CFS",  # CFS=Consolidated, OFS=Separate
 ) -> list[dict]:
-    """전체 재무제표 단일계정 조회 (fnlttSinglAcntAll).
+    """Full financial statement single-account query (fnlttSinglAcntAll).
 
     Returns: list of account dicts
     """
@@ -128,13 +128,13 @@ def get_financial_statements(
 
 
 def get_report_document(rcept_no: str) -> str:
-    """사업보고서 본문 XML 다운로드.
+    """Download annual report body XML.
 
     Args:
-        rcept_no: 접수번호 (financial_statements 결과에서 획득)
+        rcept_no: Receipt number (obtained from financial_statements result)
 
     Returns:
-        XML 본문 텍스트
+        XML body text
     """
     key = _get_api_key()
     resp = httpx.get(f"{DART_BASE}/document.xml",
@@ -142,15 +142,15 @@ def get_report_document(rcept_no: str) -> str:
     resp.raise_for_status()
 
     z = zipfile.ZipFile(io.BytesIO(resp.content))
-    # 보통 첫 번째 파일이 본문
+    # Usually the first file is the body
     xml_data = z.read(z.namelist()[0])
     return xml_data.decode("utf-8", errors="replace")
 
 
 def get_single_company_info(corp_code: str) -> dict:
-    """기업 개황 조회 (company.json).
+    """Company overview query (company.json).
 
-    Returns: 대표자명, 업종, 주소, 주식수 등
+    Returns: CEO name, industry, address, shares, etc.
     """
     key = _get_api_key()
     resp = httpx.get(f"{DART_BASE}/company.json",
@@ -163,7 +163,7 @@ def get_single_company_info(corp_code: str) -> dict:
 
 
 def _parse_dart_number(s: str) -> int:
-    """DART 숫자 문자열 파싱 ('5,969,782,550' → 5969782550, '-' → 0)."""
+    """Parse DART number string ('5,969,782,550' -> 5969782550, '-' -> 0)."""
     if not s or s.strip() in ("-", ""):
         return 0
     return int(s.replace(",", "").strip())
@@ -174,19 +174,19 @@ def get_stock_total_info(
     year: int,
     reprt_code: str = "11011",
 ) -> dict | None:
-    """주식의 총수 현황 조회 (stockTotqySttus.json).
+    """Query total shares status (stockTotqySttus.json).
 
     Args:
-        corp_code: DART 고유번호
-        year: 사업연도 (e.g., 2024)
-        reprt_code: 11011=사업보고서, 11012=반기, 11013=1분기, 11014=3분기
+        corp_code: DART corporate code
+        year: Fiscal year (e.g., 2024)
+        reprt_code: 11011=Annual, 11012=Semi-annual, 11013=Q1, 11014=Q3
 
     Returns:
         {
-            "shares_ordinary": int,   # 보통주 발행주식총수
-            "shares_preferred": int,  # 우선주 발행주식총수
-            "treasury_ordinary": int, # 자기주식수 (보통주)
-            "treasury_preferred": int,# 자기주식수 (우선주)
+            "shares_ordinary": int,   # Total ordinary shares issued
+            "shares_preferred": int,  # Total preferred shares issued
+            "treasury_ordinary": int, # Treasury shares (ordinary)
+            "treasury_preferred": int,# Treasury shares (preferred)
         }
         or None if API call fails
     """
@@ -214,7 +214,7 @@ def get_stock_total_info(
     }
     for item in data.get("list", []):
         se = (item.get("se") or "").strip()
-        # istc_totqy: 현재 발행주식총수, tesstk_co: 자기주식수
+        # istc_totqy: total shares currently issued, tesstk_co: treasury shares
         issued = _parse_dart_number(item.get("istc_totqy", "0"))
         treasury = _parse_dart_number(item.get("tesstk_co", "0"))
 

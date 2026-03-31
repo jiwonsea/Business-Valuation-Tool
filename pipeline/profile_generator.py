@@ -1,23 +1,40 @@
-"""자동 데이터 수집 → YAML 프로필 생성 + AI 자동 분석."""
+"""Auto data collection -> YAML profile generation + AI-driven analysis."""
+
+from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
+if TYPE_CHECKING:
+    from schemas.models import ValuationInput, ValuationResult
 
-# 프로젝트 루트 (cli.py가 아니라 이 파일 기준으로 상위 디렉토리)
+
+@dataclass
+class AnalyzeResult:
+    """Rich return type for auto_analyze() — preserves attribute access."""
+
+    vi: ValuationInput
+    result: ValuationResult
+    excel_path: str
+    summary_md: str
+
+
+# Project root (relative to this file's parent directory, not cli.py)
 _PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def auto_fetch(company_query: str) -> dict:
-    """기업명/ticker 입력 → 자동 판별 → 재무 데이터 수집 → raw dict 반환."""
+    """Company name/ticker input -> auto-detect market -> collect financials -> return raw dict."""
     from pipeline.data_fetcher import DataFetcher
 
     fetcher = DataFetcher()
 
-    # Step 1: 기업 식별
+    # Step 1: Company identification
     print(f"\n[1/3] 기업 식별 중: '{company_query}'")
     identity = fetcher.identify(company_query)
     if not identity:
@@ -33,7 +50,7 @@ def auto_fetch(company_query: str) -> dict:
     if identity.corp_code:
         print(f"    DART corp_code: {identity.corp_code}")
 
-    # Step 2: 재무제표 수집
+    # Step 2: Financial statement collection
     print(f"\n[2/3] 재무제표 수집 중...")
     financials = fetcher.fetch_financials(identity)
     if not financials:
@@ -46,7 +63,7 @@ def auto_fetch(company_query: str) -> dict:
         unit = "$M" if identity.market == "US" else "백만원"
         print(f"  {year}: 매출 {rev:,}{unit}, 영업이익 {op:,}{unit}")
 
-    # Step 3: 주식수 / 시장 데이터
+    # Step 3: Share count / market data
     print(f"\n[3/3] 시장 데이터 수집 중...")
     shares_info = fetcher.fetch_shares(identity)
     if shares_info.get("shares_total"):
@@ -55,7 +72,7 @@ def auto_fetch(company_query: str) -> dict:
         currency = shares_info.get("currency", "")
         print(f"  현재가: {shares_info['price']:,.2f} {currency}")
 
-    # Step 4: YAML 프로필 자동 생성
+    # Step 4: Auto-generate YAML profile
     yaml_path = _generate_draft_profile(identity, financials, shares_info)
 
     print(f"\n{'='*60}")
@@ -78,17 +95,17 @@ def auto_fetch(company_query: str) -> dict:
 def _estimate_wacc_params(
     cons: dict, shares_info: dict, market: str, identity
 ) -> dict:
-    """데이터 기반 WACC 파라미터 자동 추정.
+    """Data-driven automatic WACC parameter estimation.
 
-    핵심 원칙:
-    - D/E: 이자발생부채(gross_borr) / 시장자본(market_cap) (총부채/장부자본 아님)
+    Key principles:
+    - D/E: interest-bearing debt (gross_borr) / market cap (not total liabilities / book equity)
     - Tax: min(max(effective_tax, 0), statutory_max)
-    - Beta: yfinance → Hamada unlever
+    - Beta: yfinance -> Hamada unlevering
     - Kd: |interest_expense| / gross_borr
     - Equity weight: market_cap / (market_cap + gross_borr)
     """
     is_us = market == "US"
-    # 시장별 기본값
+    # Market-specific defaults
     rf = 4.25 if is_us else 3.50
     erp = 5.50 if is_us else 7.00
     statutory_tax = 21.0 if is_us else 25.0
@@ -100,10 +117,10 @@ def _estimate_wacc_params(
     gross_borr = cons.get("gross_borr", 0)
     interest_expense = cons.get("interest_expense", 0)
 
-    # yfinance beta 수집
-    levered_beta = shares_info.get("beta")  # fetch_shares에서 전달
+    # Fetch beta from yfinance
+    levered_beta = shares_info.get("beta")  # Passed from fetch_shares
     if levered_beta is None:
-        # yfinance_fetcher에서 직접 시도
+        # Try directly from yfinance_fetcher
         try:
             from pipeline.yfinance_fetcher import fetch_market_data
             if identity.ticker:
@@ -113,49 +130,49 @@ def _estimate_wacc_params(
         except Exception:
             pass
 
-    # 시장자본 계산 (재무제표와 동일 단위: 백만원/$M)
-    # price * shares = raw currency → ÷ 1,000,000 → 재무제표 단위
+    # Market cap calculation (same unit as financial statements: million KRW / $M)
+    # price * shares = raw currency -> / 1,000,000 -> financial statement unit
     market_cap = 0.0
     if market_price > 0 and shares_total > 0:
         market_cap = market_price * shares_total / 1_000_000
 
-    # --- Tax rate: 실효세율 클램핑 ---
+    # --- Tax rate: clamp effective tax rate ---
     from pipeline.macro_data import calc_effective_tax_rate
     effective_tax = calc_effective_tax_rate({0: cons})  # dummy year key
     if effective_tax is not None:
         tax = min(max(effective_tax, 0.0), statutory_tax)
     else:
-        tax = statutory_tax * 0.85  # 보수적 기본값
+        tax = statutory_tax * 0.85  # Conservative default
 
-    # --- D/E: gross_borr / market_cap ---
+    # --- D/E ratio: gross_borr / market_cap ---
     if market_cap > 0 and gross_borr > 0:
         de_ratio = round(gross_borr / market_cap * 100, 1)
     elif market_cap > 0:
         de_ratio = 0.0
     else:
-        # 비상장: 장부가 기반 fallback
+        # Unlisted: book value-based fallback
         equity_bv = cons.get("equity", 0)
         liabilities = cons.get("liabilities", 0)
         de_ratio = round(liabilities / equity_bv * 100, 1) if equity_bv > 0 else 100.0
 
-    # --- Equity weight ---
+    # --- Equity weight in capital structure ---
     if market_cap > 0:
         eq_w = round(market_cap / (market_cap + max(gross_borr, 0)) * 100, 1)
     else:
         eq_w = round(100 / (1 + de_ratio / 100), 1)
 
-    # --- Unlevered beta (Hamada) ---
+    # --- Unlevered beta via Hamada equation ---
     if levered_beta and levered_beta > 0 and market_cap > 0:
         hamada_de = gross_borr / market_cap if market_cap > 0 else 0
         bu = round(levered_beta / (1 + (1 - tax / 100) * hamada_de), 3)
-        bu = max(bu, 0.1)  # 비현실적 값 방지
+        bu = max(bu, 0.1)  # Prevent unrealistic values
     else:
         bu = default_bu
 
     # --- Kd_pre: |interest_expense| / gross_borr ---
     if gross_borr > 0 and interest_expense != 0:
         kd_pre = round(abs(interest_expense) / gross_borr * 100, 2)
-        # 범위 제한: [rf, rf + 5%]
+        # Clamp to range: [rf, rf + 5%]
         kd_pre = max(rf, min(kd_pre, rf + 5.0))
     else:
         kd_pre = default_kd
@@ -168,7 +185,7 @@ def _estimate_wacc_params(
 
 
 def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> str | None:
-    """수집된 데이터로 draft YAML 프로필 자동 생성."""
+    """Auto-generate a draft YAML profile from collected data."""
     years = sorted(financials.keys())
     if not years:
         return None
@@ -190,7 +207,7 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     net_debt = cons.get("net_borr", 0)
     market_price = shares_info.get("price", 0)
 
-    # WACC 자동 추정
+    # Auto-estimate WACC parameters
     wacc_est = _estimate_wacc_params(cons, shares_info, identity.market, identity)
     rf = wacc_est["rf"]
     erp = wacc_est["erp"]
@@ -200,14 +217,14 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     de_ratio = wacc_est["de"]
     eq_w = wacc_est["eq_w"]
 
-    # 파일명 생성
+    # Generate filename
     safe_name = re.sub(r"[^\w\-]", "_", identity.name.lower().replace(" ", "_"))
     if identity.ticker:
         safe_name = identity.ticker.lower()
     yaml_filename = f"profiles/{safe_name}.yaml"
     yaml_path = str(_PROJECT_ROOT / yaml_filename)
 
-    # consolidated YAML 블록
+    # Consolidated financials YAML block
     cons_blocks = []
     for yr in years:
         d = financials[yr]
@@ -226,34 +243,37 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
 
     net_debt = cons.get("net_borr", 0)
 
-    # 매크로 데이터 자동 수집
+    # Auto-fetch macro data
     from pipeline.macro_data import get_terminal_growth, get_diluted_shares
     from engine.growth import generate_growth_rates
     terminal_growth = get_terminal_growth(identity.market)
 
-    # EBITDA 성장률 동적 생성 (최근 CAGR → 시장 수렴치로 선형 감쇠)
-    growth_rates = generate_growth_rates(financials, market=identity.market)
+    # Dynamically generate EBITDA growth rates (industry base-rate -> market convergence via linear decay)
+    _industry = getattr(identity, "industry", "") or ""
+    growth_rates = generate_growth_rates(
+        financials, market=identity.market, industry=_industry,
+    )
     growth_rates_str = "[" + ", ".join(f"{r:.2f}" for r in growth_rates) + "]"
-    # Note: tax rate는 _estimate_wacc_params()에서 클램핑 적용 완료
+    # Note: tax rate is already clamped in _estimate_wacc_params()
 
-    # 희석주식수 (SBC/스톡옵션 반영) — DART 주식총수를 못 가져온 경우만
+    # Diluted shares (reflecting SBC/stock options) -- only if DART share data unavailable
     if identity.ticker and shares_preferred == 0 and treasury_shares == 0:
         diluted = get_diluted_shares(identity.ticker, identity.market)
         if diluted and diluted > shares_total:
             shares_total = diluted
             shares_ordinary = diluted
 
-    # 유통보통주식수 (per-share 계산 기준)
+    # Outstanding ordinary shares (basis for per-share calculation)
     shares_outstanding = shares_ordinary - treasury_shares
     if shares_outstanding <= 0:
         shares_outstanding = shares_ordinary or shares_total
 
-    # 교차검증 멀티플 자동 계산 (수집된 재무 + 시장 데이터 기반)
+    # Auto-calculate cross-validation multiples (based on collected financials + market data)
     pe_multiple = 0.0
     ev_revenue_multiple = 0.0
     pbv_multiple = 0.0
     if market_price > 0 and shares_outstanding > 0:
-        mcap = market_price * shares_outstanding / 1_000_000  # 백만원/$M 단위
+        mcap = market_price * shares_outstanding / 1_000_000  # In million KRW / $M
         net_inc = cons.get("net_income", 0)
         revenue = cons.get("revenue", 0)
         if net_inc > 0:
@@ -264,7 +284,7 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
         if equity_bv > 0:
             pbv_multiple = round(mcap / equity_bv, 1)
 
-    # 금융자회사 보유 가능성 경고
+    # Warning for potential financial subsidiary ownership
     fin_subsidiary_warn = ""
     if not is_us and de_ratio > 150:
         industry = getattr(identity, "industry", "") or ""
@@ -367,8 +387,8 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: {terminal_growth}
 
-# 교차검증 멀티플 (Trading Multiple — 현재 시장가 기반 역산)
-# Peer 기반 독립 멀티플로 교체 권장
+# Cross-validation multiples (Trading Multiple -- reverse-engineered from current market price)
+# Recommended to replace with independent peer-based multiples
 pe_multiple: {pe_multiple}
 ev_revenue_multiple: {ev_revenue_multiple}
 pbv_multiple: {pbv_multiple}
@@ -390,17 +410,17 @@ peers: []
 
 
 def auto_analyze(company_query: str, output_dir: str | None = None):
-    """AI 기반 end-to-end 자동 분석.
+    """AI-driven end-to-end automated analysis.
 
-    1. 데이터 수집 (auto_fetch)
-    2. AI가 부문/멀티플/시나리오 설계
-    3. YAML 프로필 보강
-    4. 밸류에이션 실행 + Excel 출력
+    1. Data collection (auto_fetch)
+    2. AI designs segments / multiples / scenarios
+    3. Enrich YAML profile
+    4. Run valuation + Excel output
     """
     from valuation_runner import load_profile, run_valuation
     from output.console_report import print_report
 
-    # Step 1: 데이터 수집
+    # Step 1: Data collection
     fetch_result = auto_fetch(company_query)
     if not fetch_result or not fetch_result.get("yaml_path"):
         print("[ERROR] 데이터 수집 실패. --auto 중단.")
@@ -410,7 +430,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
     identity = fetch_result["identity"]
     financials = fetch_result["financials"]
 
-    # Step 2: AI 분석
+    # Step 2: AI analysis
     print(f"\n{'='*60}")
     print(f"[AI 분석 시작] {identity.name}")
     print(f"{'='*60}")
@@ -426,15 +446,20 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         from output.excel_builder import export
         path = export(vi, result, output_dir)
         print(f"\n[Excel] 저장 완료: {path}")
-        return result
+        from orchestrator import format_summary
+        return AnalyzeResult(
+            vi=vi, result=result,
+            excel_path=str(path),
+            summary_md=format_summary(vi, result),
+        )
 
     latest = max(financials.keys())
     cons = financials[latest]
 
-    # 매출 구성 텍스트
+    # Revenue composition text
     revenue_text = f"총 매출: {cons.get('revenue', 0):,}, 영업이익: {cons.get('op', 0):,}"
 
-    # AI Step 2: 부문 분류
+    # AI Step 2: Segment classification
     print("[AI 2/6] 부문 분류 중...")
     try:
         seg_result = analyst.classify_segments(identity.name, revenue_text)
@@ -444,7 +469,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         print(f"  [WARN] 부문 분류 실패: {e}")
         segments = []
 
-    # AI Step 3: Peer/멀티플 추천
+    # AI Step 3: Peer / multiple recommendation
     peers_all = []
     multiples_ai = {}
     if segments:
@@ -471,7 +496,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
                 print(f"  [WARN] {code} Peer 추천 실패: {e}")
                 multiples_ai[code] = 10.0
 
-    # AI Step 4: WACC 추천
+    # AI Step 4: WACC recommendation
     print("[AI 4/6] WACC 추정 중...")
     equity = cons.get("equity", 0)
     liabilities = cons.get("liabilities", 0)
@@ -483,7 +508,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         print(f"  [WARN] WACC 추정 실패: {e}")
         wacc_result = {}
 
-    # AI Step 5a: 뉴스 수집 → 핵심 이슈 요약
+    # AI Step 5a: News collection -> key issues summary
     print("[AI 5/6] 관련 뉴스 수집 중...")
     key_issues = ""
     try:
@@ -501,11 +526,11 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
     except Exception as e:
         print(f"  [WARN] 뉴스 수집 실패: {e}. 범용 시나리오로 진행합니다.")
 
-    # AI Step 5b: 시나리오 설계 (뉴스 기반 key_issues + 멀티 드라이버)
+    # AI Step 5b: Scenario design (news-based key_issues + multi-driver)
     print("[AI 6/6] 시나리오 설계 중...")
     legal = "상장" if identity.market == "US" else "비상장"
 
-    # 방법론 결정 → AI에게 전달하여 method-aware 드라이버 생성
+    # Determine valuation method -> pass to AI for method-aware driver generation
     try:
         from engine.method_selector import suggest_method
         val_method = suggest_method(
@@ -526,12 +551,12 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         print(f"  [WARN] 시나리오 설계 실패: {e}")
         ai_scenarios = []
 
-    # Step 3: YAML 보강
+    # Step 3: Enrich YAML
     print(f"\n[YAML 보강 중] {yaml_path}")
     with open(yaml_path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
-    # 부문 정보 업데이트
+    # Update segment information
     if segments:
         raw["segments"] = {}
         seg_data_update = {}
@@ -550,22 +575,28 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
             }
         raw["segment_data"] = {latest: seg_data_update}
 
-    # WACC 업데이트
+    # Update WACC parameters
     if wacc_result:
         for key in ["rf", "erp", "bu", "kd_pre", "tax"]:
             if key in wacc_result:
                 raw["wacc_params"][key] = wacc_result[key]
 
-    # 뉴스 핵심 이슈 저장 (감사 추적용)
+    # Save news key issues (for audit trail)
     if key_issues:
         raw["news_key_issues"] = key_issues
 
-    # 시나리오 업데이트 (멀티 드라이버 매핑)
+    # Update scenarios (multi-variable news drivers / backward-compatible with direct assignment)
     if ai_scenarios:
-        # 유통보통주식수 (보통주 - 자사주) 기준
+        # Outstanding ordinary shares (ordinary - treasury) basis
         _ord = raw["company"].get("shares_ordinary", raw["company"]["shares_total"])
         _trs = raw["company"].get("treasury_shares", 0)
         shares = _ord - _trs if _trs > 0 else _ord
+
+        # Save news drivers (multi-variable approach -- when AI-generated)
+        ai_news_drivers = sc_result.get("news_drivers", []) if sc_result else []
+        if ai_news_drivers:
+            raw["news_drivers"] = ai_news_drivers
+
         raw["scenarios"] = {}
         for sc in ai_scenarios:
             code = sc.get("code", "A")
@@ -582,7 +613,10 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
                 "desc": sc.get("description", ""),
                 "probability_rationale": sc.get("probability_rationale", ""),
             }
-            # AI가 생성한 정량적 드라이버 매핑
+            # Multi-variable news driver approach (active_drivers)
+            if "active_drivers" in sc:
+                sc_dict["active_drivers"] = sc["active_drivers"]
+            # Legacy direct assignment approach (fallback -- when no news_drivers)
             drivers = sc.get("drivers", {})
             for field in (
                 "growth_adj_pct", "terminal_growth_adj", "market_sentiment_pct",
@@ -590,21 +624,21 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
             ):
                 if field in drivers:
                     val = drivers[field]
-                    # ddm_growth/ev_multiple: 0은 "미설정"을 의미 → None으로 변환
+                    # ddm_growth/ev_multiple: 0 means "not set" -> convert to None
                     if field in ("ddm_growth", "ev_multiple") and val == 0:
                         val = None
                     sc_dict[field] = val
-            # 드라이버별 근거
+            # Per-driver rationale
             dr = sc.get("driver_rationale", {})
             if dr:
                 sc_dict["driver_rationale"] = dr
             raw["scenarios"][code] = sc_dict
 
-    # Peers 업데이트
+    # Update peers
     if peers_all:
         raw["peers"] = peers_all
 
-    # MC 활성화
+    # Enable Monte Carlo simulation
     raw["mc_enabled"] = True
 
     with open(yaml_path, "w", encoding="utf-8") as f:
@@ -612,7 +646,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
 
     print(f"  → YAML 저장 완료")
 
-    # Step 4: 밸류에이션 실행
+    # Step 4: Run valuation
     print(f"\n{'='*60}")
     print(f"[밸류에이션 실행]")
     print(f"{'='*60}")
@@ -620,14 +654,6 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
     vi = load_profile(yaml_path)
     result = run_valuation(vi)
 
-    # 상장사 괴리율 자동 비교
+    # Auto-compare valuation gap for listed companies
     from cli import _fetch_and_compare_market_price
-    result = _fetch_and_compare_market_price(vi, result)
-
-    print_report(vi, result)
-
-    from output.excel_builder import export
-    path = export(vi, result, output_dir)
-    print(f"\n[Excel] 저장 완료: {path}")
-
-    return result
+    result = _fetch_and_compare_market_price(vi, resul

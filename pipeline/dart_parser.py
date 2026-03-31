@@ -1,29 +1,29 @@
-"""DART API 응답 → 구조화된 재무 데이터 변환.
+"""DART API response -> structured financial data conversion.
 
-원 → 백만원 단위 변환, 계정 매핑 포함.
+KRW -> million KRW unit conversion, with account mapping.
 """
 
 import re
 
-# DART 계정과목 → 내부 키 매핑
+# DART account names -> internal key mapping
 ACCOUNT_MAP = {
-    # IS (손익계산서) — 매출/수익 (top-line Revenue)
-    "매출액": "revenue",           # 전통 형식: 매출액 → 매출원가 → 매출총이익
-    "수익(매출액)": "revenue",     # 변형 표기
-    "영업수익": "revenue",         # IFRS 기능별 형식: 영업수익 − 영업비용 = 영업이익
-    # IS — 영업이익 (Operating Income, Revenue − Costs)
+    # IS (Income Statement) -- Revenue (top-line)
+    "매출액": "revenue",           # Traditional format: Sales -> COGS -> Gross Profit
+    "수익(매출액)": "revenue",     # Variant notation
+    "영업수익": "revenue",         # IFRS by-function format: Operating Revenue - Operating Expense = Operating Income
+    # IS -- Operating Income (Revenue - Costs)
     "영업이익": "op",
     "영업이익(손실)": "op",
-    # IS — 당기순이익
+    # IS -- Net Income
     "당기순이익": "net_income",
     "당기순이익(손실)": "net_income",
-    # BS (재무상태표)
+    # BS (Balance Sheet)
     "자산총계": "assets",
     "부채총계": "liabilities",
     "자본총계": "equity",
 }
 
-# 현금흐름표 비현금항목
+# Cash flow statement non-cash items
 NONCASH_MAP = {
     "감가상각비": "dep",
     "유형자산감가상각비": "dep",
@@ -32,11 +32,11 @@ NONCASH_MAP = {
 
 
 def _to_millions(value_str: str) -> int:
-    """원 단위 문자열 → 백만원 정수 변환."""
+    """Convert KRW string to million KRW integer."""
     if not value_str:
         return 0
     cleaned = re.sub(r"[,\s]", "", value_str)
-    # 괄호 = 음수
+    # Parentheses = negative
     if cleaned.startswith("(") and cleaned.endswith(")"):
         cleaned = "-" + cleaned[1:-1]
     try:
@@ -50,23 +50,23 @@ def _to_millions(value_str: str) -> int:
 
 
 def parse_financial_statements(items: list[dict], year: int) -> dict:
-    """fnlttSinglAcntAll 응답 → 연결 재무제표 dict.
+    """fnlttSinglAcntAll response -> consolidated financial statement dict.
 
     Args:
         items: DART API raw items
-        year: 대상 회계연도
+        year: Target fiscal year
 
     Returns:
-        {"revenue": int, "op": int, ..., "dep": int, "amort": int} (백만원)
+        {"revenue": int, "op": int, ..., "dep": int, "amort": int} (million KRW)
     """
     result = {}
 
     for item in items:
         acct_name = item.get("account_nm", "")
-        # 당기 금액 우선, 없으면 thstrm_amount
+        # Prefer current period amount, fallback to thstrm_amount
         amount_str = item.get("thstrm_amount", "")
 
-        # 계정 매핑
+        # Account mapping
         internal_key = ACCOUNT_MAP.get(acct_name)
         if internal_key and internal_key not in result:
             result[internal_key] = _to_millions(amount_str)
@@ -75,26 +75,26 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
 
 
 def parse_noncash_from_xml(xml_text: str) -> dict[str, int]:
-    """사업보고서 XML에서 비현금항목(감가상각비, 무형자산상각비) 추출.
+    """Extract non-cash items (depreciation, amortization) from annual report XML.
 
     Returns:
-        {"dep": int, "amort": int} (천원 → 백만원 변환)
+        {"dep": int, "amort": int} (converted from thousand KRW to million KRW)
     """
     result = {}
 
-    # "비현금항목" 또는 "비현금" 섹션 탐색
+    # Search for "non-cash items" or "non-cash" section
     pattern = r"비현금[항목\s]*조정.*?(?=현금의|투자활동|영업활동에서)"
     match = re.search(pattern, xml_text, re.DOTALL)
     if not match:
         return result
 
     section = match.group(0)
-    # XML 태그 제거
+    # Strip XML tags
     clean = re.sub(r"<[^>]+>", " ", section)
     clean = re.sub(r"\s+", " ", clean)
 
     for korean_name, key in NONCASH_MAP.items():
-        # "감가상각비 123,456,789 111,222,333" 패턴
+        # Pattern: "감가상각비 123,456,789 111,222,333"
         pat = rf"{korean_name}\s+([\d,\(\)\-]+)"
         m = re.search(pat, clean)
         if m:
@@ -102,7 +102,7 @@ def parse_noncash_from_xml(xml_text: str) -> dict[str, int]:
             if val_str.startswith("(") and val_str.endswith(")"):
                 val_str = val_str[1:-1]
             try:
-                result[key] = round(int(val_str) / 1_000_000)  # 천원 → 백만원
+                result[key] = round(int(val_str) / 1_000_000)  # thousand KRW -> million KRW
             except ValueError:
                 pass
 
@@ -110,10 +110,10 @@ def parse_noncash_from_xml(xml_text: str) -> dict[str, int]:
 
 
 def estimate_borrowings(items: list[dict]) -> dict[str, int]:
-    """BS에서 차입금 관련 항목 추출 → 총차입금/순차입금 추정.
+    """Extract borrowing-related items from balance sheet -> estimate gross/net borrowings.
 
     Returns:
-        {"gross_borr": int, "net_borr": int} (백만원)
+        {"gross_borr": int, "net_borr": int} (million KRW)
     """
     borrowing_keys = [
         "단기차입금", "유동성장기부채", "장기차입금",

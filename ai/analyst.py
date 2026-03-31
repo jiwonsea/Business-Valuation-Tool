@@ -1,11 +1,11 @@
-"""AI 분석 오케스트레이터 — 6단계 밸류에이션 보조.
+"""AI analysis orchestrator -- 6-step valuation assistant.
 
-1. 기업 식별 (자연어 → corp_code)
-2. 부문 분류 (사보 XML → segments)
-3. Peer/멀티플 추천
-4. WACC 초안 제시
-5. 시나리오 설계
-6. 리서치 노트 자동 생성
+1. Company identification (natural language -> corp_code)
+2. Segment classification (annual report XML -> segments)
+3. Peer/multiple recommendation
+4. WACC draft suggestion
+5. Scenario design
+6. Automated research note generation
 """
 
 import hashlib
@@ -29,13 +29,13 @@ from .prompts import (
 
 logger = logging.getLogger(__name__)
 
-# ── LLM 응답 디스크 캐시 ──
+# ── LLM response disk cache ──
 _LLM_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "llm"
 _LLM_CACHE_TTL = 7 * 86400  # 7일
 
 
 def _cache_key(company: str, step: str, extra: str = "") -> str:
-    """캐시 파일명 생성 (company + step + extra 해시)."""
+    """Generate cache filename (company + step + extra hash)."""
     raw = f"{company}:{step}:{extra}"
     h = hashlib.md5(raw.encode()).hexdigest()[:12]
     safe_name = re.sub(r'[^\w\-]', '_', company)[:30]
@@ -43,7 +43,7 @@ def _cache_key(company: str, step: str, extra: str = "") -> str:
 
 
 def _get_cached(company: str, step: str, extra: str = "") -> dict | None:
-    """캐시에서 LLM 응답 로드. TTL 만료 시 None."""
+    """Load LLM response from cache. Returns None if TTL expired."""
     path = _LLM_CACHE_DIR / _cache_key(company, step, extra)
     if not path.exists():
         return None
@@ -59,28 +59,28 @@ def _get_cached(company: str, step: str, extra: str = "") -> dict | None:
 
 
 def _set_cached(company: str, step: str, data: dict, extra: str = ""):
-    """LLM 응답을 캐시에 저장."""
+    """Save LLM response to cache."""
     _LLM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = _LLM_CACHE_DIR / _cache_key(company, step, extra)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _parse_json(text: str) -> dict:
-    """LLM 응답에서 JSON 추출 (3단계 전략).
+    """Extract JSON from LLM response (3-stage strategy).
 
-    1) 직접 json.loads 시도
-    2) 코드블록(```json ... ```) 내부 추출
-    3) 첫 '{' ~ 마지막 '}' 범위 추출
+    1) Direct json.loads attempt
+    2) Extract from code block (```json ... ```)
+    3) Extract from first '{' to last '}' range
     """
     text = text.strip()
 
-    # 1단계: 직접 파싱
+    # Stage 1: direct parsing
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # 2단계: 코드블록 추출
+    # Stage 2: code block extraction
     match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
     if match:
         try:
@@ -88,7 +88,7 @@ def _parse_json(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    # 3단계: 첫 { ~ 마지막 } 범위
+    # Stage 3: first { to last } range
     first = text.find("{")
     last = text.rfind("}")
     if first != -1 and last > first:
@@ -101,7 +101,7 @@ def _parse_json(text: str) -> dict:
 
 
 def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
-    """AI 분석 결과를 Supabase에 저장 (실패 시 무시)."""
+    """Save AI analysis result to Supabase (silently ignore on failure)."""
     try:
         from db.repository import save_ai_analysis
         save_ai_analysis(company_name, step, result_data, model)
@@ -110,14 +110,14 @@ def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
 
 
 class AIAnalyst:
-    """AI 밸류에이션 보조 애널리스트."""
+    """AI-powered valuation assistant analyst."""
 
     def __init__(self, model: str = ""):
         from .llm_client import _ANTHROPIC_DEFAULT_MODEL
         self.model = model or _ANTHROPIC_DEFAULT_MODEL
 
     def _ask_json(self, prompt: str, system: str, max_tokens: int) -> dict:
-        """구조화된 JSON 응답 요청 + 파싱 실패 시 1회 재시도."""
+        """Request structured JSON response + retry once on parse failure."""
         response = ask_structured(
             prompt, system=system, model=self.model, max_tokens=max_tokens,
         )
@@ -132,7 +132,7 @@ class AIAnalyst:
             return _parse_json(response)
 
     def identify_company(self, user_input: str) -> dict:
-        """Step 1: 자연어 → 기업 식별."""
+        """Step 1: Natural language -> company identification."""
         cached = _get_cached(user_input, "identify")
         if cached:
             return cached
@@ -143,7 +143,7 @@ class AIAnalyst:
         return result
 
     def classify_segments(self, company_name: str, revenue_breakdown: str) -> dict:
-        """Step 2: 매출 구성 → 부문 분류."""
+        """Step 2: Revenue breakdown -> segment classification."""
         cached = _get_cached(company_name, "classify")
         if cached:
             return cached
@@ -160,7 +160,7 @@ class AIAnalyst:
         segment_name: str,
         segment_description: str = "",
     ) -> dict:
-        """Step 3: 부문별 Peer/멀티플 추천."""
+        """Step 3: Per-segment peer/multiple recommendation."""
         cached = _get_cached(company_name, "peers", extra=segment_code)
         if cached:
             return cached
@@ -178,7 +178,7 @@ class AIAnalyst:
         de_ratio: float,
         industry: str = "",
     ) -> dict:
-        """Step 4: WACC 초안."""
+        """Step 4: WACC draft."""
         cached = _get_cached(company_name, "wacc")
         if cached:
             return cached
@@ -195,7 +195,7 @@ class AIAnalyst:
         key_issues: str = "",
         valuation_method: str = "dcf_primary",
     ) -> dict:
-        """Step 5: 시나리오 설계 (멀티 드라이버)."""
+        """Step 5: Scenario design (multi-driver)."""
         cached = _get_cached(company_name, "scenarios", extra=valuation_method)
         if cached:
             return cached
@@ -212,7 +212,7 @@ class AIAnalyst:
         company_name: str,
         valuation_summary: str,
     ) -> str:
-        """Step 6: 리서치 노트 생성."""
+        """Step 6: Research note generation."""
         cached = _get_cached(company_name, "research_note")
         if cached:
             return cached.get("note", "")

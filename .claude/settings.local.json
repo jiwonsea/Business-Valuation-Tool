@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"git diff --cached --name-only 2>/dev/null | grep -qE '^\\.env' && echo 'BLOCKED: .env file is staged. Run: git reset HEAD .env' && exit 1 || exit 0\""
+          }
+        ]
+      }
+    ]
+  }
+}

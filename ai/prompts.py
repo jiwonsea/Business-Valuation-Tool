@@ -104,19 +104,58 @@ JSON 형식:
 }}"""
 
 
+_METHOD_DRIVERS: dict[str, dict[str, str]] = {
+    "dcf_primary": {
+        "growth_adj_pct": "EBITDA 성장률 % 조정 (e.g., +20 → 기본 성장률 × 1.2, -25 → × 0.75)",
+        "terminal_growth_adj": "영구성장률 절대 조정 %p (e.g., +0.3 → TGR + 0.3%p)",
+        "wacc_adj": "WACC %p 조정 (e.g., +0.5 → WACC + 0.5%p)",
+        "market_sentiment_pct": "시장 심리 EV % 조정 (e.g., +5 → EV × 1.05)",
+    },
+    "sotp": {
+        "market_sentiment_pct": "시장 심리 EV % 조정 (e.g., +5 → EV × 1.05)",
+        "wacc_adj": "WACC %p 조정 (교차검증 DCF에 반영)",
+    },
+    "ddm": {
+        "ddm_growth": "배당성장률 override (%, 절대값. e.g., 4.0 → 4% 성장)",
+        "wacc_adj": "Ke %p 조정 (e.g., +0.5 → Ke + 0.5%p)",
+    },
+    "rim": {
+        "rim_roe_adj": "ROE %p 조정 (e.g., -1.0 → 전체 ROE -1%p)",
+        "wacc_adj": "Ke %p 조정 (e.g., +0.5 → Ke + 0.5%p)",
+    },
+    "nav": {
+        "nav_discount": "지주할인율 (%, e.g., 30 → NAV × 0.7)",
+        "market_sentiment_pct": "시장 심리 EV % 조정",
+    },
+    "multiples": {
+        "ev_multiple": "적용 멀티플 override (절대값, e.g., 8.5)",
+        "market_sentiment_pct": "시장 심리 EV % 조정",
+        "wacc_adj": "WACC %p 조정 (교차검증 DCF에 반영)",
+    },
+}
+
+
 def prompt_scenario_design(
     company_name: str,
     legal_status: str,
     key_issues: str,
+    valuation_method: str = "dcf_primary",
 ) -> str:
     """시나리오 설계 프롬프트.
 
     key_issues가 비어있으면 범용 프롬프트, 있으면 뉴스 기반 근거 프롬프트 생성.
+    valuation_method에 따라 AI가 설정할 수 있는 드라이버 목록이 달라짐.
     """
+    drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
+    driver_desc = "\n".join(f"  - {k}: {v}" for k, v in drivers_info.items())
+    driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+    rationale_json = ", ".join(f'"{k}": "근거"' for k in drivers_info)
+
     if key_issues.strip():
-        # 뉴스 기반 시나리오 설계 (근거 강화)
+        # 뉴스 기반 시나리오 설계 (멀티 드라이버)
         return f"""기업: {company_name}
 상장여부: {legal_status}
+적용 밸류에이션 방법론: {valuation_method}
 
 최근 1개월간 수집된 핵심 이슈:
 {key_issues}
@@ -128,6 +167,14 @@ def prompt_scenario_design(
 - key_assumptions에 관련 뉴스 이슈를 구체적으로 명시
 - probability_rationale에 해당 확률을 할당한 근거를 설명
 - DLOM(비상장 할인)은 상장여부와 시나리오별 유동성 리스크를 반영
+- **중요 — 멀티 드라이버**: 각 시나리오에 정량적 drivers를 설정하세요.
+  하나의 뉴스 이벤트가 여러 드라이버에 동시에 영향을 줄 수 있습니다.
+  예시: "금리 인상" → wacc_adj: +0.5, growth_adj_pct: -10, terminal_growth_adj: -0.3
+  Base Case는 drivers를 모두 0으로, Bull/Bear는 방향성에 맞게 설정하세요.
+- driver_rationale에 각 드라이버 값의 근거를 뉴스 이슈와 연결하여 설명
+
+사용 가능한 드라이버 ({valuation_method} 방법론):
+{driver_desc}
 
 JSON 형식:
 {{
@@ -139,19 +186,28 @@ JSON 형식:
             "probability_rationale": "이 확률을 할당한 근거 (뉴스/시장 상황 기반)",
             "description": "시나리오 설명",
             "dlom": 0,
-            "key_assumptions": ["뉴스 기반 가정1", "가정2"]
+            "key_assumptions": ["뉴스 기반 가정1", "가정2"],
+            "drivers": {{{driver_json}}},
+            "driver_rationale": {{{rationale_json}}}
         }}
     ],
     "rationale": "전체 시나리오 구성 근거",
     "news_factors_considered": ["반영된 주요 뉴스 이슈 요약"]
 }}"""
 
-    # 범용 시나리오 설계 (기존 동작 유지)
+    # 범용 시나리오 설계 (멀티 드라이버)
     return f"""기업: {company_name}
 상장여부: {legal_status}
+적용 밸류에이션 방법론: {valuation_method}
 
 이 기업에 적합한 밸류에이션 시나리오 2~4개를 설계하세요.
 각 시나리오의 확률, 핵심 가정, DLOM(비상장 할인) 적용 여부를 포함하세요.
+
+**중요 — 멀티 드라이버**: 각 시나리오에 정량적 drivers를 설정하세요.
+Base Case는 drivers를 모두 0으로, Bull/Bear는 방향성에 맞게 설정하세요.
+
+사용 가능한 드라이버 ({valuation_method} 방법론):
+{driver_desc}
 
 JSON 형식:
 {{
@@ -162,7 +218,9 @@ JSON 형식:
             "prob": 30,
             "description": "시나리오 설명",
             "dlom": 0,
-            "key_assumptions": ["가정1", "가정2"]
+            "key_assumptions": ["가정1", "가정2"],
+            "drivers": {{{driver_json}}},
+            "driver_rationale": {{{rationale_json}}}
         }}
     ],
     "rationale": "시나리오 구성 근거"

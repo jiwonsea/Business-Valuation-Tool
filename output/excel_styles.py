@@ -13,6 +13,7 @@ GREEN_FILL = PatternFill("solid", fgColor="E8F5E9")     # 양수 결과
 RED_FILL = PatternFill("solid", fgColor="FDE8E8")       # 음수 결과
 GRAY_FILL = PatternFill("solid", fgColor=NAVY)          # 헤더 (네이비)
 DARK_FILL = PatternFill("solid", fgColor="2C3E50")      # 짙은 헤더
+DRIVER_FILL = PatternFill("solid", fgColor="FFF3E0")    # 시나리오 드라이버 (연한 오렌지)
 
 # ── Font ──
 HEADER_FONT = Font(bold=True, size=11, color="FFFFFF")

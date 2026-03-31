@@ -6,7 +6,8 @@ from pathlib import Path
 import yaml
 
 from schemas.models import (
-    CompanyProfile, WACCParams, ScenarioParams, DCFParams, DDMParams, NAVParams,
+    CompanyProfile, WACCParams, WACCResult, ScenarioParams,
+    DCFParams, DDMParams, NAVParams,
     RIMParams, RIMProjectionResult, RIMValuationResult,
     PeerCompany, ValuationInput, ValuationResult, CrossValidationItem,
     MonteCarloResult, DDMValuationResult, NAVResult, MultiplesResult,
@@ -31,6 +32,18 @@ from engine.method_selector import suggest_method
 def _seg_names(vi: ValuationInput) -> dict[str, str]:
     """segments 딕셔너리에서 {code: name} 매핑 추출."""
     return {code: info["name"] for code, info in vi.segments.items()}
+
+
+def _adjust_wacc(base: WACCResult, wacc_adj: float) -> WACCResult:
+    """시나리오별 WACC 조정. wacc_adj는 %p 단위 (e.g., +0.5 → WACC + 0.5%p)."""
+    if wacc_adj == 0:
+        return base
+    return WACCResult(
+        bl=base.bl,
+        ke=round(base.ke + wacc_adj, 4),
+        kd_at=base.kd_at,
+        wacc=round(base.wacc + wacc_adj, 4),
+    )
 
 
 def load_profile(path: str) -> ValuationInput:
@@ -72,6 +85,14 @@ def load_profile(path: str) -> ValuationInput:
 
     # DCF
     dcf_params = DCFParams(**raw["dcf_params"])
+    # ebitda_growth_rates 미지정 시 재무데이터 기반 자동 생성
+    if dcf_params.ebitda_growth_rates is None:
+        from engine.growth import generate_growth_rates
+        dcf_params = dcf_params.model_copy(update={
+            "ebitda_growth_rates": generate_growth_rates(
+                consolidated, market=company.market,
+            )
+        })
 
     # DDM (Optional)
     ddm_params = None
@@ -276,7 +297,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # 민감도
     sens_mult, _, _ = sensitivity_multiples(
         base_alloc, vi.multiples, effective_net_debt, vi.eco_frontier,
-        vi.company.shares_total, unit_multiplier=um,
+        vi.company.shares_outstanding, unit_multiplier=um,
     )
     ref_sc = _get_reference_scenario(vi.scenarios)
     sens_irr, _, _ = sensitivity_irr_dlom(
@@ -284,7 +305,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         vi.cps_principal, vi.cps_years,
         ref_sc.rcps_repay if ref_sc else 0,
         ref_sc.buyback if ref_sc else 0,
-        vi.company.shares_ordinary,
+        vi.company.shares_outstanding,
         unit_multiplier=um,
     )
     sens_dcf_rows, _, _ = sensitivity_dcf(
@@ -299,7 +320,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     )
 
     # Monte Carlo
-    mc_result = _run_mc_if_enabled(vi, wacc_result, base_alloc, um, dcf_result=dcf_result)
+    sotp_seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
+    mc_result = _run_monte_carlo(vi, wacc_result, sotp_seg_ebitdas, um, dcf_result=dcf_result)
 
     # Peer 통계
     seg_names = _seg_names(vi)
@@ -361,18 +383,29 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
     total_ev = dcf_result.ev_dcf
 
-    # 시나리오 (DCF EV 기반, per-scenario DCF driver 적용)
+    # 시나리오 (DCF EV 기반, per-scenario DCF driver + WACC 조정 적용)
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc_ev = total_ev  # 기본: base DCF EV
 
+        # 시나리오별 WACC 조정
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        effective_wacc = sc_wacc.wacc
+
         # 시나리오별 DCF driver 조정
-        sc_dcf_params = _make_scenario_dcf_params(vi.dcf_params, sc, wacc_result.wacc)
+        sc_dcf_params = _make_scenario_dcf_params(vi.dcf_params, sc, effective_wacc)
         if sc_dcf_params is not None:
             sc_dcf = calc_dcf(
                 ebitda_base, total_da_base, cons["revenue"],
-                wacc_result.wacc, sc_dcf_params, vi.base_year,
+                effective_wacc, sc_dcf_params, vi.base_year,
+            )
+            sc_ev = sc_dcf.ev_dcf
+        elif sc.wacc_adj != 0:
+            # growth 조정 없어도 WACC 변경만으로 DCF 재계산
+            sc_dcf = calc_dcf(
+                ebitda_base, total_da_base, cons["revenue"],
+                effective_wacc, vi.dcf_params, vi.base_year,
             )
             sc_ev = sc_dcf.ev_dcf
 
@@ -447,23 +480,25 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         equity_per_share=ddm_raw.equity_per_share,
     )
 
-    # 시나리오별 DDM: 각 시나리오에 ddm_growth가 있으면 해당 성장률로 재계산
+    # 시나리오별 DDM: ddm_growth + wacc_adj(Ke 조정)로 재계산
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc_growth = sc.ddm_growth if sc.ddm_growth is not None else base_growth
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        sc_ke = sc_wacc.ke
         sc_ddm = calc_ddm_engine(
-            vi.ddm_params.dps, sc_growth, ke,
+            vi.ddm_params.dps, sc_growth, sc_ke,
             buyback_per_share=buyback_ps,
         )
-        sc_ev = sc_ddm.equity_per_share * vi.company.shares_total // (um or 1)
+        sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
     # DDM base EV (교차검증용)
-    total_ev = ddm_raw.equity_per_share * vi.company.shares_total // (um or 1)
+    total_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
 
     # 시나리오 미설정 시 DDM 값 직접 사용
     if not scenario_results:
@@ -485,7 +520,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
 
     # Monte Carlo (segment EBITDA 기반 — 보조 분포)
-    mc_result = _run_mc_generic(vi, wacc_result, cons, um)
+    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um)
 
     return ValuationResult(
         primary_method="ddm",
@@ -507,7 +542,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     by = vi.base_year
     cons = vi.consolidated[by]
     equity_bv = cons.get("equity", 0)
-    shares = vi.company.shares_total
+    shares = vi.company.shares_outstanding
     ke = wacc_result.ke
 
     # RIM 파라미터: 명시적 rim_params 또는 재무제표 기반 자동 생성
@@ -556,16 +591,19 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     # RIM은 Equity Value 직접 산출 → EV 역산
     total_ev = rim_raw.equity_value + vi.net_debt
 
-    # 시나리오 — rim_roe_adj로 ROE 조정 시 RIM 재계산
+    # 시나리오 — rim_roe_adj + wacc_adj(Ke 조정)로 RIM 재계산
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc_ev = total_ev
-        if sc.rim_roe_adj != 0:
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        sc_ke = sc_wacc.ke
+        needs_recalc = (sc.rim_roe_adj != 0) or (sc.wacc_adj != 0)
+        if needs_recalc:
             adj_roes = [r + sc.rim_roe_adj for r in roe_forecasts]
             try:
                 sc_rim = calc_rim_engine(
-                    book_value=equity_bv, roe_forecasts=adj_roes, ke=ke,
+                    book_value=equity_bv, roe_forecasts=adj_roes, ke=sc_ke,
                     terminal_growth=tg, shares=shares,
                     unit_multiplier=um, payout_ratio=payout,
                 )
@@ -597,7 +635,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
 
     # Monte Carlo
-    mc_result = _run_mc_generic(vi, wacc_result, cons, um)
+    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um)
 
     return ValuationResult(
         primary_method="rim",
@@ -623,7 +661,7 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     ebitda_base = cons["op"] + total_da_base
     net_income = cons.get("net_income", 0)
     book_value = cons.get("equity", 0)
-    shares = vi.company.shares_total
+    shares = vi.company.shares_outstanding
 
     # 주방법론 선택: EV/EBITDA → P/E → P/BV 우선순위
     # Peer 기반 멀티플 또는 YAML에 명시된 멀티플 사용
@@ -703,7 +741,7 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     )
 
     # Monte Carlo
-    mc_result = _run_mc_generic(vi, wacc_result, cons, um, dcf_result=dcf_result)
+    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um, dcf_result=dcf_result)
 
     return ValuationResult(
         primary_method="multiples",
@@ -729,7 +767,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     total_assets = cons.get("assets", 0)
     total_liabilities = cons.get("liabilities", 0)
     revaluation = vi.nav_params.revaluation if vi.nav_params else 0
-    shares = vi.company.shares_total
+    shares = vi.company.shares_outstanding
 
     nav_raw = calc_nav(
         total_assets=total_assets,
@@ -790,7 +828,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
 
     # Monte Carlo
-    mc_result = _run_mc_generic(vi, wacc_result, cons, um, dcf_result=dcf_result)
+    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um, dcf_result=dcf_result)
 
     return ValuationResult(
         primary_method="nav",
@@ -818,7 +856,7 @@ def _get_reference_scenario(scenarios: dict) -> ScenarioParams | None:
 def _cross_validate_financial(vi, cons, um):
     """금융주 교차검증 — P/E, P/BV만 (EBITDA 기반 DCF/SOTP 무의미)."""
     items = []
-    shares = vi.company.shares_total
+    shares = vi.company.shares_outstanding
     net_income = cons.get("net_income", 0)
     book_value = cons.get("equity", 0)
 
@@ -847,7 +885,7 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
         net_income=cons.get("net_income", 0),
         book_value=cons.get("equity", 0),
         net_debt=net_debt,
-        shares=vi.company.shares_total,
+        shares=vi.company.shares_outstanding,
         sotp_ev=sotp_ev,
         dcf_ev=dcf_ev,
         ev_revenue_multiple=vi.ev_revenue_multiple,
@@ -867,51 +905,6 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
     ]
 
 
-def _run_mc_if_enabled(vi, wacc_result, base_alloc, um, dcf_result=None):
-    """Monte Carlo 실행 (mc_enabled=True인 경우)."""
-    if not vi.mc_enabled:
-        return None
-
-    from engine.monte_carlo import MCInput, run_monte_carlo
-    seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
-    mc_params = MCInput(
-        multiple_params={
-            code: (vi.multiples[code], vi.multiples[code] * vi.mc_multiple_std_pct / 100)
-            for code in vi.segments if vi.multiples[code] > 0
-        },
-        wacc_mean=wacc_result.wacc,
-        wacc_std=1.0,
-        dlom_mean=vi.mc_dlom_mean,
-        dlom_std=vi.mc_dlom_std,
-        tg_mean=vi.dcf_params.terminal_growth,
-        tg_std=0.5,
-        n_sims=vi.mc_sims,
-    )
-    ref_sc = _get_reference_scenario(vi.scenarios)
-
-    # DCF 정보 전달 (WACC/TG 샘플링 → TV 변동 반영)
-    dcf_kwargs = {}
-    if dcf_result and dcf_result.projections:
-        dcf_kwargs = dict(
-            wacc_for_dcf=wacc_result.wacc,
-            dcf_last_fcff=dcf_result.projections[-1].fcff,
-            dcf_pv_fcff_sum=dcf_result.pv_fcff_sum,
-            dcf_n_periods=len(dcf_result.projections),
-        )
-
-    mc_raw = run_monte_carlo(
-        mc_params, seg_ebitdas, vi.net_debt, vi.eco_frontier,
-        vi.cps_principal, vi.cps_years,
-        ref_sc.rcps_repay if ref_sc else 0,
-        ref_sc.buyback if ref_sc else 0,
-        ref_sc.shares if ref_sc else vi.company.shares_total,
-        irr=ref_sc.irr if ref_sc and ref_sc.irr else 5.0,
-        unit_multiplier=um,
-        **dcf_kwargs,
-    )
-    return _mc_raw_to_result(mc_raw)
-
-
 def _mc_raw_to_result(mc_raw):
     """MCResult → MonteCarloResult 변환."""
     return MonteCarloResult(
@@ -922,37 +915,24 @@ def _mc_raw_to_result(mc_raw):
     )
 
 
-def _run_mc_generic(vi, wacc_result, cons, um, dcf_result=None):
-    """비-SOTP 방법론용 Monte Carlo (단일 세그먼트 EBITDA × 멀티플 기반)."""
+def _run_monte_carlo(
+    vi, wacc_result, seg_ebitdas: dict[str, int], um: int,
+    dcf_result=None,
+) -> MonteCarloResult | None:
+    """Monte Carlo 실행 — SOTP/비SOTP 공통 진입점.
+
+    Args:
+        seg_ebitdas: {seg_code: ebitda} — SOTP면 allocate_da 결과, 아니면 연결 기반 배분.
+    """
     if not vi.mc_enabled:
         return None
 
     from engine.monte_carlo import MCInput, run_monte_carlo
 
-    total_da = cons.get("dep", 0) + cons.get("amort", 0)
-    ebitda = cons.get("op", 0) + total_da
-
-    # 세그먼트별 EBITDA 배분 (단일 세그먼트면 전체 할당)
-    seg_codes = list(vi.segments.keys())
-    if len(seg_codes) == 1:
-        seg_ebitdas = {seg_codes[0]: ebitda}
-    else:
-        # 다부문이면 revenue 비율로 배분
-        by = vi.base_year
-        seg_data = vi.segment_data.get(by, {})
-        total_rev = sum(s.get("revenue", 0) for s in seg_data.values())
-        if total_rev > 0:
-            seg_ebitdas = {
-                c: round(ebitda * seg_data.get(c, {}).get("revenue", 0) / total_rev)
-                for c in seg_codes
-            }
-        else:
-            seg_ebitdas = {seg_codes[0]: ebitda}
-
     mc_params = MCInput(
         multiple_params={
             c: (vi.multiples[c], vi.multiples[c] * vi.mc_multiple_std_pct / 100)
-            for c in seg_codes if vi.multiples.get(c, 0) > 0
+            for c in seg_ebitdas if vi.multiples.get(c, 0) > 0
         },
         wacc_mean=wacc_result.wacc,
         wacc_std=1.0,
@@ -978,9 +958,28 @@ def _run_mc_generic(vi, wacc_result, cons, um, dcf_result=None):
         vi.cps_principal, vi.cps_years,
         ref_sc.rcps_repay if ref_sc else 0,
         ref_sc.buyback if ref_sc else 0,
-        ref_sc.shares if ref_sc else vi.company.shares_total,
+        ref_sc.shares if ref_sc else vi.company.shares_outstanding,
         irr=ref_sc.irr if ref_sc and ref_sc.irr else 5.0,
         unit_multiplier=um,
         **dcf_kwargs,
     )
     return _mc_raw_to_result(mc_raw)
+
+
+def _build_seg_ebitdas_from_consolidated(vi, cons) -> dict[str, int]:
+    """비-SOTP 방법론용: 연결 EBITDA를 세그먼트별로 배분."""
+    total_da = cons.get("dep", 0) + cons.get("amort", 0)
+    ebitda = cons.get("op", 0) + total_da
+
+    seg_codes = list(vi.segments.keys())
+    if len(seg_codes) == 1:
+        return {seg_codes[0]: ebitda}
+
+    seg_data = vi.segment_data.get(vi.base_year, {})
+    total_rev = sum(s.get("revenue", 0) for s in seg_data.values())
+    if total_rev > 0:
+        return {
+            c: round(ebitda * seg_data.get(c, {}).get("revenue", 0) / total_rev)
+            for c in seg_codes
+        }
+    return {seg_codes[0]: ebitda}

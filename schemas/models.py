@@ -23,12 +23,18 @@ class CompanyProfile(BaseModel):
     corp_code: Optional[str] = None  # DART corp_code (KR only)
     parent_name: Optional[str] = None
     parent_stake_pct: Optional[float] = None
-    shares_total: int
-    shares_ordinary: int
-    shares_preferred: int = 0  # CPS/우선주
+    shares_total: int  # 총발행주식수 (보통주 + 우선주)
+    shares_ordinary: int  # 보통주 발행주식수
+    shares_preferred: int = 0  # 우선주 발행주식수
+    treasury_shares: int = 0  # 자사주 (보통주 기준)
     cps_conversion_shares: int = 0
     analysis_date: date = Field(default_factory=date.today)
     industry: Optional[str] = None
+
+    @property
+    def shares_outstanding(self) -> int:
+        """유통보통주식수 (보통주 발행 - 자사주). 주당 가치 산출 기준."""
+        return max(self.shares_ordinary - self.treasury_shares, 1)
 
     @field_validator("shares_total")
     @classmethod
@@ -157,6 +163,19 @@ class ScenarioParams(BaseModel):
     terminal_growth_adj: float = 0.0  # TGR 절대 조정 (e.g., +0.3 → TGR + 0.3%)
     market_sentiment_pct: float = 0.0  # 시장 심리 프리미엄/디스카운트 (EV % 조정)
 
+    # Cross-cutting driver (all discount-rate methods)
+    wacc_adj: float = 0.0  # WACC %p 조정 (e.g., +0.5 → WACC + 0.5%p, DDM/RIM은 Ke에 반영)
+
+    # AI 분석 근거 (뉴스 → 드라이버 매핑)
+    driver_rationale: dict[str, str] = {}  # {"wacc_adj": "금리인상 50bp 반영", ...}
+
+    @field_validator("wacc_adj")
+    @classmethod
+    def wacc_adj_range(cls, v: float) -> float:
+        if not -3.0 <= v <= 3.0:
+            raise ValueError(f"WACC 조정은 ±3.0%p 범위여야 합니다: {v}%p")
+        return v
+
     @field_validator("prob")
     @classmethod
     def prob_range(cls, v: float) -> float:
@@ -270,7 +289,7 @@ class MultiplesResult(BaseModel):
 # ── DCF ──
 
 class DCFParams(BaseModel):
-    ebitda_growth_rates: list[float]  # 예측기간 EBITDA 성장률 리스트
+    ebitda_growth_rates: Optional[list[float]] = None  # 예측기간 EBITDA 성장률 (None이면 자동 생성)
     tax_rate: float = 22.0
     capex_to_da: float = 1.10
     nwc_to_rev_delta: float = 0.05

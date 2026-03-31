@@ -101,9 +101,12 @@ class AIAnalyst:
         company_name: str,
         legal_status: str,
         key_issues: str = "",
+        valuation_method: str = "dcf_primary",
     ) -> dict:
-        """Step 5: 시나리오 설계."""
-        prompt = prompt_scenario_design(company_name, legal_status, key_issues)
+        """Step 5: 시나리오 설계 (멀티 드라이버)."""
+        prompt = prompt_scenario_design(
+            company_name, legal_status, key_issues, valuation_method,
+        )
         response = ask_structured(prompt, system=SYSTEM_ANALYST, model=self.model)
         result = _parse_json(response)
         _save_analysis(company_name, "scenarios", result, self.model)

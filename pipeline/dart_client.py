@@ -130,3 +130,69 @@ def get_single_company_info(corp_code: str) -> dict:
     if data.get("status") != "000":
         raise RuntimeError(f"DART API 오류: {data.get('message')}")
     return data
+
+
+def _parse_dart_number(s: str) -> int:
+    """DART 숫자 문자열 파싱 ('5,969,782,550' → 5969782550, '-' → 0)."""
+    if not s or s.strip() in ("-", ""):
+        return 0
+    return int(s.replace(",", "").strip())
+
+
+def get_stock_total_info(
+    corp_code: str,
+    year: int,
+    reprt_code: str = "11011",
+) -> dict | None:
+    """주식의 총수 현황 조회 (stockTotqySttus.json).
+
+    Args:
+        corp_code: DART 고유번호
+        year: 사업연도 (e.g., 2024)
+        reprt_code: 11011=사업보고서, 11012=반기, 11013=1분기, 11014=3분기
+
+    Returns:
+        {
+            "shares_ordinary": int,   # 보통주 발행주식총수
+            "shares_preferred": int,  # 우선주 발행주식총수
+            "treasury_ordinary": int, # 자기주식수 (보통주)
+            "treasury_preferred": int,# 자기주식수 (우선주)
+        }
+        or None if API call fails
+    """
+    key = _get_api_key()
+    params = {
+        "crtfc_key": key,
+        "corp_code": corp_code,
+        "bsns_year": str(year),
+        "reprt_code": reprt_code,
+    }
+    resp = httpx.get(
+        f"{DART_BASE}/stockTotqySttus.json", params=params, timeout=15,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    if data.get("status") != "000":
+        return None
+
+    result = {
+        "shares_ordinary": 0,
+        "shares_preferred": 0,
+        "treasury_ordinary": 0,
+        "treasury_preferred": 0,
+    }
+    for item in data.get("list", []):
+        se = (item.get("se") or "").strip()
+        # istc_totqy: 현재 발행주식총수, tesstk_co: 자기주식수
+        issued = _parse_dart_number(item.get("istc_totqy", "0"))
+        treasury = _parse_dart_number(item.get("tesstk_co", "0"))
+
+        if "보통주" in se:
+            result["shares_ordinary"] = issued
+            result["treasury_ordinary"] = treasury
+        elif "우선주" in se:
+            result["shares_preferred"] = issued
+            result["treasury_preferred"] = treasury
+
+    return result

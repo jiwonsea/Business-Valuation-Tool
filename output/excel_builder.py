@@ -18,7 +18,7 @@ from openpyxl.styles import Font
 
 from schemas.models import ValuationInput, ValuationResult
 from .excel_styles import (
-    NAVY, BLUE_FILL, YELLOW_FILL, GREEN_FILL, RED_FILL, GRAY_FILL, DARK_FILL,
+    NAVY, BLUE_FILL, YELLOW_FILL, GREEN_FILL, RED_FILL, GRAY_FILL, DARK_FILL, DRIVER_FILL,
     HEADER_FONT, SECTION_FONT, TITLE_FONT, NOTE_FONT, WHITE_FONT, RESULT_FONT,
     NUM_FMT, PCT_FMT, MULT_FMT, THIN_BORDER, BASE_BORDER,
     style_header_row, write_cell,
@@ -66,6 +66,9 @@ def _make_ctx(vi: ValuationInput, result: ValuationResult, wb: Workbook) -> _Ctx
 def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None = None) -> str:
     """Excel 워크북 생성 및 저장."""
     wb = Workbook()
+    # 기본 빈 시트 제거 (Assumptions가 첫 시트가 됨)
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
     ctx = _make_ctx(vi, result, wb)
 
     _sheet_assumptions(ctx)
@@ -95,7 +98,7 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
 
 
 def _sheet_assumptions(ctx: _Ctx):
-    ws = ctx.wb.active
+    ws = ctx.wb.active or ctx.wb.create_sheet("Assumptions")
     ws.title = "Assumptions"
     ws.sheet_properties.tabColor = NAVY
     ws.column_dimensions['A'].width = 28
@@ -230,24 +233,37 @@ def _sheet_assumptions(ctx: _Ctx):
             write_cell(ws, r, 2, f"{mp.multiple:.1f}x", fill=BLUE_FILL)
             r += 1
 
-    # ── 시나리오 확률 (있을 때만) ──
+    # ── 시나리오 가정 요약 (있을 때만) ──
+    is_listed = ctx.vi.company.legal_status == "상장"
+    has_dlom = any(ctx.vi.scenarios[c].dlom > 0 for c in ctx.sc_codes) if ctx.sc_codes else False
+
     if ctx.sc_codes:
         r += 1
-        write_cell(ws, r, 1, "시나리오 확률 / DLOM", font=SECTION_FONT); r += 1
+        section_title = "시나리오 확률" + (" / DLOM" if has_dlom else "")
+        write_cell(ws, r, 1, section_title, font=SECTION_FONT); r += 1
         write_cell(ws, r, 1, "항목")
         for i, sc_code in enumerate(ctx.sc_codes, 2):
             write_cell(ws, r, i, f"{sc_code}: {ctx.vi.scenarios[sc_code].name}")
         style_header_row(ws, r, 1 + len(ctx.sc_codes)); r += 1
 
-        for label, key in [("확률", "prob"), ("DLOM", "dlom")]:
-            write_cell(ws, r, 1, label)
+        # 확률은 항상 표시
+        write_cell(ws, r, 1, "확률")
+        for i, sc_code in enumerate(ctx.sc_codes, 2):
+            write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].prob}%", fill=BLUE_FILL)
+        r += 1
+
+        # DLOM — 비상장이거나 실제 적용된 경우만
+        if not is_listed or has_dlom:
+            write_cell(ws, r, 1, "DLOM")
             for i, sc_code in enumerate(ctx.sc_codes, 2):
-                sc = ctx.vi.scenarios[sc_code]
-                val = getattr(sc, key)
-                write_cell(ws, r, i, f"{val}%", fill=BLUE_FILL)
+                write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].dlom}%", fill=BLUE_FILL)
             r += 1
 
-        # IRR (있는 시나리오만)
+        # 방법론별 드라이버 가정
+        _write_assumption_drivers(ws, r, ctx)
+        r += 1  # 드라이버가 없어도 최소 1줄 건너뜀
+
+        # IRR (비상장 + CPS 있는 경우만)
         if any(ctx.vi.scenarios[c].irr is not None for c in ctx.sc_codes):
             write_cell(ws, r, 1, "FI IRR")
             for i, sc_code in enumerate(ctx.sc_codes, 2):
@@ -262,7 +278,9 @@ def _sheet_assumptions(ctx: _Ctx):
     _is_mixed = bool(ctx.vi.segment_net_debt) and any(
         info.get("method") in ("pbv", "pe") for info in ctx.vi.segments.values()
     )
-    others = [("순차입금 (연결)", f"{ctx.vi.net_debt:,}{ctx.unit}")]
+    write_cell(ws, r, 1, f"순차입금 ({ctx.unit})")
+    write_cell(ws, r, 2, ctx.vi.net_debt, fmt=NUM_FMT, fill=BLUE_FILL)
+    r += 1
     if _is_mixed:
         fin_debt = sum(
             ctx.vi.segment_net_debt[c]
@@ -270,16 +288,66 @@ def _sheet_assumptions(ctx: _Ctx):
             if info.get("method") in ("pbv", "pe") and c in ctx.vi.segment_net_debt
         )
         eff_nd = ctx.vi.net_debt - fin_debt
-        others.append(("(-) 금융부문 부채 (PBV 내재)", f"{fin_debt:,}{ctx.unit}"))
-        others.append(("유효 순차입금", f"{eff_nd:,}{ctx.unit}"))
-    others += [
-        ("보통주 발행주식수", f"{ctx.vi.company.shares_ordinary:,}"),
-        ("총발행주식수", f"{ctx.vi.company.shares_total:,}"),
-    ]
-    for label, val in others:
-        write_cell(ws, r, 1, label)
-        write_cell(ws, r, 2, val, fill=BLUE_FILL)
+        write_cell(ws, r, 1, f"(-) 금융부문 부채 (PBV 내재)")
+        write_cell(ws, r, 2, fin_debt, fmt=NUM_FMT, fill=BLUE_FILL)
         r += 1
+        write_cell(ws, r, 1, f"유효 순차입금")
+        write_cell(ws, r, 2, eff_nd, fmt=NUM_FMT, fill=BLUE_FILL)
+        r += 1
+    write_cell(ws, r, 1, "보통주 발행주식수")
+    write_cell(ws, r, 2, ctx.vi.company.shares_ordinary, fmt=NUM_FMT, fill=BLUE_FILL)
+    r += 1
+    if ctx.vi.company.shares_preferred > 0:
+        write_cell(ws, r, 1, "우선주 발행주식수")
+        write_cell(ws, r, 2, ctx.vi.company.shares_preferred, fmt=NUM_FMT, fill=BLUE_FILL)
+        r += 1
+    write_cell(ws, r, 1, "총발행주식수")
+    write_cell(ws, r, 2, ctx.vi.company.shares_total, fmt=NUM_FMT, fill=BLUE_FILL)
+    r += 1
+    if ctx.vi.company.treasury_shares > 0:
+        write_cell(ws, r, 1, "자사주 (보통주)")
+        write_cell(ws, r, 2, ctx.vi.company.treasury_shares, fmt=NUM_FMT, fill=BLUE_FILL)
+        r += 1
+        write_cell(ws, r, 1, "유통보통주식수 (주당가치 기준)")
+        write_cell(ws, r, 2, ctx.vi.company.shares_outstanding, fmt=NUM_FMT,
+                   fill=BLUE_FILL, bold=True)
+        r += 1
+
+
+def _write_assumption_drivers(ws, r: int, ctx: _Ctx):
+    """Assumptions 시트에 시나리오별 핵심 드라이버 가정 표시."""
+    method = ctx.method
+    sc_codes = ctx.sc_codes
+
+    if method == "multiples":
+        write_cell(ws, r, 1, "적용 멀티플")
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            m = sc.ev_multiple
+            if m is None:
+                mp = ctx.result.multiples_primary
+                m = mp.multiple if mp else 0
+            write_cell(ws, r, i, f"{m:.1f}x", fill=BLUE_FILL)
+
+    elif method == "ddm":
+        write_cell(ws, r, 1, "배당성장률")
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            g = sc.ddm_growth if sc.ddm_growth is not None else (
+                ctx.vi.ddm_params.dividend_growth if ctx.vi.ddm_params else 0)
+            write_cell(ws, r, i, f"{g:.1f}%", fill=BLUE_FILL)
+
+    elif method == "rim":
+        write_cell(ws, r, 1, "ROE 조정 (%p)")
+        for i, sc_code in enumerate(sc_codes, 2):
+            adj = ctx.vi.scenarios[sc_code].rim_roe_adj
+            label = f"{adj:+.1f}%p" if adj != 0 else "기본"
+            write_cell(ws, r, i, label, fill=BLUE_FILL)
+
+    elif method == "nav":
+        write_cell(ws, r, 1, "지주할인율")
+        for i, sc_code in enumerate(sc_codes, 2):
+            write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].nav_discount:.0f}%", fill=BLUE_FILL)
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -853,18 +921,26 @@ def _sheet_scenarios(ctx: _Ctx):
         ws.column_dimensions[get_column_letter(c)].width = 20 if c > 1 else 28
     style_header_row(ws, r, len(sc_headers))
 
-    # 시나리오 기본 정보
+    is_listed = ctx.vi.company.legal_status == "상장"
+    has_dlom = any(ctx.vi.scenarios[c].dlom > 0 for c in sc_codes)
+
+    # ── 시나리오 기본 가정 ──
     r += 1
     write_cell(ws, r, 1, "확률")
     for i, sc_code in enumerate(sc_codes, 2):
         write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].prob}%", fill=BLUE_FILL)
 
-    r += 1
-    write_cell(ws, r, 1, "DLOM")
-    for i, sc_code in enumerate(sc_codes, 2):
-        write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].dlom}%", fill=BLUE_FILL)
+    # 방법론별 핵심 드라이버 (시나리오 간 차이를 만드는 수치)
+    r = _write_scenario_drivers(ws, r, ctx)
 
-    # IRR (있는 경우만)
+    # DLOM — 비상장사이거나 실제로 DLOM이 적용된 경우만 표시
+    if not is_listed or has_dlom:
+        r += 1
+        write_cell(ws, r, 1, "DLOM")
+        for i, sc_code in enumerate(sc_codes, 2):
+            write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].dlom}%", fill=BLUE_FILL)
+
+    # IRR (비상장 + CPS 있는 경우만)
     if any(ctx.vi.scenarios[c].irr is not None for c in sc_codes):
         r += 1
         write_cell(ws, r, 1, "FI IRR")
@@ -875,16 +951,14 @@ def _sheet_scenarios(ctx: _Ctx):
     # 구분선
     r += 1
 
-    # 동적 Equity Bridge (adjustments 기반)
+    # ── 동적 Equity Bridge (adjustments 기반) ──
     r += 1
-    # Total EV
     write_cell(ws, r, 1, _ev_label(ctx.method), bold=True)
     for i, sc_code in enumerate(sc_codes, 2):
         sr = ctx.result.scenarios[sc_code]
         write_cell(ws, r, i, sr.total_ev, fmt=NUM_FMT)
 
     # Adjustments — Waterfall
-    # 첫 번째 시나리오의 adjustments를 기준으로 항목명 추출 (모든 시나리오 동일 구조)
     first_sr = ctx.result.scenarios[sc_codes[0]]
     for adj_idx, adj in enumerate(first_sr.adjustments):
         r += 1
@@ -904,23 +978,33 @@ def _sheet_scenarios(ctx: _Ctx):
 
     r += 1  # 구분선
 
-    # 주당 가치
+    # ── 주당 가치 ──
     r += 1
     write_cell(ws, r, 1, "적용 주식수")
     for i, sc_code in enumerate(sc_codes, 2):
         write_cell(ws, r, i, ctx.result.scenarios[sc_code].shares, fmt=NUM_FMT)
 
-    r += 1
-    write_cell(ws, r, 1, "주당 가치 (DLOM 전)")
-    for i, sc_code in enumerate(sc_codes, 2):
-        write_cell(ws, r, i, ctx.result.scenarios[sc_code].pre_dlom, fmt=NUM_FMT)
+    if not is_listed or has_dlom:
+        # 비상장사: DLOM 전/후 모두 표시
+        r += 1
+        write_cell(ws, r, 1, "주당 가치 (DLOM 전)")
+        for i, sc_code in enumerate(sc_codes, 2):
+            write_cell(ws, r, i, ctx.result.scenarios[sc_code].pre_dlom, fmt=NUM_FMT)
 
-    r += 1
-    write_cell(ws, r, 1, "주당 가치 (DLOM 후)", bold=True)
-    for i, sc_code in enumerate(sc_codes, 2):
-        sr = ctx.result.scenarios[sc_code]
-        write_cell(ws, r, i, sr.post_dlom, fmt=NUM_FMT, bold=True,
-                   fill=GREEN_FILL if sr.post_dlom > 0 else None)
+        r += 1
+        write_cell(ws, r, 1, "주당 가치 (DLOM 후)", bold=True)
+        for i, sc_code in enumerate(sc_codes, 2):
+            sr = ctx.result.scenarios[sc_code]
+            write_cell(ws, r, i, sr.post_dlom, fmt=NUM_FMT, bold=True,
+                       fill=GREEN_FILL if sr.post_dlom > 0 else None)
+    else:
+        # 상장사: 주당 가치 한 줄만 표시
+        r += 1
+        write_cell(ws, r, 1, "주당 가치", bold=True)
+        for i, sc_code in enumerate(sc_codes, 2):
+            sr = ctx.result.scenarios[sc_code]
+            write_cell(ws, r, i, sr.post_dlom, fmt=NUM_FMT, bold=True,
+                       fill=GREEN_FILL if sr.post_dlom > 0 else None)
 
     r += 1
     write_cell(ws, r, 1, "확률가중 기여")
@@ -952,6 +1036,243 @@ def _sheet_scenarios(ctx: _Ctx):
         if sc.probability_rationale:
             r += 1
             write_cell(ws, r, 1, f"  확률 근거: {sc.probability_rationale}", font=NOTE_FONT)
+
+    # ── 뉴스 → 드라이버 매핑 (AI 분석 근거) ──
+    has_rationale = any(
+        ctx.vi.scenarios[c].driver_rationale for c in sc_codes
+    )
+    if has_rationale:
+        r += 3
+        write_cell(ws, r, 1, "뉴스 → 드라이버 매핑 (AI 분석 근거)", font=SECTION_FONT)
+        r += 1
+        driver_labels = {
+            "growth_adj_pct": "EBITDA 성장률 조정",
+            "terminal_growth_adj": "영구성장률 조정",
+            "wacc_adj": "WACC 조정",
+            "market_sentiment_pct": "시장 심리 조정",
+            "ddm_growth": "배당성장률",
+            "ev_multiple": "적용 멀티플",
+            "rim_roe_adj": "ROE 조정",
+            "nav_discount": "지주할인율",
+        }
+        for sc_code in sc_codes:
+            sc = ctx.vi.scenarios[sc_code]
+            if not sc.driver_rationale:
+                continue
+            r += 1
+            write_cell(ws, r, 1, f"{sc_code}: {sc.name}",
+                       font=Font(bold=True, color=NAVY))
+            for driver_name, rationale in sc.driver_rationale.items():
+                r += 1
+                label = driver_labels.get(driver_name, driver_name)
+                write_cell(ws, r, 1, f"  {label}", font=NOTE_FONT)
+                write_cell(ws, r, 2, rationale, font=NOTE_FONT)
+
+
+def _write_scenario_drivers(ws, r: int, ctx: _Ctx) -> int:
+    """방법론별 시나리오 핵심 드라이버 + 계산 과정 행 출력."""
+    sc_codes = ctx.sc_codes
+    method = ctx.method
+    calc_font = Font(italic=True, size=9, color="566573")
+
+    if method == "multiples":
+        mp = ctx.result.multiples_primary
+        base_metric = mp.metric_value if mp else 0
+        base_method = mp.primary_multiple_method if mp else "EV/EBITDA"
+
+        # 드라이버: 적용 멀티플
+        r += 1
+        write_cell(ws, r, 1, f"적용 {base_method}", bold=True)
+        sc_multiples = []
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            m = sc.ev_multiple if sc.ev_multiple is not None else (mp.multiple if mp else 0)
+            sc_multiples.append(m)
+            write_cell(ws, r, i, f"{m:.1f}x", fill=DRIVER_FILL, bold=True)
+
+        # 계산: 기초 지표
+        r += 1
+        metric_label = {"EV/EBITDA": "EBITDA", "P/E": "순이익", "P/BV": "자기자본"}.get(
+            base_method, "Metric")
+        write_cell(ws, r, 1, metric_label, font=calc_font)
+        for i in range(len(sc_codes)):
+            write_cell(ws, r, i + 2, base_metric, fmt=NUM_FMT, font=calc_font)
+
+        # 계산: 산식 = Metric × Multiple
+        r += 1
+        write_cell(ws, r, 1, f"  {metric_label} × {base_method}", font=calc_font)
+        for i, m in enumerate(sc_multiples):
+            write_cell(ws, r, i + 2, round(base_metric * m), fmt=NUM_FMT, font=calc_font)
+
+    elif method == "ddm":
+        ddm = ctx.result.ddm
+        dps = ddm.dps if ddm else 0
+        ke = ddm.ke if ddm else 0
+
+        # 드라이버: 배당성장률
+        r += 1
+        write_cell(ws, r, 1, "배당성장률 (g)", bold=True)
+        sc_growths = []
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            g = sc.ddm_growth if sc.ddm_growth is not None else (
+                ctx.vi.ddm_params.dividend_growth if ctx.vi.ddm_params else 0)
+            sc_growths.append(g)
+            write_cell(ws, r, i, f"{g:.1f}%", fill=DRIVER_FILL, bold=True)
+
+        # 계산: Ke (시나리오별 wacc_adj 반영)
+        r += 1
+        has_wacc_adj = any(ctx.vi.scenarios[c].wacc_adj != 0 for c in sc_codes)
+        write_cell(ws, r, 1, "Ke (자기자본비용)", font=calc_font)
+        for i, sc_code in enumerate(sc_codes):
+            sc_ke = ke + ctx.vi.scenarios[sc_code].wacc_adj
+            write_cell(ws, r, i + 2, f"{sc_ke:.2f}%", font=calc_font)
+
+        # 계산: DPS
+        r += 1
+        write_cell(ws, r, 1, "DPS (주당배당금)", font=calc_font)
+        for i in range(len(sc_codes)):
+            write_cell(ws, r, i + 2, f"{dps:,.0f}원", font=calc_font)
+
+        # 계산: 산식 (시나리오별 Ke 반영)
+        r += 1
+        write_cell(ws, r, 1, "산식: DPS×(1+g) / (Ke-g)", font=calc_font)
+        for i, g in enumerate(sc_growths):
+            sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
+            spread = sc_ke - g
+            if spread > 0:
+                val = round(dps * (1 + g / 100) / (spread / 100))
+            else:
+                val = 0
+            write_cell(ws, r, i + 2, f"{val:,.0f}원", font=calc_font)
+
+    elif method == "rim":
+        ke = ctx.result.wacc.ke
+        base_roes = ctx.vi.rim_params.roe_forecasts if ctx.vi.rim_params else []
+        by = ctx.vi.base_year
+        equity_bv = ctx.vi.consolidated[by].get("equity", 0)
+
+        # 드라이버: ROE 조정
+        r += 1
+        write_cell(ws, r, 1, "ROE 조정 (%p)", bold=True)
+        sc_adjs = []
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            adj = sc.rim_roe_adj
+            sc_adjs.append(adj)
+            label = f"{adj:+.1f}%p" if adj != 0 else "기본"
+            write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
+
+        # 계산: 적용 ROE (1년차)
+        if base_roes:
+            r += 1
+            write_cell(ws, r, 1, "적용 ROE (1년차)", font=calc_font)
+            for i, adj in enumerate(sc_adjs):
+                roe1 = base_roes[0] + adj
+                write_cell(ws, r, i + 2, f"{roe1:.1f}%", font=calc_font)
+
+        # 계산: Ke (시나리오별 wacc_adj 반영)
+        r += 1
+        write_cell(ws, r, 1, "Ke (자기자본비용)", font=calc_font)
+        for i, sc_code in enumerate(sc_codes):
+            sc_ke = ke + ctx.vi.scenarios[sc_code].wacc_adj
+            write_cell(ws, r, i + 2, f"{sc_ke:.2f}%", font=calc_font)
+
+        # 계산: RI Spread = ROE - Ke (시나리오별)
+        if base_roes:
+            r += 1
+            write_cell(ws, r, 1, "RI Spread (ROE-Ke)", font=calc_font)
+            for i, adj in enumerate(sc_adjs):
+                sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
+                spread = base_roes[0] + adj - sc_ke
+                color = "27AE60" if spread > 0 else "E74C3C"
+                write_cell(ws, r, i + 2, f"{spread:+.1f}%p",
+                           font=Font(italic=True, size=9, color=color))
+
+        # 계산: 장부가
+        r += 1
+        write_cell(ws, r, 1, "자기자본 (BV)", font=calc_font)
+        for i in range(len(sc_codes)):
+            write_cell(ws, r, i + 2, equity_bv, fmt=NUM_FMT, font=calc_font)
+
+        # 계산: 산식 설명
+        r += 1
+        write_cell(ws, r, 1, "산식: BV + PV(RI) + PV(TV)", font=calc_font)
+
+    elif method == "nav":
+        nav_result = ctx.result.nav
+        base_nav = nav_result.nav if nav_result else 0
+
+        # 드라이버: 지주할인율
+        r += 1
+        write_cell(ws, r, 1, "지주할인율", bold=True)
+        sc_discounts = []
+        for i, sc_code in enumerate(sc_codes, 2):
+            sc = ctx.vi.scenarios[sc_code]
+            sc_discounts.append(sc.nav_discount)
+            write_cell(ws, r, i, f"{sc.nav_discount:.0f}%", fill=DRIVER_FILL, bold=True)
+
+        # 계산: NAV (할인 전)
+        r += 1
+        write_cell(ws, r, 1, "NAV (할인 전)", font=calc_font)
+        for i in range(len(sc_codes)):
+            write_cell(ws, r, i + 2, base_nav, fmt=NUM_FMT, font=calc_font)
+
+        # 계산: 산식 = NAV × (1 - 할인율)
+        r += 1
+        write_cell(ws, r, 1, "산식: NAV × (1 - 할인율)", font=calc_font)
+        for i, disc in enumerate(sc_discounts):
+            discounted = round(base_nav * (1 - disc / 100))
+            write_cell(ws, r, i + 2, discounted, fmt=NUM_FMT, font=calc_font)
+
+    elif method == "dcf_primary":
+        has_growth = any(ctx.vi.scenarios[c].growth_adj_pct != 0 for c in sc_codes)
+        has_tg = any(ctx.vi.scenarios[c].terminal_growth_adj != 0 for c in sc_codes)
+        if has_growth:
+            r += 1
+            write_cell(ws, r, 1, "EBITDA 성장률 조정", bold=True)
+            for i, sc_code in enumerate(sc_codes, 2):
+                adj = ctx.vi.scenarios[sc_code].growth_adj_pct
+                label = f"{adj:+.0f}%" if adj != 0 else "기본"
+                write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
+        if has_tg:
+            r += 1
+            write_cell(ws, r, 1, "영구성장률 조정", bold=True)
+            for i, sc_code in enumerate(sc_codes, 2):
+                adj = ctx.vi.scenarios[sc_code].terminal_growth_adj
+                label = f"{adj:+.1f}%p" if adj != 0 else "기본"
+                write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
+        # 계산: WACC (시나리오별 wacc_adj 반영)
+        r += 1
+        write_cell(ws, r, 1, "WACC", font=calc_font)
+        for i, sc_code in enumerate(sc_codes):
+            sc_wacc = ctx.result.wacc.wacc + ctx.vi.scenarios[sc_code].wacc_adj
+            write_cell(ws, r, i + 2, f"{sc_wacc:.2f}%", font=calc_font)
+        r += 1
+        write_cell(ws, r, 1, "산식: DCF(FCFF, WACC, TGR)", font=calc_font)
+
+    has_sentiment = any(ctx.vi.scenarios[c].market_sentiment_pct != 0 for c in sc_codes)
+    if has_sentiment:
+        r += 1
+        write_cell(ws, r, 1, "시장 심리 조정", bold=True)
+        for i, sc_code in enumerate(sc_codes, 2):
+            adj = ctx.vi.scenarios[sc_code].market_sentiment_pct
+            label = f"{adj:+.0f}%" if adj != 0 else "-"
+            write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
+
+    # WACC 조정 (크로스컷팅 — DCF/DDM/RIM 외 방법론에서도 표시)
+    # DDM/RIM/DCF는 각자 Ke/WACC 행에 이미 반영하므로, 여기선 SOTP/Multiples용
+    if method in ("sotp", "multiples", "nav"):
+        has_wacc_adj = any(ctx.vi.scenarios[c].wacc_adj != 0 for c in sc_codes)
+        if has_wacc_adj:
+            r += 1
+            write_cell(ws, r, 1, "WACC 조정 (%p)", bold=True)
+            for i, sc_code in enumerate(sc_codes, 2):
+                adj = ctx.vi.scenarios[sc_code].wacc_adj
+                label = f"{adj:+.2f}%p" if adj != 0 else "기본"
+                write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
+
+    return r
 
 
 def _ev_label(method: str) -> str:
@@ -1117,8 +1438,10 @@ def _sheet_dashboard(ctx: _Ctx):
     ws.sheet_properties.tabColor = NAVY
     ws.column_dimensions['A'].width = 30
     ws.column_dimensions['B'].width = 20
-    ws.column_dimensions['C'].width = 20
-    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 18
+    ws.column_dimensions['F'].width = 18
 
     method_labels = {
         "sotp": "SOTP (Sum-of-the-Parts)",
@@ -1328,11 +1651,10 @@ def _sheet_dashboard(ctx: _Ctx):
         r += 1
         write_cell(ws, r, 1, "멀티플 교차검증 (Cross-Validation)", font=SECTION_FONT); r += 1
         cv_headers = ["방법론", "지표값", "배수", "EV", "Equity Value", f"주당 가치 ({ctx.currency_sym})"]
+        cv_widths = [20, 18, 10, 18, 18, 18]
         for c, h in enumerate(cv_headers, 1):
             write_cell(ws, r, c, h)
-            ws.column_dimensions[get_column_letter(c)].width = max(
-                ws.column_dimensions[get_column_letter(c)].width or 0, [20, 16, 10, 16, 16, 16][c - 1]
-            )
+            ws.column_dimensions[get_column_letter(c)].width = cv_widths[c - 1]
         style_header_row(ws, r, len(cv_headers))
         cv_header_row = r
 
@@ -1512,16 +1834,28 @@ def _get_primary_value(ctx: _Ctx) -> tuple[int, str]:
 def _write_football_field(ws, r: int, ctx: _Ctx):
     """Football Field 차트 (교차검증/시나리오 기반)."""
     write_cell(ws, r, 1, "Football Field — 밸류에이션 범위", font=SECTION_FONT); r += 1
+    # Football Field 데이터는 H-L열(col 8~12)에 배치
+    FF_COL_START = 8
     ff_headers = ["방법론", "하단", "주당가치", "상단", "범위"]
-    for c, h in enumerate(ff_headers, 1):
-        write_cell(ws, r, c, h)
-    style_header_row(ws, r, 5)
+    for c, h in enumerate(ff_headers):
+        write_cell(ws, r, FF_COL_START + c, h)
+    # 헤더 스타일 (H~L열)
+    for col_idx in range(FF_COL_START, FF_COL_START + len(ff_headers)):
+        cell = ws.cell(row=r, column=col_idx)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = GRAY_FILL
     ff_header_row = r
 
     ff_colors_list = []
     ff_color_palette = ["1B2A4A", "2E86C1", "27AE60", "F39C12", "E74C3C", "8E44AD", "17A589"]
 
-    # 교차검증 결과를 Football Field에 포함
+    # Football Field 데이터는 H-L열(col 8~12)에 배치 — A-F 교차검증 열과 충돌 방지
+    FF_COL_LABEL = 8   # H: 방법론
+    FF_COL_LO = 9      # I: 하단
+    FF_COL_VAL = 10     # J: 주당가치
+    FF_COL_HI = 11      # K: 상단
+    FF_COL_RANGE = 12   # L: 범위 (차트용, 숨김)
+
     ff_entries = []
     if ctx.result.cross_validations:
         for cv in ctx.result.cross_validations:
@@ -1532,7 +1866,6 @@ def _write_football_field(ws, r: int, ctx: _Ctx):
             sc = ctx.vi.scenarios[sc_code]
             ff_entries.append((f"{sc_code}: {sc.name}", sr.post_dlom))
     else:
-        # 단일 결과만 있는 경우
         primary_val, primary_label = _get_primary_value(ctx)
         ff_entries.append((primary_label, primary_val))
 
@@ -1541,15 +1874,19 @@ def _write_football_field(ws, r: int, ctx: _Ctx):
         hi = round(val * 1.2) if val > 0 else 0
 
         r += 1
-        write_cell(ws, r, 1, label)
-        write_cell(ws, r, 2, lo, fmt=NUM_FMT)
-        write_cell(ws, r, 3, val, fmt=NUM_FMT, fill=BLUE_FILL)
-        write_cell(ws, r, 4, hi, fmt=NUM_FMT)
-        write_cell(ws, r, 5, max(hi - lo, 0), fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_LABEL, label)
+        write_cell(ws, r, FF_COL_LO, lo, fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_VAL, val, fmt=NUM_FMT, fill=BLUE_FILL)
+        write_cell(ws, r, FF_COL_HI, hi, fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_RANGE, max(hi - lo, 0), fmt=NUM_FMT)
         ff_colors_list.append(ff_color_palette[i % len(ff_color_palette)])
 
     ff_data_end = r
-    ws.column_dimensions['E'].width = 2
+    ws.column_dimensions[get_column_letter(FF_COL_LABEL)].width = 24
+    ws.column_dimensions[get_column_letter(FF_COL_LO)].width = 14
+    ws.column_dimensions[get_column_letter(FF_COL_VAL)].width = 14
+    ws.column_dimensions[get_column_letter(FF_COL_HI)].width = 14
+    ws.column_dimensions[get_column_letter(FF_COL_RANGE)].width = 2  # 숨김 (차트 데이터용)
 
     if not ff_entries:
         return
@@ -1561,9 +1898,9 @@ def _write_football_field(ws, r: int, ctx: _Ctx):
     chart3.title = "Football Field — 밸류에이션 범위"
     chart3.x_axis.numFmt = '#,##0'
 
-    cats3 = Reference(ws, min_col=1, min_row=ff_header_row + 1, max_row=ff_data_end)
-    vals_lo = Reference(ws, min_col=2, min_row=ff_header_row + 1, max_row=ff_data_end)
-    vals_range = Reference(ws, min_col=5, min_row=ff_header_row + 1, max_row=ff_data_end)
+    cats3 = Reference(ws, min_col=FF_COL_LABEL, min_row=ff_header_row + 1, max_row=ff_data_end)
+    vals_lo = Reference(ws, min_col=FF_COL_LO, min_row=ff_header_row + 1, max_row=ff_data_end)
+    vals_range = Reference(ws, min_col=FF_COL_RANGE, min_row=ff_header_row + 1, max_row=ff_data_end)
 
     chart3.add_data(vals_lo, titles_from_data=False)
     chart3.add_data(vals_range, titles_from_data=False)

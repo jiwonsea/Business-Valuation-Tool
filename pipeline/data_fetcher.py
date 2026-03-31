@@ -102,22 +102,23 @@ class DataFetcher:
         """
         query = query.strip()
 
+        cache_key = f"id:{query}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         # 한글 → 한국 기업
         if _is_korean(query):
-            return self._identify_kr(query)
+            result = self._identify_kr(query)
+        elif _is_likely_ticker(query):
+            # 영문 ticker 패턴 → 미국 우선
+            result = self._identify_us(query) or self._identify_kr(query)
+        else:
+            # 영문 일반 → 미국 우선, 실패 시 한국
+            result = self._identify_us(query) or self._identify_kr(query)
 
-        # 영문 ticker 패턴 → 미국 우선
-        if _is_likely_ticker(query):
-            result = self._identify_us(query)
-            if result:
-                return result
-
-        # 영문 일반 → 미국 우선, 실패 시 한국
-        result = self._identify_us(query)
-        if result:
-            return result
-
-        return self._identify_kr(query)
+        if result is not None:
+            self._cache[cache_key] = result
+        return result
 
     def _identify_kr(self, query: str) -> CompanyIdentity | None:
         """DART에서 한국 기업 검색 + 상장 여부 판별."""
@@ -195,9 +196,19 @@ class DataFetcher:
             {year: {"revenue": int, "op": int, "dep": int, "amort": int, ...}}
             KR: 백만원, US: $M (USD millions)
         """
+        years_key = tuple(sorted(years)) if years else ()
+        cache_key = f"fin:{identity.market}:{identity.corp_code or identity.cik or identity.ticker}:{years_key}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         if identity.market == "US":
-            return self._fetch_us(identity, years)
-        return self._fetch_kr(identity, years)
+            result = self._fetch_us(identity, years)
+        else:
+            result = self._fetch_kr(identity, years)
+
+        if result:
+            self._cache[cache_key] = result
+        return result
 
     def _fetch_us(
         self, identity: CompanyIdentity, years: list[int] | None,
@@ -262,9 +273,18 @@ class DataFetcher:
         Returns:
             {"shares_total": int, "shares_ordinary": int, "price": float, ...}
         """
+        cache_key = f"shares:{identity.market}:{identity.ticker or identity.corp_code or identity.name}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         if identity.market == "US":
-            return self._fetch_us_shares(identity)
-        return self._fetch_kr_shares(identity)
+            result = self._fetch_us_shares(identity)
+        else:
+            result = self._fetch_kr_shares(identity)
+
+        if result and result.get("shares_total", 0) > 0:
+            self._cache[cache_key] = result
+        return result
 
     def _fetch_us_shares(self, identity: CompanyIdentity) -> dict:
         """SEC EDGAR + Yahoo Finance → 주식수, 시가총액."""
@@ -303,46 +323,71 @@ class DataFetcher:
         return result
 
     def _fetch_kr_shares(self, identity: CompanyIdentity) -> dict:
-        """상장사: Yahoo Finance (.KS) → 비상장: 38.co.kr."""
-        result = {"shares_total": 0, "shares_ordinary": 0}
+        """상장사: yfinance(시세) + DART(주식총수현황) → 비상장: 38.co.kr."""
+        result = {"shares_total": 0, "shares_ordinary": 0,
+                  "shares_preferred": 0, "treasury_shares": 0}
 
-        # 상장사: yfinance 우선 → Yahoo Finance fallback
+        # 상장사: yfinance(시세/beta) + DART(주식수 정밀 분류)
         if identity.legal_status in ("상장", "listed") and identity.ticker:
-            # yfinance 경로 (KOSPI/KOSDAQ 자동 감지)
+            # yfinance: 시세, beta, 시가총액
             if yfinance_fetcher:
                 try:
                     mkt = yfinance_fetcher.fetch_market_data(identity.ticker, "KR")
                     if mkt and mkt.get("shares_outstanding"):
                         result["price"] = mkt.get("price", 0)
                         result["currency"] = "KRW"
-                        result["shares_total"] = mkt["shares_outstanding"]
+                        # yfinance shares_outstanding → 보통주 발행 (fallback)
                         result["shares_ordinary"] = mkt["shares_outstanding"]
+                        result["shares_total"] = mkt["shares_outstanding"]
                         if mkt.get("beta") is not None:
                             result["beta"] = mkt["beta"]
                         if mkt.get("market_cap"):
                             result["market_cap"] = mkt["market_cap"]
-                        return result
                 except Exception as e:
-                    logger.debug("yfinance KR 주식수 조회 실패 (%s): %s", identity.ticker, e)
+                    logger.debug("yfinance KR 조회 실패 (%s): %s", identity.ticker, e)
 
-            # Yahoo Finance REST fallback (KOSPI/KOSDAQ 자동 감지)
-            try:
-                if yfinance_fetcher:
-                    kr_ticker = yfinance_fetcher.resolve_kr_ticker(identity.ticker)
-                else:
-                    kr_ticker = f"{identity.ticker}.KS"
-                info = yahoo_finance.get_stock_info(kr_ticker)
-                if info and info.get("price"):
-                    result["price"] = info["price"]
-                    result["currency"] = "KRW"
-                summary = yahoo_finance.get_quote_summary(kr_ticker)
-                if summary and summary.get("shares_outstanding"):
-                    result["shares_total"] = summary["shares_outstanding"]
-                    result["shares_ordinary"] = summary["shares_outstanding"]
-                if result["shares_total"] > 0:
-                    return result
-            except Exception as e:
-                logger.debug("Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e)
+            # DART 주식총수현황: 보통주/우선주/자사주 정밀 분류
+            if identity.corp_code:
+                try:
+                    current_year = datetime.datetime.now().year
+                    stock_info = dart_client.get_stock_total_info(
+                        identity.corp_code, current_year - 1,
+                    )
+                    if stock_info and stock_info["shares_ordinary"] > 0:
+                        ord_shares = stock_info["shares_ordinary"]
+                        pref_shares = stock_info["shares_preferred"]
+                        treasury = stock_info["treasury_ordinary"]
+                        result["shares_ordinary"] = ord_shares
+                        result["shares_preferred"] = pref_shares
+                        result["shares_total"] = ord_shares + pref_shares
+                        result["treasury_shares"] = treasury
+                        logger.info(
+                            "DART 주식총수: 보통주=%s, 우선주=%s, 자사주=%s",
+                            f"{ord_shares:,}", f"{pref_shares:,}", f"{treasury:,}",
+                        )
+                except Exception as e:
+                    logger.debug("DART 주식총수 조회 실패 (%s): %s", identity.corp_code, e)
+
+            # yfinance도 DART도 실패 시 Yahoo Finance REST fallback
+            if result["shares_total"] == 0:
+                try:
+                    if yfinance_fetcher:
+                        kr_ticker = yfinance_fetcher.resolve_kr_ticker(identity.ticker)
+                    else:
+                        kr_ticker = f"{identity.ticker}.KS"
+                    info = yahoo_finance.get_stock_info(kr_ticker)
+                    if info and info.get("price"):
+                        result["price"] = info["price"]
+                        result["currency"] = "KRW"
+                    summary = yahoo_finance.get_quote_summary(kr_ticker)
+                    if summary and summary.get("shares_outstanding"):
+                        result["shares_total"] = summary["shares_outstanding"]
+                        result["shares_ordinary"] = summary["shares_outstanding"]
+                except Exception as e:
+                    logger.debug("Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e)
+
+            if result["shares_total"] > 0:
+                return result
 
         # 비상장 또는 상장 Yahoo 실패 시: 38.co.kr
         from . import market_data  # lazy: 비상장 경로에서만 사용

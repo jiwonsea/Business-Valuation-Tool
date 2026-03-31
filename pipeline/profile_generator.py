@@ -182,6 +182,8 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
 
     shares_total = shares_info.get("shares_total", 0)
     shares_ordinary = shares_info.get("shares_ordinary", shares_total)
+    shares_preferred = shares_info.get("shares_preferred", 0)
+    treasury_shares = shares_info.get("treasury_shares", 0)
 
     equity_bv = cons.get("equity", 0)
     liabilities = cons.get("liabilities", 0)
@@ -226,22 +228,32 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
 
     # 매크로 데이터 자동 수집
     from pipeline.macro_data import get_terminal_growth, get_diluted_shares
+    from engine.growth import generate_growth_rates
     terminal_growth = get_terminal_growth(identity.market)
+
+    # EBITDA 성장률 동적 생성 (최근 CAGR → 시장 수렴치로 선형 감쇠)
+    growth_rates = generate_growth_rates(financials, market=identity.market)
+    growth_rates_str = "[" + ", ".join(f"{r:.2f}" for r in growth_rates) + "]"
     # Note: tax rate는 _estimate_wacc_params()에서 클램핑 적용 완료
 
-    # 희석주식수 (SBC/스톡옵션 반영)
-    if identity.ticker:
+    # 희석주식수 (SBC/스톡옵션 반영) — DART 주식총수를 못 가져온 경우만
+    if identity.ticker and shares_preferred == 0 and treasury_shares == 0:
         diluted = get_diluted_shares(identity.ticker, identity.market)
         if diluted and diluted > shares_total:
             shares_total = diluted
             shares_ordinary = diluted
 
+    # 유통보통주식수 (per-share 계산 기준)
+    shares_outstanding = shares_ordinary - treasury_shares
+    if shares_outstanding <= 0:
+        shares_outstanding = shares_ordinary or shares_total
+
     # 교차검증 멀티플 자동 계산 (수집된 재무 + 시장 데이터 기반)
     pe_multiple = 0.0
     ev_revenue_multiple = 0.0
     pbv_multiple = 0.0
-    if market_price > 0 and shares_total > 0:
-        mcap = market_price * shares_total / 1_000_000  # 백만원/$M 단위
+    if market_price > 0 and shares_outstanding > 0:
+        mcap = market_price * shares_outstanding / 1_000_000  # 백만원/$M 단위
         net_inc = cons.get("net_income", 0)
         revenue = cons.get("revenue", 0)
         if net_inc > 0:
@@ -279,7 +291,8 @@ company:
   corp_code: {f'"{identity.corp_code}"' if identity.corp_code else 'null'}
   shares_total: {shares_total}
   shares_ordinary: {shares_ordinary}
-  shares_preferred: 0
+  shares_preferred: {shares_preferred}
+  treasury_shares: {treasury_shares}
   analysis_date: "{date.today().isoformat()}"
 
 # TODO: Define business segments (REQUIRED for SOTP)
@@ -316,7 +329,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: {shares_total}
+    shares: {shares_outstanding}
     growth_adj_pct: 0
     terminal_growth_adj: 0
     desc: "Base case with consensus estimates"
@@ -329,7 +342,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: {shares_total}
+    shares: {shares_outstanding}
     growth_adj_pct: 20
     terminal_growth_adj: 0.3
     desc: "Upside scenario"
@@ -342,13 +355,13 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: {shares_total}
+    shares: {shares_outstanding}
     growth_adj_pct: -25
     terminal_growth_adj: -0.3
     desc: "Downside scenario"
 
 dcf_params:
-  ebitda_growth_rates: [0.10, 0.08, 0.06, 0.05, 0.04]
+  ebitda_growth_rates: {growth_rates_str}
   tax_rate: {tax}
   capex_to_da: 1.10
   nwc_to_rev_delta: 0.05
@@ -488,13 +501,27 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
     except Exception as e:
         print(f"  [WARN] 뉴스 수집 실패: {e}. 범용 시나리오로 진행합니다.")
 
-    # AI Step 5b: 시나리오 설계 (뉴스 기반 key_issues 전달)
+    # AI Step 5b: 시나리오 설계 (뉴스 기반 key_issues + 멀티 드라이버)
     print("[AI 6/6] 시나리오 설계 중...")
     legal = "상장" if identity.market == "US" else "비상장"
+
+    # 방법론 결정 → AI에게 전달하여 method-aware 드라이버 생성
     try:
-        sc_result = analyst.design_scenarios(identity.name, legal, key_issues)
+        from engine.method_selector import suggest_method
+        val_method = suggest_method(
+            n_segments=len(segments) if segments else 1,
+            legal_status=legal,
+            industry=getattr(identity, "industry", "") or "",
+        )
+    except Exception:
+        val_method = "dcf_primary"
+
+    try:
+        sc_result = analyst.design_scenarios(
+            identity.name, legal, key_issues, valuation_method=val_method,
+        )
         ai_scenarios = sc_result.get("scenarios", [])
-        print(f"  → {len(ai_scenarios)}개 시나리오")
+        print(f"  → {len(ai_scenarios)}개 시나리오 (멀티 드라이버, {val_method})")
     except Exception as e:
         print(f"  [WARN] 시나리오 설계 실패: {e}")
         ai_scenarios = []
@@ -533,13 +560,16 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
     if key_issues:
         raw["news_key_issues"] = key_issues
 
-    # 시나리오 업데이트
+    # 시나리오 업데이트 (멀티 드라이버 매핑)
     if ai_scenarios:
-        shares = raw["company"]["shares_total"]
+        # 유통보통주식수 (보통주 - 자사주) 기준
+        _ord = raw["company"].get("shares_ordinary", raw["company"]["shares_total"])
+        _trs = raw["company"].get("treasury_shares", 0)
+        shares = _ord - _trs if _trs > 0 else _ord
         raw["scenarios"] = {}
         for sc in ai_scenarios:
             code = sc.get("code", "A")
-            raw["scenarios"][code] = {
+            sc_dict = {
                 "name": sc.get("name", f"Scenario {code}"),
                 "prob": sc.get("prob", 33),
                 "ipo": "N/A",
@@ -552,6 +582,23 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
                 "desc": sc.get("description", ""),
                 "probability_rationale": sc.get("probability_rationale", ""),
             }
+            # AI가 생성한 정량적 드라이버 매핑
+            drivers = sc.get("drivers", {})
+            for field in (
+                "growth_adj_pct", "terminal_growth_adj", "market_sentiment_pct",
+                "wacc_adj", "ddm_growth", "ev_multiple", "rim_roe_adj", "nav_discount",
+            ):
+                if field in drivers:
+                    val = drivers[field]
+                    # ddm_growth/ev_multiple: 0은 "미설정"을 의미 → None으로 변환
+                    if field in ("ddm_growth", "ev_multiple") and val == 0:
+                        val = None
+                    sc_dict[field] = val
+            # 드라이버별 근거
+            dr = sc.get("driver_rationale", {})
+            if dr:
+                sc_dict["driver_rationale"] = dr
+            raw["scenarios"][code] = sc_dict
 
     # Peers 업데이트
     if peers_all:

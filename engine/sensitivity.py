@@ -3,6 +3,7 @@
 from schemas.models import DAAllocation, DCFParams, SensitivityRow
 from .sotp import calc_sotp
 from .dcf import calc_dcf
+from .units import per_share
 
 
 def sensitivity_multiples(
@@ -11,16 +12,26 @@ def sensitivity_multiples(
     net_debt: int,
     eco_frontier: int,
     shares: int,
-    row_seg: str = "HI",
-    col_seg: str = "ALC",
+    row_seg: str | None = None,
+    col_seg: str | None = None,
     row_range: list[float] | None = None,
     col_range: list[float] | None = None,
+    unit_multiplier: int = 1_000_000,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """민감도: 두 부문 멀티플 변동 → Scenario A 주당 가치."""
+    # 세그먼트 코드 자동 선택 (하드코딩 방지)
+    seg_codes = list(multiples.keys())
+    if row_seg is None:
+        row_seg = seg_codes[0] if len(seg_codes) > 0 else ""
+    if col_seg is None:
+        col_seg = seg_codes[1] if len(seg_codes) > 1 else row_seg
+
     if row_range is None:
-        row_range = [6.0, 7.0, 8.0, 9.0, 10.0]
+        base_m = multiples.get(row_seg, 8.0)
+        row_range = [round(base_m + i, 1) for i in range(-2, 3)]
     if col_range is None:
-        col_range = [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0]
+        base_m = multiples.get(col_seg, 13.0)
+        col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
     rows = []
     for row_m in row_range:
@@ -30,7 +41,7 @@ def sensitivity_multiples(
             mults[col_seg] = col_m
             _, ev = calc_sotp(base_ebitda_by_seg, mults)
             eq = ev - net_debt - eco_frontier
-            ps = round(eq * 1_000_000 / shares) if eq > 0 else 0
+            ps = per_share(eq, unit_multiplier, shares)
             rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
     return rows, row_range, col_range
 
@@ -46,6 +57,7 @@ def sensitivity_irr_dlom(
     shares: int,
     irr_range: list[float] | None = None,
     dlom_range: list[float] | None = None,
+    unit_multiplier: int = 1_000_000,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """민감도: FI IRR × DLOM → Scenario B 주당 가치 (확률 미적용)."""
     if irr_range is None:
@@ -60,7 +72,7 @@ def sensitivity_irr_dlom(
         eq = total_ev - claims
         for dlom in dlom_range:
             if eq > 0:
-                ps = round(eq * 1_000_000 / shares * (1 - dlom / 100))
+                ps = round(per_share(eq, unit_multiplier, shares) * (1 - dlom / 100))
             else:
                 ps = 0
             rows.append(SensitivityRow(row_val=irr, col_val=dlom, value=ps))

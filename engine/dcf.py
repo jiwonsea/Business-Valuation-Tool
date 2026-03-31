@@ -19,15 +19,29 @@ def calc_dcf(
     wacc = wacc_pct / 100
     tg = params.terminal_growth / 100
     tax = params.tax_rate / 100
-    capex_ratio = params.capex_to_da
-    nwc_ratio = params.nwc_to_rev_delta
     growth_rates = params.ebitda_growth_rates
 
     da_to_ebitda = da_base / ebitda_base if ebitda_base > 0 else 0.5
 
+    # 실제 Capex가 있으면 Capex/D&A 비율을 역산, 없으면 파라미터 사용
+    if params.actual_capex is not None and da_base > 0:
+        capex_ratio = params.actual_capex / da_base
+    else:
+        capex_ratio = params.capex_to_da
+
+    # 실제 NWC가 있으면 ΔNWC/ΔRevenue 비율을 역산
+    if params.actual_nwc is not None and params.prior_nwc is not None and revenue_base > 0:
+        delta_nwc_actual = params.actual_nwc - params.prior_nwc
+        # 매출 성장률로 implied revenue delta 추정
+        nwc_to_rev = params.actual_nwc / revenue_base if revenue_base > 0 else params.nwc_to_rev_delta
+        nwc_ratio = nwc_to_rev
+    else:
+        nwc_ratio = params.nwc_to_rev_delta
+
     projections = []
     prev_ebitda = ebitda_base
     prev_revenue = revenue_base
+    prev_nwc = params.actual_nwc if params.actual_nwc is not None else round(revenue_base * nwc_ratio)
 
     for i, g in enumerate(growth_rates):
         yr = base_year + 1 + i
@@ -37,7 +51,15 @@ def calc_dcf(
         nopat = round(op * (1 - tax))
         capex = round(da * capex_ratio)
         revenue = round(prev_revenue * (1 + g))
-        delta_nwc = round((revenue - prev_revenue) * nwc_ratio)
+
+        if params.actual_nwc is not None:
+            # NWC를 매출 비례로 예측
+            nwc_current = round(revenue * nwc_ratio)
+            delta_nwc = nwc_current - prev_nwc
+            prev_nwc = nwc_current
+        else:
+            delta_nwc = round((revenue - prev_revenue) * nwc_ratio)
+
         fcff = nopat + da - capex - delta_nwc
 
         projections.append(DCFProjection(

@@ -1,6 +1,7 @@
 """시나리오 분석 엔진."""
 
 from schemas.models import ScenarioParams, ScenarioResult
+from .units import per_share
 
 
 def calc_scenario(
@@ -10,6 +11,7 @@ def calc_scenario(
     eco_frontier: int,
     cps_principal: int,
     cps_years: int,
+    unit_multiplier: int = 1_000_000,
 ) -> ScenarioResult:
     """시나리오별 Equity Value 및 주당 가치 산출."""
     # CPS 상환액 계산
@@ -29,7 +31,7 @@ def calc_scenario(
 
     # 주당 가치
     if equity_value > 0:
-        pre_dlom = round(equity_value * 1_000_000 / sc.shares)
+        pre_dlom = per_share(equity_value, unit_multiplier, sc.shares)
         post_dlom = round(pre_dlom * (1 - sc.dlom / 100))
     else:
         pre_dlom = 0

@@ -33,9 +33,28 @@ import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
-# ── KR 티커 캐시 (KOSPI/KOSDAQ 감지 결과) ──
+# ── 캐시 ──
 _kr_ticker_cache: dict[str, str] = {}
 _kr_exchange_cache: dict[str, str] = {}  # ticker → "KOSPI" | "KOSDAQ"
+_ticker_info_cache: dict[str, dict] = {}  # resolved_ticker → yf.Ticker().info
+
+
+def _get_ticker_info(resolved: str) -> dict:
+    """yf.Ticker().info 캐시 조회 (동일 세션 내 1회만 호출)."""
+    if resolved in _ticker_info_cache:
+        return _ticker_info_cache[resolved]
+    t = yf.Ticker(resolved)
+    info = t.info or {}
+    _ticker_info_cache[resolved] = info
+    return info
+
+
+def _get_ticker_obj(resolved: str) -> yf.Ticker:
+    """yf.Ticker 객체 반환 + info 캐시 부수 효과."""
+    t = yf.Ticker(resolved)
+    if resolved not in _ticker_info_cache:
+        _ticker_info_cache[resolved] = t.info or {}
+    return t
 
 
 def _is_valid_yf_ticker(info: dict, raw_ticker: str) -> bool:
@@ -68,8 +87,7 @@ def resolve_kr_ticker(ticker: str) -> str:
     # KOSPI (.KS) 시도
     ks = f"{ticker}.KS"
     try:
-        t = yf.Ticker(ks)
-        info = t.info or {}
+        info = _get_ticker_info(ks)
         if _is_valid_yf_ticker(info, ticker):
             _kr_ticker_cache[ticker] = ks
             _kr_exchange_cache[ticker] = "KOSPI"
@@ -80,8 +98,7 @@ def resolve_kr_ticker(ticker: str) -> str:
     # KOSDAQ (.KQ) 시도
     kq = f"{ticker}.KQ"
     try:
-        t = yf.Ticker(kq)
-        info = t.info or {}
+        info = _get_ticker_info(kq)
         if _is_valid_yf_ticker(info, ticker):
             _kr_ticker_cache[ticker] = kq
             _kr_exchange_cache[ticker] = "KOSDAQ"
@@ -145,8 +162,8 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
     """
     resolved = _resolve_ticker(ticker, market)
     try:
-        t = yf.Ticker(resolved)
-        info = t.info or {}
+        t = _get_ticker_obj(resolved)
+        info = _ticker_info_cache.get(resolved, {})
         currency = info.get("currency", "USD" if market == "US" else "KRW")
 
         # 연간 재무제표 (DataFrame, columns = 날짜)
@@ -270,8 +287,7 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
     """
     resolved = _resolve_ticker(ticker, market)
     try:
-        t = yf.Ticker(resolved)
-        info = t.info or {}
+        info = _get_ticker_info(resolved)
         if not info.get("regularMarketPrice") and not info.get("currentPrice"):
             logger.warning("yfinance 시장 데이터 없음: %s", resolved)
             return None

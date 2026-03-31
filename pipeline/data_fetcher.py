@@ -74,16 +74,14 @@ class DataFetcher:
 
         price = None
         try:
-            if identity.market == "US" and identity.ticker:
+            if identity.ticker and yfinance_fetcher:
+                ticker = identity.ticker
+                if identity.market == "KR":
+                    ticker = yfinance_fetcher.resolve_kr_ticker(ticker)
+                mkt = yfinance_fetcher.fetch_market_data(ticker, identity.market)
+                price = mkt.get("price", 0) if mkt else None
+            elif identity.ticker:
                 info = yahoo_finance.get_stock_info(identity.ticker)
-                price = info.get("price", 0) if info else None
-            elif identity.market == "KR" and identity.ticker:
-                # yfinance로 KOSPI/KOSDAQ 자동 감지된 티커 사용
-                if yfinance_fetcher:
-                    kr_ticker = yfinance_fetcher.resolve_kr_ticker(identity.ticker)
-                else:
-                    kr_ticker = f"{identity.ticker}.KS"
-                info = yahoo_finance.get_stock_info(kr_ticker)
                 price = info.get("price", 0) if info else None
         except Exception as e:
             logger.debug("시장가 조회 실패 (%s): %s", identity.ticker, e)
@@ -315,10 +313,13 @@ class DataFetcher:
                 except Exception:
                     pass
             if not result.get("price"):
-                info = yahoo_finance.get_stock_info(identity.ticker)
-                if info:
-                    result["price"] = info.get("price", 0)
-                    result["currency"] = info.get("currency", "USD")
+                summary = yahoo_finance.get_quote_summary(identity.ticker)
+                if summary:
+                    result["price"] = summary.get("price", 0)
+                    result["currency"] = "USD"
+                    if not result["shares_total"] and summary.get("shares_outstanding"):
+                        result["shares_total"] = summary["shares_outstanding"]
+                        result["shares_ordinary"] = summary["shares_outstanding"]
 
         return result
 
@@ -368,21 +369,21 @@ class DataFetcher:
                 except Exception as e:
                     logger.debug("DART 주식총수 조회 실패 (%s): %s", identity.corp_code, e)
 
-            # yfinance도 DART도 실패 시 Yahoo Finance REST fallback
+            # yfinance도 DART도 실패 시 Yahoo Finance REST fallback (1회 호출)
             if result["shares_total"] == 0:
                 try:
                     if yfinance_fetcher:
                         kr_ticker = yfinance_fetcher.resolve_kr_ticker(identity.ticker)
                     else:
                         kr_ticker = f"{identity.ticker}.KS"
-                    info = yahoo_finance.get_stock_info(kr_ticker)
-                    if info and info.get("price"):
-                        result["price"] = info["price"]
-                        result["currency"] = "KRW"
                     summary = yahoo_finance.get_quote_summary(kr_ticker)
-                    if summary and summary.get("shares_outstanding"):
-                        result["shares_total"] = summary["shares_outstanding"]
-                        result["shares_ordinary"] = summary["shares_outstanding"]
+                    if summary:
+                        if summary.get("shares_outstanding"):
+                            result["shares_total"] = summary["shares_outstanding"]
+                            result["shares_ordinary"] = summary["shares_outstanding"]
+                        if not result.get("price") and summary.get("price"):
+                            result["price"] = summary["price"]
+                            result["currency"] = "KRW"
                 except Exception as e:
                     logger.debug("Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e)
 

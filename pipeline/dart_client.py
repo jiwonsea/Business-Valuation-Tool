@@ -5,13 +5,23 @@ DART API Key 필요: https://opendart.fss.or.kr/
 """
 
 import io
+import logging
 import os
+import time
 import zipfile
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 import httpx
 
+logger = logging.getLogger(__name__)
+
 DART_BASE = "https://opendart.fss.or.kr/api"
+
+# corpCode.xml 디스크 캐시 (8MB ZIP → 매번 다운로드 방지)
+_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
+_CORP_CODE_CACHE = _CACHE_DIR / "corpCode.xml"
+_CORP_CODE_TTL = 86400  # 24시간
 
 
 def _get_api_key() -> str:
@@ -19,6 +29,32 @@ def _get_api_key() -> str:
     if not key:
         raise RuntimeError("DART_API_KEY 환경변수가 설정되지 않았습니다.")
     return key
+
+
+def _load_corp_code_xml() -> ET.Element:
+    """corpCode.xml 로드 (디스크 캐시 우선, 만료 시 재다운로드)."""
+    # 캐시 유효성 확인
+    if _CORP_CODE_CACHE.exists():
+        age = time.time() - _CORP_CODE_CACHE.stat().st_mtime
+        if age < _CORP_CODE_TTL:
+            logger.debug("corpCode.xml 캐시 사용 (age=%.0fs)", age)
+            return ET.parse(_CORP_CODE_CACHE).getroot()
+
+    # 캐시 없거나 만료 → 다운로드
+    logger.info("corpCode.xml 다운로드 중 (~8MB)...")
+    key = _get_api_key()
+    resp = httpx.get(f"{DART_BASE}/corpCode.xml", params={"crtfc_key": key}, timeout=30)
+    resp.raise_for_status()
+
+    z = zipfile.ZipFile(io.BytesIO(resp.content))
+    xml_data = z.read(z.namelist()[0])
+
+    # 디스크에 저장
+    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    _CORP_CODE_CACHE.write_bytes(xml_data)
+    logger.info("corpCode.xml 캐시 저장 완료 (%s)", _CORP_CODE_CACHE)
+
+    return ET.fromstring(xml_data)
 
 
 def get_corp_code(company_name: str) -> str | None:
@@ -36,13 +72,7 @@ def get_corp_info(company_name: str) -> dict | None:
     Returns:
         {"corp_code": str, "stock_code": str|None, "is_listed": bool} or None
     """
-    key = _get_api_key()
-    resp = httpx.get(f"{DART_BASE}/corpCode.xml", params={"crtfc_key": key}, timeout=30)
-    resp.raise_for_status()
-
-    z = zipfile.ZipFile(io.BytesIO(resp.content))
-    xml_data = z.read(z.namelist()[0])
-    root = ET.fromstring(xml_data)
+    root = _load_corp_code_xml()
 
     # 모든 매칭 후보를 수집한 뒤, 상장사 우선 + 정확매칭 우선으로 정렬
     candidates = []

@@ -7,12 +7,16 @@
 """
 
 import json
+import logging
 import os
+import time
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # OpenRouter 기본 모델 (무료/저가 모델로 시작, 필요 시 변경)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
-_ANTHROPIC_DEFAULT_MODEL = "claude-sonnet-4-20250514"
+_ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20250414"
 
 
 def _get_provider() -> str:
@@ -34,7 +38,7 @@ def _ask_anthropic(
     max_tokens: int = 4096,
     temperature: float = 0.3,
 ) -> str:
-    """Anthropic API 직접 호출."""
+    """Anthropic API 직접 호출 (프롬프트 캐싱 자동 적용)."""
     import anthropic
 
     key = os.getenv("ANTHROPIC_API_KEY")
@@ -51,9 +55,26 @@ def _ask_anthropic(
         "messages": messages,
     }
     if system:
-        kwargs["system"] = system
+        # 프롬프트 캐싱: 동일 시스템 프롬프트 반복 시 입력 비용 90% 절감
+        kwargs["system"] = [
+            {
+                "type": "text",
+                "text": system,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
 
     response = client.messages.create(**kwargs)
+
+    # Usage 로깅 — 토큰 사용량 + 캐시 적중 추적
+    usage = response.usage
+    cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+    cache_create = getattr(usage, "cache_creation_input_tokens", 0) or 0
+    logger.info(
+        "Anthropic [%s] 입력=%d (캐시읽기=%d, 캐시생성=%d), 출력=%d",
+        model, usage.input_tokens, cache_read, cache_create, usage.output_tokens,
+    )
+
     return response.content[0].text
 
 
@@ -80,20 +101,33 @@ def _ask_openrouter(
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
 
-    resp = httpx.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        },
-        timeout=120,
-    )
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    }
+
+    # 429 rate limit 대응: 최대 5회 재시도 (Retry-After 헤더 우선, fallback exponential)
+    max_retries = 5
+    for attempt in range(max_retries + 1):
+        resp = httpx.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=120,
+        )
+        if resp.status_code != 429 or attempt == max_retries:
+            break
+        retry_after = resp.headers.get("retry-after")
+        wait = int(retry_after) if retry_after and retry_after.isdigit() else 10 * (attempt + 1)
+        logger.warning("OpenRouter rate limit — %ds 후 재시도 (%d/%d)", wait, attempt + 1, max_retries)
+        time.sleep(wait)
+
     resp.raise_for_status()
     data = resp.json()
 

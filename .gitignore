@@ -29,5 +29,8 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 
+# Cache (DART corpCode, LLM responses)
+.cache/
+
 # Misc artifacts
 *.docx

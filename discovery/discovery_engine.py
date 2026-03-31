@@ -44,33 +44,32 @@ def summarize_key_issues(
         return ""
 
     from ai.llm_client import ask
+    from ai.prompts import SYSTEM_DISCOVERY
 
     news_text = "\n".join(
-        f"- [{n['pub_date'][:10]}] {n['title']}: {n.get('description', '')}"
+        f"- [{n['pub_date'][:10]}] {n['title']}"
         for n in news
     )
 
     market_label = "한국" if market == "KR" else "미국"
-    prompt = f"""다음은 {company_name}({market_label} 시장) 관련 최근 1개월간 뉴스입니다:
-
+    prompt = f"""\
+<company>{company_name} ({market_label} 시장)</company>
+<news_data>
 {news_text}
+</news_data>
 
 위 뉴스에서 이 기업의 밸류에이션에 영향을 줄 수 있는 핵심 이슈를 요약하세요.
+카테고리별 bullet point 형식으로 5~10개 이내 핵심만 추출하세요.
+밸류에이션과 무관한 뉴스는 제외하고, 각 이슈에 관련 뉴스 날짜를 포함하세요.
 
-요구사항:
-- 카테고리별 bullet point 형식: [리스크], [기회], [규제], [실적], [산업동향] 등
-- 각 이슈에 관련 뉴스 날짜 포함
-- 밸류에이션과 무관한 뉴스는 제외
-- 5~10개 이내로 핵심만 추출
-- 한국어로 작성
-
-예시 형식:
+<example>
 - [리스크] 수주 감소로 2025년 매출 하락 전망 (3월 뉴스)
 - [기회] 신규 해외 프로젝트 수주 발표 예정 (3월 뉴스)
-- [규제] ESG 관련 신규 규제안 국회 통과 가능성 (2월 뉴스)"""
+- [규제] ESG 관련 신규 규제안 국회 통과 가능성 (2월 뉴스)
+</example>"""
 
     try:
-        return ask(prompt, temperature=0.2)
+        return ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1024)
     except Exception:
         return ""
 
@@ -170,47 +169,40 @@ class DiscoveryEngine:
     def _analyze_with_ai(self, news: list[dict], market: str) -> dict:
         """Claude API로 뉴스 분석."""
         from ai.llm_client import ask
+        from ai.analyst import _parse_json
+        from ai.prompts import SYSTEM_DISCOVERY
 
-        # 뉴스 요약 텍스트 구성 (토큰 절약을 위해 제목+설명만)
+        # 뉴스 요약 텍스트 구성 (토큰 절약: 제목만 전송)
         news_text = "\n".join(
-            f"- [{n['pub_date'][:10]}] {n['title']}: {n['description'][:200]}"
-            for n in news[:50]  # 최대 50건
+            f"- [{n['pub_date'][:10]}] {n['title']}"
+            for n in news[:30]  # 최대 30건 (토큰 절약)
         )
 
         market_label = "한국" if market == "KR" else "미국"
-        prompt = f"""다음은 최근 1개월간 {market_label} 시장의 주요 뉴스입니다:
-
+        prompt = f"""\
+<news_data>
+최근 1개월간 {market_label} 시장 주요 뉴스:
 {news_text}
+</news_data>
 
-위 뉴스를 분석하여 다음 JSON 형식으로 응답해주세요:
+위 뉴스를 분석하여 시장 동향 요약, 밸류에이션 분석이 의미 있는 기업 추천(최대 5개), 시장 시나리오(3개, 확률 합계 100%)를 제시하세요.
+
+<output_format>
 {{
   "summary": "시장 전체 동향 요약 (3-5문장)",
   "companies": [
-    {{"name": "기업명", "ticker": "티커 (알고 있는 경우)", "reason": "분석 추천 이유"}},
-    ...최대 5개
+    {{"name": "기업명", "ticker": "티커 (알고 있는 경우)", "reason": "분석 추천 이유"}}
   ],
   "scenarios": [
-    {{"name": "시나리오명", "prob": 확률(%), "description": "설명"}},
-    ...3개 시나리오
+    {{"name": "시나리오명", "prob": 30, "description": "설명"}}
   ]
 }}
+</output_format>"""
 
-시나리오 확률 합계는 100%여야 합니다.
-기업 추천은 뉴스에서 주요 이슈가 있어 밸류에이션 분석이 의미 있는 기업을 선택하세요.
-"""
+        response = ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2,
+                       max_tokens=1536)
 
-        response = ask(prompt)
-
-        # JSON 파싱 시도
         try:
-            # 코드 블록 내 JSON 추출
-            if "```json" in response:
-                json_str = response.split("```json")[1].split("```")[0]
-            elif "```" in response:
-                json_str = response.split("```")[1].split("```")[0]
-            else:
-                json_str = response
-
-            return json.loads(json_str.strip())
-        except (json.JSONDecodeError, IndexError):
+            return _parse_json(response)
+        except (json.JSONDecodeError, ValueError):
             return {"summary": response, "companies": [], "scenarios": []}

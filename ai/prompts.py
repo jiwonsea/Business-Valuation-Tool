@@ -114,6 +114,47 @@ Since peer multiples are a critical input for SOTP valuation, verify that each E
 </output_format>"""
 
 
+def prompt_peer_recommendation_batch(
+    company_name: str,
+    segments: list[dict],
+) -> str:
+    """Batch peer recommendation prompt for multiple segments in a single LLM call.
+
+    Each segment dict should have: code, name, peer_group (description).
+    """
+    seg_lines = "\n".join(
+        f"  - Code: {s.get('code', 'MAIN')}, "
+        f"Segment: {s.get('name', 'Main')}, "
+        f"Description: {s.get('peer_group', '')}"
+        for s in segments
+    )
+    seg_codes = ", ".join(s.get("code", "MAIN") for s in segments)
+    return f"""\
+<company>{company_name}</company>
+<segments>
+{seg_lines}
+</segments>
+
+Recommend 5+ domestic and international peer companies for EACH segment above.
+Select peers by industry classification, revenue scale, and business structure similarity (in that order).
+Prioritize Korean listed companies; include international peers when business structure is highly similar.
+Since peer multiples are a critical input for SOTP valuation, verify that each EV/EBITDA is realistic.
+
+<output_format>
+{{
+    "{seg_codes.split(', ')[0]}": {{
+        "peers": [
+            {{"name": "Company name", "ev_ebitda": 10.0, "notes": "Selection rationale and multiple source"}}
+        ],
+        "recommended_multiple": 10.0,
+        "multiple_range": [8.0, 12.0],
+        "rationale": "Recommendation rationale"
+    }},
+    ... (one entry per segment code: {seg_codes})
+}}
+</output_format>"""
+
+
 def prompt_wacc_suggestion(
     company_name: str,
     de_ratio: float,
@@ -154,6 +195,38 @@ Cite Korea market-based evidence for each parameter.
 </output_format>"""
 
 
+SYSTEM_ANALYST_DRIVERS = """\
+<driver_reference>
+Available valuation scenario drivers by method:
+
+dcf_primary:
+  - growth_adj_pct: EBITDA growth rate % adjustment (e.g., +20 → base growth × 1.2, -25 → × 0.75)
+  - terminal_growth_adj: Terminal growth rate absolute adjustment %p (e.g., +0.3 → TGR + 0.3%p)
+  - wacc_adj: WACC %p adjustment (e.g., +0.5 → WACC + 0.5%p)
+  - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
+
+sotp:
+  - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
+  - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
+
+ddm:
+  - ddm_growth: Dividend growth rate override (%, absolute. e.g., 4.0 → 4% growth)
+  - wacc_adj: Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)
+
+rim:
+  - rim_roe_adj: ROE %p adjustment (e.g., -1.0 → all ROE -1%p)
+  - wacc_adj: Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)
+
+nav:
+  - nav_discount: Holding company discount (%, e.g., 30 → NAV × 0.7)
+  - market_sentiment_pct: Market sentiment EV % adjustment
+
+multiples:
+  - ev_multiple: Applied multiple override (absolute, e.g., 8.5)
+  - market_sentiment_pct: Market sentiment EV % adjustment
+  - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
+</driver_reference>"""
+
 _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "dcf_primary": {
         "growth_adj_pct": "EBITDA growth rate % adjustment (e.g., +20 → base growth × 1.2, -25 → × 0.75)",
@@ -185,11 +258,80 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
 }
 
 
+def _optionality_instructions(currency_unit: str = "$M") -> str:
+    """Shared optionality segment detection instructions for scenario design prompts."""
+    return f"""
+<optionality_detection>
+If this company has binary-outcome business segments where payoff is explosive-or-0
+(examples: autonomous driving, robotaxi fleet, humanoid robots, drug pipeline, AI platform,
+space launch, nuclear fusion), identify them as optionality segments.
+
+For each optionality segment, estimate EBITDA in {currency_unit} per scenario using:
+  TAM × penetration_rate × operating_margin = EBITDA estimate
+
+CRITICAL: Use the EXACT SAME scenario codes defined in "scenarios" above (e.g. if scenarios use "Bull","Base","Bear" then scenario_ebitda keys must be "Bull","Base","Bear").
+
+Add to output (omit if no optionality segments found):
+"optionality_segments": [
+  {{
+    "code": "SEG_OPT1",
+    "name": "Descriptive segment name (e.g. FSD / Full Self-Driving)",
+    "multiple": <SaaS/platform multiple, typically 25-50x EV/EBITDA>,
+    "scenario_ebitda": {{
+      "<scenario_code_bull>": <ebitda in {currency_unit}, full deployment>,
+      "<scenario_code_base>": <ebitda in {currency_unit}, partial deployment>,
+      "<scenario_code_bear>": 0
+    }},
+    "rationale": "TAM × penetration × margin math, e.g. $500B TAM × 3% × 25% = $3.75B"
+  }}
+]
+</optionality_detection>"""
+
+
+def _sanitize_news(text: str) -> str:
+    """Strip control chars and truncate to prevent prompt injection from news content."""
+    import re
+    # Remove XML/HTML-like tags and control characters
+    cleaned = re.sub(r"<[^>]*>", "", text)
+    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", cleaned)
+    # Truncate excessively long input
+    if len(cleaned) > 8000:
+        cleaned = cleaned[:8000] + "\n... (truncated)"
+    return cleaned
+
+
+def _driver_range_table(drivers_info: dict[str, str]) -> str:
+    """Generate a driver range reference table for the LLM."""
+    rows = []
+    for k, desc in drivers_info.items():
+        bounds = _DRIVER_BOUNDS.get(k)
+        if bounds:
+            rows.append(f"  - {k}: [{bounds[0]}, {bounds[1]}] — {desc}")
+        else:
+            rows.append(f"  - {k}: {desc}")
+    return "\n".join(rows)
+
+
+# Reasonable bounds for driver values (shared with validators)
+_DRIVER_BOUNDS: dict[str, tuple[float, float]] = {
+    "growth_adj_pct": (-50, 100),
+    "terminal_growth_adj": (-2.0, 2.0),
+    "wacc_adj": (-3.0, 3.0),
+    "market_sentiment_pct": (-30, 30),
+    "ddm_growth": (0.0, 15.0),
+    "rim_roe_adj": (-10.0, 10.0),
+    "ev_multiple": (1.0, 50.0),
+    "nav_discount": (0.0, 60.0),
+}
+
+
 def prompt_scenario_design(
     company_name: str,
     legal_status: str,
     key_issues: str,
     valuation_method: str = "dcf_primary",
+    include_optionality: bool = False,
+    currency_unit: str = "$M",
 ) -> str:
     """Scenario design prompt.
 
@@ -197,11 +339,12 @@ def prompt_scenario_design(
     Available driver list varies by valuation_method.
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
-    driver_desc = "\n".join(f"  - {k}: {v}" for k, v in drivers_info.items())
     driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
+    driver_table = _driver_range_table(drivers_info)
 
     if key_issues.strip():
+        sanitized_issues = _sanitize_news(key_issues)
         # News-driven scenario design (multi-variable news drivers)
         effect_json = ", ".join(f'"{k}": 0' for k in drivers_info)
         return f"""\
@@ -211,34 +354,48 @@ Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
 
+<driver_ranges>
+{driver_table}
+All driver values MUST stay within these ranges. Values outside will be rejected.
+</driver_ranges>
+
 <news_issues>
-{key_issues}
+{sanitized_issues}
 </news_issues>
 
 Design 2-4 valuation scenarios for this company reflecting the news issues above.
 
 <instructions>
 Design using multi-variable news drivers (multiple regression approach):
-Step 1: Extract 2-5 independent news_drivers from the key news issues
-Step 2: Quantify the partial effect of each driver on financial variables
+Step 1: Extract 2-5 independent news_drivers from the key news issues (title + description)
+Step 2: Quantify the partial effect of each driver on financial variables within the allowed ranges above
 Step 3: For each scenario, decide which drivers to apply at what intensity (weight, 0~1)
 
-When allocating probabilities, separate macro, industry, and company-specific factors and assess each factor's likelihood.
-Specify related news issues concretely in key_assumptions.
-DLOM (liquidity discount) should reflect listed status and per-scenario liquidity risk.
+PROBABILITY ASSIGNMENT (mandatory reasoning chain):
+1. Anchor: Start from base rate — the historical frequency of similar events occurring
+   (e.g., "Fed rate hikes > 50bp occurred in 3 of last 10 cycles = ~30% base rate")
+2. Decompose: Break each scenario probability into conditional factors:
+   P(scenario) = P(macro_condition) × P(industry_impact | macro) × P(company_response | industry)
+3. Show the multiplication chain in probability_rationale
+4. Base Case probability MUST be 30-50%. No single scenario may exceed 60%.
+5. Verify: all probabilities sum to exactly 100%
+
+CORRELATION AWARENESS:
+When multiple drivers affect the same financial variable, note the interaction.
+Correlated drivers (e.g., rate hike + credit tightening) applied together will be dampened
+by a correlation factor downstream — design scenarios assuming independent partial effects.
+
+Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.
+For listed (상장) companies, DLOM MUST be 0 for ALL scenarios. DLOM only applies to unlisted (비상장) companies.
 </instructions>
 
 <example>
 "50bp rate hike" driver → effects: {{wacc_adj: +0.5, growth_adj_pct: -10}}
 "Tariff shock" driver → effects: {{growth_adj_pct: -15, market_sentiment_pct: -5}}
 Bear scenario: both drivers at weight 1.0 → combined effects applied
+  probability_rationale: "P(aggressive hike)=30% × P(tariff escalation|hike)=50% × P(margin hit|tariff)=80% ≈ 12%, rounded to 15%"
 Base scenario: rate hike only at weight 0.5 → half effect applied
 </example>
-
-<available_drivers>
-Available effect keys ({valuation_method} method):
-{driver_desc}
-</available_drivers>
 
 <output_format>
 {{
@@ -248,7 +405,7 @@ Available effect keys ({valuation_method} method):
             "name": "News event name",
             "category": "macro | industry | company",
             "effects": {{{effect_json}}},
-            "rationale": "Rationale for this driver's partial effects"
+            "rationale": "Rationale for this driver's partial effects with evidence/base rate"
         }}
     ],
     "scenarios": [
@@ -256,8 +413,8 @@ Available effect keys ({valuation_method} method):
             "code": "A",
             "name": "Scenario name",
             "prob": 30,
-            "probability_rationale": "Rationale for this probability allocation",
-            "description": "Scenario description",
+            "probability_rationale": "Base rate: X%. Conditional decomposition: P(A)×P(B|A)×P(C|B) = Y%",
+            "description": "2-3 sentence scenario narrative",
             "dlom": 0,
             "key_assumptions": ["News-based assumption 1", "Assumption 2"],
             "active_drivers": {{"driver_id": 1.0}}
@@ -266,7 +423,7 @@ Available effect keys ({valuation_method} method):
     "rationale": "Overall scenario design rationale",
     "news_factors_considered": ["Summary of key news issues reflected"]
 }}
-</output_format>"""
+</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
 
     # Generic scenario design (multi-driver)
     return f"""\
@@ -276,19 +433,30 @@ Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
 
+<driver_ranges>
+{driver_table}
+All driver values MUST stay within these ranges. Values outside will be rejected.
+</driver_ranges>
+
 Design 2-4 valuation scenarios suitable for this company.
 Include probability, key assumptions, and DLOM (liquidity discount) applicability for each scenario.
 
 <instructions>
-Set quantitative drivers for each scenario.
+Set quantitative drivers for each scenario within the allowed ranges above.
 Base Case: all drivers at 0. Bull/Bear: adjust in appropriate direction.
-When allocating probabilities, separate macro, industry, and company-specific factors and cite rationale.
-</instructions>
 
-<available_drivers>
-Available drivers ({valuation_method} method):
-{driver_desc}
-</available_drivers>
+PROBABILITY ASSIGNMENT (mandatory reasoning chain):
+1. Anchor: Start from base rate — the historical frequency of similar macro/industry conditions
+2. Decompose: P(scenario) = P(macro) × P(industry | macro) × P(company | industry)
+3. Base Case probability MUST be 30-50%. No single scenario may exceed 60%.
+4. Show the reasoning chain in probability_rationale.
+
+CORRELATION AWARENESS:
+If two drivers affect the same variable (e.g., growth_adj_pct and terminal_growth_adj both reduce growth),
+note this in driver_rationale. Correlated effects will be dampened downstream.
+
+Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.
+</instructions>
 
 <output_format>
 {{
@@ -297,7 +465,8 @@ Available drivers ({valuation_method} method):
             "code": "A",
             "name": "Scenario name",
             "prob": 30,
-            "description": "Scenario description",
+            "probability_rationale": "Base rate: X%. Conditional: P(A)×P(B|A) = Y%",
+            "description": "2-3 sentence scenario narrative",
             "dlom": 0,
             "key_assumptions": ["Assumption 1", "Assumption 2"],
             "drivers": {{{driver_json}}},
@@ -306,7 +475,184 @@ Available drivers ({valuation_method} method):
     ],
     "rationale": "Scenario design rationale"
 }}
+</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
+
+
+def prompt_scenario_classify(
+    company_name: str,
+    legal_status: str,
+    key_issues: str,
+    valuation_method: str = "dcf_primary",
+    currency_unit: str = "$M",
+) -> str:
+    """Pass 1 (Haiku): Lightweight scenario classification draft.
+
+    Outputs scenario codes, names, probability ranges, and key driver directions
+    WITHOUT precise numeric values. Designed for fast, cheap execution.
+    """
+    drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
+    driver_names = ", ".join(drivers_info.keys())
+
+    news_block = ""
+    if key_issues.strip():
+        sanitized_issues = _sanitize_news(key_issues)
+        news_block = f"""
+<news_issues>
+{sanitized_issues}
+</news_issues>
+"""
+
+    return f"""\
+<company>{company_name}</company>
+<context>
+Listed status: {legal_status}
+Valuation method: {valuation_method}
+</context>
+{news_block}
+Classify 2-4 valuation scenarios for this company.
+This is a CLASSIFICATION step only — provide directional guidance, not precise values.
+
+<instructions>
+For each scenario:
+1. Assign a short code (e.g., "Bull", "Base", "Bear") and descriptive name
+2. Estimate probability RANGE (e.g., 25-35%) — not a single number
+3. List the key drivers that matter (from: {driver_names}) and their DIRECTION (↑/↓/→)
+4. Write a 1-sentence narrative summary
+5. If news is provided, extract 2-5 key news_driver themes (id + name + category)
+
+PROBABILITY GUIDELINES:
+- Base Case range MUST include 30-50% (e.g., 35-45%)
+- No single scenario upper bound may exceed 60%
+- Ranges should overlap minimally
+
+For listed (상장) companies, DLOM MUST be 0.
+</instructions>
+
+<output_format>
+{{
+    "news_drivers": [
+        {{
+            "id": "driver_id",
+            "name": "News event name",
+            "category": "macro | industry | company"
+        }}
+    ],
+    "scenario_draft": [
+        {{
+            "code": "Bull",
+            "name": "Scenario name",
+            "prob_range": [25, 35],
+            "narrative": "1-sentence scenario summary",
+            "dlom": 0,
+            "driver_directions": {{"growth_adj_pct": "up", "wacc_adj": "down"}},
+            "key_assumptions": ["Assumption 1", "Assumption 2"]
+        }}
+    ],
+    "classification_rationale": "Why these scenarios were chosen"
+}}
 </output_format>"""
+
+
+def prompt_scenario_refine(
+    company_name: str,
+    legal_status: str,
+    key_issues: str,
+    draft: dict,
+    valuation_method: str = "dcf_primary",
+    include_optionality: bool = False,
+    currency_unit: str = "$M",
+) -> str:
+    """Pass 2 (Sonnet): Refine a scenario classification draft into a full design.
+
+    Takes the Pass 1 draft and produces precise driver values, exact probabilities,
+    descriptions, and rationale.
+    """
+    import json as _json
+
+    drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
+    driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+    rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
+    driver_table = _driver_range_table(drivers_info)
+
+    draft_str = _json.dumps(draft, ensure_ascii=False, indent=2)
+
+    news_block = ""
+    if key_issues.strip():
+        sanitized_issues = _sanitize_news(key_issues)
+        news_block = f"""
+<news_issues>
+{sanitized_issues}
+</news_issues>
+"""
+        effect_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+        news_driver_format = f"""
+    "news_drivers": [
+        {{
+            "id": "driver_id",
+            "name": "News event name",
+            "category": "macro | industry | company",
+            "effects": {{{effect_json}}},
+            "rationale": "Rationale with evidence/base rate"
+        }}
+    ],"""
+        scenario_driver_key = '"active_drivers": {"driver_id": 1.0}'
+    else:
+        news_driver_format = ""
+        scenario_driver_key = f'"drivers": {{{driver_json}}},\n            "driver_rationale": {{{rationale_json}}}'
+
+    return f"""\
+<company>{company_name}</company>
+<context>
+Listed status: {legal_status}
+Valuation method: {valuation_method}
+</context>
+
+<driver_ranges>
+{driver_table}
+All driver values MUST stay within these ranges. Values outside will be rejected.
+</driver_ranges>
+{news_block}
+<classification_draft>
+{draft_str}
+</classification_draft>
+
+Refine the scenario classification draft above into a FULL scenario design.
+You MUST use the exact scenario codes and structure from the draft.
+
+<instructions>
+For each scenario from the draft:
+1. Convert the probability RANGE into a single precise probability (pick within the range)
+2. Convert driver DIRECTIONS into precise numeric values within the allowed ranges
+3. Expand the narrative into a 2-3 sentence description
+4. Add detailed probability_rationale using conditional decomposition:
+   P(scenario) = P(macro) × P(industry|macro) × P(company|industry)
+5. Verify: all probabilities sum to exactly 100%
+6. Base Case probability MUST be 30-50%. No single scenario may exceed 60%.
+
+If news_drivers are present in the draft, quantify their partial effects on financial variables.
+
+CORRELATION AWARENESS:
+When multiple drivers affect the same financial variable, note the interaction.
+Correlated drivers applied together will be dampened by a correlation factor downstream.
+</instructions>
+
+<output_format>
+{{{news_driver_format}
+    "scenarios": [
+        {{
+            "code": "A",
+            "name": "Scenario name",
+            "prob": 30,
+            "probability_rationale": "Base rate: X%. Conditional: P(A)×P(B|A) = Y%",
+            "description": "2-3 sentence scenario narrative",
+            "dlom": 0,
+            "key_assumptions": ["Assumption 1", "Assumption 2"],
+            {scenario_driver_key}
+        }}
+    ],
+    "rationale": "Overall scenario design rationale"
+}}
+</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
 
 
 def prompt_research_note(

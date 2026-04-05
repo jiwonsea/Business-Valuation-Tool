@@ -1,10 +1,11 @@
-"""AI module unit tests — _parse_json parsing robustness verification.
+"""AI module unit tests — _parse_json parsing robustness + two-pass scenario design.
 
-Does not call the LLM API; tests pure parsing logic only.
+Does not call the LLM API; tests pure parsing logic and prompt generation only.
 """
 
 import pytest
 from ai.analyst import _parse_json
+from ai.prompts import prompt_scenario_classify, prompt_scenario_refine
 
 
 class TestParseJson:
@@ -69,3 +70,77 @@ class TestParseJson:
         text = '다음은 결과입니다:\n```json\n{"name": "SK에코플랜트"}\n```\n끝.'
         result = _parse_json(text)
         assert result["name"] == "SK에코플랜트"
+
+
+class TestTwoPassPrompts:
+    """Two-pass scenario prompts generate correct structure."""
+
+    def test_classify_prompt_has_required_sections(self):
+        """Pass 1 prompt includes scenario_draft output format."""
+        prompt = prompt_scenario_classify(
+            "삼성전자", "상장", "금리 인상 우려", "dcf_primary",
+        )
+        assert "scenario_draft" in prompt
+        assert "prob_range" in prompt
+        assert "driver_directions" in prompt
+        assert "CLASSIFICATION" in prompt
+
+    def test_classify_prompt_no_news(self):
+        """Pass 1 prompt works without news."""
+        prompt = prompt_scenario_classify(
+            "삼성전자", "상장", "", "dcf_primary",
+        )
+        assert "scenario_draft" in prompt
+        assert "news_issues" not in prompt
+
+    def test_classify_prompt_includes_driver_names(self):
+        """Pass 1 prompt lists available drivers for the method."""
+        prompt = prompt_scenario_classify(
+            "삼성전자", "상장", "", "dcf_primary",
+        )
+        assert "growth_adj_pct" in prompt
+        assert "wacc_adj" in prompt
+
+    def test_classify_prompt_ddm_method(self):
+        """Pass 1 prompt adapts drivers to DDM method."""
+        prompt = prompt_scenario_classify(
+            "삼성전자", "상장", "", "ddm",
+        )
+        assert "ddm_growth" in prompt
+        # DDM driver list should not include DCF-specific drivers
+        assert "terminal_growth_adj" not in prompt
+
+    def test_refine_prompt_includes_draft(self):
+        """Pass 2 prompt embeds the classification draft."""
+        draft = {
+            "scenario_draft": [
+                {"code": "Bull", "name": "Bull Case", "prob_range": [25, 35],
+                 "driver_directions": {"growth_adj_pct": "up"}},
+                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
+                 "driver_directions": {}},
+            ]
+        }
+        prompt = prompt_scenario_refine(
+            "삼성전자", "상장", "", draft, "dcf_primary",
+        )
+        assert "classification_draft" in prompt
+        assert "Bull Case" in prompt
+        assert "prob_range" in prompt
+
+    def test_refine_prompt_with_news(self):
+        """Pass 2 prompt includes news and news_driver format when key_issues given."""
+        draft = {"scenario_draft": []}
+        prompt = prompt_scenario_refine(
+            "삼성전자", "상장", "금리 인상 관련 뉴스", draft, "dcf_primary",
+        )
+        assert "news_issues" in prompt
+        assert "active_drivers" in prompt
+
+    def test_refine_prompt_has_driver_ranges(self):
+        """Pass 2 prompt includes driver range table."""
+        draft = {"scenario_draft": []}
+        prompt = prompt_scenario_refine(
+            "삼성전자", "상장", "", draft, "dcf_primary",
+        )
+        assert "driver_ranges" in prompt
+        assert "[-50, 100]" in prompt  # growth_adj_pct range

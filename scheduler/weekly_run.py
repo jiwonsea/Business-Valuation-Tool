@@ -13,10 +13,20 @@ import calendar
 import json
 import logging
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+
+# Load .env so Task Scheduler (which doesn't inherit shell env) gets all API keys
+try:
+    from dotenv import load_dotenv
+    _env_file = Path(__file__).resolve().parent.parent / ".env"
+    if _env_file.exists():
+        load_dotenv(_env_file, override=False)
+except ImportError:
+    pass
 
 from .scoring import score_companies
 
@@ -27,11 +37,30 @@ _RESULTS_BASE = Path(
     )
 )
 
+_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+_LOG_DIR.mkdir(exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(
+            _LOG_DIR / f"weekly_{datetime.now().strftime('%Y%m%d')}.log",
+            encoding="utf-8",
+        ),
+    ],
 )
 logger = logging.getLogger(__name__)
+
+
+def _alert(phase: str, error: str) -> None:
+    """Send error alert via Gmail (best-effort)."""
+    try:
+        from .email_sender import send_error_alert
+        send_error_alert(phase, error)
+    except Exception:
+        pass
 
 
 def _week_number(dt: datetime) -> int:
@@ -48,10 +77,24 @@ def _ordinal(n: int) -> str:
 
 
 def _week_folder(dt: datetime) -> str:
-    """Folder name: '2026-03-31(Mar 5th week)'."""
+    """Folder name: '2026-03-31(Mar 5th week)' (local display)."""
     wn = _week_number(dt)
     mon = calendar.month_abbr[dt.month]
     return f"{dt.year}-{dt.month:02d}-{dt.day:02d}({mon} {_ordinal(wn)} week)"
+
+
+def _storage_folder(week_folder_name: str) -> str:
+    """Sanitize folder name for Supabase Storage keys.
+
+    Supabase Storage rejects keys containing parentheses or spaces.
+    '2026-03-31(Mar 5th week)' -> '2026-03-31_Mar-5th-week'
+    """
+    return (
+        week_folder_name
+        .replace("(", "_")
+        .replace(")", "")
+        .replace(" ", "-")
+    )
 
 
 def _week_label(dt: datetime) -> str:
@@ -124,7 +167,9 @@ def run_weekly(
             market_news = result.get("news", [])
             all_news.extend(market_news)
             if not market_news:
-                logger.warning("[%s] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요", market)
+                msg = f"[{market}] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요"
+                logger.warning(msg)
+                _alert("Discovery", msg)
             for co in result.get("companies", []):
                 co["market"] = market
                 all_companies.append(co)
@@ -147,9 +192,19 @@ def run_weekly(
     summary["scored_companies"] = scored
 
     # ── Per-market selection: top N per market ──
+    # Filter out sector/theme names (e.g. '반도체 관련주', '방위산업 관련 기업군')
+    _SECTOR_KEYWORDS = ("관련주", "관련 기업", "관련기업", "기업군", "관련 종목", "관련종목")
+
+    def _is_real_company(co: dict) -> bool:
+        name = co.get("name", "")
+        return not any(kw in name for kw in _SECTOR_KEYWORDS)
+
     targets: list[dict] = []
     for market in markets:
-        market_companies = [c for c in scored if c.get("market") == market]
+        market_companies = [
+            c for c in scored
+            if c.get("market") == market and _is_real_company(c)
+        ]
         actual = market_companies[:max_per_market]
         targets.extend(actual)
         if len(actual) < max_per_market:
@@ -182,6 +237,27 @@ def run_weekly(
     if low_quota:
         logger.warning("Insufficient quota for: %s", low_quota)
 
+    # ── Quota safety net: trim targets to fit LLM quota ──
+    # If OpenRouter is active, sum both budgets (Anthropic is the fallback).
+    # If Anthropic only, use its budget alone.
+    if os.getenv("OPENROUTER_API_KEY"):
+        # Only count Anthropic budget if the fallback key is actually configured
+        anthropic_bonus = (
+            estimate["remaining_quota"].get("anthropic", 0)
+            if os.getenv("ANTHROPIC_API_KEY") else 0
+        )
+        llm_budget = estimate["remaining_quota"].get("openrouter", 0) + anthropic_bonus
+    else:
+        llm_budget = estimate["remaining_quota"].get("anthropic", 50)
+    calls_per_company = 4  # classify + peers_batch + wacc + scenarios
+    max_affordable = max(llm_budget // calls_per_company, 1)
+    if len(targets) > max_affordable:
+        logger.warning(
+            "Trimming targets from %d to %d to fit LLM quota (%d remaining)",
+            len(targets), max_affordable, llm_budget,
+        )
+        targets = targets[:max_affordable]
+
     # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
 
@@ -196,7 +272,7 @@ def run_weekly(
         name = co.get("name", "")
         try:
             logger.info("Valuation start: %s %s", co.get("stars", ""), name)
-            analyze_result = auto_analyze(name, output_dir=str(week_dir))
+            analyze_result = auto_analyze(name, output_dir=str(week_dir), scored_data=co)
             if analyze_result:
                 return {
                     "company": name,
@@ -212,21 +288,25 @@ def run_weekly(
             return {"company": name, "market": co.get("market", ""), "status": "failed", "error": str(e)}
 
     if not targets:
-        logger.warning("No target companies for valuation.")
+        msg = "Discovery returned 0 companies — valuation skipped. Check NAVER/OpenRouter API keys and network."
+        logger.warning(msg)
+        _alert("Valuation", msg)
+    _summary_lock = threading.Lock()
     with ThreadPoolExecutor(max_workers=max(min(len(targets), 3), 1)) as pool:
         futures = {pool.submit(_run_valuation, co): co for co in targets}
         for fut in as_completed(futures):
             entry = fut.result()
-            summary["valuations"].append(entry)
-            if entry.get("status") == "failed":
-                summary["errors"].append({
-                    "phase": "valuation",
-                    "company": entry["company"],
-                    "error": entry.get("error", ""),
-                })
+            with _summary_lock:
+                summary["valuations"].append(entry)
+                if entry.get("status") == "failed":
+                    summary["errors"].append({
+                        "phase": "valuation",
+                        "company": entry["company"],
+                        "error": entry.get("error", ""),
+                    })
 
     # ── Phase 3.5: Upload Excel to Supabase Storage ──
-    _upload_excels_to_storage(summary, week_folder_name)
+    _upload_excels_to_storage(summary, _storage_folder(week_folder_name))
 
     # ── Phase 3.6: Save JSON summary for delivery agent ──
     _save_json_summary(summary, week_dir)
@@ -238,7 +318,41 @@ def run_weekly(
     except Exception as e:
         logger.warning("Email notification failed: %s", e)
 
-    # ── Phase 4: Completion ──
+    # ── Phase 6a: WordPress posting (US only, best-effort) ──
+    try:
+        from .wp_poster import post_to_wordpress
+        wp_url = post_to_wordpress(summary)
+        if wp_url:
+            summary["wp_url"] = wp_url
+    except Exception as e:
+        logger.warning("WordPress posting failed: %s", e)
+        _alert("WordPress", str(e))
+
+    # ── Phase 6b: Naver Blog posting (KR+US, best-effort) ──
+    try:
+        from .naver_poster import post_to_naver
+        naver_url = post_to_naver(summary)
+        if naver_url:
+            summary["naver_url"] = naver_url
+    except Exception as e:
+        logger.warning("Naver Blog posting failed: %s", e)
+        _alert("Naver Blog", str(e))
+
+    # ── Phase 7: YouTube video creation + upload (best-effort) ──
+    try:
+        from .video_creator import create_weekly_video
+        from .youtube_uploader import upload_to_youtube
+
+        video_path = create_weekly_video(summary, output_dir=week_dir)
+        if video_path:
+            yt_url = upload_to_youtube(video_path, summary)
+            if yt_url:
+                summary["youtube_url"] = yt_url
+    except Exception as e:
+        logger.warning("YouTube pipeline failed: %s", e)
+        _alert("YouTube", str(e))
+
+    # ── Phase 8: Completion ──
     duration = time.time() - start
     _finalize_run(run_id, summary, duration, total_news, scored)
     _print_completion(summary, duration, week_dir)

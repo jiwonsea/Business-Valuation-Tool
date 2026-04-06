@@ -77,9 +77,15 @@ def _size_score(market_cap_usd: int | None) -> int:
     return 10
 
 
+# Ticker values that mean "unknown" — should not be passed to Yahoo Finance
+_INVALID_TICKERS: frozenset[str] = frozenset({
+    "미지정", "n/a", "unknown", "없음", "미확인", "tbd", "null", "none", "-",
+})
+
+
 def _fetch_market_cap_usd(ticker: str | None, market: str) -> int | None:
     """Fetch market cap and convert to USD."""
-    if not ticker:
+    if not ticker or not ticker.strip() or ticker.strip().lower() in _INVALID_TICKERS:
         return None
     try:
         from pipeline.yahoo_finance import get_market_cap

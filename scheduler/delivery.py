@@ -7,6 +7,7 @@ This module prepares the content strings only.
 from __future__ import annotations
 
 from datetime import datetime
+from html import escape as _esc
 
 
 def build_company_gamma_text(entry: dict) -> str:
@@ -134,6 +135,73 @@ def _company_brief(entry: dict) -> str:
 """
 
 
+def _extract_cross_validation_html(summary_md: str) -> str:
+    """Extract cross-validation and key metrics from summary_md and render as HTML.
+
+    Parses the ## 교차검증 and ## 시장가격 비교 sections from format_summary() output.
+    Returns an HTML snippet safe for Gmail (no external CSS).
+    """
+    if not summary_md:
+        return ""
+
+    lines = summary_md.split("\n")
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+
+    for line in lines:
+        if line.startswith("## "):
+            current = line[3:].strip()
+            sections[current] = []
+        elif current is not None:
+            sections[current].append(line)
+
+    html_parts: list[str] = []
+
+    # WACC
+    wacc_lines = sections.get("WACC", []) or []
+    for ln in wacc_lines:
+        ln = ln.strip()
+        if ln.startswith("## WACC"):
+            html_parts.append(f'<span style="color:#555;font-size:12px;">{_esc(ln)}</span>')
+        elif ln.startswith("-"):
+            html_parts.append(f'<span style="color:#888;font-size:11px;">{_esc(ln)}</span>')
+
+    # WACC 섹션 헤더가 별도 섹션 키로 파싱되는 경우 처리
+    for key, body in sections.items():
+        if key.startswith("WACC"):
+            for ln in body:
+                ln = ln.strip()
+                if ln.startswith("-"):
+                    html_parts.append(
+                        f'<span style="color:#888;font-size:11px;">{_esc(ln)}</span><br>'
+                    )
+
+    # 시장가격 비교
+    market_lines = [ln.strip() for ln in sections.get("시장가격 비교", []) if ln.strip()]
+    if market_lines:
+        html_parts.append('<hr style="border:none;border-top:1px solid #eee;margin:4px 0">')
+        html_parts.append('<span style="font-size:11px;color:#666;font-weight:bold;">시장가격 비교</span><br>')
+        for ln in market_lines:
+            if ln.startswith("-") or ln.startswith("⚠"):
+                color = "#c62828" if "⚠" in ln else "#555"
+                html_parts.append(
+                    f'<span style="color:{color};font-size:11px;">{_esc(ln)}</span><br>'
+                )
+
+    # 교차검증
+    cv_lines = [ln.strip() for ln in sections.get("교차검증", []) if ln.strip()]
+    if cv_lines:
+        html_parts.append('<hr style="border:none;border-top:1px solid #eee;margin:4px 0">')
+        html_parts.append('<span style="font-size:11px;color:#1a237e;font-weight:bold;">교차검증</span><br>')
+        for ln in cv_lines:
+            if ln.startswith("-"):
+                html_parts.append(
+                    f'<span style="color:#333;font-size:11px;">{_esc(ln)}</span><br>'
+                )
+
+    return "\n".join(html_parts)
+
+
 def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     """Build Gmail-compatible HTML email body (Korean).
 
@@ -145,10 +213,10 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     Returns:
         HTML string with inline CSS (Gmail-safe, table-based layout).
     """
-    label = summary.get("label", "")
+    label = _esc(summary.get("label", ""))
     status = summary.get("status_summary", {})
     valuations = summary.get("valuations", [])
-    summary_gamma = gamma_urls.get("_summary", "")
+    summary_gamma = _esc(gamma_urls.get("_summary", ""))
 
     # Build company cards
     company_cards = ""
@@ -156,14 +224,14 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
         if v.get("status") != "success":
             continue
 
-        name = v.get("company", "")
-        market = v.get("market", "")
+        name = _esc(v.get("company", ""))
+        market = _esc(v.get("market", ""))
         cap = v.get("market_cap_usd")
         cap_str = f"${cap / 1_000_000_000:.1f}B" if cap and cap >= 1_000_000_000 else (
             f"${cap / 1_000_000:,.0f}M" if cap else "-"
         )
-        gamma_url = gamma_urls.get(name, "")
-        download_url = v.get("download_url", "")
+        gamma_url = _esc(gamma_urls.get(v.get("company", ""), ""))
+        download_url = _esc(v.get("download_url", ""))
 
         links = ""
         if gamma_url:
@@ -179,12 +247,14 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
                 f"📥 Excel</a>"
             )
 
+        cv_html = _extract_cross_validation_html(v.get("summary_md", ""))
         company_cards += f"""\
 <tr>
   <td style="padding:12px 16px;border-bottom:1px solid #e0e0e0;">
     <strong>{name}</strong>
     <span style="color:#666;font-size:12px;margin-left:8px;">{market} · {cap_str}</span>
     <br>
+    {f'<div style="margin:6px 0 4px;line-height:1.7;">{cv_html}</div>' if cv_html else ''}
     <span style="font-size:13px;margin-top:4px;display:inline-block;">{links}</span>
   </td>
 </tr>

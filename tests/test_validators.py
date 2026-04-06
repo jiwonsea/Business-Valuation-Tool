@@ -70,8 +70,8 @@ class TestValidatePeers:
         result, warns = validate_peers(data)
         assert any("부족" in w for w in warns)
 
-    def test_null_ev_ebitda_excluded(self):
-        """Null EV/EBITDA peers excluded."""
+    def test_null_ev_ebitda_excluded_with_warning(self):
+        """W-10: Null EV/EBITDA peers excluded with explicit warning (not silent)."""
         data = {
             "segments": {
                 "A": {
@@ -85,6 +85,20 @@ class TestValidatePeers:
         }
         result, warns = validate_peers(data, "KR")
         assert len(result["segments"]["A"]["peers"]) == 2
+        assert any("Null Co" in w and "파싱 에러" in w for w in warns)
+
+    def test_flat_null_ev_warning(self):
+        """W-10: Flat format null EV/EBITDA also warns."""
+        data = {
+            "peers": [
+                {"name": "A", "ev_ebitda": None},
+                {"name": "B", "ev_ebitda": 10.0},
+                {"name": "C", "ev_ebitda": 8.0},
+            ]
+        }
+        result, warns = validate_peers(data)
+        assert len(result["peers"]) == 2
+        assert any("파싱 에러" in w for w in warns)
 
 
 # ── WACC Validation Tests ──

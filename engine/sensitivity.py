@@ -38,12 +38,12 @@ def sensitivity_multiples(
         base_m = multiples.get(col_seg, 13.0)
         col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
-    # Pre-compute EV for non-varying segments
+    # Pre-compute EV for non-varying segments (negative EBITDA -> negative EV)
     fixed_ev = 0
     for code, alloc in base_ebitda_by_seg.items():
         if code != row_seg and code != col_seg:
             m = multiples.get(code, 0)
-            fixed_ev += round(alloc.ebitda * m) if alloc.ebitda > 0 else 0
+            fixed_ev += round(alloc.ebitda * m)
     deductions = net_debt + eco_frontier
 
     rows = []
@@ -53,9 +53,9 @@ def sensitivity_multiples(
     col_alloc = base_ebitda_by_seg.get(col_seg)
     try:
         for row_m in row_range:
-            row_ev = round(row_alloc.ebitda * row_m) if row_alloc and row_alloc.ebitda > 0 else 0
+            row_ev = round(row_alloc.ebitda * row_m) if row_alloc else 0
             for col_m in col_range:
-                col_ev = round(col_alloc.ebitda * col_m) if col_alloc and col_alloc.ebitda > 0 else 0
+                col_ev = round(col_alloc.ebitda * col_m) if col_alloc else 0
                 eq = fixed_ev + row_ev + col_ev - deductions
                 ps = per_share(eq, unit_multiplier, shares)
                 rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
@@ -106,14 +106,23 @@ def sensitivity_dcf(
     base_year: int = 2025,
     wacc_range: list[float] | None = None,
     tg_range: list[float] | None = None,
+    wacc_base: float | None = None,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: WACC x terminal growth -> DCF EV (in display unit).
 
     Optimization: FCFF projections are independent of WACC/Tg, computed once;
     only discounting (PV) + Terminal Value recalculated per (WACC, Tg) combination.
+
+    Args:
+        wacc_base: Actual WACC (%). When provided and wacc_range is None,
+            generates a dynamic range centered on WACC ± 2%p with 0.5%p steps.
     """
     if wacc_range is None:
-        wacc_range = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
+        if wacc_base is not None:
+            center = round(wacc_base * 2) / 2  # snap to nearest 0.5
+            wacc_range = [round(center + d * 0.5, 1) for d in range(-4, 5)]
+        else:
+            wacc_range = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
     if tg_range is None:
         tg_range = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
 

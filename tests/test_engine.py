@@ -128,6 +128,17 @@ class TestDDM:
         # DPS * (1.03) / (0.10 - 0.03) = 1030 / 0.07 = 14,714
         assert r.equity_per_share == 14_714
 
+    def test_ddm_narrow_spread_warning(self):
+        """W-5: ke-growth < 2%p emits warning"""
+        r = calc_ddm(dps=1000, growth=9.0, ke=10.0)
+        assert len(r.warnings) == 1
+        assert "스프레드" in r.warnings[0]
+
+    def test_ddm_wide_spread_no_warning(self):
+        """ke-growth >= 2%p: no warning"""
+        r = calc_ddm(dps=1000, growth=3.0, ke=10.0)
+        assert len(r.warnings) == 0
+
     def test_ddm_growth_equals_ke(self):
         """ke <= growth raises ValueError"""
         import pytest
@@ -198,11 +209,24 @@ class TestSOTP:
         sotp, total_ev = calc_sotp(alloc, SK_MULTIPLES)
         assert 6_300_000 < total_ev < 6_400_000
 
-    def test_negative_ebitda_zero_ev(self):
+    def test_negative_ebitda_negative_ev(self):
+        """W-8: negative EBITDA produces negative EV (restructuring/divestiture)."""
         alloc = allocate_da({"A": {"op": -100, "assets": 100}}, 50)
         sotp, ev = calc_sotp(alloc, {"A": 10.0})
-        assert sotp["A"].ev == 0
-        assert ev == 0
+        # EBITDA = -100 + 50 = -50, EV = -50 * 10 = -500
+        assert sotp["A"].ev < 0
+        assert ev < 0
+
+    def test_mixed_positive_negative_ebitda(self):
+        """W-8: mixed segments — negative EV segment reduces total."""
+        alloc = allocate_da({
+            "A": {"op": 200, "assets": 100},
+            "B": {"op": -200, "assets": 100},
+        }, 100)
+        sotp, ev = calc_sotp(alloc, {"A": 10.0, "B": 5.0})
+        assert sotp["A"].ev > 0
+        assert sotp["B"].ev < 0
+        assert ev < sotp["A"].ev  # Negative segment reduces total
 
 
 # ═══════════════════════════════════════════════════════════
@@ -258,6 +282,29 @@ class TestScenario:
         assert r.equity_value < 0
         assert r.pre_dlom < 0  # Negative equity propagates for distress scenarios
         assert r.post_dlom < 0  # DLOM not applied to negative equity
+
+    def test_cps_dividend_rate_reduces_repay(self):
+        """W-9: CPS dividend rate reduces effective compound rate."""
+        sc = ScenarioParams(
+            code="A", name="Test", prob=100, ipo="불발",
+            irr=10.0, dlom=0, shares=100_000,
+        )
+        # Without dividend: repay = 1000 * (1.10)^5 = 1610
+        r_zero = calc_scenario(sc, 10_000, 0, 0, 1_000, 5, cps_dividend_rate=0.0)
+        # With 5% dividend: effective rate = 5%, repay = 1000 * (1.05)^5 = 1276
+        r_div = calc_scenario(sc, 10_000, 0, 0, 1_000, 5, cps_dividend_rate=5.0)
+        assert r_div.cps_repay < r_zero.cps_repay
+        assert r_div.equity_value > r_zero.equity_value  # Less claim = more equity
+
+    def test_rcps_dividend_rate_reduces_repay(self):
+        """W-9: RCPS dividend rate reduces effective compound rate."""
+        sc = ScenarioParams(
+            code="A", name="Test", prob=100, ipo="불발",
+            irr=10.0, dlom=0, shares=100_000,
+        )
+        r_zero = calc_scenario(sc, 10_000, 0, 0, 0, 0, 1_000, 5, rcps_dividend_rate=0.0)
+        r_div = calc_scenario(sc, 10_000, 0, 0, 0, 0, 1_000, 5, rcps_dividend_rate=7.5)
+        assert r_div.rcps_repay < r_zero.rcps_repay
 
 
 # ═══════════════════════════════════════════════════════════
@@ -345,6 +392,27 @@ class TestSensitivity:
         evs = [r.value for r in rows]
         for i in range(len(evs) - 1):
             assert evs[i] > evs[i + 1]
+
+    def test_dcf_sensitivity_dynamic_wacc_range(self):
+        """W-4: wacc_base -> dynamic range centered on actual WACC ± 2%p."""
+        params = DCFParams(
+            ebitda_growth_rates=[0.10, 0.08, 0.06, 0.05, 0.04],
+            tax_rate=22.0, capex_to_da=1.10,
+            nwc_to_rev_delta=0.05, terminal_growth=2.5,
+        )
+        rows, wacc_r, tg_r = sensitivity_dcf(
+            627_577, SK_DA_2025, 12_191_569, params, 2025,
+            wacc_base=8.5,
+        )
+        # Center snaps to 8.5, range = 8.5 ± 2.0 with 0.5 steps = [6.5..10.5]
+        assert len(wacc_r) == 9
+        assert min(wacc_r) == 6.5
+        assert max(wacc_r) == 10.5
+        # Monotonic: higher WACC -> lower EV (for fixed tg)
+        first_tg = tg_r[0]
+        evs_first_tg = [r.value for r in rows if r.col_val == first_tg]
+        for i in range(len(evs_first_tg) - 1):
+            assert evs_first_tg[i] >= evs_first_tg[i + 1]
 
 
 # ═══════════════════════════════════════════════════════════

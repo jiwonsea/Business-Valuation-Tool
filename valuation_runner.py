@@ -309,7 +309,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             sc_ev = round(sc_ev * (1 + sentiment / 100))
         r = calc_scenario(sc, sc_ev, effective_net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -358,6 +359,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     sens_dcf_rows, _, _ = sensitivity_dcf(
         ebitda_base, dcf_da_base, dcf_revenue,
         vi.dcf_params, vi.base_year,
+        wacc_base=wacc_result.wacc,
     )
 
     # Multiple cross-validation -- apply effective_net_debt
@@ -465,7 +467,8 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -473,6 +476,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     sens_dcf_rows, _, _ = sensitivity_dcf(
         ebitda_base, total_da_base, cons["revenue"],
         vi.dcf_params, vi.base_year,
+        wacc_base=wacc_result.wacc,
     )
 
     # SOTP cross-validation (calculate SOTP if multi-segment)
@@ -546,7 +550,8 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -668,7 +673,8 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -772,7 +778,8 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -859,7 +866,8 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um)
+                          vi.rcps_principal, vi.rcps_years, um,
+                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
         scenario_results[code] = r
         total_weighted += r.weighted
 

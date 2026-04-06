@@ -3,7 +3,7 @@
 Total Payout DDM: supports valuation based on total shareholder return including buybacks.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -15,6 +15,7 @@ class DDMResult:
     growth: float  # Growth rate (%)
     ke: float  # Cost of equity (%)
     equity_per_share: int  # Intrinsic value per share
+    warnings: list[str] = field(default_factory=list)  # Valuation warnings
 
 
 def calc_ddm(
@@ -51,6 +52,15 @@ def calc_ddm(
 
     total_payout = dps + buyback_per_share
     value = total_payout * (1 + g) / (k - g)
+
+    warnings: list[str] = []
+    spread = ke - growth
+    if spread < 2.0:
+        warnings.append(
+            f"Ke-growth 스프레드 {spread:.1f}%p < 2%p: "
+            f"밸류에이션이 입력값에 극도로 민감합니다 (Ke={ke}%, g={growth}%)"
+        )
+
     return DDMResult(
         dps=dps,
         buyback_per_share=buyback_per_share,
@@ -58,4 +68,5 @@ def calc_ddm(
         growth=growth,
         ke=ke,
         equity_per_share=round(value),
+        warnings=warnings,
     )

@@ -55,24 +55,27 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
     # Handle flat peer list format
     if "peers" in data and isinstance(data["peers"], list):
         cleaned_peers = []
-        excluded = []
+        total_input = len(data["peers"])
         for peer in data["peers"]:
             ev = peer.get("ev_ebitda", 0)
             name = peer.get("name", "unknown")
             if ev is None:
-                excluded.append(name)
+                warnings.append(f"Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
                 continue
             if ev < 0:
-                excluded.append(name)
                 warnings.append(f"Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x, 적자 기업)")
                 continue
             if ev < 0.5 or ev > 50:
-                excluded.append(name)
                 warnings.append(f"Peer '{name}' 제외: EV/EBITDA 범위 이탈 ({ev:.1f}x)")
                 continue
             cleaned_peers.append(peer)
         data["peers"] = cleaned_peers
 
+        excluded_count = total_input - len(cleaned_peers)
+        if excluded_count > 0:
+            logger.warning(
+                "Peer 파싱 집계: %d/%d개 제외됨", excluded_count, total_input,
+            )
         if len(cleaned_peers) < 2:
             warnings.append(f"유효 Peer 수 부족 ({len(cleaned_peers)}개, 최소 2개 권장)")
 
@@ -82,11 +85,15 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
             if "peers" not in seg_data or not isinstance(seg_data["peers"], list):
                 continue
             cleaned = []
+            seg_total = len(seg_data["peers"])
             for peer in seg_data["peers"]:
                 ev = peer.get("ev_ebitda", 0)
                 name = peer.get("name", "unknown")
-                if ev is None or ev < 0:
-                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: 음수/null EV/EBITDA")
+                if ev is None:
+                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
+                    continue
+                if ev < 0:
+                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x)")
                     continue
                 if ev < 0.5 or ev > 50:
                     warnings.append(f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA {ev:.1f}x 범위 이탈")
@@ -94,6 +101,11 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
                 cleaned.append(peer)
             seg_data["peers"] = cleaned
 
+            seg_excluded = seg_total - len(cleaned)
+            if seg_excluded > 0:
+                logger.warning(
+                    "[%s] Peer 파싱 집계: %d/%d개 제외됨", seg_code, seg_excluded, seg_total,
+                )
             if len(cleaned) < 2:
                 warnings.append(f"[{seg_code}] 유효 Peer 수 부족 ({len(cleaned)}개)")
 

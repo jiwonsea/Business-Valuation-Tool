@@ -56,6 +56,7 @@ def save_prediction_snapshot(
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
         "scenario_values": scenario_values,
+        "market_signals_version": 1 if getattr(vi, "market_signals", None) is not None else 0,
     }
 
     try:

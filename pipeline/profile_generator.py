@@ -597,6 +597,25 @@ def auto_analyze(
     except Exception as e:
         print(f"  [WARN] 뉴스 수집 실패: {e}. 범용 시나리오로 진행합니다.")
 
+    # Fetch market signals for scenario calibration (Phase 4)
+    market_signals = None
+    try:
+        from pipeline.market_signals import fetch_market_signals
+        print("[Signals] 시장 데이터 수집 중...")
+        market_signals = fetch_market_signals(
+            ticker=getattr(identity, "ticker", None),
+            market=getattr(identity, "market", "KR"),
+            company_name=identity.name,
+            news=news if news else None,
+        )
+        if market_signals and market_signals.has_any():
+            print(f"  → 시장 신호 수집 완료")
+        else:
+            print(f"  → 시장 신호 없음 (프롬프트 보강 없이 진행)")
+            market_signals = None
+    except Exception as e:
+        print(f"  [WARN] 시장 신호 수집 실패: {e}. 기존 방식으로 진행합니다.")
+
     # AI Step 5b: Scenario design (news-based key_issues + multi-driver)
     print("[AI 6/6] 시나리오 설계 중...")
     legal = identity.legal_status
@@ -623,6 +642,7 @@ def auto_analyze(
         sc_result = analyst.design_scenarios(
             identity.name, legal, key_issues, valuation_method=val_method,
             industry=_industry, ev_rev_multiple=_ev_rev, currency_unit=_currency,
+            signals=market_signals,
         )
         ai_scenarios = sc_result.get("scenarios", [])
         opt_segs = sc_result.get("optionality_segments", [])

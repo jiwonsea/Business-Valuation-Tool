@@ -143,4 +143,49 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
         lines.append(f"⚠ Systematic Bias: Log ratio {log_ratio:+.2f} → {pct:.0f}% 체계적 {direction} 경향")
         report["systematic_bias"] = {"log_ratio": log_ratio, "direction": direction}
 
+    # ── Phase 4 A/B Comparison (signals v0 vs v1) ──
+    ab = calc_ab_comparison(listed)
+    if ab:
+        report["ab_comparison"] = ab
+        lines.append("")
+        lines.append("Phase 4 A/B Comparison (Market Signals):")
+        for key in ("v0", "v1"):
+            grp = ab.get(key, {})
+            if grp.get("n", 0) == 0:
+                continue
+            label = "Baseline (v0)" if key == "v0" else "Signals (v1)"
+            mape_str = f"{grp['mape_t6m']:.0%}" if grp.get("mape_t6m") is not None else "--"
+            gc_str = f"{grp['gap_closure_t6m']:.2f}" if grp.get("gap_closure_t6m") is not None else "--"
+            cov_str = f"{grp['coverage_t6m']:.0%}" if grp.get("coverage_t6m") is not None else "--"
+            lines.append(f"  {label:<18} │ N={grp['n']:>3} │ MAPE={mape_str:>5} │ GapClosure={gc_str:>5} │ Coverage={cov_str:>5}")
+
     return "\n".join(lines), report
+
+
+def calc_ab_comparison(records: list[BacktestRecord]) -> dict | None:
+    """Compare calibration metrics between v0 (no signals) and v1 (with signals).
+
+    Returns None if either group has insufficient data (< 3 records).
+    """
+    v0 = [r for r in records if getattr(r, "market_signals_version", 0) == 0]
+    v1 = [r for r in records if getattr(r, "market_signals_version", 0) >= 1]
+
+    if len(v0) < 3 and len(v1) < 3:
+        return None
+
+    result = {}
+    for key, group in [("v0", v0), ("v1", v1)]:
+        if not group:
+            result[key] = {"n": 0}
+            continue
+        err = calc_forecast_price_error(group, "t6m")
+        gc = calc_gap_closure(group, "t6m")
+        iv = calc_interval_score(group, "t6m")
+        result[key] = {
+            "n": len(group),
+            "mape_t6m": err.get("mape"),
+            "gap_closure_t6m": gc.get("mean_closure"),
+            "coverage_t6m": iv.get("coverage_rate"),
+        }
+
+    return result

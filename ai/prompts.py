@@ -1,5 +1,12 @@
 """Structured LLM prompts for valuation analysis."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from schemas.models import MarketSignals
+
 SYSTEM_ANALYST = """\
 <role>
 Expert analyst specializing in KR/US company valuations.
@@ -332,6 +339,7 @@ def prompt_scenario_design(
     valuation_method: str = "dcf_primary",
     include_optionality: bool = False,
     currency_unit: str = "$M",
+    signals: MarketSignals | None = None,
 ) -> str:
     """Scenario design prompt.
 
@@ -342,6 +350,7 @@ def prompt_scenario_design(
     driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
     driver_table = _driver_range_table(drivers_info)
+    signals_block = _format_market_signals(signals)
 
     if key_issues.strip():
         sanitized_issues = _sanitize_news(key_issues)
@@ -353,7 +362,7 @@ def prompt_scenario_design(
 Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
-
+{signals_block}
 <driver_ranges>
 {driver_table}
 All driver values MUST stay within these ranges. Values outside will be rejected.
@@ -432,7 +441,7 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
 Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
-
+{signals_block}
 <driver_ranges>
 {driver_table}
 All driver values MUST stay within these ranges. Values outside will be rejected.
@@ -478,12 +487,92 @@ Each scenario MUST include a "description" field (2-3 sentences) explaining the 
 </output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
 
 
+# ── Market Signals Formatter (Phase 4) ──
+
+def _format_market_signals(signals: MarketSignals | None) -> str:
+    """Render MarketSignals into an XML block for prompt injection.
+
+    Returns empty string if signals is None or has no data.
+    """
+    if signals is None or not signals.has_any():
+        return ""
+
+    lines = []
+
+    # Macro
+    macro_parts = []
+    if signals.fed_funds_rate is not None:
+        macro_parts.append(f"Fed Funds: {signals.fed_funds_rate:.2f}%")
+    if signals.us_10y_yield is not None:
+        macro_parts.append(f"10Y Treasury: {signals.us_10y_yield:.2f}%")
+    if signals.breakeven_inflation is not None:
+        macro_parts.append(f"Breakeven Inflation: {signals.breakeven_inflation:.2f}%")
+    if signals.credit_spread_baa is not None:
+        macro_parts.append(f"BAA Credit Spread: {signals.credit_spread_baa:.2f}%")
+    if signals.vix is not None:
+        macro_parts.append(f"VIX: {signals.vix:.1f}")
+    if macro_parts:
+        ts = signals.fetched_at[:10] if signals.fetched_at else "N/A"
+        lines.append(f"MACRO (source: FRED, as of {ts}):")
+        lines.append("  " + " | ".join(macro_parts))
+
+    # Analyst Consensus
+    if signals.target_mean is not None:
+        analyst_parts = [f"Target: {signals.target_mean:.1f}"]
+        if signals.target_low is not None and signals.target_high is not None:
+            analyst_parts.append(f"(range: {signals.target_low:.1f}-{signals.target_high:.1f})")
+        if signals.recommendation:
+            analyst_parts.append(signals.recommendation.capitalize())
+        n_str = f"N={signals.analyst_count}" if signals.analyst_count else "N=?"
+        lines.append(f"ANALYST CONSENSUS ({n_str}):")
+        lines.append("  " + " ".join(analyst_parts))
+
+    # Sentiment
+    if signals.news_sentiment_score is not None:
+        n = signals.sentiment_article_count or 0
+        lines.append(f"NEWS SENTIMENT (FinBERT, {n}건):")
+        lines.append(f"  Score: {signals.news_sentiment_score:+.2f} ({signals.sentiment_label or 'N/A'})")
+
+    # Options IV
+    if signals.iv_30d_atm is not None:
+        iv_parts = [f"IV: {signals.iv_30d_atm:.1f}%"]
+        if signals.iv_percentile is not None:
+            iv_parts.append(f"(percentile: {signals.iv_percentile:.0f}th vs 1Y)")
+        if signals.put_call_ratio is not None:
+            iv_parts.append(f"P/C Ratio: {signals.put_call_ratio:.2f}")
+        lines.append("OPTIONS MARKET (30-day ATM):")
+        lines.append("  " + " | ".join(iv_parts))
+
+    # Calibration guidance
+    guidance = []
+    if signals.fed_funds_rate is not None or signals.us_10y_yield is not None:
+        guidance.append("- wacc_adj should reflect current rate environment relative to long-term average")
+    if signals.vix is not None and signals.vix > 25:
+        guidance.append("- VIX is elevated — widen scenario spread (Bull-Bear gap should be larger)")
+    if signals.target_mean is not None:
+        guidance.append("- Weighted value should be within reasonable distance of analyst consensus target")
+    if signals.news_sentiment_score is not None:
+        if signals.news_sentiment_score > 0.3:
+            guidance.append("- News sentiment is positive — Bull scenario probability may be warranted higher")
+        elif signals.news_sentiment_score < -0.3:
+            guidance.append("- News sentiment is negative — Bear scenario probability may be warranted higher")
+    if guidance:
+        lines.append("CALIBRATION GUIDANCE:")
+        lines.extend(guidance)
+
+    if not lines:
+        return ""
+
+    return "\n<market_signals>\n" + "\n".join(lines) + "\n</market_signals>\n"
+
+
 def prompt_scenario_classify(
     company_name: str,
     legal_status: str,
     key_issues: str,
     valuation_method: str = "dcf_primary",
     currency_unit: str = "$M",
+    signals: MarketSignals | None = None,
 ) -> str:
     """Pass 1 (Haiku): Lightweight scenario classification draft.
 
@@ -502,13 +591,15 @@ def prompt_scenario_classify(
 </news_issues>
 """
 
+    signals_block = _format_market_signals(signals)
+
     return f"""\
 <company>{company_name}</company>
 <context>
 Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
-{news_block}
+{signals_block}{news_block}
 Classify 2-4 valuation scenarios for this company.
 This is a CLASSIFICATION step only — provide directional guidance, not precise values.
 
@@ -561,6 +652,7 @@ def prompt_scenario_refine(
     valuation_method: str = "dcf_primary",
     include_optionality: bool = False,
     currency_unit: str = "$M",
+    signals: MarketSignals | None = None,
 ) -> str:
     """Pass 2 (Sonnet): Refine a scenario classification draft into a full design.
 
@@ -600,13 +692,15 @@ def prompt_scenario_refine(
         news_driver_format = ""
         scenario_driver_key = f'"drivers": {{{driver_json}}},\n            "driver_rationale": {{{rationale_json}}}'
 
+    signals_block = _format_market_signals(signals)
+
     return f"""\
 <company>{company_name}</company>
 <context>
 Listed status: {legal_status}
 Valuation method: {valuation_method}
 </context>
-
+{signals_block}
 <driver_ranges>
 {driver_table}
 All driver values MUST stay within these ranges. Values outside will be rejected.

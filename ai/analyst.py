@@ -274,6 +274,7 @@ class AIAnalyst:
         ev_rev_multiple: float = 0.0,
         currency_unit: str = "$M",
         two_pass: bool = False,
+        signals=None,
     ) -> dict:
         """Step 5: Scenario design (multi-driver) with optional optionality segment detection.
 
@@ -284,11 +285,12 @@ class AIAnalyst:
         Args:
             two_pass: If True, uses Haiku for classification draft (Pass 1) then
                 Sonnet for precision refinement (Pass 2). Logs token cost comparison.
+            signals: MarketSignals for prompt context injection (Phase 4).
         """
         if two_pass:
             return self._design_scenarios_two_pass(
                 company_name, legal_status, key_issues, valuation_method,
-                industry, ev_rev_multiple, currency_unit,
+                industry, ev_rev_multiple, currency_unit, signals=signals,
             )
 
         include_opt = _has_optionality_trigger(company_name, industry, key_issues, ev_rev_multiple)
@@ -305,6 +307,7 @@ class AIAnalyst:
             lambda: prompt_scenario_design(
                 company_name, legal_status, key_issues, valuation_method,
                 include_optionality=include_opt, currency_unit=currency_unit,
+                signals=signals,
             ),
             system=system, max_tokens=4096, extra=extra, model=MODEL_HEAVY,
         )
@@ -317,6 +320,15 @@ class AIAnalyst:
             result = validated
         for w in warnings:
             logger.warning("[scenarios] %s: %s", company_name, w)
+
+        # Signal-aware validation (advisory warnings only)
+        if signals is not None:
+            from ai.validators import validate_scenarios_with_signals
+            sc_list = validated if isinstance(validated, list) else list(validated.values()) if isinstance(validated, dict) else []
+            sig_warnings = validate_scenarios_with_signals(sc_list, signals)
+            for w in sig_warnings:
+                logger.warning("[scenarios:signals] %s: %s", company_name, w)
+
         return result
 
     def _design_scenarios_two_pass(
@@ -328,6 +340,7 @@ class AIAnalyst:
         industry: str,
         ev_rev_multiple: float,
         currency_unit: str,
+        signals=None,
     ) -> dict:
         """Two-pass scenario design: Haiku classification → Sonnet refinement.
 
@@ -350,6 +363,7 @@ class AIAnalyst:
             company_name, "scenarios_draft",
             lambda: prompt_scenario_classify(
                 company_name, legal_status, key_issues, valuation_method, currency_unit,
+                signals=signals,
             ),
             system=system_p1, max_tokens=2048, extra=pass1_extra, model=MODEL_LIGHT,
         )
@@ -373,6 +387,7 @@ class AIAnalyst:
             lambda: prompt_scenario_refine(
                 company_name, legal_status, key_issues, draft,
                 valuation_method, include_optionality=include_opt, currency_unit=currency_unit,
+                signals=signals,
             ),
             system=system_p2, max_tokens=4096, extra=pass2_extra, model=MODEL_HEAVY,
         )
@@ -387,6 +402,14 @@ class AIAnalyst:
             result = validated
         for w in warnings:
             logger.warning("[scenarios:2pass] %s: %s", company_name, w)
+
+        # Signal-aware validation (advisory warnings only)
+        if signals is not None:
+            from ai.validators import validate_scenarios_with_signals
+            sc_list = validated if isinstance(validated, list) else list(validated.values()) if isinstance(validated, dict) else []
+            sig_warnings = validate_scenarios_with_signals(sc_list, signals)
+            for w in sig_warnings:
+                logger.warning("[scenarios:2pass:signals] %s: %s", company_name, w)
 
         # Tag output as two-pass for downstream tracing
         if isinstance(result, dict):

@@ -49,6 +49,10 @@ class BacktestRecord(BaseModel):
     # Scenario snapshots
     scenarios: list[ScenarioSnapshot] = []
 
+    # Phase 4: Market signals version for A/B comparison
+    # 0 = pre-Phase 4 (no signals), 1 = Phase 4 (with market signals)
+    market_signals_version: int = 0
+
     @property
     def predicted_value_native(self) -> float:
         """Convert predicted_value to native currency (comparable to market price)."""

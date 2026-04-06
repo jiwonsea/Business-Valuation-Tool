@@ -24,6 +24,7 @@ publish = [
     "google-auth-oauthlib>=1.2,<2",
     "selenium>=4.20,<5",
 ]
+sentiment = ["transformers>=4.40,<5", "torch>=2.0,<3"]
 dev = ["pytest>=8.0,<9", "ruff>=0.4,<1"]
 
 [tool.setuptools]

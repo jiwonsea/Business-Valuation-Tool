@@ -170,6 +170,7 @@ def build_backtest_dataset(min_age_days: int = 90) -> list[BacktestRecord]:
                 price_t6m=outcome.get("price_t6m"),
                 price_t12m=outcome.get("price_t12m"),
                 scenarios=scenarios,
+                market_signals_version=snap.get("market_signals_version", 0),
             )
             records.append(record)
 

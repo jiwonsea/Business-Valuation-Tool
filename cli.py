@@ -158,6 +158,8 @@ def main():
                        help="뉴스 기반 기업 추천 (AI Discovery 모드)")
     group.add_argument("--weekly", "-w", action="store_true",
                        help="주간 자동 뉴스 수집 + 밸류에이션")
+    group.add_argument("--backtest", action="store_true",
+                       help="캘리브레이션 백테스트 리포트")
     parser.add_argument("--auto", action="store_true", help="AI 자동 분석 (--company와 함께 사용)")
     parser.add_argument("--excel", action="store_true", help="Excel 내보내기")
     parser.add_argument("--output-dir", "-o", default=None, help="Excel 출력 디렉토리")
@@ -171,7 +173,18 @@ def main():
                         help="(deprecated: use --max-per-market)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Weekly mode: discovery only, skip valuation")
+    parser.add_argument("--backtest-min-age", type=int, default=90,
+                        help="Backtest: 최소 밸류에이션 경과일 (기본: 90)")
     args = parser.parse_args()
+
+    # Backtest mode
+    if args.backtest:
+        from backtest.dataset import build_backtest_dataset
+        from backtest.report import generate_report
+        records = build_backtest_dataset(min_age_days=args.backtest_min_age)
+        text, _ = generate_report(records)
+        print(text)
+        return
 
     # Discovery mode
     if args.discover:

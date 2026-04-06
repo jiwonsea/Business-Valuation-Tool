@@ -30,6 +30,13 @@ def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str |
                 profile_data=vi.model_dump(mode="json"),
                 file_name=Path(profile_path).name,
             )
+        # Capture prediction snapshot for backtesting
+        if val_id:
+            try:
+                from db.backtest_repository import save_prediction_snapshot
+                save_prediction_snapshot(vi, result, val_id)
+            except Exception:
+                logger.debug("Prediction snapshot save skipped")
         return val_id
     except Exception:
         logger.debug("DB save skipped (Supabase not configured or unavailable)")

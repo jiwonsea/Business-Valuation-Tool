@@ -76,7 +76,14 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             print(f"  (+) 금융 Equity:   {eq_part:>14,}{unit}")
             print(f"  Total Equity:      {ev_part - eff_nd + eq_part:>14,}{unit}")
         else:
-            print(f"\n[SOTP EV] {sotp_ev:>14,}{unit}")
+            # Check if any optionality segments are present (ev=0 in base, value in scenarios)
+            opt_codes = [c for c, info in vi.segments.items() if info.get("optionality")]
+            has_opt = bool(opt_codes)
+            label = "SOTP EV (기본 운영 세그먼트)" if has_opt else "SOTP EV"
+            print(f"\n[{label}] {sotp_ev:>14,}{unit}")
+            if has_opt:
+                print(f"  ※ 옵셔널리티 세그먼트({', '.join(seg_names.get(c,c) for c in opt_codes)})는 "
+                      f"시나리오별 가중치에 반영됨 (기본 SOTP 제외)")
 
     # Scenarios
     if result.scenarios:
@@ -133,6 +140,11 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         if mc.flag:
             print(f"  ⚠ {mc.flag}")
 
+    # Reverse-DCF gap diagnostic
+    if result.gap_diagnostic:
+        from engine.gap_diagnostics import format_gap_diagnostic
+        print(format_gap_diagnostic(result.gap_diagnostic, is_listed=True))
+
     # Monte Carlo
     if result.monte_carlo:
         mc = result.monte_carlo
@@ -176,3 +188,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     print("\n" + "=" * 60)
     print(f"완료! [{result.primary_method.upper()}] 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")
     print("=" * 60)
+
+    # Quality score
+    if result.quality:
+        from engine.quality import format_quality_report
+        is_listed = vi.company.legal_status in ("상장", "listed")
+        print(f"\n{format_quality_report(result.quality, is_listed)}")

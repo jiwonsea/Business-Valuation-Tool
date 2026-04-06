@@ -1,7 +1,6 @@
 """Valuation execution engine -- YAML loading + method-specific dispatch."""
 
 from datetime import date
-from pathlib import Path
 
 import yaml
 
@@ -24,11 +23,11 @@ from engine.sensitivity import (
     sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf,
     sensitivity_ddm, sensitivity_rim, sensitivity_nav, sensitivity_multiple_range,
 )
-from engine.multiples import cross_validate, calc_ev_revenue, calc_pe, calc_pbv
+from engine.multiples import cross_validate, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
 from engine.nav import calc_nav
 from engine.units import detect_unit, per_share
-from engine.method_selector import suggest_method
+from engine.method_selector import suggest_method, is_financial
 
 
 def _seg_names(vi: ValuationInput) -> dict[str, str]:
@@ -36,15 +35,24 @@ def _seg_names(vi: ValuationInput) -> dict[str, str]:
     return {code: info["name"] for code, info in vi.segments.items()}
 
 
-def _adjust_wacc(base: WACCResult, wacc_adj: float) -> WACCResult:
-    """Per-scenario WACC adjustment. wacc_adj is in %p (e.g., +0.5 -> WACC + 0.5%p)."""
+def _adjust_wacc(base: WACCResult, wacc_adj: float, eq_w: float = 100.0) -> WACCResult:
+    """Per-scenario WACC adjustment. wacc_adj shifts Ke; WACC is recomputed from components.
+
+    Args:
+        base: Base WACC result
+        wacc_adj: Ke shift in %p (e.g., +0.5 -> Ke + 0.5%p)
+        eq_w: Equity weight (%) from WACCParams -- needed to recompute WACC correctly
+    """
     if wacc_adj == 0:
         return base
+    new_ke = round(base.ke + wacc_adj, 4)
+    dw = 100 - eq_w
+    new_wacc = round(new_ke * eq_w / 100 + base.kd_at * dw / 100, 4)
     return WACCResult(
         bl=base.bl,
-        ke=round(base.ke + wacc_adj, 4),
+        ke=new_ke,
         kd_at=base.kd_at,
-        wacc=round(base.wacc + wacc_adj, 4),
+        wacc=new_wacc,
     )
 
 
@@ -120,6 +128,15 @@ def load_profile(path: str) -> ValuationInput:
         except (ValueError, Exception):
             pass
 
+    # News drivers (multi-variable scenario approach)
+    news_drivers = []
+    for nd_raw in raw.get("news_drivers", []):
+        try:
+            news_drivers.append(NewsDriver(**nd_raw))
+        except (ValueError, Exception):
+            pass
+    news_key_issues = raw.get("news_key_issues")
+
     # Auto-detect unit_multiplier (when not specified in YAML)
     if "unit_multiplier" not in raw.get("company", {}):
         latest_yr = max(consolidated.keys())
@@ -144,6 +161,10 @@ def load_profile(path: str) -> ValuationInput:
         nav_params=nav_params,
         cps_principal=raw.get("cps_principal", 0),
         cps_years=raw.get("cps_years", 0),
+        cps_dividend_rate=raw.get("cps_dividend_rate", 0.0),
+        rcps_principal=raw.get("rcps_principal", 0),
+        rcps_years=raw.get("rcps_years", 0),
+        rcps_dividend_rate=raw.get("rcps_dividend_rate", 0.0),
         net_debt=raw.get("net_debt", 0),
         segment_net_debt=raw.get("segment_net_debt", {}),
         eco_frontier=raw.get("eco_frontier", 0),
@@ -160,15 +181,15 @@ def load_profile(path: str) -> ValuationInput:
         mc_multiple_std_pct=raw.get("mc_multiple_std_pct", 15.0),
         mc_dlom_mean=raw.get("mc_dlom_mean", 0.0),
         mc_dlom_std=raw.get("mc_dlom_std", 5.0),
+        news_drivers=news_drivers,
+        news_key_issues=news_key_issues,
     )
 
 
 def run_valuation(vi: ValuationInput) -> ValuationResult:
     """Execute full valuation pipeline -- dispatch by methodology."""
     # Auto-detect financial sector -> skip Hamada
-    from engine.method_selector import _FINANCIAL_KEYWORDS
-    industry_lower = vi.industry.lower()
-    if any(kw in industry_lower for kw in _FINANCIAL_KEYWORDS):
+    if is_financial(vi.industry):
         vi.wacc_params.is_financial = True
 
     # Common: WACC (needed before method selection -- Ke used for DDM/RIM decision)
@@ -185,6 +206,7 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
         net_income = cons.get("net_income", 0)
         roe = (net_income / equity_bv * 100) if equity_bv > 0 else 0.0
 
+        seg_names = [info["name"] for info in vi.segments.values()]
         method = suggest_method(
             n_segments=len(vi.segments),
             legal_status=vi.company.legal_status,
@@ -194,22 +216,25 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
             ke=wacc_result.ke,
             has_ddm_params=vi.ddm_params is not None,
             has_rim_params=vi.rim_params is not None,
+            segment_names=seg_names,
         )
 
-    if method == "sotp":
-        return _run_sotp_valuation(vi, wacc_result, um)
-    elif method == "ddm":
-        return _run_ddm_valuation(vi, wacc_result, um)
-    elif method == "rim":
-        return _run_rim_valuation(vi, wacc_result, um)
-    elif method == "nav":
-        return _run_nav_valuation(vi, wacc_result, um)
-    elif method == "multiples":
-        return _run_multiples_valuation(vi, wacc_result, um)
-    elif method == "dcf_primary":
-        return _run_dcf_valuation(vi, wacc_result, um)
-    else:
-        return _run_dcf_valuation(vi, wacc_result, um)
+    dispatch = {
+        "sotp": _run_sotp_valuation,
+        "ddm": _run_ddm_valuation,
+        "rim": _run_rim_valuation,
+        "nav": _run_nav_valuation,
+        "multiples": _run_multiples_valuation,
+        "dcf_primary": _run_dcf_valuation,
+    }
+    runner = dispatch.get(method, _run_dcf_valuation)
+    result = runner(vi, wacc_result, um)
+
+    # Quality scoring (pure function, zero IO)
+    from engine.quality import calc_quality_score
+    result.quality = calc_quality_score(vi, result)
+
+    return result
 
 
 def _calc_effective_net_debt(vi: ValuationInput) -> int:
@@ -261,17 +286,30 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         segments_info=vi.segments if is_mixed else None,
     )
 
-    # Scenarios -- apply market_sentiment_pct (SOTP does not apply DCF drivers)
+    # Scenarios -- apply per-scenario SOTP overrides + market_sentiment_pct
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
-        sc_ev = total_ev
+
+        # Per-scenario SOTP: recalculate if segment_ebitda or segment_multiples are set
+        if sc.segment_ebitda or sc.segment_multiples:
+            _, sc_ev = calc_sotp(
+                base_alloc,
+                vi.multiples,
+                segments_info=vi.segments if is_mixed else None,
+                ebitda_override=sc.segment_ebitda,
+                multiple_override=sc.segment_multiples,
+            )
+        else:
+            sc_ev = total_ev
+
         sentiment = getattr(sc, "market_sentiment_pct", 0.0)
         if sentiment != 0:
             sc_ev = round(sc_ev * (1 + sentiment / 100))
         r = calc_scenario(sc, sc_ev, effective_net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -363,8 +401,8 @@ def _make_scenario_dcf_params(
         return None
     adjusted_rates = [g * (1 + sc.growth_adj_pct / 100) for g in base.ebitda_growth_rates]
     adjusted_tg = base.terminal_growth + sc.terminal_growth_adj
-    # Safety: prevent TGR >= WACC (Gordon Growth Model precondition)
-    adjusted_tg = min(adjusted_tg, wacc - 0.5)
+    # Safety: floor at 0% (negative TGR implies perpetual shrinkage), cap below WACC
+    adjusted_tg = max(0.0, min(adjusted_tg, wacc - 0.5))
     return DCFParams(
         ebitda_growth_rates=adjusted_rates,
         tax_rate=base.tax_rate,
@@ -374,6 +412,8 @@ def _make_scenario_dcf_params(
         actual_capex=base.actual_capex,
         actual_nwc=base.actual_nwc,
         prior_nwc=base.prior_nwc,
+        da_to_ebitda_override=base.da_to_ebitda_override,
+        terminal_ev_ebitda=base.terminal_ev_ebitda,
     )
 
 
@@ -400,7 +440,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc_ev = total_ev  # Default: base DCF EV
 
         # Per-scenario WACC adjustment
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         effective_wacc = sc_wacc.wacc
 
         # Per-scenario DCF driver adjustment
@@ -424,7 +464,8 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
 
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -496,7 +537,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_growth = sc.ddm_growth if sc.ddm_growth is not None else base_growth
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         sc_ke = sc_wacc.ke
         sc_ddm = calc_ddm_engine(
             vi.ddm_params.dps, sc_growth, sc_ke,
@@ -504,7 +545,8 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         )
         sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -608,7 +650,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj)
+        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         sc_ke = sc_wacc.ke
         needs_recalc = (sc.rim_roe_adj != 0) or (sc.wacc_adj != 0)
         if needs_recalc:
@@ -625,7 +667,8 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         elif sc.market_sentiment_pct != 0:
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -728,7 +771,8 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
         elif sc.market_sentiment_pct != 0:
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -814,7 +858,8 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         elif sc.market_sentiment_pct != 0:
             sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years, um)
+                          vi.cps_principal, vi.cps_years,
+                          vi.rcps_principal, vi.rcps_years, um)
         scenario_results[code] = r
         total_weighted += r.weighted
 

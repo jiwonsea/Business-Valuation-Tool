@@ -84,7 +84,69 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
             flag=mc.flag,
         )
 
+        # ── Reverse-DCF gap diagnostics (|gap| >= 20%) ──
+        _attach_gap_diagnostic(vi, result)
+
     return result
+
+
+def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
+    """Compute and attach GapDiagnostic when market-intrinsic gap exceeds threshold.
+
+    Requires: result.market_comparison already set, DCF-based primary method.
+    No-op for non-DCF methods (SOTP with only peer multiples, DDM, RIM).
+    """
+    from engine.gap_diagnostics import diagnose_gap, GAP_THRESHOLD
+
+    mc = result.market_comparison
+    if mc is None or mc.market_price <= 0:
+        return
+    if abs(mc.gap_ratio) < GAP_THRESHOLD:
+        return
+
+    # Need EBITDA base data for reverse DCF
+    by = vi.base_year
+    cons = vi.consolidated.get(by, {})
+    da_base = cons.get("dep", 0) + cons.get("amort", 0)
+    ebitda_base = cons.get("op", 0) + da_base
+    revenue_base = cons.get("revenue", 0)
+
+    if ebitda_base <= 0:
+        return
+
+    # Market EV = market cap + net debt (display units)
+    shares = vi.company.shares_outstanding
+    net_debt = vi.net_debt
+    market_cap_display = mc.market_price * shares / vi.company.unit_multiplier
+    market_ev = market_cap_display + max(net_debt, 0)
+
+    try:
+        diag = diagnose_gap(
+            gap_ratio=mc.gap_ratio,
+            market_price=mc.market_price,
+            intrinsic_per_share=mc.intrinsic_value,
+            market_ev=market_ev,
+            ebitda_base=int(ebitda_base),
+            da_base=int(da_base),
+            revenue_base=int(revenue_base),
+            wacc_pct=result.wacc.wacc,
+            params=vi.dcf_params,
+        )
+        if diag:
+            from schemas.models import GapDiagnostic as _GD
+            result.gap_diagnostic = _GD(
+                gap_pct=diag.gap_pct,
+                direction=diag.direction,
+                implied_wacc=diag.implied_wacc,
+                implied_tgr=diag.implied_tgr,
+                implied_growth_mult=diag.implied_growth_mult,
+                category=diag.category,
+                explanation=diag.explanation,
+                suggestions=diag.suggestions,
+                reconcilable=diag.reconcilable,
+            )
+    except Exception as e:
+        logger.debug("Gap diagnostics failed: %s", e)
 
 
 def main():

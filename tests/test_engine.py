@@ -42,6 +42,8 @@ SK_NET_DEBT = 2_295_568
 SK_ECO_FRONTIER = 94_644
 SK_CPS_PRINCIPAL = 600_000
 SK_CPS_YEARS = 4
+SK_RCPS_PRINCIPAL = 400_000
+SK_RCPS_YEARS = 5
 SK_SHARES_TOTAL = 65_599_748
 SK_SHARES_ORDINARY = 54_278_993
 
@@ -78,7 +80,8 @@ class TestUnits:
         assert per_share(0, 1_000_000, 50_000_000) == 0
 
     def test_per_share_negative(self):
-        assert per_share(-100, 1_000_000, 50_000_000) == 0
+        """Negative equity propagates (distress scenarios should not be clamped to 0)."""
+        assert per_share(-100, 1_000_000, 50_000_000) == -2
 
     def test_per_share_억원_unit(self):
         """100M KRW unit: 1 (=100M KRW) equity, 10M shares"""
@@ -219,7 +222,8 @@ class TestScenario:
             dlom=0, cps_repay=0, rcps_repay=0, buyback=0,
             shares=SK_SHARES_TOTAL,
         )
-        r = calc_scenario(sc, ev, SK_NET_DEBT, SK_ECO_FRONTIER, SK_CPS_PRINCIPAL, SK_CPS_YEARS)
+        r = calc_scenario(sc, ev, SK_NET_DEBT, SK_ECO_FRONTIER, SK_CPS_PRINCIPAL, SK_CPS_YEARS,
+                          SK_RCPS_PRINCIPAL, SK_RCPS_YEARS)
         assert r.post_dlom > 0
         assert r.pre_dlom == r.post_dlom  # DLOM=0
 
@@ -230,7 +234,8 @@ class TestScenario:
             dlom=20, rcps_repay=490_000, buyback=200_000,
             shares=SK_SHARES_ORDINARY,
         )
-        r = calc_scenario(sc, ev, SK_NET_DEBT, SK_ECO_FRONTIER, SK_CPS_PRINCIPAL, SK_CPS_YEARS)
+        r = calc_scenario(sc, ev, SK_NET_DEBT, SK_ECO_FRONTIER, SK_CPS_PRINCIPAL, SK_CPS_YEARS,
+                          SK_RCPS_PRINCIPAL, SK_RCPS_YEARS)
         assert r.post_dlom > 0
         assert r.post_dlom < r.pre_dlom  # DLOM applied
 
@@ -251,8 +256,8 @@ class TestScenario:
         )
         r = calc_scenario(sc, 100, 200, 0, 0, 0)
         assert r.equity_value < 0
-        assert r.pre_dlom == 0
-        assert r.post_dlom == 0
+        assert r.pre_dlom < 0  # Negative equity propagates for distress scenarios
+        assert r.post_dlom < 0  # DLOM not applied to negative equity
 
 
 # ═══════════════════════════════════════════════════════════
@@ -497,7 +502,7 @@ class TestNAV:
             unit_multiplier=1_000_000,
         )
         assert r.nav == -2_000
-        assert r.per_share == 0
+        assert r.per_share == -2_000  # Negative NAV propagates
 
 
 class TestFullPipeline:
@@ -511,8 +516,8 @@ class TestFullPipeline:
 
         # Structural verification (instead of fixed values)
         assert result.primary_method == "sotp"
-        assert result.wacc.wacc == 8.50
-        assert 6_300_000 < result.total_ev < 6_400_000
+        assert result.wacc.wacc == 9.02  # 8.50 + size_premium 1.5% → Ke 18.11% → WACC 9.02%
+        assert 6_300_000 < result.total_ev < 6_400_000  # SOTP EV unchanged (multiple-based)
         assert result.weighted_value > 0
         assert len(result.cross_validations) >= 2
         assert result.dcf is not None
@@ -595,17 +600,26 @@ class TestValidation:
         with pytest.raises(Exception):
             WACCParams(rf=3.5, erp=7.0, bu=0.7, de=100, tax=22, kd_pre=5, eq_w=0)
 
+    def test_dcf_terminal_growth_out_of_range(self):
+        """terminal_growth > 5% rejected at schema level."""
+        import pytest
+        with pytest.raises(Exception):
+            DCFParams(
+                ebitda_growth_rates=[0.05, 0.04, 0.03],
+                terminal_growth=10.0,  # > 5% limit
+            )
+
     def test_dcf_wacc_lte_terminal_growth(self):
         """WACC <= terminal_growth raises DCF ValueError."""
         import pytest
         params = DCFParams(
             ebitda_growth_rates=[0.05, 0.04, 0.03],
-            terminal_growth=10.0,  # TG > WACC
+            terminal_growth=4.5,  # Valid range but TG > WACC
         )
         with pytest.raises(ValueError, match="WACC.*영구성장률"):
             calc_dcf(
                 ebitda_base=100_000, da_base=20_000, revenue_base=500_000,
-                wacc_pct=8.0,  # WACC < TG
+                wacc_pct=3.0,  # WACC < TG
                 params=params, base_year=2025,
             )
 
@@ -1199,11 +1213,11 @@ class TestCalcEbitdaGrowth:
     }
 
     def test_yoy_growth(self):
-        """Prior year (2024->2025) growth rate"""
+        """3-year CAGR (2023->2025): (190/125)^(1/2) - 1 ≈ 0.2329"""
         g = calc_ebitda_growth(self._CONS)
         assert g is not None
-        # 190/157 - 1 ≈ 0.2102
-        assert 0.20 < g < 0.22
+        # 3-yr CAGR preferred over 1-yr YoY for smoothing
+        assert 0.23 < g < 0.24
 
     def test_insufficient_data(self):
         assert calc_ebitda_growth({2025: {"op": 100, "dep": 10, "amort": 5}}) is None
@@ -1355,15 +1369,26 @@ class TestResolveDrivers:
         assert result.wacc_adj == 0.25
         assert result.growth_adj_pct == -5.0
 
-    def test_multi_driver_additive(self):
-        """Two drivers additive: growth_adj_pct = -10 + -15 = -25."""
+    def test_multi_driver_dampened(self):
+        """Two drivers with correlation dampening: growth_adj_pct = (-10 + -15) * sqrt(2)/2 ≈ -17.68."""
+        import math
         sc = self._BASE_SC.model_copy(update={
             "active_drivers": {"rate_hike": 1.0, "tariff_shock": 1.0},
         })
         result = resolve_drivers(sc, self._DRIVERS)
-        assert result.wacc_adj == 0.5  # rate_hike only
-        assert result.growth_adj_pct == -25  # -10 + -15
-        assert result.market_sentiment_pct == -5  # tariff_shock only
+        assert result.wacc_adj == 0.5  # rate_hike only (single driver, no dampening)
+        # growth_adj_pct: raw=-25, dampened by sqrt(2)/2
+        expected = round(-25 * math.sqrt(2) / 2, 4)
+        assert result.growth_adj_pct == expected
+        assert result.market_sentiment_pct == -5  # tariff_shock only (single driver)
+
+    def test_multi_driver_no_dampen(self):
+        """With dampen=False, pure additive: growth_adj_pct = -10 + -15 = -25."""
+        sc = self._BASE_SC.model_copy(update={
+            "active_drivers": {"rate_hike": 1.0, "tariff_shock": 1.0},
+        })
+        result = resolve_drivers(sc, self._DRIVERS, dampen=False)
+        assert result.growth_adj_pct == -25
 
     def test_unknown_driver_id_ignored(self):
         """Non-existent driver_id is ignored."""

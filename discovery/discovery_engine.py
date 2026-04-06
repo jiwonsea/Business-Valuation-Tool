@@ -6,8 +6,22 @@ The user reviews/modifies the output before running valuation.
 from __future__ import annotations
 
 import json
+import sys
 
 from .news_collector import NewsCollector
+
+
+def _safe_print(text: str) -> None:
+    """Print with encoding fallback for Windows cp949 consoles."""
+    try:
+        print(text)
+    except Exception:
+        try:
+            enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+            safe = text.encode(enc, errors="replace").decode(enc, errors="replace")
+            print(safe)
+        except Exception:
+            pass  # Last resort: silently drop non-critical console output
 
 
 # Per-market search keywords
@@ -43,6 +57,13 @@ def summarize_key_issues(
     if not news:
         return ""
 
+    # Disk cache (reuse ai/analyst.py cache infrastructure)
+    from ai.analyst import _get_cached, _set_cached
+
+    cached = _get_cached(company_name, "key_issues")
+    if cached:
+        return cached.get("text", "")
+
     from ai.llm_client import ask
     from ai.prompts import SYSTEM_DISCOVERY
 
@@ -69,7 +90,10 @@ def summarize_key_issues(
 </example>"""
 
     try:
-        return ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1024)
+        result = ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1024)
+        if result:
+            _set_cached(company_name, "key_issues", {"text": result})
+        return result
     except Exception:
         return ""
 
@@ -90,21 +114,21 @@ class DiscoveryEngine:
         Returns:
             {"news_count": int, "analysis": str, "companies": list, "scenarios": list}
         """
-        print(f"\n{'='*60}")
-        print(f"[Discovery Mode] {market} 시장 뉴스 분석")
-        print(f"{'='*60}")
+        _safe_print(f"\n{'='*60}")
+        _safe_print(f"[Discovery Mode] {market} 시장 뉴스 분석")
+        _safe_print(f"{'='*60}")
 
         # Step 1: Collect news
         queries = _KR_QUERIES if market == "KR" else _US_QUERIES
         all_news = []
         for q in queries:
-            print(f"  수집 중: '{q}'...")
+            _safe_print(f"  수집 중: '{q}'...")
             if market == "KR":
                 items = self.collector.collect_kr(q, days=30, max_items=30)
             else:
                 items = self.collector.collect_us(q, days=30, max_items=30)
             all_news.extend(items)
-            print(f"    → {len(items)}건")
+            _safe_print(f"    -> {len(items)}건")
 
         # Deduplicate (by title)
         seen = set()
@@ -114,21 +138,21 @@ class DiscoveryEngine:
                 seen.add(n["title"])
                 unique_news.append(n)
 
-        print(f"\n  총 {len(unique_news)}건 수집 (중복 제거 후)")
+        _safe_print(f"\n  총 {len(unique_news)}건 수집 (중복 제거 후)")
 
         if not unique_news:
-            print("[WARN] 수집된 뉴스가 없습니다.")
+            _safe_print("[WARN] 수집된 뉴스가 없습니다.")
             return {"news_count": 0, "analysis": "", "companies": [], "scenarios": [], "news": []}
 
         # Step 2: AI analysis
-        print(f"\n[AI 분석 시작]")
+        _safe_print("[AI 분석 시작]")
         try:
             analysis = self._analyze_with_ai(unique_news, market)
         except Exception as e:
-            print(f"[ERROR] AI 분석 실패: {e}")
-            print("[FALLBACK] 수집된 뉴스 제목만 출력합니다.")
+            _safe_print(f"[ERROR] AI 분석 실패: {e}")
+            _safe_print("[FALLBACK] 수집된 뉴스 제목만 출력합니다.")
             for i, n in enumerate(unique_news[:20], 1):
-                print(f"  {i}. {n['title']} ({n['pub_date'][:10]})")
+                _safe_print(f"  {i}. {n['title']} ({n['pub_date'][:10]})")
             return {
                 "news_count": len(unique_news),
                 "analysis": "",
@@ -138,27 +162,27 @@ class DiscoveryEngine:
             }
 
         # Step 3: Output results
-        print(f"\n{'='*60}")
-        print("[분석 결과]")
-        print(f"{'='*60}")
-        print(analysis.get("summary", ""))
+        _safe_print(f"\n{'='*60}")
+        _safe_print("[분석 결과]")
+        _safe_print(f"{'='*60}")
+        _safe_print(analysis.get("summary", ""))
 
         if analysis.get("companies"):
-            print(f"\n[추천 기업]")
+            _safe_print(f"\n[추천 기업]")
             for i, co in enumerate(analysis["companies"], 1):
-                print(f"  {i}. {co.get('name', '')} — {co.get('reason', '')}")
+                _safe_print(f"  {i}. {co.get('name', '')} — {co.get('reason', '')}")
 
         if analysis.get("scenarios"):
-            print(f"\n[시나리오 제안]")
+            _safe_print(f"\n[시나리오 제안]")
             for sc in analysis["scenarios"]:
-                print(f"  {sc.get('name', '')}: 확률 {sc.get('prob', 0)}% — {sc.get('description', '')}")
+                _safe_print(f"  {sc.get('name', '')}: 확률 {sc.get('prob', 0)}% — {sc.get('description', '')}")
 
-        print(f"\n{'='*60}")
-        print("위 결과를 검토한 후, 다음 단계를 진행하세요:")
-        print("  1. 추천 기업 중 분석 대상 선택")
-        print("  2. 시나리오/확률 조정")
-        print("  3. python cli.py --company <기업명> --auto")
-        print(f"{'='*60}")
+        _safe_print(f"\n{'='*60}")
+        _safe_print("위 결과를 검토한 후, 다음 단계를 진행하세요:")
+        _safe_print("  1. 추천 기업 중 분석 대상 선택")
+        _safe_print("  2. 시나리오/확률 조정")
+        _safe_print("  3. python cli.py --company <기업명> --auto")
+        _safe_print(f"{'='*60}")
 
         return {
             "news_count": len(unique_news),
@@ -189,11 +213,17 @@ class DiscoveryEngine:
 
 위 뉴스를 분석하여 시장 동향 요약, 밸류에이션 분석이 의미 있는 기업 추천(최대 5개), 시장 시나리오(3개, 확률 합계 100%)를 제시하세요.
 
+<rules>
+- companies는 반드시 개별 상장 기업만 포함하세요. '반도체 관련주', '방위산업 관련 기업군' 같은 섹터·테마 표현은 절대 사용하지 마세요.
+- ticker: 정확히 알고 있는 경우에만 작성하고, 모르거나 불확실하면 반드시 null로 두세요. '미지정', 'N/A', '없음' 등의 문자열 금지.
+- 한국 기업 ticker 형식: 숫자 6자리 (예: "005930"), 미국 기업: 알파벳 또는 점 포함 가능 (예: "NVDA", "BRK.B")
+</rules>
+
 <output_format>
 {{
   "summary": "시장 전체 동향 요약 (3-5문장)",
   "companies": [
-    {{"name": "기업명", "ticker": "티커 (알고 있는 경우)", "reason": "분석 추천 이유"}}
+    {{"name": "개별 기업 정식 명칭", "ticker": "티커 또는 null", "reason": "분석 추천 이유"}}
   ],
   "scenarios": [
     {{"name": "시나리오명", "prob": 30, "description": "설명"}}

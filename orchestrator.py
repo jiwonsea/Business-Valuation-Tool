@@ -118,7 +118,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- **확률가중 주당 가치: {result.weighted_value:,}{sym}**")
         lines.append("")
 
-    # Gap ratio
+    # Gap ratio + reverse-DCF diagnostic
     if result.market_comparison and result.market_comparison.market_price > 0:
         mc = result.market_comparison
         lines.append("## 시장가격 비교")
@@ -126,6 +126,31 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"- 괴리율: {mc.gap_ratio:+.1%}")
         if mc.flag:
             lines.append(f"- ⚠ {mc.flag}")
+        lines.append("")
+
+    # Reverse-DCF gap diagnostic (when |gap| >= 20%)
+    if result.gap_diagnostic:
+        gd = result.gap_diagnostic
+        _LABELS = {
+            "wacc_overestimated": "WACC 과대추정",
+            "growth_underestimated": "성장률 과소추정",
+            "optionality_premium": "옵셔널리티 프리미엄",
+            "market_pessimism": "시장 저평가 가능성",
+        }
+        lines.append("## 역방향 DCF 진단")
+        lines.append(f"- 진단 유형: **{_LABELS.get(gd.category, gd.category)}**")
+        if gd.implied_wacc is not None:
+            lines.append(f"- 시장 내재 WACC: {gd.implied_wacc:.2f}%")
+        if gd.implied_tgr is not None:
+            lines.append(f"- 시장 내재 TGR: {gd.implied_tgr:.2f}%")
+        if gd.implied_growth_mult is not None:
+            lines.append(f"- 시장 내재 성장배수: {gd.implied_growth_mult:.2f}x")
+        if not gd.reconcilable:
+            lines.append("- ⚠ EBITDA 기반 DCF로 시장가격 설명 불가 (옵셔널리티 구간)")
+        if gd.suggestions:
+            lines.append("- 권고사항:")
+            for s in gd.suggestions[:3]:
+                lines.append(f"  - {s}")
         lines.append("")
 
     # Cross-validation

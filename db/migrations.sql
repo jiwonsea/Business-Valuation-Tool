@@ -63,6 +63,9 @@ CREATE INDEX IF NOT EXISTS idx_valuations_market ON valuations(market);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_valuation ON ai_analyses(valuation_id);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_company ON ai_analyses(company_name);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_created_at ON ai_analyses(created_at DESC);
+-- Compound: list_ai_analyses() filters by valuation_id then orders by created_at
+CREATE INDEX IF NOT EXISTS idx_ai_analyses_valuation_created
+    ON ai_analyses(valuation_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_profiles_company ON profiles(company_name);
 CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
 
@@ -117,6 +120,9 @@ CREATE INDEX IF NOT EXISTS idx_discovery_runs_date
     ON discovery_runs(run_date DESC);
 CREATE INDEX IF NOT EXISTS idx_discovery_runs_created_at
     ON discovery_runs(created_at DESC);
+-- Compound: status-filtered listing ordered by date
+CREATE INDEX IF NOT EXISTS idx_discovery_runs_status_created
+    ON discovery_runs(status, created_at DESC);
 
 -- ============================================================
 -- Row Level Security (RLS)
@@ -161,6 +167,9 @@ CREATE INDEX IF NOT EXISTS idx_delivery_log_week
     ON delivery_log(week_label);
 CREATE INDEX IF NOT EXISTS idx_delivery_log_created_at
     ON delivery_log(created_at DESC);
+-- Compound: get_latest_delivery() filters by week_label then orders by created_at
+CREATE INDEX IF NOT EXISTS idx_delivery_log_week_created
+    ON delivery_log(week_label, created_at DESC);
 
 ALTER TABLE delivery_log ENABLE ROW LEVEL SECURITY;
 

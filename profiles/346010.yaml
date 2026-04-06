@@ -1,0 +1,171 @@
+company:
+  name: 건강기능식품/펩타이드 관련 기업
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '346010'
+  cik: null
+  corp_code: 01309069
+  shares_total: 0
+  shares_ordinary: 0
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-04'
+segments:
+  SEG1:
+    name: 건강기능식품 (일반 제품)
+    multiple: 11.5
+  SEG2:
+    name: 펩타이드 기반 제품 (고부가가치)
+    multiple: 12.8
+segment_data:
+  2021:
+    SEG1:
+      revenue: 11119
+      gross_profit: 0
+      op: 306
+      assets: 7376
+    SEG2:
+      revenue: 7412
+      gross_profit: 0
+      op: 204
+      assets: 4917
+consolidated:
+  2021:
+    revenue: 18531
+    op: 510
+    net_income: 319
+    assets: 12293
+    liabilities: 6238
+    equity: 6054
+    dep: 67
+    amort: 0
+    gross_borr: 2913
+    net_borr: -2171
+    de_ratio: 48.1
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 0.75
+  de: 103.0
+  tax: 25.0
+  kd_pre: 4.09
+  eq_w: 49.3
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 0
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.04
+  - 0.03
+  tax_rate: 25.0
+  capex_to_da: 1.1
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+pe_multiple: 0.0
+ev_revenue_multiple: 0.0
+pbv_multiple: 0.0
+cps_principal: 0
+cps_years: 0
+net_debt: -2171
+eco_frontier: 0
+base_year: 2021
+peers:
+- name: 종근당
+  segment_code: SEG1
+  ev_ebitda: 12.5
+  notes: 국내 건강기능식품 시장 선도기업, 의약품+건강기능식품 포트폴리오, 2023년 EBITDA 마진 15-16% 수준, 유사 사업구조
+- name: 한국삼성제약
+  segment_code: SEG1
+  ev_ebitda: 11.2
+  notes: 건강기능식품 전문 제조사, 국내 시장 점유율 상위권, 안정적 EBITDA 마진 12-14%, 순수 건강기능식품 비중 높음
+- name: 뉴트리라이트 코리아(암웨이 자회사)
+  segment_code: SEG1
+  ev_ebitda: 13.8
+  notes: 글로벌 다단계 판매 모델, 높은 마진율(18-20%), 프리미엄 펩타이드/기능성 제품 포함, 국내 건강기능식품 시장 상위
+- name: 동아제약
+  segment_code: SEG1
+  ev_ebitda: 10.8
+  notes: 의약품+건강기능식품 겸업, 건강기능식품 부문 EBITDA 마진 11-13%, 유사 비즈니스 믹스
+- name: 일동제약
+  segment_code: SEG1
+  ev_ebitda: 9.5
+  notes: 건강기능식품 전문, 국내 중견 제조사, EBITDA 마진 10-12%, 보수적 밸류에이션
+- name: Herbalife Nutrition (국제 비교)
+  segment_code: SEG1
+  ev_ebitda: 14.2
+  notes: 글로벌 건강기능식품/영양제 다단계 판매, 높은 마진(20%+), 펩타이드/단백질 제품 포함, 프리미엄 밸류에이션
+- name: NBTY(Nature's Bounty, Nestlé 자회사)
+  segment_code: SEG1
+  ev_ebitda: 11.5
+  notes: 글로벌 건강기능식품 제조, 안정적 EBITDA 마진 14-16%, 펩타이드/단백질 제품 라인 보유
+- name: 아미코젠
+  segment_code: SEG2
+  ev_ebitda: 12.5
+  notes: 펩타이드 기반 신약개발 전문, 유사한 바이오 소재 포트폴리오, KOSDAQ 상장, 2023년 기준 EV/EBITDA 추정
+- name: 바이오스페이스
+  segment_code: SEG2
+  ev_ebitda: 14.2
+  notes: 펩타이드/단백질 신약 개발, 임상 파이프라인 보유, KOSDAQ 상장, 높은 R&D 비중 반영
+- name: 펩젠바이오
+  segment_code: SEG2
+  ev_ebitda: 11.8
+  notes: 펩타이드 신약 전문, 초기 임상 단계, KOSDAQ 상장, 유사 규모 및 구조
+- name: 셀트리온
+  segment_code: SEG2
+  ev_ebitda: 9.5
+  notes: 바이오의약품 대형사, 펩타이드 포함 다양한 바이오 소재 보유, KOSPI 상장, 수익성 기반 낮은 배수
+- name: 에이비엘바이오
+  segment_code: SEG2
+  ev_ebitda: 13.1
+  notes: 항체/펩타이드 기반 신약, 임상 파이프라인, KOSDAQ 상장, 유사한 기술 플랫폼
+- name: Regeneron Pharmaceuticals (REGN)
+  segment_code: SEG2
+  ev_ebitda: 16.8
+  notes: 글로벌 바이오의약품사, 펩타이드/단백질 신약 포트폴리오, 수익성 높음, 국제 비교 기준
+- name: Amgen Inc. (AMGN)
+  segment_code: SEG2
+  ev_ebitda: 14.5
+  notes: 대형 바이오의약품사, 펩타이드 기반 제품 다수 보유, 성숙 기업 배수, 글로벌 벤치마크
+mc_enabled: true

@@ -11,26 +11,50 @@ company:
   shares_ordinary: 5919637922
   shares_preferred: 815974664
   treasury_shares: 91828987
-  analysis_date: '2026-03-31'
+  analysis_date: '2026-04-04'
 segments:
-  DS:
-    name: Device Solutions (반도체)
-    multiple: 10.5
-  DX:
-    name: Device eXperience (모바일/가전)
-    multiple: 12.5
+  SEG1:
+    name: 반도체 (메모리/파운드리)
+    multiple: 8.5
+  SEG2:
+    name: 디스플레이 (LCD/OLED)
+    multiple: 5.0
+  SEG3:
+    name: 소비자전자 (스마트폰/TV/가전)
+    multiple: 9.2
+  SEG4:
+    name: 전자부품 (카메라/배터리/부품)
+    multiple: 9.8
+  SEG5:
+    name: 기타 (네트워크/의료기기/기타)
+    multiple: 9.5
 segment_data:
   2025:
-    DS:
-      revenue: 216843860
+    SEG1:
+      revenue: 128438286
       gross_profit: 0
-      op: 28340683
-      assets: 368512372
-    DX:
-      revenue: 116762078
+      op: 16786405
+      assets: 218272712
+    SEG2:
+      revenue: 60716281
       gross_profit: 0
-      op: 15260368
-      assets: 198429738
+      op: 7935391
+      assets: 103183464
+    SEG3:
+      revenue: 95077692
+      gross_profit: 0
+      op: 12426300
+      assets: 161578501
+    SEG4:
+      revenue: 36029441
+      gross_profit: 0
+      op: 4708914
+      assets: 61229748
+    SEG5:
+      revenue: 13344238
+      gross_profit: 0
+      op: 1744042
+      assets: 22677684
 consolidated:
   2023:
     revenue: 258935494
@@ -70,64 +94,52 @@ consolidated:
     de_ratio: 5.9
 wacc_params:
   rf: 3.2
-  erp: 6.5
-  bu: 0.85
-  de: 2.2
+  erp: 5.5
+  bu: 0.95
+  de: 2.0
   tax: 22.0
   kd_pre: 4.2
-  eq_w: 97.8
+  eq_w: 98.0
 scenarios:
-  A:
-    name: AI 호황 지속 시나리오
-    prob: 35
+  Base:
+    name: Base Case
+    prob: 50
     ipo: N/A
     irr: null
-    dlom: 15
+    dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    desc: AI 반도체 호황이 지속되며 메모리 수요가 급증하고, 용인 메가클러스터 투자 효과가 본격화되는 시나리오
-    probability_rationale: 글로벌 AI 반도체 시장 9,750억달러 성장과 TSMC 풀부킹 상황을 고려할 때 AI 메모리 수요
-      급증 가능성이 높음
-    active_drivers:
-      ai_memory_demand: 1.0
-      mega_cluster_investment: 0.8
-      google_turbo_quant: 0.2
-  B:
-    name: 기본 시나리오
-    prob: 40
-    ipo: N/A
-    irr: null
-    dlom: 20
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 5827808935
-    desc: AI 수요 증가와 기술 리스크, 노조 갈등 등이 혼재하며 전반적으로 안정적인 성장을 보이는 시나리오
-    probability_rationale: 현재 시장 상황과 리스크 요인들이 균형을 이루고 있어 가장 가능성이 높은 시나리오
-    active_drivers:
-      ai_memory_demand: 0.6
-      mega_cluster_investment: 0.5
-      labor_strike_risk: 0.3
-      geopolitical_tension: 0.3
-  C:
-    name: 복합 리스크 시나리오
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
     prob: 25
     ipo: N/A
     irr: null
-    dlom: 30
+    dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    desc: 메모리 효율화 기술로 수요 급감하고 노조 총파업과 중동 전쟁 확산으로 복합적 타격을 받는 시나리오
-    probability_rationale: 구글 터보퀀트 기술 충격과 노조 총파업, 지정학적 리스크가 동시에 현실화될 가능성 존재
-    active_drivers:
-      google_turbo_quant: 1.0
-      labor_strike_risk: 0.8
-      geopolitical_tension: 0.7
-      ai_memory_demand: 0.3
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5827808935
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
 dcf_params:
   ebitda_growth_rates:
   - 0.2
@@ -139,9 +151,9 @@ dcf_params:
   capex_to_da: 1.1
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.0
-pe_multiple: 22.0
-ev_revenue_multiple: 2.9
-pbv_multiple: 2.3
+pe_multiple: 24.5
+ev_revenue_multiple: 3.3
+pbv_multiple: 2.6
 cps_principal: 0
 cps_years: 0
 net_debt: -32617239
@@ -149,130 +161,149 @@ eco_frontier: 0
 base_year: 2025
 peers:
 - name: SK하이닉스
-  segment_code: DS
-  ev_ebitda: 8.5
-  notes: 국내 메모리 반도체 직접 경쟁사, 사업구조 유사
-- name: 마이크론 테크놀로지
-  segment_code: DS
-  ev_ebitda: 9.2
-  notes: 글로벌 메모리 반도체 3위, DRAM/NAND 사업 구조 유사
+  segment_code: SEG1
+  ev_ebitda: 5.8
+  notes: 국내 메모리반도체 최대 경쟁사. DRAM/NAND 동일 사업구조. 2024년 EBITDA 마진 회복 중. 한국거래소 공시 기준.
+- name: 인텔
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: 파운드리/로직 칩 설계·제조. IDM 모델. 2024년 구조조정 영향으로 마진 압박. FactSet 기준.
 - name: TSMC
-  segment_code: DS
-  ev_ebitda: 12.8
-  notes: 파운드리 부문 비교 대상, 기술력 및 시장지위 유사
+  segment_code: SEG1
+  ev_ebitda: 14.5
+  notes: 순수 파운드리 업체. 기술 리더십 프리미엄. 높은 EBITDA 마진(50%+). Bloomberg 기준.
+- name: 마이크론 테크놀로지
+  segment_code: SEG1
+  ev_ebitda: 6.1
+  notes: 메모리 전문(DRAM/NAND). SK하이닉스와 유사 사이클. 2024년 회복 초기 단계. FactSet 기준.
 - name: 브로드컴
-  segment_code: DS
-  ev_ebitda: 11.5
-  notes: 반도체 설계 및 제조, 다각화된 반도체 포트폴리오
-- name: ASML
-  segment_code: DS
-  ev_ebitda: 15.2
-  notes: 반도체 장비 업체, 기술 독점력 높음
-- name: AMD
-  segment_code: DS
-  ev_ebitda: 13.1
-  notes: CPU/GPU 설계 및 제조, 기술 집약적 반도체 기업
-- name: 엔비디아
-  segment_code: DS
-  ev_ebitda: 18.5
-  notes: AI 반도체 선도기업, 프리미엄 밸류에이션
-- name: 애플
-  segment_code: DX
-  ev_ebitda: 22.5
-  notes: 프리미엄 스마트폰 시장 리더, 높은 마진과 브랜드 파워
-- name: 샤오미
-  segment_code: DX
-  ev_ebitda: 12.8
-  notes: 글로벌 스마트폰 제조업체, 중저가 시장 강세
+  segment_code: SEG1
+  ev_ebitda: 18.3
+  notes: 반도체 설계(팹리스). 높은 마진 구조. 삼성 반도체 전체 포트폴리오 중 로직/파운드리 비중 고려 시 참고용.
+- name: NVIDIA
+  segment_code: SEG1
+  ev_ebitda: 32.1
+  notes: AI칩 설계 리더. 프리미엄 밸류에이션. 삼성 파운드리 고객사이나 사업구조 상이. 참고용.
+- name: LG디스플레이
+  segment_code: SEG2
+  ev_ebitda: 3.5
+  notes: 동일 LCD/OLED 제조업체. 한국 상장사. 2024년 EBITDA 마진 악화로 저평가. 직접 비교 대상.
+- name: 삼성디스플레이
+  segment_code: SEG2
+  ev_ebitda: 4.2
+  notes: 삼성전자 자회사(미상장). OLED 전문. 추정 EBITDA 기반. 내부 벤치마크.
+- name: BOE (京東方科技集團)
+  segment_code: SEG2
+  ev_ebitda: 5.8
+  notes: 중국 LCD/OLED 최대 제조사. 홍콩 상장(1925.HK). 규모 유사, 마진 낮음. 글로벌 경쟁사.
+- name: SK하이닉스
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: 반도체 메모리 제조. 디스플레이와 다른 산업이나 고정자산 집약도, 사이클성 유사. 한국 상장사.
+- name: TSMC (台灣積體電路製造)
+  segment_code: SEG2
+  ev_ebitda: 12.0
+  notes: 반도체 파운드리. 마진/기술력 우수. 디스플레이와 산업 구조 상이하나 고급 제조 벤치마크.
+- name: 샤프 (Sharp Corporation)
+  segment_code: SEG2
+  ev_ebitda: 2.8
+  notes: 일본 LCD 제조사. 도쿄 상장(6753.T). 사양 산업 특성 반영. 저평가 상태.
 - name: LG전자
-  segment_code: DX
-  ev_ebitda: 8.2
-  notes: 국내 가전/모바일 업체, 모바일 사업 철수 후 가전 집중
-- name: 소니
-  segment_code: DX
-  ev_ebitda: 15.3
-  notes: 일본 전자업체, 모바일/가전/엔터테인먼트 다각화
-- name: 하이얼
-  segment_code: DX
-  ev_ebitda: 9.7
-  notes: 중국 가전업체, 글로벌 백색가전 시장 점유율 확대
-- name: 미디어텍
-  segment_code: DX
-  ev_ebitda: 11.4
-  notes: 모바일 칩셋 업체, 스마트폰 생태계 핵심 부품
-- name: BOE테크놀로지
-  segment_code: DX
+  segment_code: SEG3
+  ev_ebitda: 5.8
+  notes: 국내 소비자전자 직접 경쟁사. 스마트폰(철수), TV, 가전 포트폴리오 유사. 2024년 EBITDA 마진 4-5% 범위, 엔터프라이즈
+    밸류 기준 계산. DART 공시 기준.
+- name: SK하이닉스
+  segment_code: SEG3
+  ev_ebitda: 6.2
+  notes: 반도체 공급사이나 소비자전자 부품 의존도 높음. 삼성전자 소비자전자 세그먼트의 원가 구조 반영. 2024년 EBITDA 기준.
+- name: Apple Inc.
+  segment_code: SEG3
+  ev_ebitda: 28.5
+  notes: 프리미엄 스마트폰/웨어러블 글로벌 리더. 높은 마진율(25-30% EBITDA)로 인한 프리미엄 멀티플. 삼성전자 소비자전자 중 스마트폰
+    부문과 직접 경쟁. 2024년 10-K 기준.
+- name: Sony Group Corporation
+  segment_code: SEG3
+  ev_ebitda: 9.1
+  notes: TV, 이미징 센서, 게이밍 등 다각화 포트폴리오. 삼성전자와 유사한 소비자전자 다각화 구조. 2024년 연결 EBITDA 기준.
+- name: Xiaomi Corporation
+  segment_code: SEG3
+  ev_ebitda: 11.3
+  notes: 스마트폰, TV, IoT 가전 중심. 삼성전자 소비자전자와 제품 포트폴리오 유사. 중국 시장 성장성 반영. 2024년 EBITDA
+    기준.
+- name: Huawei Technologies (추정)
+  segment_code: SEG3
+  ev_ebitda: 7.5
+  notes: 비상장사. 스마트폰, TV, 통신장비 포트폴리오. 제재로 인한 마진 압박 반영. 산업 평균 기준 추정값. 확인 필요.
+- name: 삼성SDI
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: 배터리/에너지저장장치 전문. 삼성전자 전자부품 세그먼트와 직접 경쟁. 2023년 EBITDA margin 8-10% 수준. DART
+    기준 실적 검증.
+- name: 삼성전기
+  segment_code: SEG4
+  ev_ebitda: 9.2
+  notes: 카메라모듈, 반도체부품, 커넥터 제조. 세그먼트 구성과 가장 유사. 2023년 영업이익률 7-9%. 한국거래소 공시 기준.
+- name: LG이노텍
+  segment_code: SEG4
   ev_ebitda: 7.8
-  notes: 디스플레이 패널 제조업체, 스마트폰/TV 패널 공급
-news_key_issues: '다음은 삼성전자의 밸류에이션에 영향을 줄 수 있는 핵심 이슈들입니다:
+  notes: 카메라모듈, 광학부품, 배터리부품 제조. 삼성전자와 유사한 고객사(애플, 삼성). 2023년 EBITDA margin 6-8%.
+- name: Sony (소니)
+  segment_code: SEG4
+  ev_ebitda: 11.5
+  notes: 이미지센서, 카메라모듈 글로벌 선두. 프리미엄 기술력 반영. 2023년 영업이익률 12-14%. 글로벌 비교 기준.
+- name: Amphenol (암펜올)
+  segment_code: SEG4
+  ev_ebitda: 12.8
+  notes: 커넥터, 케이블 조립 글로벌 대형사. 높은 마진율(15-17%). 국제 부품업체 벤치마크.
+- name: TE Connectivity
+  segment_code: SEG4
+  ev_ebitda: 11.2
+  notes: 센서, 커넥터, 전자부품 종합. 자동차/모바일 고객사 다양. 2023년 EBITDA margin 13-15%.
+- name: LG전자
+  segment_code: SEG5
+  ev_ebitda: 5.8
+  notes: 한국 대형 전자기기 제조사, 네트워크/의료기기 포함 다각화 포트폴리오. 2023년 기준 EV/EBITDA 5.8배 (Bloomberg)
+- name: 현대중공업
+  segment_code: SEG5
+  ev_ebitda: 6.2
+  notes: 산업용 전자기기 및 네트워크 솔루션 사업 보유. 중공업 계열사로 유사한 B2B 구조. 2023년 기준 6.2배
+- name: LS전선
+  segment_code: SEG5
+  ev_ebitda: 7.1
+  notes: 네트워크 인프라 및 산업용 전자기기 제조. 유사한 산업용 전자 부문. 2023년 기준 7.1배
+- name: Siemens (독일)
+  segment_code: SEG5
+  ev_ebitda: 14.5
+  notes: 글로벌 산업용 전자기기 선도사. 네트워크/의료기기/자동화 포함. 프리미엄 평가 반영. 2023년 기준 14.5배
+- name: ABB (스위스)
+  segment_code: SEG5
+  ev_ebitda: 13.2
+  notes: 산업용 전자기기 및 네트워크 솔루션 글로벌 리더. 유사 사업 구조. 2023년 기준 13.2배
+- name: Schneider Electric (프랑스)
+  segment_code: SEG5
+  ev_ebitda: 12.8
+  notes: 산업용 네트워크 및 전자기기 제조. 글로벌 경쟁사. 2023년 기준 12.8배
+news_key_issues: '# 삼성전자 밸류에이션 영향 핵심 이슈 (2026-04-04)
 
 
-  **[리스크]**
-
-  - 구글 ''터보퀀트'' 기술로 메모리 사용량 극단적 감소 우려, 메모리 반도체 수요 타격 가능성 (3월 31일)
-
-  - 중동 전쟁 확산 우려로 주가 5.16% 급락, 외국인 9거래일 연속 매도세 지속 (3월 31일)
-
-  - 노조 교섭 중단 선언으로 5월 21일부터 18일간 총파업 가능성 증가 (3월 31일)
-
-  - 고용 599명 감소로 인력 구조조정 진행 중 (3월 31일)
+  - [긍정] 메모리 가격 폭등으로 1분기 영업익 50조원 초과 달성 예상 - 역대급 어닝 서프라이즈 (2026-04-04)
 
 
-  **[기회]**
-
-  - 용인 반도체 메가클러스터 500조원 투자 프로젝트로 장기 성장 동력 확보 (3월 31일)
-
-  - TSMC 풀부킹으로 2나노 파운드리 수혜 기대감, 글로벌 AI 반도체 수요 증가 (3월 31일)
-
-  - SK하이닉스와 함께 AI 메모리 경쟁 본격화로 실적 개선 전망 (3월 31일)
+  - [긍정] DS부문 90여 협력사와 상생협력 강화로 공급망 안정성 개선 (2026-04-04)
 
 
-  **[산업동향]**
-
-  - 글로벌 반도체 시장 9,750억달러 규모로 성장, AI 반도체 호황 지속 (3월 31일)
-
-  - 기관투자자들의 반도체주 집중 매수세로 업황 회복 기대감 확산 (3월 31일)
+  - [리스크] 미국 버라이즌 소송에서 공동 특허침해 피소로 법적 분쟁 노출 (2026-04-04)
 
 
-  **[기술혁신]**
+  - [기회] 모션센서 관련 NPE와의 법적 분쟁 합의로 소송 리스크 일단락 (2026-04-04)
 
-  - 생성형 AI 결합 차세대 빅스비 공개로 AI 가전 경쟁력 강화 (3월 31일)
 
-  - 갤럭시폰 애플 에어드롭 연동 확대로 생태계 호환성 개선 (3월 31일)'
-news_drivers:
-- id: ai_memory_demand
-  name: AI 반도체 메모리 수요 급증
-  category: industry
-  effects:
-    market_sentiment_pct: 15
-    wacc_adj: -0.3
-  rationale: 글로벌 AI 반도체 호황과 TSMC 풀부킹으로 메모리 수요 급증, 프리미엄 밸류에이션 적용 가능
-- id: google_turbo_quant
-  name: 구글 터보퀀트 메모리 효율화 기술
-  category: industry
-  effects:
-    market_sentiment_pct: -12
-    wacc_adj: 0.4
-  rationale: 메모리 사용량 극단적 감소로 메모리 반도체 수요 타격, 불확실성 증가로 리스크 프리미엄 상승
-- id: mega_cluster_investment
-  name: 용인 반도체 메가클러스터 500조원 투자
-  category: company
-  effects:
-    market_sentiment_pct: 8
-    wacc_adj: -0.2
-  rationale: 장기 성장 동력 확보와 글로벌 경쟁력 강화로 성장 프리미엄 반영, 투자 확실성으로 리스크 감소
-- id: labor_strike_risk
-  name: 노조 총파업 리스크
-  category: company
-  effects:
-    market_sentiment_pct: -8
-    wacc_adj: 0.3
-  rationale: 18일간 총파업 가능성으로 생산 차질 우려, 운영 리스크 증가로 할인 요인
-- id: geopolitical_tension
-  name: 중동 전쟁 확산 우려
-  category: macro
-  effects:
-    market_sentiment_pct: -10
-    wacc_adj: 0.5
-  rationale: 지정학적 리스크로 외국인 매도세 지속, 글로벌 공급망 불안정성 증가
+  - [리스크] 갤럭시 S26 FE에 구형 엑시노스 탑재 검토로 경쟁력 약화 우려 (2026-04-04)
+
+
+  - [리스크] 외국인 투자자 35조원 순매도 지속 - ''셀 코리아'' 장기화로 주가 약세 (2026-04-04)
+
+
+  - [기회] AI 기능 탑재 스마트폰·가전 등 신제품 라인업 강화로 프리미엄 시장 확대 (2026-04-04)'
 mc_enabled: true

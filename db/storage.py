@@ -98,19 +98,33 @@ def get_download_url(remote_path: str, expires_in: int = SIGNED_URL_EXPIRY) -> s
         return None
 
 
+def _sanitize_key(name: str) -> str:
+    """Remove characters that Supabase Storage rejects or that break presigned URLs."""
+    return (
+        name
+        .replace("(", "")
+        .replace(")", "")
+        .replace(" ", "_")
+        .replace(",", "")
+        .replace("#", "")
+        .replace("?", "")
+        .replace("&", "")
+    )
+
+
 def upload_and_get_url(local_path: str, week_label: str) -> dict | None:
     """Upload an Excel file and return its download URL.
 
     Args:
         local_path: Local path to .xlsx file.
-        week_label: Week folder name (e.g. "2026-03-31(Mar 5th week)").
+        week_label: Already-sanitized week folder key (no parentheses/spaces).
 
     Returns:
         {"remote_path": "...", "download_url": "https://..."} or None.
     """
     ensure_bucket()
 
-    filename = Path(local_path).name
+    filename = _sanitize_key(Path(local_path).name)
     remote_path = f"{week_label}/{filename}"
 
     uploaded = upload_excel(local_path, remote_path)

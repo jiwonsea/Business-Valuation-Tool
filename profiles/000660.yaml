@@ -1,0 +1,215 @@
+company:
+  name: SK하이닉스
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '000660'
+  cik: null
+  corp_code: 00164779
+  shares_total: 690455268
+  shares_ordinary: 690455268
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-04'
+segments:
+  SEG1:
+    name: 메모리반도체 (DRAM/NAND)
+    multiple: 7.5
+  SEG2:
+    name: 시스템반도체 및 기타
+    multiple: 12.5
+segment_data:
+  2025:
+    SEG1:
+      revenue: 92289341
+      gross_profit: 0
+      op: 44846003
+      assets: 167302276
+    SEG2:
+      revenue: 4857334
+      gross_profit: 0
+      op: 2360316
+      assets: 8805383
+consolidated:
+  2023:
+    revenue: 32765719
+    op: -7730313
+    net_income: -9112428
+    assets: 100330165
+    liabilities: 46826413
+    equity: 53504285
+    dep: 13673676
+    amort: 0
+    gross_borr: 32498506
+    net_borr: 24911177
+    de_ratio: 60.7
+  2024:
+    revenue: 66192960
+    op: 23467319
+    net_income: 19788681
+    assets: 119855209
+    liabilities: 45939505
+    equity: 73903394
+    dep: 12581537
+    amort: 0
+    gross_borr: 25452109
+    net_borr: 14246992
+    de_ratio: 34.4
+  2025:
+    revenue: 97146675
+    op: 47206319
+    net_income: 42919287
+    assets: 176107659
+    liabilities: 55440908
+    equity: 120516178
+    dep: 13930130
+    amort: 0
+    gross_borr: 24757848
+    net_borr: 9834082
+    de_ratio: 20.5
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 1.688
+  de: 4.1
+  tax: 9.1
+  kd_pre: 3.73
+  eq_w: 96.1
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 690455268
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 690455268
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 690455268
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.3
+  - 0.23
+  - 0.17
+  - 0.1
+  - 0.03
+  tax_rate: 9.1
+  capex_to_da: 1.1
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+pe_multiple: 14.1
+ev_revenue_multiple: 6.3
+pbv_multiple: 5.0
+cps_principal: 0
+cps_years: 0
+net_debt: 9834082
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: 삼성전자 (반도체 사업부)
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: 국내 최대 메모리반도체 제조사. 2023년 반도체 부문 영업이익률 저하로 인한 낮은 배수. DART 공시 기준 메모리 EBITDA
+    추정. 동일 제품군(DRAM/NAND) 경쟁사.
+- name: '마이크론 테크놀로지 (Micron Technology, NASDAQ: MU)'
+  segment_code: SEG1
+  ev_ebitda: 6.5
+  notes: 글로벌 3대 메모리반도체 제조사. 2024년 현물가격 약세로 인한 낮은 배수. 동일 DRAM/NAND 포트폴리오. 미국 상장사 기준
+    현재 시장 평가.
+- name: '인텔 (Intel, NASDAQ: INTC) - 메모리 부문'
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: NAND 플래시 메모리(Optane, QLC) 제조. 메모리 부문 EBITDA 분리 추정. 반도체 제조 인프라 유사성.
+- name: 키옥시아 (Kioxia, 비상장 추정)
+  segment_code: SEG1
+  ev_ebitda: 5.8
+  notes: 일본 NAND 플래시 메모리 전문사. 웨스턴디지털과 합작. 메모리 특화 구조. 비상장이나 산업 벤치마크로 활용. 추정 배수는 동종사
+    비교 기준.
+- name: SK하이닉스 (자사 비교)
+  segment_code: SEG1
+  ev_ebitda: 7.8
+  notes: 2023년 기준 메모리반도체 부문 EV/EBITDA. 자사 현재 평가 수준. 동일 제품군 내 자체 벤치마크.
+- name: 삼성전자 메모리 (분리 추정)
+  segment_code: SEG1
+  ev_ebitda: 8.2
+  notes: 삼성전자 메모리 사업부 EBITDA 분리 추정 (2023년 기준). 국내 동종사 비교 기준.
+- name: '퀄컴 (Qualcomm, NASDAQ: QCOM)'
+  segment_code: SEG2
+  ev_ebitda: 12.8
+  notes: 모바일 AP, RF, 통신칩 설계. 팹리스 모델. 2024년 AI칩 수요 증가로 배수 상승. 글로벌 시스템반도체 벤치마크.
+- name: '브로드컴 (Broadcom, NASDAQ: AVGO)'
+  segment_code: SEG2
+  ev_ebitda: 14.2
+  notes: 인프라 반도체(네트워크, 스토리지, 광통신). 팹리스 모델. 데이터센터 수요 강세로 높은 배수. 시스템반도체 고부가가치 영역.
+- name: '미디어텍 (MediaTek, TWSE: 2454)'
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: 모바일 AP, IoT칩 설계. 팹리스 모델. 대만 상장사. 스마트폰 AP 경쟁사. 2024년 AI칩 수요로 배수 상승.
+- name: 'AMD (Advanced Micro Devices, NASDAQ: AMD)'
+  segment_code: SEG2
+  ev_ebitda: 13.5
+  notes: CPU, GPU, 데이터센터 프로세서. 팹리스 모델. AI/HPC 수요 강세. 고성능 시스템반도체 벤치마크.
+- name: '엔비디아 (NVIDIA, NASDAQ: NVDA)'
+  segment_code: SEG2
+  ev_ebitda: 28.5
+  notes: GPU, AI 가속기. 팹리스 모델. AI 수요 급증으로 극도로 높은 배수. 참고용(SK하이닉스 시스템반도체와 직접 비교 부적절).
+- name: 삼성전자 파운드리 (분리 추정)
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: 삼성전자 파운드리 사업부 EBITDA 분리 추정. 국내 시스템반도체 제조 기준. 2023년 저수익 반영.
+news_key_issues: '# SK하이닉스 밸류에이션 핵심 이슈 분석 (2026-04-04)
+
+
+  - [긍정] 1분기 실적 호조로 연간 가이던스 상향 가능성 (2026-04-04)
+
+
+  - [긍정] 메모리 ASP 급등으로 수익성 개선 - 메모리값 1년 만에 4배 상승 (2026-04-04)
+
+
+  - [긍정] 증권가 목표주가 상향 - 160만원대 전망으로 현재 저평가 판단 (2026-04-04)
+
+
+  - [리스크] 외국인 자금 이탈 심화 - 한국주식 35조 규모 순매도 진행 중 (2026-04-04)
+
+
+  - [리스크] 구글 ''터보퀀트'' 충격으로 HBM 수요 둔화 우려 (2026-04-04)
+
+
+  - [경쟁] 중국 창신메모리 매출 130% 증가, 올해 HBM3 생산 시작으로 경쟁 심화 (2026-04-04)
+
+
+  - [기회] 지주사 가치 재평가 임박 - 거대 자산 대비 낮은 지분율 지적 (2026-04-04)
+
+
+  - [시장] 지정학적 리스크(이란 전쟁)로 인한 변동성 확대 - 87만원대 등락 (2026-04-04)'
+mc_enabled: true

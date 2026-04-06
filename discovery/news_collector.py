@@ -7,7 +7,7 @@ Google RSS: No API key required.
 from __future__ import annotations
 
 import os
-import xml.etree.ElementTree as ET
+from defusedxml.ElementTree import fromstring as safe_fromstring
 from datetime import datetime, timedelta
 from html import unescape
 
@@ -84,6 +84,11 @@ class NewsCollector:
                     })
         except Exception as e:
             print(f"[ERROR] 네이버 뉴스 수집 실패: {e}")
+            try:
+                from pipeline.api_guard import ApiGuard
+                ApiGuard.get().record_failure("naver", e)
+            except Exception:
+                pass
 
         return results
 
@@ -116,7 +121,7 @@ class NewsCollector:
                 resp.raise_for_status()
                 ApiGuard.get().record_success("google_rss")
 
-                root = ET.fromstring(resp.text)
+                root = safe_fromstring(resp.text)
                 for item in root.iter("item"):
                     title = item.findtext("title", "")
                     link = item.findtext("link", "")
@@ -144,9 +149,13 @@ class NewsCollector:
                         break
         except Exception as e:
             print(f"[ERROR] Google News RSS 수집 실패: {e}")
+            try:
+                from pipeline.api_guard import ApiGuard
+                ApiGuard.get().record_failure("google_rss", e)
+            except Exception:
+                pass
 
         return results
-
 
     def collect_for_company(
         self,

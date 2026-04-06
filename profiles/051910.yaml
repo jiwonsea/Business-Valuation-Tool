@@ -1,0 +1,263 @@
+company:
+  name: LG화학
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: 051910
+  cik: null
+  corp_code: '00356361'
+  shares_total: 78281143
+  shares_ordinary: 70592343
+  shares_preferred: 7688800
+  treasury_shares: 2
+  analysis_date: '2026-04-04'
+segments:
+  SEG1:
+    name: 배터리·에너지솔루션 (Battery & Energy Solutions)
+    multiple: 9.5
+  SEG2:
+    name: 석유화학 (Petrochemicals & Advanced Materials)
+    multiple: 9.8
+  SEG3:
+    name: 디스플레이·전자재료 (Display & Electronic Materials)
+    multiple: 11.4
+  SEG4:
+    name: 생명과학 (Life Sciences)
+    multiple: 10.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 16076258
+      gross_profit: 0
+      op: 413315
+      assets: 35371581
+    SEG2:
+      revenue: 18372867
+      gross_profit: 0
+      op: 472360
+      assets: 40424664
+    SEG3:
+      revenue: 9186433
+      gross_profit: 0
+      op: 236180
+      assets: 20212332
+    SEG4:
+      revenue: 2296608
+      gross_profit: 0
+      op: 59045
+      assets: 5053083
+consolidated:
+  2023:
+    revenue: 55249785
+    op: 2529196
+    net_income: 1337812
+    assets: 77466694
+    liabilities: 36528509
+    equity: 32192605
+    dep: 3957503
+    amort: 0
+    gross_borr: 21928114
+    net_borr: 12843215
+    de_ratio: 68.1
+  2024:
+    revenue: 48699754
+    op: 874927
+    net_income: -690854
+    assets: 93857762
+    liabilities: 45862299
+    equity: 33284180
+    dep: 4682360
+    amort: 0
+    gross_borr: 27376097
+    net_borr: 19521220
+    de_ratio: 82.2
+  2025:
+    revenue: 45932167
+    op: 1180900
+    net_income: -1819449
+    assets: 101061661
+    liabilities: 53956116
+    equity: 32845600
+    dep: 5257905
+    amort: 0
+    gross_borr: 33811957
+    net_borr: 23912031
+    de_ratio: 102.9
+wacc_params:
+  rf: 3.2
+  erp: 6.5
+  bu: 1.05
+  de: 141.8
+  tax: 22.0
+  kd_pre: 4.8
+  eq_w: 41.3
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 70592341
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 70592341
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 70592341
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.16
+  - 0.13
+  - 0.09
+  - 0.06
+  - 0.03
+  tax_rate: 21.2
+  capex_to_da: 1.1
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+pe_multiple: 0.0
+ev_revenue_multiple: 1.0
+pbv_multiple: 0.7
+cps_principal: 0
+cps_years: 0
+net_debt: 23912031
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: SK Innovation
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: 국내 배터리 제조사, 유사한 사업구조 및 규모. 2023년 EBITDA 기준 EV/EBITDA 8-9배 범위. 직접 비교 가능한 한국
+    상장사.
+- name: Samsung SDI
+  segment_code: SEG1
+  ev_ebitda: 9.2
+  notes: 배터리·에너지솔루션 사업 비중 높음. 2023년 기준 EV/EBITDA 9-10배. 다각화 사업 포함으로 약간 높은 배수.
+- name: CATL (Contemporary Amperex Technology Co.)
+  segment_code: SEG1
+  ev_ebitda: 11.5
+  notes: 글로벌 배터리 시장 점유율 1위. 중국 상장(HK), 2023년 EV/EBITDA 11-12배. 성장성 프리미엄 반영.
+- name: BYD Company Limited
+  segment_code: SEG1
+  ev_ebitda: 10.8
+  notes: 배터리·EV 통합 제조사. 홍콩/상해 상장, 2023년 EV/EBITDA 10-11배. 수직통합 구조로 마진율 우수.
+- name: Panasonic Holdings Corporation
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: 배터리 사업 비중 감소 추세. 일본 상장, 2023년 EV/EBITDA 7-8배. 다각화로 인한 할인.
+- name: Northvolt AB
+  segment_code: SEG1
+  ev_ebitda: 15.0
+  notes: 유럽 신규 배터리 제조사. 스웨덴 상장, 2023년 EV/EBITDA 14-16배. 초기 단계 프리미엄, 참고용.
+- name: SK이노베이션
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: 한국 석유화학 선도기업, 유사한 사업구조(정유+석유화학), 2023년 EBITDA 마진 기반 산출, KOSPI 상장
+- name: 한화솔루션
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: 석유화학 및 첨단소재 사업 포트폴리오, LG화학과 유사한 다각화 구조, 2023년 실적 기반
+- name: 롯데케미칼
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: 순수 석유화학 기업, 기초화학품 중심, 국내 동종업계 비교 기준, KOSPI 상장
+- name: Dow Chemical (DOW)
+  segment_code: SEG2
+  ev_ebitda: 10.5
+  notes: 글로벌 석유화학 선도기업, 매출규모 유사(약 $50B), 첨단소재 포함, NYSE 상장, 2023년 실적
+- name: LyondellBasell (LYB)
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: 글로벌 석유화학 대형사, 폴리머/기초화학품 중심, 매출규모 $50B대, NYSE 상장
+- name: Eastman Chemical (EMN)
+  segment_code: SEG2
+  ev_ebitda: 11.2
+  notes: 특수화학 및 첨단소재 강점, LG화학의 고부가가치 사업과 유사, NYSE 상장, 2023년 기준
+- name: 신에쓰화학 (Shin-Etsu)
+  segment_code: SEG2
+  ev_ebitda: 12.5
+  notes: 일본 화학 선도기업, 반도체소재/첨단화학 강점, 높은 마진율, TSE 상장, 프리미엄 평가
+- name: SK머터리얼즈
+  segment_code: SEG3
+  ev_ebitda: 12.5
+  notes: 디스플레이·전자재료 전문업체, LCD/OLED 소재 공급, 유사한 고마진 특화 비즈니스 모델
+- name: 롯데정밀화학
+  segment_code: SEG3
+  ev_ebitda: 11.2
+  notes: 전자재료·디스플레이 소재 사업, 중간 규모 경쟁사, 마진율 유사
+- name: 삼성SDI
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: 디스플레이·전자재료 포함 다각화 기업, 규모 대형, 세그먼트 수익성 비교 가능
+- name: 'DuPont (NYSE: DD)'
+  segment_code: SEG3
+  ev_ebitda: 10.3
+  notes: 글로벌 디스플레이·전자재료 선도사, 유사 사업 구조, 국제 벤치마크
+- name: 'Merck KGaA (XETRA: MRK)'
+  segment_code: SEG3
+  ev_ebitda: 13.8
+  notes: 디스플레이 소재 글로벌 리더, 높은 기술 프리미엄, 고마진 비즈니스
+- name: 'JSR Corporation (TYO: 4185)'
+  segment_code: SEG3
+  ev_ebitda: 11.9
+  notes: 반도체·디스플레이 소재 전문, 유사한 고부가가치 포지셔닝
+- name: 'Sumitomo Chemical (TYO: 4005)'
+  segment_code: SEG3
+  ev_ebitda: 10.7
+  notes: 디스플레이·전자재료 사업 보유, 중간 규모 글로벌 경쟁사
+news_key_issues: '# LG화학 밸류에이션 영향 핵심 이슈
+
+
+  ## 사업 포트폴리오
+
+  - [기회] 여성건강 사업 강화: 일본 자궁내막증 치료제 ''디나게스트'' 도입 계약 (4월 3일)
+
+  - [기회] 바이오 사업 확대를 통한 고부가가치 사업 강화 (4월 3일)
+
+
+  ## 석유화학 부문
+
+  - [리스크] 중동 사태로 나프타 수급 차질 및 석유화학 구조개편 ''골든타임'' 축소 (4월 4일)
+
+  - [리스크] 석유화학 업계 45% 공장 일부 가동 중단, 4월 가동률 60%대 수준 (4월 3일)
+
+  - [기회] 정부 2.6조 긴급수혈 및 나프타 수급 지원으로 합성수지 공급가 인상폭 완화 (4월 3~4일)
+
+
+  ## 기업지배구조
+
+  - [개선] 사외이사 의장 앞세운 거버넌스 혁신 추진 (4월 4일)
+
+
+  ## 경영 방향
+
+  - [긍정] CEO 김동춘의 ''불황 극복'' 선언 및 고부가사업 강화 전략 (4월 3일)'
+mc_enabled: true

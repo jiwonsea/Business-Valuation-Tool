@@ -2,6 +2,9 @@ name: Weekly Discovery & Valuation
 # NOTE: Primary trigger is Claude Code scheduled agent (Gamma + Gmail delivery).
 # This workflow serves as a fallback if the scheduled agent fails.
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     # Saturday 00:00 UTC = KST 09:00 (08:00 during DST)

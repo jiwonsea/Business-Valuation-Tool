@@ -33,5 +33,16 @@ Thumbs.db
 # Cache (DART corpCode, LLM responses)
 .cache/
 
+# YouTube OAuth
+credentials.json
+token.json
+
+# Naver cookies
+naver_cookies.pkl
+
+# Generated video/audio
+*.mp4
+*.mp3
+
 # Misc artifacts
 *.docx

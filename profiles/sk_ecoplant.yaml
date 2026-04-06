@@ -12,7 +12,7 @@ company:
   shares_ordinary: 54278993
   shares_preferred: 11320755   # CPS convertible preferred shares
   cps_conversion_shares: 11320755
-  analysis_date: "2026-03-29"
+  # analysis_date: omitted → defaults to today's date
 
 segments:
   HI:
@@ -97,6 +97,7 @@ wacc_params:
   tax: 22.0
   kd_pre: 5.50
   eq_w: 34.2
+  size_premium: 1.5            # 비상장 할인 프리미엄 (1.5~2.0%p, unlisted conglomerate)
 
 scenarios:
   A:
@@ -139,13 +140,23 @@ dcf_params:
   capex_to_da: 1.10
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
+  terminal_ev_ebitda: 7.0      # Exit Multiple TV cross-check (건설/환경 복합 6~8x)
   # Actual Capex/NWC (optional — used instead of ratios if provided)
   actual_capex: 350000      # 2025 actual Capex (KRW M) — from cash flow statement
   actual_nwc: 610000        # 2025 net working capital (KRW M) — current assets minus current liabilities
   prior_nwc: 580000         # 2024 net working capital (KRW M)
 
-cps_principal: 600000
-cps_years: 4
+cps_principal: 600000       # CPS 6,000억원 (2022.07 발행, zero-coupon)
+cps_years: 4                # 만기 2026.07
+cps_dividend_rate: 0.0      # IPO 전까지 무배당; 불발 시 5%→8%→11% step-up (+3%p/yr)
+
+rcps_principal: 400000      # RCPS 4,000억원 (2022.06 발행)
+rcps_years: 5               # 만기 2027.06 (CPS와 다름!)
+rcps_dividend_rate: 7.5     # 연동형 배당 7.4~7.6% (5.5% or 회사채+1.45%p 중 높은 값)
+                            # 스텝업: 2027.06부터 +2%p/yr (미상환), +2.5%p (미배당)
+                            # RCPS는 배당 지급 중이므로 상환액 ≠ 복리 IRR 적용값
+                            # 시나리오 B/C의 rcps_repay는 배당 기지급분 차감 후 협상 추정치
+
 net_debt: 2295568
 eco_frontier: 94644
 base_year: 2025
@@ -165,7 +176,9 @@ mc_dlom_std: 5.0            # DLOM std dev
 peers:
   - {name: "삼성E&A",        segment_code: "HI",  ev_ebitda: 8.0,  notes: "반도체/화학 EPC, 비화공 10x+, 전체 평균 8x"}
   - {name: "원익IPS",        segment_code: "HI",  ev_ebitda: 9.5,  notes: "반도체 장비, βu 참조용"}
-  - {name: "에어리퀴드코리아", segment_code: "GAS", ev_ebitda: 12.0, notes: "산업용 가스 (글로벌 peer 15x 대비 할인)"}
+  - {name: "에어리퀴드코리아", segment_code: "GAS", ev_ebitda: 12.0, notes: "산업용 가스 국내 법인 (모회사 AI.PA 14.7x 대비 한국 할인)"}
+  - {name: "Air Liquide SA",   segment_code: "GAS", ev_ebitda: 13.3, notes: "글로벌 산업가스 #2 (FY25E, J.P.Morgan)"}
+  - {name: "Linde plc",        segment_code: "GAS", ev_ebitda: 17.4, notes: "글로벌 산업가스 #1 (프리미엄 반영)"}
   - {name: "현대건설",        segment_code: "SOL", ev_ebitda: 5.5,  notes: "국내 대형 건설 상단"}
   - {name: "GS건설",         segment_code: "SOL", ev_ebitda: 4.8,  notes: "건설 중위권"}
   - {name: "대우건설",        segment_code: "SOL", ev_ebitda: 4.5,  notes: "건설 하단"}

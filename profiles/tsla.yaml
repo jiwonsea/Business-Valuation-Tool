@@ -1,0 +1,239 @@
+company:
+  name: Tesla, Inc.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: TSLA
+  cik: '1318605'
+  corp_code: null
+  shares_total: 3752431984
+  shares_ordinary: 3752431984
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-04'
+segments:
+  SEG1:
+    name: Automotive (EV & ICE)
+    multiple: 8.5
+  SEG2:
+    name: Energy Storage & Solar
+    multiple: 11.5
+  SEG3:
+    name: Services & Other
+    multiple: 10.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 82025
+      gross_profit: 0
+      op: 4194
+      assets: 119202
+    SEG2:
+      revenue: 8724
+      gross_profit: 0
+      op: 446
+      assets: 12678
+    SEG3:
+      revenue: 4078
+      gross_profit: 0
+      op: 209
+      assets: 5926
+consolidated:
+  2023:
+    revenue: 96773
+    op: 8891
+    net_income: 14999
+    assets: 106618
+    liabilities: 43009
+    equity: 62634
+    dep: 4667
+    amort: 0
+    gross_borr: 9573
+    net_borr: -6825
+    de_ratio: 15.3
+  2024:
+    revenue: 97690
+    op: 7760
+    net_income: 7130
+    assets: 122070
+    liabilities: 48390
+    equity: 72913
+    dep: 5368
+    amort: 0
+    gross_borr: 13623
+    net_borr: -2516
+    de_ratio: 18.7
+  2025:
+    revenue: 94827
+    op: 4849
+    net_income: 3794
+    assets: 137806
+    liabilities: 54941
+    equity: 82137
+    dep: 6148
+    amort: 0
+    gross_borr: 14719
+    net_borr: -1794
+    de_ratio: 17.9
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.85
+  de: 1.1
+  tax: 21.0
+  kd_pre: 4.8
+  eq_w: 98.9
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.04
+  - 0.04
+  - 0.04
+  - 0.04
+  - 0.04
+  tax_rate: 21.0
+  capex_to_da: 1.1
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+pe_multiple: 356.6
+ev_revenue_multiple: 14.3
+pbv_multiple: 16.5
+cps_principal: 0
+cps_years: 0
+net_debt: -1794
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Hyundai Motor Company (현대자동차)
+  segment_code: SEG1
+  ev_ebitda: 4.2
+  notes: Korean legacy automaker with growing EV portfolio (IONIQ, KONA Electric).
+    Market cap ~40조 KRW, EBITDA ~9.5조 KRW (2023). Direct competitor in premium EV
+    segment. EV/EBITDA reflects transition phase with lower margins than pure EV players.
+- name: Kia Corporation (기아)
+  segment_code: SEG1
+  ev_ebitda: 4.5
+  notes: Hyundai Group subsidiary, independent listing. Strong EV lineup (EV6, Niro
+    EV). Market cap ~25조 KRW, EBITDA ~5.5조 KRW (2023). Similar valuation profile to
+    Hyundai due to ICE revenue mix.
+- name: BYD Company Limited (비야디)
+  segment_code: SEG1
+  ev_ebitda: 12.8
+  notes: World's largest EV/battery manufacturer. Market cap ~3,500억 CNY (~70조 KRW),
+    EBITDA ~550억 CNY. Premium multiple reflects pure-play EV exposure and battery
+    vertical integration. Higher multiple justified by growth trajectory.
+- name: Volkswagen Group (폭스바겐)
+  segment_code: SEG1
+  ev_ebitda: 5.1
+  notes: Legacy automaker with aggressive EV transition (ID. series). Market cap ~€50B
+    (~70조 KRW), EBITDA ~€13B. Lower multiple reflects ICE legacy burden and European
+    regulatory headwinds. Comparable scale to Hyundai-Kia.
+- name: BMW Group (BMW)
+  segment_code: SEG1
+  ev_ebitda: 5.8
+  notes: Premium legacy automaker, strong EV presence (i3, i4, iX). Market cap ~€60B
+    (~85조 KRW), EBITDA ~€10.5B. Premium positioning and higher margins vs mass-market
+    competitors justify slightly higher multiple.
+- name: NIO Inc. (니오)
+  segment_code: SEG1
+  ev_ebitda: 18.5
+  notes: Pure-play Chinese premium EV manufacturer. Market cap ~$10B (~13조 KRW), EBITDA
+    ~$0.54B (2023). High multiple reflects growth potential but elevated execution
+    risk. Comparable positioning to Tesla in premium EV segment.
+- name: SK E&S
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: 한국 에너지저장 및 신재생 전문기업. 배터리저장장치(ESS) 및 LNG 사업. 2023년 EBITDA 기준 EV/EBITDA 8.5배.
+    DART 공시 기준.
+- name: 한화큐셀
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: 태양광 모듈 제조 및 태양광 발전사업. 신재생에너지 통합 사업구조. 2023년 기준 EV/EBITDA 9.2배.
+- name: 현대에너지솔루션
+  segment_code: SEG2
+  ev_ebitda: 10.8
+  notes: ESS 및 신재생에너지 통합 솔루션 제공. 배터리저장 전문성. 2023년 기준 EV/EBITDA 10.8배.
+- name: NextEra Energy (NEE)
+  segment_code: SEG2
+  ev_ebitda: 14.2
+  notes: 미국 최대 신재생에너지 기업. NextEra Energy Resources 자회사 포함. 글로벌 ESS 및 태양광 선도기업. 2023년
+    기준 EV/EBITDA 14.2배.
+- name: Brookfield Renewable (BEP)
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: 캐나다 신재생에너지 및 에너지저장 통합 운영사. 글로벌 포트폴리오. 2023년 기준 EV/EBITDA 11.5배.
+- name: Plug Power (PLUG)
+  segment_code: SEG2
+  ev_ebitda: 12.3
+  notes: 수소 및 에너지저장 솔루션. 배터리 기술 기반 에너지 인프라. 2023년 기준 EV/EBITDA 12.3배. 확인 필요.
+- name: Enphase Energy (ENPH)
+  segment_code: SEG2
+  ev_ebitda: 13.8
+  notes: 태양광 마이크로인버터 및 에너지관리 시스템. 분산형 에너지저장 솔루션. 2023년 기준 EV/EBITDA 13.8배.
+news_key_issues: '# Tesla, Inc. 밸류에이션 영향 핵심 이슈
+
+
+  - [리스크] Q1 2026 배송량 358,000대로 월스트리트 예상 미달, 연간 최악 분기 기록 (4월 2일)
+
+
+  - [리스크] 오스틴 공장 인력 22% 감소로 생산 능력 약화 및 현금 창출 능력 저하 우려 (4월 2-3일)
+
+
+  - [리스크] Model S/X 생산 중단 발표로 기존 수익 기둥 상실, Cybercab 의존도 증가 (4월 1일)
+
+
+  - [리스크] 재고 증가(8.8 GWh)로 인한 유동성 악화 및 마진율 압박 전망 (4월 2일)
+
+
+  - [리스크] 전기차 시장 경쟁 심화(Toyota ''Tesla Killer'' EV 확대, 중국 EV 판매 증가)로 가격 인하 압력 지속 (4월
+  2일)
+
+
+  - [기회] 중국 생산 EV 판매 2분기 연속 증가, 이탈리아 신차 판매 전년 대비 32% 증가 (4월 1-2일)
+
+
+  - [불확실성] Elon Musk의 Tesla-SpaceX 합병 가능성 논의로 기업 구조 및 전략 방향성 불명확 (4월 3-4일)
+
+
+  - [기회] AI 기술 개발 진행 중이나 현재 자동차 판매 부진이 주요 과제로 평가 (4월 3일)'
+mc_enabled: true

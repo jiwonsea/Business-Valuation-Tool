@@ -111,6 +111,12 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 7425629076
+    growth_adj_pct: 15
+    market_sentiment_pct: 5
+    segment_multiples:
+      PROD: 25.0    # Office 365/LinkedIn premium on AI Copilot adoption
+      IC: 33.0      # Azure 30%+ growth, AI infrastructure demand
+      PC: 15.0      # Windows/Xbox stable
     desc: "AI Copilot 대규모 채택, Azure 30%+ 성장"
   Bear:
     name: "Bear Case"
@@ -122,6 +128,12 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 7425629076
+    growth_adj_pct: -15
+    market_sentiment_pct: -5
+    segment_multiples:
+      PROD: 19.0    # Enterprise spending slowdown
+      IC: 23.0      # Cloud competition intensifies (AWS/GCP)
+      PC: 12.0      # Windows/Xbox decline
     desc: "클라우드 경쟁 심화, AI 투자 대비 수익화 지연"
 
 dcf_params:

@@ -242,12 +242,16 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
         "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)",
     },
     "sotp": {
-        "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)",
+        "growth_adj_pct": "EBITDA % adjustment (e.g., +20 -> all segment EBITDAs * 1.2)",
+        "segment_multiples": "Multiple override per segment for this scenario {code: value}",
+        "segment_ebitda": "EBITDA override per segment for this scenario {code: value}",
         "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 -> EV * 1.05)",
     },
     "ddm": {
-        "ddm_growth": "Dividend growth rate override (%, absolute. e.g., 4.0 → 4% growth)",
-        "wacc_adj": "Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)",
+        "ddm_growth": "Dividend growth rate override (%, absolute. e.g., 4.0 -> 4% growth)",
+        "wacc_adj": "Ke %p adjustment (e.g., +0.5 -> Ke + 0.5%p)",
+        "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 -> EV * 1.05)",
     },
     "rim": {
         "rim_roe_adj": "ROE %p adjustment (e.g., -1.0 → all ROE -1%p)",
@@ -340,6 +344,7 @@ def prompt_scenario_design(
     include_optionality: bool = False,
     currency_unit: str = "$M",
     signals: MarketSignals | None = None,
+    segment_codes: list[str] | None = None,
 ) -> str:
     """Scenario design prompt.
 
@@ -347,8 +352,16 @@ def prompt_scenario_design(
     Available driver list varies by valuation_method.
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
-    driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
-    rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
+    # Separate scalar drivers from structured (dict) drivers for JSON formatting
+    _STRUCTURED_FIELDS = {"segment_multiples", "segment_ebitda"}
+    scalar_drivers = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
+    driver_json = ", ".join(f'"{k}": 0' for k in scalar_drivers)
+    rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_drivers)
+    # Add segment-level driver examples when segment_codes are available
+    if segment_codes and valuation_method == "sotp":
+        seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
+        driver_json += f', "segment_multiples": {{{seg_mult_example}}}'
+        rationale_json += ', "segment_multiples": "rationale for per-segment multiple differentiation"'
     driver_table = _driver_range_table(drivers_info)
     signals_block = _format_market_signals(signals)
 

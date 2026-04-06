@@ -1,8 +1,11 @@
 """Valuation execution engine -- YAML loading + method-specific dispatch."""
 
+import logging
 from datetime import date
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from schemas.models import (
     CompanyProfile, WACCParams, WACCResult, ScenarioParams,
@@ -286,16 +289,38 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         segments_info=vi.segments if is_mixed else None,
     )
 
+    # Warn if all scenarios lack SOTP-specific drivers (will produce identical EV)
+    _all_undifferentiated = all(
+        not sc.segment_ebitda and not sc.segment_multiples
+        and sc.growth_adj_pct == 0 and sc.market_sentiment_pct == 0
+        for sc in vi.scenarios.values()
+    )
+    if _all_undifferentiated and len(vi.scenarios) > 1:
+        logger.warning(
+            "SOTP 시나리오에 segment_multiples/segment_ebitda/growth_adj_pct 미설정 "
+            "— 모든 시나리오 동일 EV. --auto로 재생성하거나 YAML에 드라이버를 추가하세요."
+        )
+
     # Scenarios -- apply per-scenario SOTP overrides + market_sentiment_pct
     scenario_results = {}
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
 
-        # Per-scenario SOTP: recalculate if segment_ebitda or segment_multiples are set
-        if sc.segment_ebitda or sc.segment_multiples:
+        # Per-scenario SOTP: recalculate if drivers are set
+        needs_recalc = sc.segment_ebitda or sc.segment_multiples or sc.growth_adj_pct != 0
+        if needs_recalc:
+            # Apply growth_adj_pct to base EBITDA allocation
+            adj_alloc = base_alloc
+            if sc.growth_adj_pct != 0:
+                mult = 1 + sc.growth_adj_pct / 100
+                adj_alloc = {
+                    c: alloc.model_copy(update={"ebitda": round(alloc.ebitda * mult)})
+                    for c, alloc in base_alloc.items()
+                }
+
             _, sc_ev = calc_sotp(
-                base_alloc,
+                adj_alloc,
                 vi.multiples,
                 segments_info=vi.segments if is_mixed else None,
                 ebitda_override=sc.segment_ebitda,
@@ -304,9 +329,9 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         else:
             sc_ev = total_ev
 
-        sentiment = getattr(sc, "market_sentiment_pct", 0.0)
-        if sentiment != 0:
-            sc_ev = round(sc_ev * (1 + sentiment / 100))
+        # Market sentiment is cumulative
+        if sc.market_sentiment_pct != 0:
+            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, effective_net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
                           vi.rcps_principal, vi.rcps_years, um,
@@ -550,6 +575,11 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             buyback_per_share=buyback_ps,
         )
         sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
+
+        # Market sentiment is cumulative
+        if sc.market_sentiment_pct != 0:
+            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
+
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
                           vi.rcps_principal, vi.rcps_years, um,
@@ -671,8 +701,10 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                 sc_ev = sc_rim.equity_value + vi.net_debt
             except ValueError:
                 pass
-        elif sc.market_sentiment_pct != 0:
-            sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
+
+        # Market sentiment is cumulative
+        if sc.market_sentiment_pct != 0:
+            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
                           vi.rcps_principal, vi.rcps_years, um,
@@ -777,7 +809,7 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
         if sc.ev_multiple is not None and primary_mv.metric_value > 0:
             sc_ev = round(primary_mv.metric_value * sc.ev_multiple)
         elif sc.market_sentiment_pct != 0:
-            sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
+            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
                           vi.rcps_principal, vi.rcps_years, um,
@@ -865,7 +897,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             discounted_nav = round(nav_raw.nav * (1 - sc.nav_discount / 100))
             sc_ev = discounted_nav + vi.net_debt
         elif sc.market_sentiment_pct != 0:
-            sc_ev = round(total_ev * (1 + sc.market_sentiment_pct / 100))
+            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
                           vi.cps_principal, vi.cps_years,
                           vi.rcps_principal, vi.rcps_years, um,

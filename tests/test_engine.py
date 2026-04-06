@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from schemas.models import WACCParams, ScenarioParams, DCFParams
+from schemas.models import WACCParams, ScenarioParams, DCFParams, DAAllocation
 from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
 from engine.dcf import calc_dcf
@@ -1483,3 +1483,108 @@ class TestResolveDrivers:
         result = resolve_drivers(sc, [])
         assert result.wacc_adj == 0.0
         assert result.growth_adj_pct == 0.0
+
+
+# ═══════════════════════════════════════════════════════════
+# Scenario Driver Round-Trip Tests
+# ═══════════════════════════════════════════════════════════
+
+class TestScenarioDriverRoundTrip:
+    """Verify scenario drivers flow end-to-end: YAML → ScenarioParams → EV differentiation."""
+
+    def test_sotp_segment_multiples_differentiate_ev(self):
+        """SOTP: segment_multiples in YAML → different EV per scenario."""
+        from valuation_runner import load_profile, run_valuation
+
+        profile_path = str(Path(__file__).parent.parent / "profiles" / "msft.yaml")
+        vi = load_profile(profile_path)
+        result = run_valuation(vi)
+
+        assert result.primary_method == "sotp"
+        # Bull must have higher EV than Base, Bear must have lower
+        bull = result.scenarios["Bull"]
+        base = result.scenarios["Base"]
+        bear = result.scenarios["Bear"]
+        assert bull.pre_dlom > base.pre_dlom > bear.pre_dlom, (
+            f"SOTP EV not differentiated: Bull={bull.pre_dlom}, Base={base.pre_dlom}, Bear={bear.pre_dlom}"
+        )
+
+    def test_dcf_growth_adj_differentiates_ev(self):
+        """DCF: growth_adj_pct in YAML → different EV per scenario."""
+        from valuation_runner import load_profile, run_valuation
+
+        profile_path = str(Path(__file__).parent.parent / "profiles" / "tsla.yaml")
+        vi = load_profile(profile_path)
+        result = run_valuation(vi)
+
+        assert result.primary_method in ("dcf_primary", "sotp")
+        bull = result.scenarios["Bull"]
+        base = result.scenarios["Base"]
+        bear = result.scenarios["Bear"]
+        assert bull.pre_dlom > base.pre_dlom > bear.pre_dlom, (
+            f"DCF EV not differentiated: Bull={bull.pre_dlom}, Base={base.pre_dlom}, Bear={bear.pre_dlom}"
+        )
+
+    def test_ddm_growth_differentiates_ev(self):
+        """DDM: ddm_growth in YAML → different EV per scenario."""
+        from valuation_runner import load_profile, run_valuation
+
+        profile_path = str(Path(__file__).parent.parent / "profiles" / "kb_financial.yaml")
+        vi = load_profile(profile_path)
+        result = run_valuation(vi)
+
+        assert result.primary_method == "ddm"
+        bull = result.scenarios["A"]
+        base = result.scenarios["B"]
+        bear = result.scenarios["C"]
+        assert bull.pre_dlom > base.pre_dlom > bear.pre_dlom, (
+            f"DDM EV not differentiated: A={bull.pre_dlom}, B={base.pre_dlom}, C={bear.pre_dlom}"
+        )
+
+    def test_sotp_growth_adj_pct_applies_to_ebitda(self):
+        """SOTP: growth_adj_pct uniformly scales all segment EBITDAs."""
+        da_allocs = {
+            "SEG1": DAAllocation(asset_share=60.0, da_allocated=6000, ebitda=10000),
+            "SEG2": DAAllocation(asset_share=40.0, da_allocated=4000, ebitda=5000),
+        }
+        multiples = {"SEG1": 10.0, "SEG2": 8.0}
+
+        _, base_ev = calc_sotp(da_allocs, multiples)
+
+        # Apply +20% growth adjustment
+        adj_allocs = {
+            c: a.model_copy(update={"ebitda": round(a.ebitda * 1.2)})
+            for c, a in da_allocs.items()
+        }
+        _, bull_ev = calc_sotp(adj_allocs, multiples)
+
+        # Apply -25% growth adjustment
+        bear_allocs = {
+            c: a.model_copy(update={"ebitda": round(a.ebitda * 0.75)})
+            for c, a in da_allocs.items()
+        }
+        _, bear_ev = calc_sotp(bear_allocs, multiples)
+
+        assert bull_ev > base_ev > bear_ev
+        # 20% EBITDA increase → ~20% EV increase
+        assert abs(bull_ev / base_ev - 1.2) < 0.01
+
+    def test_yaml_segment_multiples_round_trip(self):
+        """YAML with segment_multiples loads correctly into ScenarioParams."""
+        from valuation_runner import load_profile
+
+        profile_path = str(Path(__file__).parent.parent / "profiles" / "msft.yaml")
+        vi = load_profile(profile_path)
+
+        bull_sc = vi.scenarios["Bull"]
+        bear_sc = vi.scenarios["Bear"]
+        base_sc = vi.scenarios["Base"]
+
+        # Bull should have segment_multiples set
+        assert bull_sc.segment_multiples is not None
+        assert "IC" in bull_sc.segment_multiples
+        assert bull_sc.segment_multiples["IC"] > base_sc.segment_multiples.get("IC", 0) if base_sc.segment_multiples else True
+
+        # Bear should have lower multiples
+        assert bear_sc.segment_multiples is not None
+        assert bear_sc.segment_multiples["IC"] < bull_sc.segment_multiples["IC"]

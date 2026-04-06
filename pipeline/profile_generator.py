@@ -639,10 +639,11 @@ def auto_analyze(
         _revenue_usd = cons.get("revenue", 0)
         _ev_rev = round(_market_cap_usd / (_revenue_usd * 1e6), 1) if _market_cap_usd and _revenue_usd else 0.0
         _currency = "$M" if getattr(identity, "market", "KR") == "US" else "억원"
+        _seg_codes = [seg.get("code", f"S{i}") for i, seg in enumerate(segments)] if segments else None
         sc_result = analyst.design_scenarios(
             identity.name, legal, key_issues, valuation_method=val_method,
             industry=_industry, ev_rev_multiple=_ev_rev, currency_unit=_currency,
-            signals=market_signals,
+            signals=market_signals, segment_codes=_seg_codes,
         )
         ai_scenarios = sc_result.get("scenarios", [])
         opt_segs = sc_result.get("optionality_segments", [])
@@ -733,6 +734,11 @@ def auto_analyze(
                     if field in ("ddm_growth", "ev_multiple") and val == 0:
                         val = None
                     sc_dict[field] = val
+            # Structured per-segment overrides (SOTP scenarios)
+            for seg_field in ("segment_ebitda", "segment_multiples"):
+                val = sc.get(seg_field) or drivers.get(seg_field)
+                if val and isinstance(val, dict):
+                    sc_dict[seg_field] = val
             # Per-driver rationale
             dr = sc.get("driver_rationale", {})
             if dr:

@@ -126,6 +126,7 @@ scenarios:
     shares: 5827808935
     growth_adj_pct: 20
     terminal_growth_adj: 0.3
+    market_sentiment_pct: 10
     desc: Upside scenario
   Bear:
     name: Bear Case
@@ -139,6 +140,7 @@ scenarios:
     shares: 5827808935
     growth_adj_pct: -25
     terminal_growth_adj: -0.3
+    market_sentiment_pct: -10
     desc: Downside scenario
 dcf_params:
   ebitda_growth_rates:

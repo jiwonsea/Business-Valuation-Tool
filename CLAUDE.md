@@ -35,6 +35,7 @@ python cli.py --discover --market KR                      # news-based company d
 python cli.py --weekly                                    # weekly auto-analysis (KR+US, 3 companies)
 python cli.py --weekly --markets KR --max-companies 5     # specify market/count
 python cli.py --weekly --dry-run                          # discovery only, skip valuation
+python cli.py --backtest --backtest-min-age 90            # calibration backtesting report
 python -m scheduler.weekly_run                            # direct module execution
 
 streamlit run app.py                                      # web UI

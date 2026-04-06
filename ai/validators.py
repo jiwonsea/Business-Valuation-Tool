@@ -254,12 +254,15 @@ def validate_scenarios(scenarios_data: dict | list) -> tuple[dict | list, list[s
                 if isinstance(weight, (int, float)) and not (0 <= weight <= 1):
                     warnings.append(f"[{label}] driver '{did}' weight={weight} 범위 이탈 [0, 1]")
 
-    # ── Scenario differentiation check ──
+    # ── Scenario differentiation check (includes segment overrides) ──
     driver_signatures = []
     for s in items:
         drivers = s.get("drivers", {})
         active = s.get("active_drivers", {})
-        sig = tuple(sorted(drivers.items())) + tuple(sorted((active or {}).items()))
+        seg_mult = tuple(sorted((s.get("segment_multiples") or {}).items()))
+        seg_ebitda = tuple(sorted((s.get("segment_ebitda") or {}).items()))
+        sig = (tuple(sorted(drivers.items())) + tuple(sorted((active or {}).items()))
+               + seg_mult + seg_ebitda)
         driver_signatures.append(sig)
     if len(set(driver_signatures)) == 1 and len(items) > 1:
         warnings.append("모든 시나리오의 드라이버가 동일합니다 — 시나리오 분화 부족")

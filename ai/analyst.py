@@ -275,6 +275,7 @@ class AIAnalyst:
         currency_unit: str = "$M",
         two_pass: bool = False,
         signals=None,
+        segment_codes: list[str] | None = None,
     ) -> dict:
         """Step 5: Scenario design (multi-driver) with optional optionality segment detection.
 
@@ -307,7 +308,7 @@ class AIAnalyst:
             lambda: prompt_scenario_design(
                 company_name, legal_status, key_issues, valuation_method,
                 include_optionality=include_opt, currency_unit=currency_unit,
-                signals=signals,
+                signals=signals, segment_codes=segment_codes,
             ),
             system=system, max_tokens=4096, extra=extra, model=MODEL_HEAVY,
         )

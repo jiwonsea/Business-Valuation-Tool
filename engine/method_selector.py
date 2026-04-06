@@ -12,6 +12,11 @@ _GROWTH_KEYWORDS = frozenset({
     "소프트웨어", "software", "플랫폼", "platform", "클라우드", "cloud",
     "ai", "saas", "바이오", "bio", "제약", "pharma", "게임", "game",
     "인터넷", "internet", "핀테크", "fintech", "반도체", "semiconductor",
+    # EV / clean energy / space (high-growth disruptors regardless of legacy sector)
+    "ev ", "(ev",               # "EV & ICE", "(EV & ICE)" segment name patterns
+    "electric vehicle", "전기차", "battery storage",
+    "autonomous vehicle", "자율주행", "로보택시", "robotaxi",
+    "space exploration", "로켓",
 })
 
 # Asset-centric / holding company keywords (REITs excluded — handled separately)
@@ -52,6 +57,11 @@ def classify_industry(industry: str) -> str:
     return "default"
 
 
+def is_financial(industry: str) -> bool:
+    """Check if an industry string indicates a financial company."""
+    return any(kw in industry.lower() for kw in _FINANCIAL_KEYWORDS)
+
+
 def suggest_method(
     n_segments: int,
     legal_status: str = "",
@@ -61,6 +71,7 @@ def suggest_method(
     ke: float = 0.0,
     has_ddm_params: bool = False,
     has_rim_params: bool = False,
+    segment_names: list[str] | None = None,
 ) -> str:
     """Suggest the primary valuation method based on company characteristics.
 
@@ -73,14 +84,29 @@ def suggest_method(
         ke: Cost of equity (%). Used for DDM/RIM decision for financials
         has_ddm_params: Whether DDM parameters are provided
         has_rim_params: Whether RIM parameters are provided
+        segment_names: Segment name list (for mixed financial/non-financial detection)
 
     Returns:
         "sotp" | "dcf_primary" | "ddm" | "rim" | "multiples" | "nav"
     """
     industry_lower = industry.lower()
 
+    # Multi-segment with mixed financial/non-financial subsidiaries -> SOTP
+    # (must precede single-keyword checks to avoid mis-routing platform+bank combos)
+    if n_segments > 1 and segment_names:
+        has_fin_seg = any(
+            any(kw in name.lower() for kw in _FINANCIAL_KEYWORDS)
+            for name in segment_names
+        )
+        has_non_fin_seg = any(
+            not any(kw in name.lower() for kw in _FINANCIAL_KEYWORDS)
+            for name in segment_names
+        )
+        if has_fin_seg and has_non_fin_seg:
+            return "sotp"
+
     # Financial companies -> auto-select DDM vs RIM
-    if any(kw in industry_lower for kw in _FINANCIAL_KEYWORDS):
+    if is_financial(industry):
         return _suggest_financial_method(
             roe=roe, ke=ke,
             has_ddm_params=has_ddm_params,
@@ -95,13 +121,14 @@ def suggest_method(
     if any(kw in industry_lower for kw in _HOLDING_KEYWORDS):
         return "nav"
 
+    # Multi-segment -> SOTP (before growth check: conglomerates with growth segments
+    # are better served by per-segment multiples than consolidated DCF)
+    if n_segments > 1:
+        return "sotp"
+
     # Growth/tech -> DCF (P/S cross-validation auto-included)
     if any(kw in industry_lower for kw in _GROWTH_KEYWORDS):
         return "dcf_primary"
-
-    # Multi-segment -> SOTP
-    if n_segments > 1:
-        return "sotp"
 
     # Mature/stable + sufficient peers -> relative valuation (Multiples primary)
     if has_peers and any(kw in industry_lower for kw in _MATURE_KEYWORDS):

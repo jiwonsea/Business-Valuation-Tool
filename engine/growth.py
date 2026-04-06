@@ -17,31 +17,46 @@ def linear_fade(start: float, end: float, n: int) -> list[float]:
     return [round(start + step * i, 4) for i in range(n)]
 
 
-def calc_ebitda_growth(consolidated: dict[int, dict]) -> float | None:
-    """Compute trailing 1-year EBITDA growth from consolidated financials. Returns None if insufficient data.
+def _ebitda(year_data: dict) -> float:
+    return year_data.get("op", 0) + year_data.get("dep", 0) + year_data.get("amort", 0)
 
-    EBITDA = op + dep + amort. Uses the most recent trend as Y1 basis.
+
+def calc_ebitda_growth(consolidated: dict[int, dict]) -> float | None:
+    """Compute EBITDA growth using longest available CAGR (up to 3 years).
+
+    Uses multi-year CAGR instead of 1-year trailing to reduce single-year outlier noise.
+    Falls back to 1-year YoY when only 2 years of data exist.
+    Returns None if insufficient or negative EBITDA data.
     """
     years = sorted(consolidated.keys())
     if len(years) < 2:
         return None
 
+    # Prefer 3-year CAGR (years[-3] -> years[-1]) when available
+    if len(years) >= 3:
+        start_yr, end_yr = years[-3], years[-1]
+        n_years = end_yr - start_yr
+        ebitda_start = _ebitda(consolidated[start_yr])
+        ebitda_end = _ebitda(consolidated[end_yr])
+        if ebitda_start > 0 and ebitda_end > 0 and n_years > 0:
+            return round((ebitda_end / ebitda_start) ** (1 / n_years) - 1, 4)
+
+    # Fallback: 1-year YoY
     prev_yr, last_yr = years[-2], years[-1]
-    prev = consolidated[prev_yr]
-    last = consolidated[last_yr]
-
-    ebitda_prev = prev.get("op", 0) + prev.get("dep", 0) + prev.get("amort", 0)
-    ebitda_last = last.get("op", 0) + last.get("dep", 0) + last.get("amort", 0)
-
+    ebitda_prev = _ebitda(consolidated[prev_yr])
+    ebitda_last = _ebitda(consolidated[last_yr])
     if ebitda_prev <= 0 or ebitda_last <= 0:
         return None
-
     return round(ebitda_last / ebitda_prev - 1, 4)
 
 
-# Clamping range (used when industry is unspecified + YoY fallback)
+# Clamping range
 _GROWTH_FLOOR = 0.02
 _GROWTH_CAP = 0.30
+
+# Deeply negative threshold: below this, trailing data is too distorted to use as Y1
+# (e.g. Tesla 2023-2025 CAGR ~ -10% due to margin compression, not structural decline)
+_NEGATIVE_OUTLIER_THRESHOLD = -0.05
 
 # Market-specific convergence target (Y5)
 _FADE_END = {"KR": 0.03, "US": 0.04}
@@ -64,9 +79,11 @@ def generate_growth_rates(
     """Auto-generate EBITDA growth rate array.
 
     Y1 determination priority:
-      1. industry provided -> industry base-rate (outside view)
-      2. no industry but financial data available -> clamped YoY (backward compatible)
-      3. neither available -> fallback_start
+      1. industry provided -> industry base-rate (outside view, Damodaran)
+      2. no industry, trailing CAGR >= -5% -> clamped multi-year CAGR
+      3. no industry, trailing CAGR < -5% (deeply negative outlier)
+         -> fallback_start (inside-view suppressed, outside view used)
+      4. no data -> fallback_start
     Yn: market-specific GDP-linked convergence target
     Intermediate years: linear interpolation
     """
@@ -74,15 +91,21 @@ def generate_growth_rates(
 
     category = classify_industry(industry)
     if industry:
+        # Outside view: use industry base-rate regardless of trailing performance
         fade_start = _INDUSTRY_BASE_RATE[category]
     else:
-        yoy = calc_ebitda_growth(consolidated)
-        if yoy is not None:
-            fade_start = max(_GROWTH_FLOOR, min(yoy, _GROWTH_CAP))
+        cagr = calc_ebitda_growth(consolidated)
+        if cagr is not None:
+            if cagr < _NEGATIVE_OUTLIER_THRESHOLD:
+                # Deeply negative trailing: single-period distortion likely
+                # Use fallback (outside view) to avoid locking in temporary trough
+                fade_start = fallback_start
+            else:
+                fade_start = max(_GROWTH_FLOOR, min(cagr, _GROWTH_CAP))
         else:
             fade_start = fallback_start
 
-    # If Y1 is below convergence target, clamp to prevent reverse fade
+    # Prevent reverse fade (Y1 < Yn is meaningless)
     if fade_start < fade_end:
         fade_start = fade_end
 

@@ -18,8 +18,18 @@ def calc_dcf(
     """
     wacc = wacc_pct / 100
     tg = params.terminal_growth / 100
-    tax_mult = 1 - params.tax_rate / 100  # Pre-computed NOPAT multiplier
+    tax_rate = params.tax_rate / 100
     growth_rates = params.ebitda_growth_rates
+
+    # Auto-generate growth rates if not provided or empty (5-year fade from 8% to 3%)
+    if not growth_rates:
+        growth_rates = [0.08, 0.07, 0.06, 0.05, 0.03]
+
+    if ebitda_base <= 0:
+        raise ValueError(
+            f"EBITDA({ebitda_base:,})가 0 이��입니다. "
+            "DCF는 양의 현금흐름을 전제로 하므로, 적자 기업에는 Multiples/P/S 등 대안 방법론을 사용하세요."
+        )
 
     if wacc <= tg:
         raise ValueError(
@@ -27,7 +37,11 @@ def calc_dcf(
             "Terminal Value가 음수/무한대가 되어 DCF 산출이 불가합니다."
         )
 
-    da_to_ebitda = da_base / ebitda_base if ebitda_base > 0 else 0.5
+    # Use 3-year average override when provided; fallback to single-year ratio
+    if params.da_to_ebitda_override is not None and params.da_to_ebitda_override > 0:
+        da_to_ebitda = params.da_to_ebitda_override
+    else:
+        da_to_ebitda = da_base / ebitda_base if ebitda_base > 0 else 0.5
 
     # If actual Capex available, derive Capex/D&A ratio; otherwise use parameter
     if params.actual_capex is not None and da_base > 0:
@@ -37,28 +51,29 @@ def calc_dcf(
 
     # If actual NWC available, derive delta_NWC/delta_Revenue ratio
     if params.actual_nwc is not None and params.prior_nwc is not None and revenue_base > 0:
-        delta_nwc_actual = params.actual_nwc - params.prior_nwc
-        # Estimate implied NWC/revenue ratio from actuals
-        nwc_to_rev = params.actual_nwc / revenue_base if revenue_base > 0 else params.nwc_to_rev_delta
-        nwc_ratio = nwc_to_rev
+        # Derive NWC/revenue ratio from actuals (projects NWC proportionally to revenue)
+        nwc_ratio = params.actual_nwc / revenue_base
     else:
         nwc_ratio = params.nwc_to_rev_delta
 
     projections = []
     prev_ebitda = ebitda_base
     prev_revenue = revenue_base
-    prev_nwc = params.actual_nwc if params.actual_nwc is not None else round(revenue_base * nwc_ratio)
+    # Use actual NWC only when both actual and prior are available (paired validation)
+    _use_actual_nwc = params.actual_nwc is not None and params.prior_nwc is not None
+    prev_nwc = params.actual_nwc if _use_actual_nwc else round(revenue_base * nwc_ratio)
 
     for i, g in enumerate(growth_rates):
         yr = base_year + 1 + i
         ebitda = round(prev_ebitda * (1 + g))
         da = round(ebitda * da_to_ebitda)
         op = ebitda - da
-        nopat = round(op * tax_mult)
+        # No tax shield when operating at a loss (no NOL schedule modeled)
+        nopat = round(op * (1 - tax_rate)) if op > 0 else op
         capex = round(da * capex_ratio)
         revenue = round(prev_revenue * (1 + g))
 
-        if params.actual_nwc is not None:
+        if _use_actual_nwc:
             # Project NWC proportional to revenue
             nwc_current = round(revenue * nwc_ratio)
             delta_nwc = nwc_current - prev_nwc
@@ -91,6 +106,17 @@ def calc_dcf(
     pv_terminal = round(terminal_value / (1 + wacc) ** n)
 
     ev_dcf = pv_fcff + pv_terminal
+    tv_ev_ratio = round(pv_terminal / ev_dcf * 100, 1) if ev_dcf > 0 else 0.0
+
+    # Exit Multiple terminal value (optional cross-check)
+    terminal_value_exit = None
+    pv_terminal_exit = None
+    ev_dcf_exit = None
+    if params.terminal_ev_ebitda is not None and params.terminal_ev_ebitda > 0:
+        last_ebitda = projections[-1].ebitda
+        terminal_value_exit = round(last_ebitda * params.terminal_ev_ebitda)
+        pv_terminal_exit = round(terminal_value_exit / (1 + wacc) ** n)
+        ev_dcf_exit = pv_fcff + pv_terminal_exit
 
     return DCFResult(
         projections=projections,
@@ -100,4 +126,9 @@ def calc_dcf(
         ev_dcf=ev_dcf,
         wacc=wacc_pct,
         terminal_growth=params.terminal_growth,
+        terminal_value_exit=terminal_value_exit,
+        pv_terminal_exit=pv_terminal_exit,
+        ev_dcf_exit=ev_dcf_exit,
+        terminal_ev_ebitda=params.terminal_ev_ebitda,
+        tv_ev_ratio=tv_ev_ratio,
     )

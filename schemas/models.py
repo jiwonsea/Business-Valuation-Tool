@@ -102,7 +102,15 @@ class WACCParams(BaseModel):
     tax: float  # Corporate tax rate (%)
     kd_pre: float  # Pre-tax cost of debt (%)
     eq_w: float  # Equity weight (%)
+    size_premium: float = 0.0  # Size/illiquidity premium (%, added to Ke for unlisted/small-cap)
     is_financial: bool = False  # Financial sector (True: skip Hamada, use bu as βL directly)
+
+    @field_validator("size_premium")
+    @classmethod
+    def size_premium_range(cls, v: float) -> float:
+        if not -2.0 <= v <= 10.0:
+            raise ValueError(f"Size premium은 -2%~10% 범위여야 합니다: {v}%")
+        return v
 
     @field_validator("bu")
     @classmethod
@@ -203,6 +211,10 @@ class ScenarioParams(BaseModel):
     # Multi-variable news drivers (when active_drivers is set, effects are summed via resolve_drivers())
     active_drivers: Optional[dict[str, float]] = None  # {driver_id: weight(0~1)}, None=direct assignment mode
 
+    # Optionality segment overrides (per-scenario) — for binary-outcome segments (FSD, Robotaxi, etc.)
+    segment_ebitda: Optional[dict[str, int]] = None   # {seg_code: ebitda} overrides allocate_da result
+    segment_multiples: Optional[dict[str, float]] = None  # {seg_code: multiple} overrides vi.multiples
+
     @field_validator("wacc_adj")
     @classmethod
     def wacc_adj_range(cls, v: float) -> float:
@@ -222,6 +234,41 @@ class ScenarioParams(BaseModel):
     def dlom_range(cls, v: float) -> float:
         if not 0 <= v <= 100:
             raise ValueError(f"DLOM은 0~100% 범위여야 합니다: {v}%")
+        return v
+
+    @field_validator("growth_adj_pct")
+    @classmethod
+    def growth_adj_range(cls, v: float) -> float:
+        if not -50 <= v <= 100:
+            raise ValueError(f"성장률 조정은 -50~+100% 범위여야 합니다: {v}%")
+        return v
+
+    @field_validator("terminal_growth_adj")
+    @classmethod
+    def terminal_growth_adj_range(cls, v: float) -> float:
+        if not -2.0 <= v <= 2.0:
+            raise ValueError(f"TGR 조정은 ±2.0%p 범위여야 합니다: {v}%p")
+        return v
+
+    @field_validator("market_sentiment_pct")
+    @classmethod
+    def market_sentiment_range(cls, v: float) -> float:
+        if not -30 <= v <= 30:
+            raise ValueError(f"시장 심리 조정은 ±30% 범위여야 합니다: {v}%")
+        return v
+
+    @field_validator("rim_roe_adj")
+    @classmethod
+    def rim_roe_adj_range(cls, v: float) -> float:
+        if not -10.0 <= v <= 10.0:
+            raise ValueError(f"ROE 조정은 ±10.0%p 범위여야 합니다: {v}%p")
+        return v
+
+    @field_validator("nav_discount")
+    @classmethod
+    def nav_discount_range(cls, v: float) -> float:
+        if not 0 <= v <= 60:
+            raise ValueError(f"NAV 할인율은 0~60% 범위여야 합니다: {v}%")
         return v
 
 
@@ -332,6 +379,17 @@ class DCFParams(BaseModel):
     actual_capex: Optional[int] = None  # Actual Capex (in display units)
     actual_nwc: Optional[int] = None  # Actual NWC (in display units)
     prior_nwc: Optional[int] = None  # Prior-period NWC (for delta NWC calculation)
+    # 3-year average D&A/EBITDA ratio override (if provided, replaces single-year derived ratio)
+    da_to_ebitda_override: Optional[float] = None
+    # Exit Multiple terminal value (used alongside Gordon Growth for cross-check)
+    terminal_ev_ebitda: Optional[float] = None  # Terminal EV/EBITDA multiple (None=skip)
+
+    @field_validator("terminal_growth")
+    @classmethod
+    def terminal_growth_range(cls, v: float) -> float:
+        if not 0 <= v <= 5:
+            raise ValueError(f"Terminal growth rate must be 0~5%: {v}%")
+        return v
 
 
 class DCFProjection(BaseModel):
@@ -355,6 +413,12 @@ class DCFResult(BaseModel):
     ev_dcf: int
     wacc: float
     terminal_growth: float
+    # Exit Multiple terminal value (optional cross-check)
+    terminal_value_exit: Optional[int] = None  # TV via EV/EBITDA exit multiple
+    pv_terminal_exit: Optional[int] = None
+    ev_dcf_exit: Optional[int] = None  # DCF EV using exit multiple TV
+    terminal_ev_ebitda: Optional[float] = None  # Applied exit multiple
+    tv_ev_ratio: float = 0.0  # TV/EV ratio (Gordon Growth) for transparency
 
 
 # ── Peer ──
@@ -408,6 +472,10 @@ class ValuationInput(BaseModel):
     nav_params: Optional[NAVParams] = None  # For NAV (holding co./REITs/asset-heavy)
     cps_principal: int = 0  # In display units
     cps_years: int = 0
+    cps_dividend_rate: float = 0.0  # CPS annual dividend rate (%, 0=zero-coupon)
+    rcps_principal: int = 0  # RCPS principal in display units
+    rcps_years: int = 0  # RCPS maturity (years from issuance)
+    rcps_dividend_rate: float = 0.0  # RCPS annual dividend rate (%, e.g. 7.5)
     net_debt: int = 0  # In display units
     segment_net_debt: dict[str, int] = {}  # {segment_code: net_debt} -- for financial subsidiary split SOTP
     eco_frontier: int = 0  # In display units
@@ -507,6 +575,31 @@ class CrossValidationItem(BaseModel):
     per_share: int  # Per-share value
 
 
+class QualityScore(BaseModel):
+    """Valuation quality score (autoresearch-inspired scalar metric)."""
+    total: int = 0                    # 0-100 (rescaled for unlisted)
+    cv_convergence: int = 0           # 0-25 (cross-validation method agreement)
+    wacc_plausibility: int = 0        # 0-25 (WACC components in reasonable ranges)
+    scenario_consistency: int = 0     # 0-25 (scenario design quality)
+    market_alignment: int = 0         # 0-25 (listed only; disabled for unlisted)
+    max_score: int = 100              # 100 for listed, 75 for unlisted (before rescale)
+    warnings: list[str] = []          # Korean deduction reasons
+    grade: str = ""                   # A/B/C/D/F
+
+
+class GapDiagnostic(BaseModel):
+    """Reverse-DCF gap analysis: explains why market price diverges from intrinsic value."""
+    gap_pct: float = 0.0                       # (intrinsic - market) / market * 100
+    direction: str = ""                         # "market_premium" | "market_discount"
+    implied_wacc: Optional[float] = None        # WACC % that reconciles with market
+    implied_tgr: Optional[float] = None         # TGR % that reconciles with market
+    implied_growth_mult: Optional[float] = None # Growth multiplier that reconciles
+    category: str = ""                          # "wacc_overestimated" | "growth_underestimated" | "optionality_premium" | "market_pessimism"
+    explanation: str = ""
+    suggestions: list[str] = []
+    reconcilable: bool = True                   # False = even extreme assumptions cannot bridge gap
+
+
 class ValuationResult(BaseModel):
     primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav")
     wacc: WACCResult
@@ -529,3 +622,5 @@ class ValuationResult(BaseModel):
     sensitivity_dcf: list[SensitivityRow] = []
     sensitivity_primary: list[SensitivityRow] = []  # Primary method-specific sensitivity
     sensitivity_primary_label: str = ""  # Sensitivity table title
+    quality: Optional[QualityScore] = None  # Post-valuation quality score
+    gap_diagnostic: Optional[GapDiagnostic] = None  # Reverse-DCF gap analysis (when |gap| >= 20%)

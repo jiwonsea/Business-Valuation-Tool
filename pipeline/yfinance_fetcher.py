@@ -113,6 +113,10 @@ def resolve_kr_ticker(ticker: str) -> str:
       2) Query with .KQ -> if price + valid longName, it's KOSDAQ
       3) Both fail -> .KS fallback
     """
+    # Already resolved (e.g., "105560.KS") — return as-is
+    if ticker.endswith((".KS", ".KQ")):
+        return ticker
+
     if ticker in _kr_ticker_cache:
         return _kr_ticker_cache[ticker]
 

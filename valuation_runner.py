@@ -355,6 +355,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         ref_sc.buyback if ref_sc else 0,
         vi.company.shares_outstanding,
         unit_multiplier=um,
+        cps_dividend_rate=vi.cps_dividend_rate,
     )
     sens_dcf_rows, _, _ = sensitivity_dcf(
         ebitda_base, dcf_da_base, dcf_revenue,
@@ -533,6 +534,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         growth=ddm_raw.growth,
         ke=ddm_raw.ke,
         equity_per_share=ddm_raw.equity_per_share,
+        warnings=ddm_raw.warnings,
     )
 
     # Per-scenario DDM: recalculate with ddm_growth + wacc_adj (Ke adjustment)

@@ -146,6 +146,45 @@ class AdjustmentItem(BaseModel):
     value: int  # In display units (positive=deduct, negative=add)
 
 
+# ── Market Signals (external data for scenario calibration) ──
+
+class MarketSignals(BaseModel):
+    """External market data signals injected into scenario design prompts."""
+    # FRED Macro
+    fed_funds_rate: Optional[float] = None        # Current Fed Funds Rate (%)
+    us_10y_yield: Optional[float] = None           # 10-Year Treasury yield (%)
+    breakeven_inflation: Optional[float] = None    # 10-Year Breakeven Inflation (%)
+    credit_spread_baa: Optional[float] = None      # BAA-AAA corporate OAS (%)
+    vix: Optional[float] = None                    # CBOE VIX index
+
+    # Analyst Consensus (yfinance)
+    target_mean: Optional[float] = None            # Mean analyst target price
+    target_high: Optional[float] = None
+    target_low: Optional[float] = None
+    analyst_count: Optional[int] = None
+    recommendation: Optional[str] = None           # "buy" | "hold" | "sell" | ...
+
+    # Sentiment (FinBERT)
+    news_sentiment_score: Optional[float] = None   # -1.0 to +1.0
+    sentiment_label: Optional[str] = None          # "positive" | "neutral" | "negative"
+    sentiment_article_count: Optional[int] = None
+
+    # Options IV (US listed only)
+    iv_30d_atm: Optional[float] = None             # 30-day ATM implied vol (%)
+    iv_percentile: Optional[float] = None          # IV rank vs 1Y range (0-100)
+    put_call_ratio: Optional[float] = None
+
+    fetched_at: Optional[str] = None               # ISO timestamp
+
+    def has_any(self) -> bool:
+        """True if at least one signal was successfully fetched."""
+        return any(
+            v is not None
+            for k, v in self.model_dump().items()
+            if k != "fetched_at"
+        )
+
+
 # ── News Drivers (multiple regression independent variables) ──
 
 _DRIVER_FIELDS = frozenset({
@@ -304,6 +343,7 @@ class DDMValuationResult(BaseModel):
     growth: float  # (%)
     ke: float  # (%)
     equity_per_share: int
+    warnings: list[str] = []  # Valuation warnings (e.g., narrow ke-growth spread)
 
 
 # ── RIM (Residual Income Model) ──
@@ -495,6 +535,7 @@ class ValuationInput(BaseModel):
     mc_dlom_mean: float = 0.0  # DLOM mean (%)
     mc_dlom_std: float = 5.0  # DLOM std dev (%)
     news_key_issues: Optional[str] = None  # News-based key issues summary
+    market_signals: Optional[MarketSignals] = None  # External market data signals (Phase 4)
 
     @model_validator(mode="after")
     def validate_inputs(self):

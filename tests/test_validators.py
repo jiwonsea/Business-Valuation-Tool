@@ -87,6 +87,26 @@ class TestValidatePeers:
         assert len(result["segments"]["A"]["peers"]) == 2
         assert any("Null Co" in w and "파싱 에러" in w for w in warns)
 
+    def test_string_ev_ebitda_excluded(self):
+        """W-10: String EV/EBITDA (e.g., 'N/A') treated as parse error."""
+        data = {"peers": [
+            {"name": "StringCo", "ev_ebitda": "N/A"},
+            {"name": "Good", "ev_ebitda": 10.0},
+        ]}
+        result, warns = validate_peers(data)
+        assert len(result["peers"]) == 1
+        assert any("파싱 에러" in w for w in warns)
+
+    def test_nan_ev_ebitda_excluded(self):
+        """W-10: NaN EV/EBITDA treated as parse error."""
+        data = {"peers": [
+            {"name": "NanCo", "ev_ebitda": float("nan")},
+            {"name": "Good", "ev_ebitda": 10.0},
+        ]}
+        result, warns = validate_peers(data)
+        assert len(result["peers"]) == 1
+        assert any("파싱 에러" in w for w in warns)
+
     def test_flat_null_ev_warning(self):
         """W-10: Flat format null EV/EBITDA also warns."""
         data = {

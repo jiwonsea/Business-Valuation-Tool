@@ -79,6 +79,7 @@ def sensitivity_irr_dlom(
     irr_range: list[float] | None = None,
     dlom_range: list[float] | None = None,
     unit_multiplier: int = 1_000_000,
+    cps_dividend_rate: float = 0.0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: FI IRR x DLOM -> Scenario B per-share value (pre-probability)."""
     if irr_range is None:
@@ -88,7 +89,8 @@ def sensitivity_irr_dlom(
 
     rows = []
     for irr in irr_range:
-        cps_r = round(cps_principal * (1 + irr / 100) ** cps_years)
+        effective_rate = max(irr - cps_dividend_rate, 0.0)
+        cps_r = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
         claims = net_debt + cps_r + rcps_repay + buyback + eco_frontier
         eq = total_ev - claims
         base_ps = per_share(eq, unit_multiplier, shares) if eq > 0 else 0
@@ -126,9 +128,10 @@ def sensitivity_dcf(
     if tg_range is None:
         tg_range = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
 
-    # Compute FCFF projections once (using base WACC; projections are WACC-independent)
+    # Compute FCFF projections once (using actual WACC; projections are WACC-independent)
+    seed_wacc = wacc_base if wacc_base is not None else wacc_range[len(wacc_range) // 2]
     base_result = calc_dcf(ebitda_base, da_base, revenue_base,
-                           wacc_range[0], params, base_year)
+                           seed_wacc, params, base_year)
     fcffs = [p.fcff for p in base_result.projections]
     n = len(fcffs)
     last_fcff = fcffs[-1]

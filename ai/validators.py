@@ -7,9 +7,23 @@ Zero LLM calls -- pure arithmetic range checks.
 from __future__ import annotations
 
 import logging
+import math
 from copy import deepcopy
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_numeric(val) -> float | None:
+    """Convert ev_ebitda value to float, returning None for non-numeric inputs."""
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return None
+    if isinstance(val, (int, float)):
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return float(val)
+    return None
 
 # ── Market-specific WACC parameter ranges (shared with engine/quality.py) ──
 
@@ -57,7 +71,7 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
         cleaned_peers = []
         total_input = len(data["peers"])
         for peer in data["peers"]:
-            ev = peer.get("ev_ebitda", 0)
+            ev = _safe_numeric(peer.get("ev_ebitda"))
             name = peer.get("name", "unknown")
             if ev is None:
                 warnings.append(f"Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
@@ -87,7 +101,7 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
             cleaned = []
             seg_total = len(seg_data["peers"])
             for peer in seg_data["peers"]:
-                ev = peer.get("ev_ebitda", 0)
+                ev = _safe_numeric(peer.get("ev_ebitda"))
                 name = peer.get("name", "unknown")
                 if ev is None:
                     warnings.append(f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
@@ -375,3 +389,104 @@ def _clamp(data: dict, key: str, bounds: tuple[float, float], label: str, warnin
     elif val > hi:
         warnings.append(f"{label} 상한 보정 ({val:.2f} → {hi:.2f})")
         data[key] = hi
+
+
+# ── Market Signal-Aware Validation (Phase 4) ──
+
+def validate_scenarios_with_signals(
+    scenarios: list[dict],
+    signals,
+    weighted_value: int | None = None,
+) -> list[str]:
+    """Cross-check AI scenarios against external market signals.
+
+    Returns warning messages only (does NOT modify scenarios -- advisory layer).
+
+    Args:
+        scenarios: List of scenario dicts (post-validate_scenarios).
+        signals: MarketSignals object (or None).
+        weighted_value: Probability-weighted per-share value (optional).
+    """
+    if signals is None:
+        return []
+
+    warnings: list[str] = []
+
+    # 1. Analyst target range check
+    if weighted_value and signals.target_mean:
+        deviation = abs(weighted_value - signals.target_mean) / signals.target_mean
+        if deviation > 0.5:
+            direction = "높음" if weighted_value > signals.target_mean else "낮음"
+            warnings.append(
+                f"[Signal] 가중평균 가치({weighted_value:,})가 애널리스트 목표가"
+                f"({signals.target_mean:,.0f}) 대비 {deviation:.0%} {direction} — 검토 권장"
+            )
+
+    # 2. Scenario range vs analyst range overlap check
+    if signals.target_low and signals.target_high and len(scenarios) >= 2:
+        sc_values = []
+        for s in scenarios:
+            # Try to find per-share value from scenario (may not exist at validation time)
+            val = s.get("per_share") or s.get("weighted") or s.get("post_dlom")
+            if isinstance(val, (int, float)) and val > 0:
+                sc_values.append(val)
+
+        if sc_values:
+            sc_min, sc_max = min(sc_values), max(sc_values)
+            # Check if ranges overlap at all
+            if sc_max < signals.target_low or sc_min > signals.target_high:
+                warnings.append(
+                    f"[Signal] 시나리오 범위({sc_min:,}-{sc_max:,})와 "
+                    f"애널리스트 범위({signals.target_low:,.0f}-{signals.target_high:,.0f})가 "
+                    f"겹치지 않음 — 시나리오 범위 재검토 권장"
+                )
+
+    # 3. VIX-scenario spread check
+    if signals.vix is not None and signals.vix > 25 and len(scenarios) >= 2:
+        probs = [s.get("prob", 0) for s in scenarios]
+        if probs:
+            max_prob, min_prob = max(probs), min(probs)
+            spread = max_prob - min_prob
+            if spread < 15:
+                warnings.append(
+                    f"[Signal] VIX 높음({signals.vix:.0f}) 대비 시나리오 확률 편차"
+                    f"({spread:.0f}%p)가 작음 — 불확실성 반영 부족 가능"
+                )
+
+    # 4. Sentiment consistency check
+    if signals.news_sentiment_score is not None:
+        bull_prob = 0.0
+        bear_prob = 0.0
+        for s in scenarios:
+            name_lower = (s.get("name") or s.get("code") or "").lower()
+            prob = s.get("prob", 0)
+            if "bull" in name_lower or "upside" in name_lower:
+                bull_prob = prob
+            elif "bear" in name_lower or "downside" in name_lower:
+                bear_prob = prob
+
+        if bull_prob > 0 and bear_prob > 0:
+            if signals.news_sentiment_score > 0.3 and bear_prob > bull_prob:
+                warnings.append(
+                    f"[Signal] 뉴스 감성 긍정적({signals.news_sentiment_score:+.2f})인데 "
+                    f"Bear({bear_prob:.0f}%) > Bull({bull_prob:.0f}%) — 불일치 검토"
+                )
+            elif signals.news_sentiment_score < -0.3 and bull_prob > bear_prob:
+                warnings.append(
+                    f"[Signal] 뉴스 감성 부정적({signals.news_sentiment_score:+.2f})인데 "
+                    f"Bull({bull_prob:.0f}%) > Bear({bear_prob:.0f}%) — 불일치 검토"
+                )
+
+    # 5. IV-proportional scenario spread check
+    if signals.iv_30d_atm is not None and signals.iv_30d_atm > 40:
+        has_wide_wacc = any(
+            abs(s.get("drivers", {}).get("wacc_adj", s.get("wacc_adj", 0)) or 0) >= 0.5
+            for s in scenarios
+        )
+        if not has_wide_wacc:
+            warnings.append(
+                f"[Signal] IV 높음({signals.iv_30d_atm:.0f}%)인데 "
+                f"wacc_adj ±0.5%p 이상 시나리오 없음 — 변동성 미반영 가능"
+            )
+
+    return warnings

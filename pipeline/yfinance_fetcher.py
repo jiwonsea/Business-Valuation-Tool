@@ -4,9 +4,11 @@ Auto-detects KOSPI (.KS) / KOSDAQ (.KQ), provides 3-year financials and market d
 Unlike engine/, this is a pipeline module that performs IO, so httpx/yfinance usage is allowed.
 """
 
+import json
 import logging
 import os
 import shutil
+from pathlib import Path
 
 # ── Fix Windows unicode username SSL certificate path issue ──
 # yfinance (curl_cffi-based) cannot read CA cert from unicode paths.
@@ -34,9 +36,39 @@ import yfinance as yf
 logger = logging.getLogger(__name__)
 
 # ── Cache ──
+_TICKER_CACHE_FILE = Path(__file__).resolve().parent.parent / ".cache" / "kr_tickers.json"
+
 _kr_ticker_cache: dict[str, str] = {}
 _kr_exchange_cache: dict[str, str] = {}  # ticker → "KOSPI" | "KOSDAQ"
 _ticker_info_cache: dict[str, dict] = {}  # resolved_ticker → yf.Ticker().info
+
+
+def _load_ticker_cache() -> None:
+    """Load persistent ticker cache from disk on module init."""
+    if not _TICKER_CACHE_FILE.exists():
+        return
+    try:
+        data = json.loads(_TICKER_CACHE_FILE.read_text(encoding="utf-8"))
+        _kr_ticker_cache.update(data.get("tickers", {}))
+        _kr_exchange_cache.update(data.get("exchanges", {}))
+        logger.debug("Ticker cache loaded: %d entries", len(_kr_ticker_cache))
+    except (json.JSONDecodeError, OSError):
+        pass
+
+
+def _save_ticker_cache() -> None:
+    """Persist ticker cache to disk (atomic write for thread safety)."""
+    _TICKER_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    data = json.dumps(
+        {"tickers": _kr_ticker_cache, "exchanges": _kr_exchange_cache},
+        ensure_ascii=False, indent=2,
+    )
+    tmp = _TICKER_CACHE_FILE.with_suffix(".tmp")
+    tmp.write_text(data, encoding="utf-8")
+    tmp.replace(_TICKER_CACHE_FILE)
+
+
+_load_ticker_cache()
 
 
 def _get_ticker_info(resolved: str) -> dict:
@@ -91,6 +123,7 @@ def resolve_kr_ticker(ticker: str) -> str:
         if _is_valid_yf_ticker(info, ticker):
             _kr_ticker_cache[ticker] = ks
             _kr_exchange_cache[ticker] = "KOSPI"
+            _save_ticker_cache()
             return ks
     except Exception:
         pass
@@ -102,6 +135,7 @@ def resolve_kr_ticker(ticker: str) -> str:
         if _is_valid_yf_ticker(info, ticker):
             _kr_ticker_cache[ticker] = kq
             _kr_exchange_cache[ticker] = "KOSDAQ"
+            _save_ticker_cache()
             return kq
     except Exception:
         pass
@@ -109,6 +143,7 @@ def resolve_kr_ticker(ticker: str) -> str:
     # fallback
     _kr_ticker_cache[ticker] = ks
     _kr_exchange_cache[ticker] = "KOSPI"
+    _save_ticker_cache()
     return ks
 
 
@@ -206,8 +241,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         op = _get_inc(["Operating Income", "EBIT", "Operating Profit"])
         net_income = _get_inc(["Net Income", "Net Income Common Stockholders",
                                "Net Income From Continuing Operations"])
-        interest_expense = _get_inc(["Interest Expense", "Interest Expense Non Operating",
-                                     "Net Interest Income"])
+        interest_expense = _get_inc(["Interest Expense", "Interest Expense Non Operating"])
 
         # Balance Sheet
         assets = _get_bs(["Total Assets"])
@@ -222,11 +256,13 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         cash = _get_bs(["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments",
                         "Cash Financial", "Cash And Short Term Investments"])
 
-        # Cashflow — D&A
+        # Cashflow — D&A + CapEx
         dep_amort = _get_cf(["Depreciation And Amortization",
                              "Depreciation Amortization Depletion"])
         dep_only = _get_cf(["Depreciation"])
         amort_only = _get_cf(["Amortization Of Intangibles", "Amortization"])
+        capex_raw = _get_cf(["Capital Expenditure", "Purchase Of PPE",
+                             "Capital Expenditures", "Purchases Of Property Plant And Equipment"])
 
         # Scaling
         s = lambda v: _scale_value(v, currency)  # noqa: E731
@@ -264,6 +300,9 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         # D/E ratio (interest-bearing debt / book equity)
         de_ratio = round(gross_borr_s / equity_s * 100, 1) if equity_s > 0 else 0.0
 
+        # CapEx: yfinance reports capex as negative in CF statement; take absolute value
+        capex_s = abs(s(capex_raw)) if capex_raw is not None and capex_raw != 0 else 0
+
         result[year] = {
             "revenue": revenue_s,
             "op": op_s,
@@ -277,6 +316,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
             "net_borr": net_borr_s,
             "de_ratio": de_ratio,
             "interest_expense": interest_expense_s,
+            "capex": capex_s,
         }
 
     return result if result else None

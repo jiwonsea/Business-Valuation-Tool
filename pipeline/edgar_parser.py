@@ -49,6 +49,11 @@ CONCEPT_MAP = {
         "CashAndCashEquivalentsAtCarryingValue",
         "CashCashEquivalentsAndShortTermInvestments",
     ],
+    "capex": [
+        "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsToAcquireProductiveAssets",
+        "AcquisitionsNetOfCashAcquiredAndPurchasesOfBusinesses",
+    ],
 }
 
 

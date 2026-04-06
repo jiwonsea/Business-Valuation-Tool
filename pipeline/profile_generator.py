@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -150,10 +153,10 @@ def _estimate_wacc_params(
     elif market_cap > 0:
         de_ratio = 0.0
     else:
-        # Unlisted: book value-based fallback
+        # Unlisted: use interest-bearing debt (gross_borr) / book equity
+        # NOT total liabilities / book equity — that inflates D/E by including trade payables etc.
         equity_bv = cons.get("equity", 0)
-        liabilities = cons.get("liabilities", 0)
-        de_ratio = round(liabilities / equity_bv * 100, 1) if equity_bv > 0 else 100.0
+        de_ratio = round(gross_borr / equity_bv * 100, 1) if equity_bv > 0 and gross_borr > 0 else 50.0
 
     # --- Equity weight in capital structure ---
     if market_cap > 0:
@@ -255,6 +258,37 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     )
     growth_rates_str = "[" + ", ".join(f"{r:.2f}" for r in growth_rates) + "]"
     # Note: tax rate is already clamped in _estimate_wacc_params()
+
+    # ── Auto-derive capex_to_da and da_to_ebitda from historical actuals ──
+    # Prefer 3-year averages over single-year point-in-time ratios.
+    capex_ratios = []
+    da_ebitda_ratios = []
+    for yr in years:
+        d = financials[yr]
+        da = d.get("dep", 0) + d.get("amort", 0)
+        ebitda = d.get("op", 0) + da
+        capex = d.get("capex", 0)
+        if da > 0 and capex > 0:
+            capex_ratios.append(capex / da)
+        if ebitda > 0 and da > 0:
+            da_ebitda_ratios.append(da / ebitda)
+
+    # Capex/DA ratio: use historical average, fallback to 1.10
+    if capex_ratios:
+        capex_to_da_auto = round(sum(capex_ratios) / len(capex_ratios), 2)
+        # Sanity clamp: 0.3x (light asset) ~ 5.0x (heavy capex like semiconductors)
+        capex_to_da_auto = max(0.3, min(capex_to_da_auto, 5.0))
+    else:
+        capex_to_da_auto = 1.10  # Default: maintenance capex ≈ D&A
+
+    # 3-year average DA/EBITDA ratio
+    if da_ebitda_ratios:
+        da_to_ebitda_avg = round(sum(da_ebitda_ratios) / len(da_ebitda_ratios), 4)
+    else:
+        da_to_ebitda_avg = None  # Will be computed inside DCF engine from latest year
+
+    # Actual capex (latest year) — passed to DCFParams for precise first-year CapEx
+    actual_capex_latest = cons.get("capex", 0) or 0
 
     # Diluted shares (reflecting SBC/stock options) -- only if DART share data unavailable
     if identity.ticker and shares_preferred == 0 and treasury_shares == 0:
@@ -371,7 +405,7 @@ scenarios:
     prob: 25
     ipo: "N/A"
     irr: null
-    dlom: {'20' if not is_us else '0'}
+    dlom: {'20' if identity.legal_status != '상장' else '0'}
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
@@ -383,9 +417,11 @@ scenarios:
 dcf_params:
   ebitda_growth_rates: {growth_rates_str}
   tax_rate: {tax}
-  capex_to_da: 1.10
+  capex_to_da: {capex_to_da_auto}{"  # auto-derived from " + str(len(capex_ratios)) + "-yr historical avg" if capex_ratios else "  # default (no capex data available)"}
   nwc_to_rev_delta: 0.05
   terminal_growth: {terminal_growth}
+  actual_capex: {actual_capex_latest if actual_capex_latest > 0 else "null"}{"  # latest-year actual CapEx" if actual_capex_latest > 0 else ""}
+  da_to_ebitda_override: {round(da_to_ebitda_avg, 4) if da_to_ebitda_avg else "null"}{"  # 3-yr avg D&A/EBITDA" if da_to_ebitda_avg else "  # null = computed from latest year in DCF engine"}
 
 # Cross-validation multiples (Trading Multiple -- reverse-engineered from current market price)
 # Recommended to replace with independent peer-based multiples
@@ -409,13 +445,21 @@ peers: []
     return yaml_filename
 
 
-def auto_analyze(company_query: str, output_dir: str | None = None):
+def auto_analyze(
+    company_query: str,
+    output_dir: str | None = None,
+    scored_data: dict | None = None,
+):
     """AI-driven end-to-end automated analysis.
 
     1. Data collection (auto_fetch)
     2. AI designs segments / multiples / scenarios
     3. Enrich YAML profile
     4. Run valuation + Excel output
+
+    Args:
+        scored_data: Pre-computed data from scoring phase (market_cap_usd, etc.)
+                     to avoid redundant API calls in the weekly pipeline.
     """
     from valuation_runner import load_profile, run_valuation
     from output.console_report import print_report
@@ -469,40 +513,67 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         print(f"  [WARN] 부문 분류 실패: {e}")
         segments = []
 
-    # AI Step 3: Peer / multiple recommendation
+    # AI Step 3: Peer / multiple recommendation (batch)
     peers_all = []
     multiples_ai = {}
     if segments:
         print("[AI 3/6] Peer 기업 추천 중...")
-        for seg in segments:
-            code = seg.get("code", "MAIN")
-            name = seg.get("name", "Main")
-            try:
-                peer_result = analyst.recommend_peers(
-                    identity.name, code, name,
-                    seg.get("peer_group", ""),
-                )
-                for p in peer_result.get("peers", []):
+        batch_ok = False
+        try:
+            batch_result = analyst.recommend_peers_batch(identity.name, segments, market=identity.market)
+            for seg in segments:
+                code = seg.get("code", "MAIN")
+                seg_data = batch_result.get(code, {})
+                if not seg_data or "peers" not in seg_data:
+                    continue
+                for p in seg_data.get("peers", []):
                     peers_all.append({
                         "name": p["name"],
                         "segment_code": code,
                         "ev_ebitda": p.get("ev_ebitda", 10.0),
                         "notes": p.get("notes", ""),
                     })
-                multiples_ai[code] = peer_result.get("recommended_multiple", 10.0)
-                print(f"  → {code}: {peer_result.get('recommended_multiple', '?')}x "
-                      f"({len(peer_result.get('peers', []))} peers)")
-            except Exception as e:
-                print(f"  [WARN] {code} Peer 추천 실패: {e}")
-                multiples_ai[code] = 10.0
+                multiples_ai[code] = seg_data.get("recommended_multiple", 10.0)
+                print(f"  → {code}: {seg_data.get('recommended_multiple', '?')}x "
+                      f"({len(seg_data.get('peers', []))} peers)")
+            batch_ok = len(multiples_ai) == len(segments)
+        except Exception as e:
+            logger.warning("Batch peer recommendation failed: %s — falling back to per-segment", e)
+
+        # Fallback: per-segment calls for any missing segments
+        if not batch_ok:
+            for seg in segments:
+                code = seg.get("code", "MAIN")
+                if code in multiples_ai:
+                    continue
+                name = seg.get("name", "Main")
+                try:
+                    peer_result = analyst.recommend_peers(
+                        identity.name, code, name,
+                        seg.get("peer_group", ""),
+                    )
+                    for p in peer_result.get("peers", []):
+                        peers_all.append({
+                            "name": p["name"],
+                            "segment_code": code,
+                            "ev_ebitda": p.get("ev_ebitda", 10.0),
+                            "notes": p.get("notes", ""),
+                        })
+                    multiples_ai[code] = peer_result.get("recommended_multiple", 10.0)
+                    print(f"  → {code}: {peer_result.get('recommended_multiple', '?')}x "
+                          f"({len(peer_result.get('peers', []))} peers)")
+                except Exception as e:
+                    print(f"  [WARN] {code} Peer 추천 실패: {e}")
+                    multiples_ai[code] = 10.0
 
     # AI Step 4: WACC recommendation
     print("[AI 4/6] WACC 추정 중...")
     equity = cons.get("equity", 0)
-    liabilities = cons.get("liabilities", 0)
-    de_ratio = round(liabilities / equity * 100, 1) if equity > 0 else 100.0
+    gross_borr_for_wacc = cons.get("gross_borr", 0)
+    # Use interest-bearing debt / book equity (not total liabilities / equity)
+    de_ratio = round(gross_borr_for_wacc / equity * 100, 1) if equity > 0 and gross_borr_for_wacc > 0 else 50.0
     try:
-        wacc_result = analyst.suggest_wacc(identity.name, de_ratio, "")
+        wacc_result = analyst.suggest_wacc(identity.name, de_ratio, "", market=identity.market)
         print(f"  → WACC ≈ {wacc_result.get('wacc_estimate', '?')}%")
     except Exception as e:
         print(f"  [WARN] WACC 추정 실패: {e}")
@@ -528,7 +599,7 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
 
     # AI Step 5b: Scenario design (news-based key_issues + multi-driver)
     print("[AI 6/6] 시나리오 설계 중...")
-    legal = "상장" if identity.market == "US" else "비상장"
+    legal = identity.legal_status
 
     # Determine valuation method -> pass to AI for method-aware driver generation
     try:
@@ -542,14 +613,28 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
         val_method = "dcf_primary"
 
     try:
+        # Pass industry + ev_rev for optionality pre-screen (no extra LLM call)
+        _industry = getattr(identity, "industry", "") or ""
+        # Infer EV/Revenue from scored_data market cap (if available) vs financial revenue
+        _market_cap_usd = (scored_data or {}).get("market_cap_usd", 0)
+        _revenue_usd = cons.get("revenue", 0)
+        _ev_rev = round(_market_cap_usd / (_revenue_usd * 1e6), 1) if _market_cap_usd and _revenue_usd else 0.0
+        _currency = "$M" if getattr(identity, "market", "KR") == "US" else "억원"
         sc_result = analyst.design_scenarios(
             identity.name, legal, key_issues, valuation_method=val_method,
+            industry=_industry, ev_rev_multiple=_ev_rev, currency_unit=_currency,
         )
         ai_scenarios = sc_result.get("scenarios", [])
+        opt_segs = sc_result.get("optionality_segments", [])
+        if opt_segs:
+            print(f"  → 옵셔널리티 세그먼트 {len(opt_segs)}개 감지됨: {[s['name'] for s in opt_segs]}")
         print(f"  → {len(ai_scenarios)}개 시나리오 (멀티 드라이버, {val_method})")
     except Exception as e:
+        import traceback
         print(f"  [WARN] 시나리오 설계 실패: {e}")
+        traceback.print_exc()
         ai_scenarios = []
+        opt_segs = []
 
     # Step 3: Enrich YAML
     print(f"\n[YAML 보강 중] {yaml_path}")
@@ -634,9 +719,64 @@ def auto_analyze(company_query: str, output_dir: str | None = None):
                 sc_dict["driver_rationale"] = dr
             raw["scenarios"][code] = sc_dict
 
+    # Warn if news existed but AI scenarios were not generated
+    if key_issues and not ai_scenarios:
+        print(f"  [WARN] 뉴스 기반 이슈가 존재하나 AI 시나리오 생성 실패. 범용 시나리오가 유지됩니다.")
+
+    # Apply optionality segments (AI-detected binary-outcome segments)
+    if opt_segs:
+        latest = max(raw.get("segment_data", {}).keys(), default=raw.get("base_year", 2025))
+        for opt_seg in opt_segs:
+            code = opt_seg.get("code", "")
+            if not code:
+                continue
+            # Add to segments with optionality flag
+            raw.setdefault("segments", {})[code] = {
+                "name": opt_seg.get("name", code),
+                "multiple": opt_seg.get("multiple", 30.0),
+                "optionality": True,
+            }
+            # Add to segment_data with op=0 (value comes from scenario_ebitda)
+            for yr_data in raw.get("segment_data", {}).values():
+                yr_data.setdefault(code, {"revenue": 0, "gross_profit": 0, "op": 0, "assets": 0})
+            raw.setdefault("multiples", {})[code] = opt_seg.get("multiple", 30.0)
+            # Write per-scenario EBITDA overrides — warn explicitly on code mismatch
+            sc_ebitda = opt_seg.get("scenario_ebitda", {})
+            valid_sc_codes = set(raw.get("scenarios", {}).keys())
+            matched = 0
+            for sc_code, ebitda_val in sc_ebitda.items():
+                if sc_code in valid_sc_codes:
+                    raw["scenarios"][sc_code].setdefault("segment_ebitda", {})[code] = int(ebitda_val)
+                    matched += 1
+                else:
+                    print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': scenario_ebitda 키 '{sc_code}'가 "
+                          f"시나리오 코드 {sorted(valid_sc_codes)}와 불일치 — 해당 값 무시됨")
+            if sc_ebitda and matched == 0:
+                print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': 모든 scenario_ebitda 키 불일치. "
+                      f"AI 응답의 scenario_ebitda 키가 scenarios[].code와 동일해야 함.")
+        print(f"  → 옵셔널리티 세그먼트 YAML 반영 완료: {[s['code'] for s in opt_segs]}")
+
     # Update peers
     if peers_all:
         raw["peers"] = peers_all
+
+    # Recalculate growth rates using segment names as industry hint
+    # (Segment names are richer than yfinance's generic "Auto Manufacturers" etc.)
+    if segments:
+        from engine.growth import generate_growth_rates
+        from engine.method_selector import classify_industry
+        seg_name_text = " ".join(s.get("name", "") for s in segments)
+        # Only override if segment names provide a stronger classification signal
+        seg_category = classify_industry(seg_name_text)
+        id_category = classify_industry(getattr(identity, "industry", "") or "")
+        if seg_category != "default" or id_category == "default":
+            # Segment names give better signal, or identity industry is also generic
+            updated_rates = generate_growth_rates(
+                financials, market=identity.market, industry=seg_name_text,
+            )
+            rates_str = "[" + ", ".join(f"{r:.2f}" for r in updated_rates) + "]"
+            raw.setdefault("dcf_params", {})["ebitda_growth_rates"] = updated_rates
+            print(f"  [Growth rates updated from segments: {rates_str}]")
 
     # Enable Monte Carlo simulation
     raw["mc_enabled"] = True

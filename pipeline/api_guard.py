@@ -85,8 +85,8 @@ PROVIDER_DEFAULTS: dict[str, ProviderConfig] = {
     "fred": ProviderConfig("fred", daily_limit=20, failure_threshold=3, cooldown_seconds=300, max_retries=2, base_delay=2.0),
     "naver": ProviderConfig("naver", daily_limit=50, failure_threshold=3, cooldown_seconds=60, max_retries=2, base_delay=1.0),
     "google_rss": ProviderConfig("google_rss", daily_limit=50, failure_threshold=3, cooldown_seconds=60, max_retries=2, base_delay=1.0),
-    "openrouter": ProviderConfig("openrouter", daily_limit=50, failure_threshold=3, cooldown_seconds=120, max_retries=5, base_delay=10.0, max_delay=120.0),
-    "anthropic": ProviderConfig("anthropic", daily_limit=50, failure_threshold=3, cooldown_seconds=120, max_retries=5, base_delay=10.0, max_delay=120.0),
+    "openrouter": ProviderConfig("openrouter", daily_limit=200, failure_threshold=3, cooldown_seconds=120, max_retries=2, base_delay=5.0, max_delay=30.0),
+    "anthropic": ProviderConfig("anthropic", daily_limit=200, failure_threshold=3, cooldown_seconds=120, max_retries=5, base_delay=10.0, max_delay=120.0),
     "supabase": ProviderConfig("supabase", daily_limit=200, failure_threshold=5, cooldown_seconds=30, max_retries=3, base_delay=1.0),
 }
 

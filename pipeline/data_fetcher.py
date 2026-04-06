@@ -164,8 +164,9 @@ class DataFetcher:
         best = results[0]
         ticker = best["ticker"]
 
-        # Verify exchange via Yahoo Finance -> auto-classify listed/OTC
+        # Verify exchange via Yahoo Finance -> auto-classify listed/OTC + fetch industry
         legal_status = "상장"
+        industry = ""
         if ticker:
             try:
                 info = yahoo_finance.get_stock_info(ticker)
@@ -176,6 +177,13 @@ class DataFetcher:
                     )
             except Exception as e:
                 logger.debug("Yahoo 거래소 조회 실패 (%s): %s", ticker, e)
+            try:
+                if yfinance_fetcher:
+                    mkt = yfinance_fetcher.fetch_market_data(ticker, "US")
+                    if mkt:
+                        industry = mkt.get("industry", "")
+            except Exception as e:
+                logger.debug("yfinance industry 조회 실패 (%s): %s", ticker, e)
 
         return CompanyIdentity(
             name=best["name"],
@@ -183,6 +191,7 @@ class DataFetcher:
             ticker=ticker,
             cik=best["cik"],
             legal_status=legal_status,
+            industry=industry,
         )
 
     def fetch_financials(

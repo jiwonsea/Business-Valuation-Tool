@@ -6,16 +6,18 @@ Priority:
 3. Neither set -> RuntimeError
 """
 
-import json
 import logging
 import os
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 # OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+
+# Model tiers for mixed strategy (Haiku for routine, Sonnet for reasoning)
+MODEL_LIGHT = "claude-haiku-4-5-20251001"       # classify, peers, wacc
+MODEL_HEAVY = "claude-sonnet-4-20250514"         # scenarios, research notes
 
 
 def _get_provider() -> str:
@@ -96,9 +98,15 @@ def _ask_openrouter(
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    # Ignore direct Anthropic model IDs -> use OpenRouter default model
-    if not model or model.startswith("claude-"):
+    # Map Anthropic model IDs to OpenRouter equivalents
+    _ANTHROPIC_TO_OPENROUTER = {
+        MODEL_LIGHT: "anthropic/claude-haiku-4-5-20251001",
+        MODEL_HEAVY: "anthropic/claude-sonnet-4",
+    }
+    if not model:
         model = os.getenv("OPENROUTER_MODEL", _OPENROUTER_DEFAULT_MODEL)
+    elif model.startswith("claude-"):
+        model = _ANTHROPIC_TO_OPENROUTER.get(model, f"anthropic/{model}")
 
     messages = []
     if system:
@@ -128,7 +136,11 @@ def _ask_openrouter(
     if "error" in data:
         raise RuntimeError(f"OpenRouter error: {data['error']}")
 
-    return data["choices"][0]["message"]["content"]
+    choices = data.get("choices")
+    if not choices:
+        raise RuntimeError(f"OpenRouter returned empty choices: {data}")
+
+    return choices[0]["message"]["content"]
 
 
 def ask(
@@ -153,7 +165,15 @@ def ask(
     provider = _get_provider()
 
     if provider == "openrouter":
-        return _ask_openrouter(prompt, system, model, max_tokens, temperature)
+        try:
+            return _ask_openrouter(prompt, system, model, max_tokens, temperature)
+        except Exception as e:
+            # Fallback to Anthropic when OpenRouter exhausts retries (e.g. 429 rate limit)
+            if os.getenv("ANTHROPIC_API_KEY"):
+                logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
+                anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
+                return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+            raise
     else:
         anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
         return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)

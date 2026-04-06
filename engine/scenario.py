@@ -11,18 +11,34 @@ def calc_scenario(
     eco_frontier: int,
     cps_principal: int,
     cps_years: int,
+    rcps_principal: int = 0,
+    rcps_years: int = 0,
     unit_multiplier: int = 1_000_000,
 ) -> ScenarioResult:
-    """Compute equity value and per-share value for each scenario."""
+    """Compute equity value and per-share value for each scenario.
+
+    CPS/RCPS redemption logic:
+      - Manual override (cps_repay/rcps_repay not None) takes priority.
+      - CPS (zero-coupon): compound IRR — principal × (1+IRR)^years.
+      - RCPS (dividend-paying): compound IRR on principal, same formula.
+        When RCPS pays ongoing dividends, the repay amount may be lower than
+        pure compound calc; use manual override for negotiated figures.
+    """
     # Calculate CPS redemption amount
     if sc.cps_repay is not None:
         cps_repay = sc.cps_repay
-    elif sc.irr is not None:
+    elif sc.irr is not None and cps_principal > 0:
         cps_repay = round(cps_principal * (1 + sc.irr / 100) ** cps_years)
     else:
         cps_repay = 0
 
-    rcps_repay = sc.rcps_repay
+    # Calculate RCPS redemption amount (same compound logic, manual override supported)
+    if sc.rcps_repay is not None and sc.rcps_repay > 0:
+        rcps_repay = sc.rcps_repay
+    elif sc.irr is not None and rcps_principal > 0:
+        rcps_repay = round(rcps_principal * (1 + sc.irr / 100) ** rcps_years)
+    else:
+        rcps_repay = 0
     buyback = sc.buyback
 
     # Build dynamic equity bridge adjustment items
@@ -42,13 +58,13 @@ def calc_scenario(
     total_claims = sum(a.value for a in adjustments)
     equity_value = total_ev - total_claims
 
-    # Per-share value
+    # Per-share value (negative equity propagates for distress scenarios)
+    pre_dlom = per_share(equity_value, unit_multiplier, sc.shares)
     if equity_value > 0:
-        pre_dlom = per_share(equity_value, unit_multiplier, sc.shares)
         post_dlom = round(pre_dlom * (1 - sc.dlom / 100))
     else:
-        pre_dlom = 0
-        post_dlom = 0
+        # DLOM not applied to negative equity (limited liability: floor at negative value)
+        post_dlom = pre_dlom
 
     weighted = round(post_dlom * sc.prob / 100)
 

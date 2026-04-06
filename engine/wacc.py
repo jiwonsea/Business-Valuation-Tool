@@ -20,8 +20,11 @@ def calc_wacc(p: WACCParams) -> WACCResult:
     if p.is_financial:
         bl = p.bu  # Use equity beta directly
     else:
-        bl = p.bu * (1 + (1 - p.tax / 100) * p.de / 100)
-    ke = p.rf + bl * p.erp
+        # Cap D/E at 200% for Hamada levering: D/E > 200% signals financial subsidiaries
+        # or distress — amplifying beta beyond 3x is economically unrealistic.
+        hamada_de = min(p.de, 200.0)
+        bl = p.bu * (1 + (1 - p.tax / 100) * hamada_de / 100)
+    ke = p.rf + bl * p.erp + p.size_premium
     kd_at = p.kd_pre * (1 - p.tax / 100)
     dw = 100 - p.eq_w
     wacc = ke * p.eq_w / 100 + kd_at * dw / 100

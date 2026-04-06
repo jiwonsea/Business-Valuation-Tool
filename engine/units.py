@@ -38,6 +38,6 @@ def per_share(equity: int, unit_multiplier: int, shares: int) -> int:
     Returns:
         Per-share value (KRW or $)
     """
-    if equity <= 0 or shares <= 0:
+    if shares <= 0:
         return 0
     return round(equity * unit_multiplier / shares)

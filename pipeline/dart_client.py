@@ -10,7 +10,7 @@ import os
 import time
 import zipfile
 from pathlib import Path
-from xml.etree import ElementTree as ET
+from defusedxml.ElementTree import parse as safe_parse, fromstring as safe_fromstring
 
 import httpx
 
@@ -43,7 +43,7 @@ def _load_corp_code_xml() -> ET.Element:
         if age < _CORP_CODE_TTL:
             logger.debug("corpCode.xml 캐시 사용 (age=%.0fs)", age)
             guard.record_cache_hit("dart")
-            return ET.parse(_CORP_CODE_CACHE).getroot()
+            return safe_parse(_CORP_CODE_CACHE).getroot()
 
     # No cache or expired -> download
     guard.check("dart")
@@ -61,7 +61,7 @@ def _load_corp_code_xml() -> ET.Element:
     _CORP_CODE_CACHE.write_bytes(xml_data)
     logger.info("corpCode.xml 캐시 저장 완료 (%s)", _CORP_CODE_CACHE)
 
-    return ET.fromstring(xml_data)
+    return safe_fromstring(xml_data)
 
 
 def get_corp_code(company_name: str) -> str | None:

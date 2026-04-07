@@ -27,6 +27,8 @@ class MCInput:
     tg_std: float
     n_sims: int = 10_000
     seed: int | None = 42
+    # Per-segment valuation method: {code: "ev_ebitda"|"ev_revenue"}
+    segment_methods: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -63,6 +65,7 @@ def run_monte_carlo(
     dcf_last_fcff: int = 0,
     dcf_pv_fcff_sum: int = 0,
     dcf_n_periods: int = 5,
+    seg_revenues: dict[str, int] | None = None,
 ) -> MCResult:
     """Run Monte Carlo simulation.
 
@@ -73,8 +76,8 @@ def run_monte_carlo(
     4. Compute per-share value with DLOM applied
 
     Args:
-        mc_input: Simulation parameters
-        seg_ebitdas: segment code -> EBITDA
+        mc_input: Simulation parameters (with segment_methods for ev_revenue dispatch)
+        seg_ebitdas: segment code -> EBITDA (base for ev_ebitda segments)
         net_debt: Net debt
         eco_frontier: Eco Frontier derivative liability
         cps_principal: CPS principal
@@ -87,6 +90,7 @@ def run_monte_carlo(
         dcf_last_fcff: Last-year FCFF from DCF (for TV recalculation)
         dcf_pv_fcff_sum: DCF projection period PV sum (fixed)
         dcf_n_periods: Number of DCF projection periods
+        seg_revenues: segment code -> Revenue (base for ev_revenue segments)
 
     Returns:
         MCResult with distribution statistics
@@ -115,13 +119,21 @@ def run_monte_carlo(
     # CPS redemption calculation (IRR-based)
     cps_repay = round(cps_principal * (1 + irr / 100) ** cps_years) if cps_principal > 0 else 0
 
-    # Vectorized SOTP EV calculation
-    ev = np.zeros(n)
+    # Vectorized SOTP EV calculation (ev_ebitda: EBITDA*mult, ev_revenue: Revenue*mult)
+    ev_ebitda_part = np.zeros(n)
+    ev_revenue_part = np.zeros(n)
     for code, ebitda in seg_ebitdas.items():
-        if ebitda > 0 and code in multiples_samples:
-            ev += ebitda * multiples_samples[code]
+        if code not in multiples_samples:
+            continue
+        method = mc_input.segment_methods.get(code, "ev_ebitda")
+        if method == "ev_revenue":
+            rev = (seg_revenues or {}).get(code, 0)
+            if rev > 0:
+                ev_revenue_part += rev * multiples_samples[code]
+        elif ebitda > 0:
+            ev_ebitda_part += ebitda * multiples_samples[code]
 
-    # DCF TV variation (vectorized)
+    # DCF TV variation applies only to EBITDA-based EV (not revenue-based optionality)
     if use_dcf_tv:
         w = wacc_samples / 100
         g = tg_samples / 100
@@ -138,7 +150,9 @@ def run_monte_carlo(
         dcf_ev_base = dcf_pv_fcff_sum + pv_tv_base
 
         if dcf_ev_base > 0:
-            ev = np.where(valid, ev * (dcf_ev_sample / dcf_ev_base), ev)
+            ev_ebitda_part = np.where(valid, ev_ebitda_part * (dcf_ev_sample / dcf_ev_base), ev_ebitda_part)
+
+    ev = ev_ebitda_part + ev_revenue_part
 
     # Equity bridge (vectorized)
     claims = net_debt + cps_repay + rcps_repay + buyback + eco_frontier

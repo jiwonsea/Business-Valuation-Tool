@@ -894,6 +894,105 @@ class TestMonteCarloEnhanced:
         assert r.std > 0
 
 
+class TestMonteCarloEvRevenue:
+    """Monte Carlo ev_revenue segment support tests."""
+
+    def test_mc_ev_revenue_only(self):
+        """Single ev_revenue segment: mean proportional to revenue * mean_multiple."""
+        mc_params = MCInput(
+            multiple_params={"FSD": (15.0, 0.01)},  # near-zero std for predictable mean
+            wacc_mean=9.0, wacc_std=0.01,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.5, tg_std=0.01,
+            n_sims=5_000, seed=42,
+            segment_methods={"FSD": "ev_revenue"},
+        )
+        # FSD: EBITDA=0 (pre-profit), Revenue=5000
+        r = run_monte_carlo(
+            mc_params, {"FSD": 0},
+            net_debt=10_000, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+            seg_revenues={"FSD": 5_000},
+        )
+        # EV ≈ 5000 * 15 = 75000 → per-share ≈ (75000-10000)*1M/50M = 1300
+        assert r.mean > 0
+        assert r.std < r.mean * 0.1  # very tight distribution (near-zero std)
+
+    def test_mc_mixed_ebitda_revenue(self):
+        """Mixed segments: ev_ebitda + ev_revenue both contribute to EV."""
+        mc_params = MCInput(
+            multiple_params={"AUTO": (8.0, 0.01), "FSD": (15.0, 0.01)},
+            wacc_mean=9.0, wacc_std=0.01,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.5, tg_std=0.01,
+            n_sims=5_000, seed=42,
+            segment_methods={"AUTO": "ev_ebitda", "FSD": "ev_revenue"},
+        )
+        r_mixed = run_monte_carlo(
+            mc_params, {"AUTO": 10_000, "FSD": 0},
+            net_debt=0, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+            seg_revenues={"AUTO": 0, "FSD": 5_000},
+        )
+        # EV ≈ AUTO(10000*8) + FSD(5000*15) = 80000 + 75000 = 155000
+        # per-share ≈ 155000*1M/50M = 3100
+        expected_ps = 155_000 * 1_000_000 / 50_000_000
+        assert abs(r_mixed.mean - expected_ps) / expected_ps < 0.05
+
+    def test_mc_ev_revenue_zero_revenue(self):
+        """ev_revenue segment with revenue=0 contributes 0 EV (no crash)."""
+        mc_params = MCInput(
+            multiple_params={"ROBO": (8.0, 1.0)},
+            wacc_mean=9.0, wacc_std=1.0,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.5, tg_std=0.5,
+            n_sims=1_000, seed=42,
+            segment_methods={"ROBO": "ev_revenue"},
+        )
+        r = run_monte_carlo(
+            mc_params, {"ROBO": 0},
+            net_debt=0, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+            seg_revenues={"ROBO": 0},
+        )
+        # All EV = 0 → per-share = 0
+        assert r.mean == 0
+
+    def test_mc_backward_compat(self):
+        """MCInput without segment_methods preserves existing behavior."""
+        mc_old = MCInput(
+            multiple_params={"A": (8.0, 1.2)},
+            wacc_mean=9.0, wacc_std=1.0,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.5, tg_std=0.5,
+            n_sims=5_000, seed=42,
+        )
+        mc_new = MCInput(
+            multiple_params={"A": (8.0, 1.2)},
+            wacc_mean=9.0, wacc_std=1.0,
+            dlom_mean=0, dlom_std=0,
+            tg_mean=2.5, tg_std=0.5,
+            n_sims=5_000, seed=42,
+            segment_methods={},
+        )
+        kwargs = dict(
+            net_debt=100_000, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=50_000_000,
+            unit_multiplier=1_000_000,
+        )
+        r1 = run_monte_carlo(mc_old, {"A": 500_000}, **kwargs)
+        r2 = run_monte_carlo(mc_new, {"A": 500_000}, **kwargs)
+        assert r1.mean == r2.mean
+        assert r1.std == r2.std
+
+
 # ═══════════════════════════════════════════════════════════
 # Profile Loading Tests
 # ═══════════════════════════════════════════════════════════
@@ -1664,6 +1763,58 @@ class TestScenarioDriverRoundTrip:
         assert bear_sc.segment_multiples["IC"] < bull_sc.segment_multiples["IC"]
 
 
+class TestScenarioMethodTransition:
+    """Scenario-level method transition via segment_method_override."""
+
+    def test_revenue_to_ebitda_transition(self):
+        """ev_revenue segment transitions to ev_ebitda when segment_method_override is set."""
+        seg_data = {
+            "AUTO": {"op": 4000, "assets": 80000},
+            "FSD": {"op": -500, "assets": 5000},
+        }
+        total_da = 1000
+        # Base: FSD uses ev_revenue (excluded from D&A allocation)
+        base_methods = {"AUTO": "ev_ebitda", "FSD": "ev_revenue"}
+        base_alloc = allocate_da(seg_data, total_da, base_methods)
+        assert base_alloc["FSD"].da_allocated == 0  # ev_revenue gets no D&A
+
+        base_sotp, base_ev = calc_sotp(
+            base_alloc, {"AUTO": 8.0, "FSD": 15.0},
+            segments_info={"AUTO": {"method": "ev_ebitda"}, "FSD": {"method": "ev_revenue"}},
+            revenue_by_seg={"AUTO": 80000, "FSD": 5000},
+        )
+        assert base_sotp["FSD"].method == "ev_revenue"
+        assert base_sotp["FSD"].ev == 75000  # 5000 * 15
+
+        # Bull scenario: FSD transitions to ev_ebitda (became profitable)
+        bull_segments = {
+            "AUTO": {"method": "ev_ebitda"},
+            "FSD": {"method": "ev_ebitda"},  # TRANSITION
+        }
+        bull_methods = {"AUTO": "ev_ebitda", "FSD": "ev_ebitda"}
+        bull_alloc = allocate_da(seg_data, total_da, bull_methods)
+        # FSD now gets D&A allocation
+        assert bull_alloc["FSD"].da_allocated > 0
+
+        bull_sotp, bull_ev = calc_sotp(
+            bull_alloc, {"AUTO": 8.0, "FSD": 15.0},
+            segments_info=bull_segments,
+            ebitda_override={"FSD": 4000},  # FSD now has EBITDA in Bull
+        )
+        assert bull_sotp["FSD"].method == "ev_ebitda"
+        assert bull_sotp["FSD"].ev == 60000  # 4000 * 15
+
+    def test_no_override_preserves_method(self):
+        """Without segment_method_override, original methods are preserved."""
+        seg_data = {"A": {"op": 1000, "assets": 50000}}
+        alloc = allocate_da(seg_data, 500, {"A": "ev_ebitda"})
+        sotp, _ = calc_sotp(
+            alloc, {"A": 10.0},
+            segments_info={"A": {"method": "ev_ebitda"}},
+        )
+        assert sotp["A"].method == "ev_ebitda"
+
+
 class TestDistressDiscount:
     """Distress discount engine tests."""
 
@@ -1749,3 +1900,57 @@ class TestDistressDiscount:
         multiples = {"SEG1": 10.0}
         result = apply_distress_discount(multiples, 0.0)
         assert result is multiples  # Same object (no copy needed)
+
+    def test_cyclical_single_loss_exempt(self):
+        """Cyclical industry with single-year loss gets no loss penalty."""
+        cons = {
+            2024: {"de_ratio": 50.0, "net_income": 10000, "op": 15000,
+                   "dep": 3000, "amort": 0, "gross_borr": 20000},
+            2025: {"de_ratio": 55.0, "net_income": -5000, "op": 2000,
+                   "dep": 3000, "amort": 0, "gross_borr": 22000},
+        }
+        d = calc_distress_discount(cons, 2025, industry="Automotive Parts")
+        assert d.loss_penalty == 0.0  # 1-year exemption for cyclicals
+
+    def test_cyclical_two_year_loss_still_penalized(self):
+        """Cyclical industry with 2+ consecutive losses still gets penalty."""
+        cons = {
+            2024: {"de_ratio": 50.0, "net_income": -5000, "op": 2000,
+                   "dep": 3000, "amort": 0, "gross_borr": 20000},
+            2025: {"de_ratio": 55.0, "net_income": -8000, "op": -1000,
+                   "dep": 3000, "amort": 0, "gross_borr": 22000},
+        }
+        d = calc_distress_discount(cons, 2025, industry="Semiconductor Equipment")
+        assert d.loss_penalty == 0.10  # 2 consecutive → penalty applies
+
+    def test_non_cyclical_single_loss_penalized(self):
+        """Non-cyclical industry single-year loss still gets penalty."""
+        cons = {
+            2024: {"de_ratio": 50.0, "net_income": 10000, "op": 15000,
+                   "dep": 3000, "amort": 0, "gross_borr": 20000},
+            2025: {"de_ratio": 55.0, "net_income": -5000, "op": 2000,
+                   "dep": 3000, "amort": 0, "gross_borr": 22000},
+        }
+        d = calc_distress_discount(cons, 2025, industry="Software & Services")
+        assert d.loss_penalty == 0.05  # No cyclical exemption
+
+    def test_exempt_segments_keep_original_multiples(self):
+        """Exempt segments retain original multiples when discount applied."""
+        multiples = {"AUTO": 10.0, "FSD": 15.0, "ENERGY": 8.0}
+        result = apply_distress_discount(multiples, 0.20, exempt_segments={"FSD"})
+        assert result["AUTO"] == 8.0   # 10.0 * 0.8
+        assert result["FSD"] == 15.0   # exempt → original
+        assert result["ENERGY"] == 6.4 # 8.0 * 0.8
+
+    def test_custom_max_discount_cap(self):
+        """Custom max_discount cap limits total discount."""
+        cons = {
+            2023: {"de_ratio": 250.0, "net_income": -50000, "op": -40000,
+                   "dep": 1000, "amort": 0, "gross_borr": 500000},
+            2024: {"de_ratio": 280.0, "net_income": -60000, "op": -45000,
+                   "dep": 1000, "amort": 0, "gross_borr": 550000},
+            2025: {"de_ratio": 300.0, "net_income": -70000, "op": -50000,
+                   "dep": 1000, "amort": 0, "gross_borr": 600000},
+        }
+        d = calc_distress_discount(cons, 2025, max_discount=0.25)
+        assert d.discount <= 0.25

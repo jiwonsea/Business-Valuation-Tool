@@ -254,6 +254,7 @@ class ScenarioParams(BaseModel):
     segment_ebitda: Optional[dict[str, int]] = None   # {seg_code: ebitda} overrides allocate_da result
     segment_multiples: Optional[dict[str, float]] = None  # {seg_code: multiple} overrides vi.multiples
     segment_revenue: Optional[dict[str, int]] = None  # {seg_code: revenue} for ev_revenue segments
+    segment_method_override: Optional[dict[str, str]] = None  # {seg_code: "ev_ebitda"|"ev_revenue"} per-scenario method transition
 
     @field_validator("wacc_adj")
     @classmethod
@@ -535,8 +536,16 @@ class ValuationInput(BaseModel):
     mc_multiple_std_pct: float = 15.0  # Multiple std dev (% of applied value)
     mc_dlom_mean: float = 0.0  # DLOM mean (%)
     mc_dlom_std: float = 5.0  # DLOM std dev (%)
+    distress_max_discount: float = 0.35  # Maximum distress discount cap (0.0~1.0)
     news_key_issues: Optional[str] = None  # News-based key issues summary
     market_signals: Optional[MarketSignals] = None  # External market data signals (Phase 4)
+
+    @field_validator("distress_max_discount")
+    @classmethod
+    def distress_max_discount_range(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError(f"distress_max_discount는 0.0~1.0 범위여야 합니다: {v}")
+        return v
 
     @model_validator(mode="after")
     def validate_inputs(self):

@@ -17,6 +17,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+# Cyclical industries: single-year loss is expected during downcycles
+_CYCLICAL_KEYWORDS = frozenset({
+    "auto", "automotive", "automobile",
+    "steel", "metals",
+    "shipping", "marine",
+    "semiconductor", "semiconductors",
+    "oil", "oil & gas", "upstream", "refining", "mining",
+    "construction", "chemical", "chemicals",
+})
+
 # Market-specific D/E thresholds (Korean chaebol routinely operate at 150-300%)
 _DE_THRESHOLDS = {
     "KR": {"start": 150, "max_at": 300, "max_penalty": 0.15},
@@ -42,6 +52,7 @@ def calc_distress_discount(
     max_discount: float = 0.35,
     market: str = "US",
     kd_pre: float = 5.0,
+    industry: str = "",
 ) -> DistressResult:
     """Calculate financial distress discount from consolidated data.
 
@@ -88,12 +99,14 @@ def calc_distress_discount(
         else:
             break
 
+    is_cyclical = any(kw in industry.lower() for kw in _CYCLICAL_KEYWORDS) if industry else False
+
     if loss_streak >= 3:
         loss_penalty = 0.15
     elif loss_streak == 2:
         loss_penalty = 0.10
     elif loss_streak == 1:
-        loss_penalty = 0.05
+        loss_penalty = 0.0 if is_cyclical else 0.05
     else:
         loss_penalty = 0.0
 
@@ -150,12 +163,14 @@ def calc_distress_discount(
 def apply_distress_discount(
     multiples: dict[str, float],
     discount: float,
+    exempt_segments: set[str] | None = None,
 ) -> dict[str, float]:
-    """Apply distress discount to all segment multiples.
+    """Apply distress discount to segment multiples (exempt segments keep original).
 
     Args:
-        multiples: {segment_code: ev_ebitda_multiple}
+        multiples: {segment_code: multiple}
         discount: 0.0 to max_discount
+        exempt_segments: segment codes exempt from discount (e.g., ev_revenue segments)
 
     Returns:
         New dict with discounted multiples (originals unchanged).
@@ -163,4 +178,8 @@ def apply_distress_discount(
     if discount <= 0:
         return multiples
     factor = 1.0 - discount
-    return {code: round(m * factor, 2) for code, m in multiples.items()}
+    exempt = exempt_segments or set()
+    return {
+        code: m if code in exempt else round(m * factor, 2)
+        for code, m in multiples.items()
+    }

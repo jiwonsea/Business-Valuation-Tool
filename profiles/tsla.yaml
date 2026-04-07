@@ -22,6 +22,14 @@ segments:
   SEG3:
     name: Services & Other
     multiple: 10.0
+  SEG4:
+    name: FSD / Autonomous Driving
+    method: ev_revenue
+    multiple: 15.0
+  SEG5:
+    name: Robotaxi / Mobility Network
+    method: ev_revenue
+    multiple: 8.0
 segment_data:
   2025:
     SEG1:
@@ -39,6 +47,16 @@ segment_data:
       gross_profit: 0
       op: 209
       assets: 5926
+    SEG4:
+      revenue: 2500
+      gross_profit: 0
+      op: -500
+      assets: 5000
+    SEG5:
+      revenue: 0
+      gross_profit: 0
+      op: -200
+      assets: 1000
 consolidated:
   2023:
     revenue: 96773
@@ -97,7 +115,9 @@ scenarios:
     shares: 3752431984
     growth_adj_pct: 0
     terminal_growth_adj: 0
-    desc: Base case with consensus estimates
+    segment_multiples:
+      SEG4: 15.0
+    desc: Base case — FSD subscription revenue at current trajectory
   Bull:
     name: Bull Case
     prob: 25
@@ -110,7 +130,17 @@ scenarios:
     shares: 3752431984
     growth_adj_pct: 20
     terminal_growth_adj: 0.3
-    desc: Upside scenario
+    segment_revenue:
+      SEG4: 8000
+      SEG5: 3000
+    segment_multiples:
+      SEG4: 20.0
+      SEG5: 12.0
+    segment_method_override:
+      SEG4: ev_ebitda
+    segment_ebitda:
+      SEG4: 4000
+    desc: Upside — FSD profitable, Robotaxi launch generating revenue
   Bear:
     name: Bear Case
     prob: 25
@@ -123,7 +153,12 @@ scenarios:
     shares: 3752431984
     growth_adj_pct: -25
     terminal_growth_adj: -0.3
-    desc: Downside scenario
+    segment_revenue:
+      SEG4: 1000
+    segment_multiples:
+      SEG4: 8.0
+      SEG5: 0.0
+    desc: Downside — FSD stalls, Robotaxi fails to launch
 dcf_params:
   ebitda_growth_rates:
   - 0.20
@@ -210,6 +245,26 @@ peers:
   segment_code: SEG2
   ev_ebitda: 13.8
   notes: 태양광 마이크로인버터 및 에너지관리 시스템. 분산형 에너지저장 솔루션. 2023년 기준 EV/EBITDA 13.8배.
+- name: Mobileye (MBLY)
+  segment_code: SEG4
+  ev_ebitda: 18.0
+  notes: Intel subsidiary, autonomous driving technology provider. EV/Revenue used as primary
+    metric for pre-profit optionality valuation. Revenue ~$1.8B (2024).
+- name: Qualcomm Snapdragon Ride
+  segment_code: SEG4
+  ev_ebitda: 14.0
+  notes: ADAS/AD platform. Implied EV/Revenue from automotive segment. Proxy for FSD
+    technology licensing valuation.
+- name: Uber Technologies (UBER)
+  segment_code: SEG5
+  ev_ebitda: 10.5
+  notes: Ride-hailing platform, closest proxy for robotaxi network economics. Market cap
+    ~$170B, Mobility segment EV/Revenue ~10x. Scale advantage reference.
+- name: Waymo (Alphabet subsidiary)
+  segment_code: SEG5
+  ev_ebitda: 6.0
+  notes: Implied valuation from Alphabet Other Bets. Autonomous ride-hailing pioneer.
+    Lower multiple reflects pre-revenue stage and execution uncertainty.
 news_key_issues: '# Tesla, Inc. 밸류에이션 영향 핵심 이슈
 
 

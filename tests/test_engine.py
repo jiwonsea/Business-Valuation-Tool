@@ -22,6 +22,7 @@ from engine.multiples import calc_ps, calc_pffo
 from engine.market_comparison import compare_to_market
 from engine.nav import calc_nav
 from engine.growth import linear_fade, calc_ebitda_growth, generate_growth_rates
+from engine.distress import calc_distress_discount, apply_distress_discount
 from engine.method_selector import classify_industry
 from engine.drivers import resolve_drivers
 from schemas.models import NewsDriver
@@ -585,7 +586,7 @@ class TestFullPipeline:
         # Structural verification (instead of fixed values)
         assert result.primary_method == "sotp"
         assert result.wacc.wacc == 9.02  # 8.50 + size_premium 1.5% → Ke 18.11% → WACC 9.02%
-        assert 6_300_000 < result.total_ev < 6_400_000  # SOTP EV unchanged (multiple-based)
+        assert 4_800_000 < result.total_ev < 6_400_000  # SOTP EV (distress discount may reduce)
         assert result.weighted_value > 0
         assert len(result.cross_validations) >= 2
         assert result.dcf is not None
@@ -1588,3 +1589,90 @@ class TestScenarioDriverRoundTrip:
         # Bear should have lower multiples
         assert bear_sc.segment_multiples is not None
         assert bear_sc.segment_multiples["IC"] < bull_sc.segment_multiples["IC"]
+
+
+class TestDistressDiscount:
+    """Distress discount engine tests."""
+
+    def test_healthy_company_no_discount(self):
+        """Healthy financials should produce zero discount."""
+        cons = {
+            2025: {"de_ratio": 40.0, "net_income": 100000, "op": 80000,
+                   "dep": 10000, "amort": 2000, "gross_borr": 50000},
+            2024: {"de_ratio": 35.0, "net_income": 90000, "op": 70000,
+                   "dep": 9000, "amort": 1800, "gross_borr": 45000},
+        }
+        d = calc_distress_discount(cons, 2025)
+        assert d.discount == 0.0
+        assert not d.applied
+
+    def test_high_leverage_penalty(self):
+        """D/E > 80% triggers leverage penalty."""
+        cons = {
+            2025: {"de_ratio": 120.0, "net_income": 50000, "op": 40000,
+                   "dep": 5000, "amort": 0, "gross_borr": 30000},
+        }
+        d = calc_distress_discount(cons, 2025)
+        assert d.de_penalty > 0
+        assert d.loss_penalty == 0
+
+    def test_consecutive_losses(self):
+        """Two consecutive loss years trigger loss penalty."""
+        cons = {
+            2023: {"de_ratio": 50.0, "net_income": 10000, "op": 15000,
+                   "dep": 3000, "amort": 0, "gross_borr": 20000},
+            2024: {"de_ratio": 55.0, "net_income": -5000, "op": 2000,
+                   "dep": 3000, "amort": 0, "gross_borr": 22000},
+            2025: {"de_ratio": 60.0, "net_income": -8000, "op": -1000,
+                   "dep": 3000, "amort": 0, "gross_borr": 25000},
+        }
+        d = calc_distress_discount(cons, 2025)
+        assert d.loss_penalty == 0.10  # 2 consecutive losses
+
+    def test_three_year_loss_streak(self):
+        """Three consecutive losses get maximum loss penalty."""
+        cons = {
+            2023: {"de_ratio": 50.0, "net_income": -1000, "op": 0,
+                   "dep": 1000, "amort": 0, "gross_borr": 10000},
+            2024: {"de_ratio": 55.0, "net_income": -2000, "op": -500,
+                   "dep": 1000, "amort": 0, "gross_borr": 12000},
+            2025: {"de_ratio": 60.0, "net_income": -3000, "op": -1000,
+                   "dep": 1000, "amort": 0, "gross_borr": 15000},
+        }
+        d = calc_distress_discount(cons, 2025)
+        assert d.loss_penalty == 0.15
+
+    def test_low_icr_penalty(self):
+        """Low interest coverage triggers ICR penalty."""
+        cons = {
+            2025: {"de_ratio": 50.0, "net_income": 5000, "op": 8000,
+                   "dep": 2000, "amort": 0, "gross_borr": 200000},
+        }
+        d = calc_distress_discount(cons, 2025)
+        assert d.icr_penalty > 0
+
+    def test_max_discount_cap(self):
+        """Total discount is capped at max_discount."""
+        cons = {
+            2023: {"de_ratio": 250.0, "net_income": -50000, "op": -40000,
+                   "dep": 1000, "amort": 0, "gross_borr": 500000},
+            2024: {"de_ratio": 280.0, "net_income": -60000, "op": -45000,
+                   "dep": 1000, "amort": 0, "gross_borr": 550000},
+            2025: {"de_ratio": 300.0, "net_income": -70000, "op": -50000,
+                   "dep": 1000, "amort": 0, "gross_borr": 600000},
+        }
+        d = calc_distress_discount(cons, 2025, max_discount=0.35)
+        assert d.discount <= 0.35
+
+    def test_apply_distress_discount(self):
+        """apply_distress_discount reduces multiples by factor."""
+        multiples = {"SEG1": 10.0, "SEG2": 8.0}
+        result = apply_distress_discount(multiples, 0.20)
+        assert result["SEG1"] == 8.0
+        assert result["SEG2"] == 6.4
+
+    def test_zero_discount_passthrough(self):
+        """Zero discount returns original multiples."""
+        multiples = {"SEG1": 10.0}
+        result = apply_distress_discount(multiples, 0.0)
+        assert result is multiples  # Same object (no copy needed)

@@ -18,6 +18,7 @@ from schemas.models import (
 from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
+from engine.distress import calc_distress_discount, apply_distress_discount
 from engine.dcf import calc_dcf
 from engine.ddm import calc_ddm as calc_ddm_engine
 from engine.rim import calc_rim as calc_rim_engine
@@ -282,10 +283,20 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         total_da = c["dep"] + c["amort"]
         da_allocations[yr] = allocate_da(segs, total_da, seg_methods if is_mixed else None)
 
+    # Financial distress discount on multiples
+    distress = calc_distress_discount(
+        vi.consolidated, by,
+        market=vi.company.market,
+        kd_pre=vi.wacc_params.kd_pre,
+    )
+    effective_multiples = apply_distress_discount(vi.multiples, distress.discount)
+    if distress.applied:
+        logger.info("[Distress] %s: %s", vi.company.name, distress.detail)
+
     # SOTP (base year) -- Mixed Method support
     base_alloc = da_allocations[by]
     sotp, total_ev = calc_sotp(
-        base_alloc, vi.multiples,
+        base_alloc, effective_multiples,
         segments_info=vi.segments if is_mixed else None,
     )
 
@@ -321,7 +332,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
             _, sc_ev = calc_sotp(
                 adj_alloc,
-                vi.multiples,
+                effective_multiples,
                 segments_info=vi.segments if is_mixed else None,
                 ebitda_override=sc.segment_ebitda,
                 multiple_override=sc.segment_multiples,
@@ -369,7 +380,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     # Sensitivity
     sens_mult, _, _ = sensitivity_multiples(
-        base_alloc, vi.multiples, effective_net_debt, vi.eco_frontier,
+        base_alloc, effective_multiples, effective_net_debt, vi.eco_frontier,
         vi.company.shares_outstanding, unit_multiplier=um,
     )
     ref_sc = _get_reference_scenario(vi.scenarios)
@@ -396,7 +407,10 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     # Monte Carlo
     sotp_seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
-    mc_result = _run_monte_carlo(vi, wacc_result, sotp_seg_ebitdas, um, dcf_result=dcf_result)
+    mc_result = _run_monte_carlo(
+        vi, wacc_result, sotp_seg_ebitdas, um,
+        dcf_result=dcf_result, effective_multiples=effective_multiples,
+    )
 
     # Peer statistics
     seg_names = _seg_names(vi)
@@ -1019,21 +1033,24 @@ def _mc_raw_to_result(mc_raw):
 def _run_monte_carlo(
     vi, wacc_result, seg_ebitdas: dict[str, int], um: int,
     dcf_result=None,
+    effective_multiples: dict[str, float] | None = None,
 ) -> MonteCarloResult | None:
     """Run Monte Carlo -- common entry point for SOTP/non-SOTP.
 
     Args:
         seg_ebitdas: {seg_code: ebitda} -- allocate_da result for SOTP, or consolidated-based allocation.
+        effective_multiples: Distress-adjusted multiples (falls back to vi.multiples if None).
     """
     if not vi.mc_enabled:
         return None
 
     from engine.monte_carlo import MCInput, run_monte_carlo
 
+    mults = effective_multiples or vi.multiples
     mc_params = MCInput(
         multiple_params={
-            c: (vi.multiples[c], vi.multiples[c] * vi.mc_multiple_std_pct / 100)
-            for c in seg_ebitdas if vi.multiples.get(c, 0) > 0
+            c: (mults[c], mults[c] * vi.mc_multiple_std_pct / 100)
+            for c in seg_ebitdas if mults.get(c, 0) > 0
         },
         wacc_mean=wacc_result.wacc,
         wacc_std=1.0,

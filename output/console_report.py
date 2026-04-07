@@ -2,6 +2,7 @@
 
 from schemas.models import ValuationInput, ValuationResult
 from valuation_runner import _seg_names
+from engine.distress import calc_distress_discount
 
 
 def print_report(vi: ValuationInput, result: ValuationResult):
@@ -18,6 +19,20 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     # WACC
     w = result.wacc
     print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
+
+    # Distress discount (SOTP only)
+    if result.primary_method == "sotp" and len(vi.segments) > 1:
+        distress = calc_distress_discount(
+            vi.consolidated, by,
+            market=vi.company.market,
+            kd_pre=vi.wacc_params.kd_pre,
+        )
+        if distress.applied:
+            print(f"\n[Distress Haircut] {distress.detail}")
+            for code in vi.segments:
+                orig = vi.multiples.get(code, 0)
+                adj = round(orig * (1 - distress.discount), 2)
+                print(f"  {seg_names.get(code, code)}: {orig:.1f}x → {adj:.1f}x")
 
     # Mixed SOTP determination
     is_mixed = bool(vi.segment_net_debt) and any(

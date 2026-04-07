@@ -54,6 +54,8 @@ def calc_sotp(
     segments_info: dict[str, dict] | None = None,
     ebitda_override: dict[str, int] | None = None,
     multiple_override: dict[str, float] | None = None,
+    revenue_by_seg: dict[str, int] | None = None,
+    revenue_override: dict[str, int] | None = None,
 ) -> tuple[dict[str, SOTPSegmentResult], int]:
     """Calculate SOTP EV (mixed method support).
 
@@ -62,6 +64,7 @@ def calc_sotp(
       - ev_ebitda: EBITDA x multiple -> EV
       - pbv: book_equity x multiple -> Equity (is_equity_based=True)
       - pe: net_income_segment x multiple -> Equity (is_equity_based=True)
+      - ev_revenue: revenue x multiple -> EV (for pre-profit optionality segments)
 
     Args:
         ebitda_by_seg: {code: DAAllocation}
@@ -69,6 +72,8 @@ def calc_sotp(
         segments_info: {code: {"name", "multiple", "method", "book_equity", ...}}
         ebitda_override: {code: ebitda} -- per-scenario override for optionality segments
         multiple_override: {code: multiple} -- per-scenario multiple override
+        revenue_by_seg: {code: revenue} -- base revenue for ev_revenue segments
+        revenue_override: {code: revenue} -- per-scenario revenue override
 
     Returns:
         ({code: SOTPSegmentResult}, total_ev)
@@ -95,6 +100,16 @@ def calc_sotp(
             result[code] = SOTPSegmentResult(
                 ebitda=alloc.ebitda, multiple=m, ev=ev,
                 method="pe", is_equity_based=True,
+            )
+        elif method == "ev_revenue":
+            # EV/Revenue for pre-profit optionality segments (FSD, Robotaxi, AI platform)
+            # multiple_override applies (scenario-level multiple variation)
+            m = (multiple_override or {}).get(code, multiples.get(code, 0))
+            rev = (revenue_override or {}).get(code, (revenue_by_seg or {}).get(code, 0))
+            ev = round(rev * m) if rev > 0 else 0
+            result[code] = SOTPSegmentResult(
+                ebitda=alloc.ebitda, multiple=m, ev=ev,
+                method="ev_revenue", is_equity_based=False, revenue=rev,
             )
         else:
             # Standard EV/EBITDA — apply ebitda_override and multiple_override if provided

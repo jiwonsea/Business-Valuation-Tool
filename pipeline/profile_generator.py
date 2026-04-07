@@ -761,30 +761,32 @@ def auto_analyze(
             code = opt_seg.get("code", "")
             if not code:
                 continue
-            # Add to segments with optionality flag
+            # Add to segments with optionality flag + ev_revenue method
             raw.setdefault("segments", {})[code] = {
                 "name": opt_seg.get("name", code),
-                "multiple": opt_seg.get("multiple", 30.0),
+                "multiple": opt_seg.get("multiple", 15.0),
                 "optionality": True,
+                "method": "ev_revenue",
             }
-            # Add to segment_data with op=0 (value comes from scenario_ebitda)
+            # Add to segment_data with op=0, revenue from AI estimate
+            base_rev = int(opt_seg.get("base_revenue", 0))
             for yr_data in raw.get("segment_data", {}).values():
-                yr_data.setdefault(code, {"revenue": 0, "gross_profit": 0, "op": 0, "assets": 0})
-            raw.setdefault("multiples", {})[code] = opt_seg.get("multiple", 30.0)
-            # Write per-scenario EBITDA overrides — warn explicitly on code mismatch
-            sc_ebitda = opt_seg.get("scenario_ebitda", {})
+                yr_data.setdefault(code, {"revenue": base_rev, "gross_profit": 0, "op": 0, "assets": 0})
+            raw.setdefault("multiples", {})[code] = opt_seg.get("multiple", 15.0)
+            # Write per-scenario revenue overrides — warn explicitly on code mismatch
+            sc_revenue = opt_seg.get("scenario_revenue", {})
             valid_sc_codes = set(raw.get("scenarios", {}).keys())
             matched = 0
-            for sc_code, ebitda_val in sc_ebitda.items():
+            for sc_code, rev_val in sc_revenue.items():
                 if sc_code in valid_sc_codes:
-                    raw["scenarios"][sc_code].setdefault("segment_ebitda", {})[code] = int(ebitda_val)
+                    raw["scenarios"][sc_code].setdefault("segment_revenue", {})[code] = int(rev_val)
                     matched += 1
                 else:
-                    print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': scenario_ebitda 키 '{sc_code}'가 "
+                    print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': scenario_revenue 키 '{sc_code}'가 "
                           f"시나리오 코드 {sorted(valid_sc_codes)}와 불일치 — 해당 값 무시됨")
-            if sc_ebitda and matched == 0:
-                print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': 모든 scenario_ebitda 키 불일치. "
-                      f"AI 응답의 scenario_ebitda 키가 scenarios[].code와 동일해야 함.")
+            if sc_revenue and matched == 0:
+                print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': 모든 scenario_revenue 키 불일치. "
+                      f"AI 응답의 scenario_revenue 키가 scenarios[].code와 동일해야 함.")
         print(f"  → 옵셔널리티 세그먼트 YAML 반영 완료: {[s['code'] for s in opt_segs]}")
 
     # Update peers

@@ -238,7 +238,7 @@ multiples:
 </driver_reference>"""
 
 # Structured (dict-type) driver fields — excluded from news_driver effects (scalar-only)
-_STRUCTURED_FIELDS = {"segment_multiples", "segment_ebitda"}
+_STRUCTURED_FIELDS = {"segment_multiples", "segment_ebitda", "segment_revenue"}
 
 _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "dcf_primary": {
@@ -251,6 +251,7 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
         "growth_adj_pct": "EBITDA % adjustment (e.g., +20 -> all segment EBITDAs * 1.2)",
         "segment_multiples": "Multiple override per segment for this scenario {code: value}",
         "segment_ebitda": "EBITDA override per segment for this scenario {code: value}",
+        "segment_revenue": "Revenue override per segment for ev_revenue method {code: value}",
         "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
         "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 -> EV * 1.05)",
     },
@@ -283,23 +284,26 @@ If this company has binary-outcome business segments where payoff is explosive-o
 (examples: autonomous driving, robotaxi fleet, humanoid robots, drug pipeline, AI platform,
 space launch, nuclear fusion), identify them as optionality segments.
 
-For each optionality segment, estimate EBITDA in {currency_unit} per scenario using:
-  TAM × penetration_rate × operating_margin = EBITDA estimate
+For each optionality segment, estimate REVENUE in {currency_unit} per scenario using:
+  TAM × penetration_rate = Revenue estimate
+Use forward revenue estimates if the segment is in early commercialization with accelerating take-rate.
 
-CRITICAL: Use the EXACT SAME scenario codes defined in "scenarios" above (e.g. if scenarios use "Bull","Base","Bear" then scenario_ebitda keys must be "Bull","Base","Bear").
+CRITICAL: Use the EXACT SAME scenario codes defined in "scenarios" above (e.g. if scenarios use "Bull","Base","Bear" then scenario_revenue keys must be "Bull","Base","Bear").
 
 Add to output (omit if no optionality segments found):
 "optionality_segments": [
   {{
     "code": "SEG_OPT1",
     "name": "Descriptive segment name (e.g. FSD / Full Self-Driving)",
-    "multiple": <SaaS/platform multiple, typically 25-50x EV/EBITDA>,
-    "scenario_ebitda": {{
-      "<scenario_code_bull>": <ebitda in {currency_unit}, full deployment>,
-      "<scenario_code_base>": <ebitda in {currency_unit}, partial deployment>,
+    "method": "ev_revenue",
+    "multiple": <EV/Revenue multiple, typically 10-25x>,
+    "base_revenue": <current or near-term revenue in {currency_unit}, 0 if pre-launch>,
+    "scenario_revenue": {{
+      "<scenario_code_bull>": <revenue in {currency_unit}, full deployment>,
+      "<scenario_code_base>": <revenue in {currency_unit}, partial deployment>,
       "<scenario_code_bear>": 0
     }},
-    "rationale": "TAM × penetration × margin math, e.g. $500B TAM × 3% × 25% = $3.75B"
+    "rationale": "TAM × penetration math, e.g. $500B TAM × 3% = $15B revenue"
   }}
 ]
 </optionality_detection>"""

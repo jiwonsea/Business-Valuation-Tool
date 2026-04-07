@@ -290,19 +290,28 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         kd_pre=vi.wacc_params.kd_pre,
     )
     effective_multiples = apply_distress_discount(vi.multiples, distress.discount)
+    # ev_revenue segments: exclude from distress discount (comp multiples already embed risk)
+    for _code, _info in vi.segments.items():
+        if _info.get("method") == "ev_revenue":
+            effective_multiples[_code] = vi.multiples.get(_code, effective_multiples.get(_code, 0))
     if distress.applied:
         logger.info("[Distress] %s: %s", vi.company.name, distress.detail)
+
+    # Build segment revenue map for ev_revenue segments
+    seg_revenue = {c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0)
+                   for c in vi.segments}
 
     # SOTP (base year) -- Mixed Method support
     base_alloc = da_allocations[by]
     sotp, total_ev = calc_sotp(
         base_alloc, effective_multiples,
         segments_info=vi.segments if is_mixed else None,
+        revenue_by_seg=seg_revenue if is_mixed else None,
     )
 
     # Warn if all scenarios lack SOTP-specific drivers (will produce identical EV)
     _all_undifferentiated = all(
-        not sc.segment_ebitda and not sc.segment_multiples
+        not sc.segment_ebitda and not sc.segment_multiples and not sc.segment_revenue
         and sc.growth_adj_pct == 0 and sc.market_sentiment_pct == 0
         for sc in vi.scenarios.values()
     )
@@ -319,7 +328,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         sc = resolve_drivers(sc, vi.news_drivers)
 
         # Per-scenario SOTP: recalculate if drivers are set
-        needs_recalc = sc.segment_ebitda or sc.segment_multiples or sc.growth_adj_pct != 0
+        needs_recalc = (sc.segment_ebitda or sc.segment_multiples or sc.segment_revenue
+                        or sc.growth_adj_pct != 0)
         if needs_recalc:
             # Apply growth_adj_pct to base EBITDA allocation
             adj_alloc = base_alloc
@@ -336,6 +346,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                 segments_info=vi.segments if is_mixed else None,
                 ebitda_override=sc.segment_ebitda,
                 multiple_override=sc.segment_multiples,
+                revenue_by_seg=seg_revenue if is_mixed else None,
+                revenue_override=sc.segment_revenue,
             )
         else:
             sc_ev = total_ev
@@ -382,6 +394,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     sens_mult, _, _ = sensitivity_multiples(
         base_alloc, effective_multiples, effective_net_debt, vi.eco_frontier,
         vi.company.shares_outstanding, unit_multiplier=um,
+        segments_info=vi.segments if is_mixed else None,
+        revenue_by_seg=seg_revenue if is_mixed else None,
     )
     ref_sc = _get_reference_scenario(vi.scenarios)
     sens_irr, _, _ = sensitivity_irr_dlom(
@@ -525,7 +539,13 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     da_allocations = {}
     if len(vi.segments) > 1 and by in vi.segment_data:
         da_allocations[by] = allocate_da(vi.segment_data[by], total_da_base)
-        sotp_result, sotp_ev = calc_sotp(da_allocations[by], vi.multiples)
+        _cv_seg_revenue = {c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0)
+                          for c in vi.segments}
+        sotp_result, sotp_ev = calc_sotp(
+            da_allocations[by], vi.multiples,
+            segments_info=vi.segments if len(vi.segments) > 1 else None,
+            revenue_by_seg=_cv_seg_revenue,
+        )
 
     cv_items = _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_result.ev_dcf, um)
 

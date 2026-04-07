@@ -274,8 +274,16 @@ if is_sotp:
             for code in seg_names:
                 if code in result.sotp:
                     s = result.sotp[code]
+                    if s.method == "ev_revenue":
+                        metric_lbl, metric_val = "Revenue", getattr(s, "revenue", 0) or 0
+                    elif s.method == "pbv":
+                        metric_lbl, metric_val = "Book Equity", s.ebitda
+                    elif s.method == "pe":
+                        metric_lbl, metric_val = "Net Income", s.ebitda
+                    else:
+                        metric_lbl, metric_val = "EBITDA", s.ebitda
                     st.write(
-                        f"**{seg_names[code]}**: EBITDA {s.ebitda:,} × "
+                        f"**{seg_names[code]}**: {metric_lbl} {metric_val:,} × "
                         f"{s.multiple:.1f}x = **{s.ev:,}**{unit}"
                     )
             st.divider()

@@ -229,6 +229,79 @@ class TestSOTP:
         assert sotp["B"].ev < 0
         assert ev < sotp["A"].ev  # Negative segment reduces total
 
+    def test_ev_revenue_basic(self):
+        """ev_revenue: EV = revenue × multiple."""
+        alloc = allocate_da({"FSD": {"op": 0, "assets": 0}}, 0,
+                            segment_methods={"FSD": "ev_revenue"})
+        sotp, ev = calc_sotp(
+            alloc, {"FSD": 15.0},
+            segments_info={"FSD": {"name": "FSD", "method": "ev_revenue"}},
+            revenue_by_seg={"FSD": 5000},
+        )
+        assert sotp["FSD"].ev == 75000  # 5000 * 15.0
+        assert sotp["FSD"].method == "ev_revenue"
+        assert sotp["FSD"].revenue == 5000
+        assert sotp["FSD"].is_equity_based is False
+        assert ev == 75000
+
+    def test_ev_revenue_with_override(self):
+        """ev_revenue: revenue_override and multiple_override apply."""
+        alloc = allocate_da({"FSD": {"op": 0, "assets": 0}}, 0,
+                            segment_methods={"FSD": "ev_revenue"})
+        sotp, ev = calc_sotp(
+            alloc, {"FSD": 15.0},
+            segments_info={"FSD": {"name": "FSD", "method": "ev_revenue"}},
+            revenue_by_seg={"FSD": 5000},
+            revenue_override={"FSD": 20000},
+            multiple_override={"FSD": 20.0},
+        )
+        assert sotp["FSD"].ev == 400000  # 20000 * 20.0
+        assert sotp["FSD"].revenue == 20000
+
+    def test_ev_revenue_zero(self):
+        """ev_revenue: revenue=0 → EV=0 (pre-launch segment)."""
+        alloc = allocate_da({"ROBO": {"op": 0, "assets": 0}}, 0,
+                            segment_methods={"ROBO": "ev_revenue"})
+        sotp, ev = calc_sotp(
+            alloc, {"ROBO": 25.0},
+            segments_info={"ROBO": {"name": "Robotaxi", "method": "ev_revenue"}},
+            revenue_by_seg={"ROBO": 0},
+        )
+        assert sotp["ROBO"].ev == 0
+        assert ev == 0
+
+    def test_mixed_ebitda_and_revenue(self):
+        """Mixed ev_ebitda + ev_revenue: total_ev = sum of both."""
+        seg_data = {"AUTO": {"op": 4000, "assets": 100}, "FSD": {"op": 0, "assets": 0}}
+        seg_methods = {"AUTO": "ev_ebitda", "FSD": "ev_revenue"}
+        alloc = allocate_da(seg_data, 500, segment_methods=seg_methods)
+        sotp, ev = calc_sotp(
+            alloc, {"AUTO": 8.0, "FSD": 15.0},
+            segments_info={
+                "AUTO": {"name": "Automotive", "method": "ev_ebitda"},
+                "FSD": {"name": "FSD", "method": "ev_revenue"},
+            },
+            revenue_by_seg={"AUTO": 80000, "FSD": 5000},
+        )
+        # AUTO: EBITDA = 4000 + 500 = 4500, EV = 4500 * 8.0 = 36000
+        assert sotp["AUTO"].method == "ev_ebitda"
+        assert sotp["AUTO"].ev == 36000
+        # FSD: Revenue = 5000, EV = 5000 * 15.0 = 75000
+        assert sotp["FSD"].method == "ev_revenue"
+        assert sotp["FSD"].ev == 75000
+        assert ev == 36000 + 75000
+
+    def test_allocate_da_excludes_ev_revenue(self):
+        """D&A allocation excludes ev_revenue segments (like pbv/pe)."""
+        seg_data = {"A": {"op": 1000, "assets": 200}, "B": {"op": 0, "assets": 50}}
+        alloc = allocate_da(seg_data, 100,
+                            segment_methods={"A": "ev_ebitda", "B": "ev_revenue"})
+        # 100% of D&A goes to A (only ev_ebitda segment)
+        assert alloc["A"].da_allocated == 100
+        assert alloc["A"].asset_share == 100.0
+        assert alloc["B"].da_allocated == 0
+        assert alloc["B"].asset_share == 0
+
 
 # ═══════════════════════════════════════════════════════════
 # Scenario Tests

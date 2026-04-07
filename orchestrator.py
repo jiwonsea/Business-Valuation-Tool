@@ -103,7 +103,11 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(f"## SOTP EV: {result.total_ev:,}{unit}")
         for code, s in result.sotp.items():
             if s.ev > 0:
-                lines.append(f"- {seg_names.get(code, code)}: EBITDA {s.ebitda:,} × {s.multiple:.1f}x = {s.ev:,}{unit}")
+                if s.method == "ev_revenue":
+                    _m_lbl, _m_val = "Revenue", getattr(s, "revenue", 0) or 0
+                else:
+                    _m_lbl, _m_val = "EBITDA", s.ebitda
+                lines.append(f"- {seg_names.get(code, code)}: {_m_lbl} {_m_val:,} × {s.multiple:.1f}x = {s.ev:,}{unit}")
         lines.append("")
 
     # DCF

@@ -11,6 +11,16 @@ from .nav import calc_nav
 from .units import per_share
 
 
+def _seg_metric(code: str, alloc: DAAllocation,
+                 segments_info: dict[str, dict] | None,
+                 revenue_by_seg: dict[str, int] | None) -> int:
+    """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise."""
+    method = (segments_info or {}).get(code, {}).get("method", "ev_ebitda")
+    if method == "ev_revenue":
+        return (revenue_by_seg or {}).get(code, 0)
+    return alloc.ebitda
+
+
 def sensitivity_multiples(
     base_ebitda_by_seg: dict[str, DAAllocation],
     multiples: dict[str, float],
@@ -22,6 +32,8 @@ def sensitivity_multiples(
     row_range: list[float] | None = None,
     col_range: list[float] | None = None,
     unit_multiplier: int = 1_000_000,
+    segments_info: dict[str, dict] | None = None,
+    revenue_by_seg: dict[str, int] | None = None,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: two-segment multiple variation -> Scenario A per-share value."""
     # Auto-select segment codes (avoid hardcoding)
@@ -38,24 +50,25 @@ def sensitivity_multiples(
         base_m = multiples.get(col_seg, 13.0)
         col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
-    # Pre-compute EV for non-varying segments (negative EBITDA -> negative EV)
+    # Pre-compute EV for non-varying segments (uses revenue for ev_revenue method)
     fixed_ev = 0
     for code, alloc in base_ebitda_by_seg.items():
         if code != row_seg and code != col_seg:
             m = multiples.get(code, 0)
-            fixed_ev += round(alloc.ebitda * m)
+            metric = _seg_metric(code, alloc, segments_info, revenue_by_seg)
+            fixed_ev += round(metric * m)
     deductions = net_debt + eco_frontier
 
     rows = []
     orig_row = multiples.get(row_seg)
     orig_col = multiples.get(col_seg)
-    row_alloc = base_ebitda_by_seg.get(row_seg)
-    col_alloc = base_ebitda_by_seg.get(col_seg)
+    row_metric = _seg_metric(row_seg, base_ebitda_by_seg.get(row_seg), segments_info, revenue_by_seg) if row_seg in base_ebitda_by_seg else 0
+    col_metric = _seg_metric(col_seg, base_ebitda_by_seg.get(col_seg), segments_info, revenue_by_seg) if col_seg in base_ebitda_by_seg else 0
     try:
         for row_m in row_range:
-            row_ev = round(row_alloc.ebitda * row_m) if row_alloc else 0
+            row_ev = round(row_metric * row_m)
             for col_m in col_range:
-                col_ev = round(col_alloc.ebitda * col_m) if col_alloc else 0
+                col_ev = round(col_metric * col_m)
                 eq = fixed_ev + row_ev + col_ev - deductions
                 ps = per_share(eq, unit_multiplier, shares)
                 rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))

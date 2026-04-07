@@ -55,7 +55,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 a = alloc[code]
                 if is_mixed:
                     method = vi.segments[code].get("method", "ev_ebitda")
-                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
                     print(f"{seg_names.get(code, code):<18} {m_lbl:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
                 else:
                     print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
@@ -69,7 +69,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 if code in result.sotp:
                     s = result.sotp[code]
                     method = getattr(s, "method", "ev_ebitda")
-                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E"}.get(method, method)
+                    m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
                     eq_tag = " [Equity]" if getattr(s, "is_equity_based", False) else " [EV]"
                     print(f"  {seg_names.get(code, code):<18} {m_lbl:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
             print(f"  {'합계':<30} {sotp_ev:>14,}{unit}")

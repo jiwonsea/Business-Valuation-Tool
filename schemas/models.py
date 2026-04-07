@@ -253,6 +253,7 @@ class ScenarioParams(BaseModel):
     # Optionality segment overrides (per-scenario) — for binary-outcome segments (FSD, Robotaxi, etc.)
     segment_ebitda: Optional[dict[str, int]] = None   # {seg_code: ebitda} overrides allocate_da result
     segment_multiples: Optional[dict[str, float]] = None  # {seg_code: multiple} overrides vi.multiples
+    segment_revenue: Optional[dict[str, int]] = None  # {seg_code: revenue} for ev_revenue segments
 
     @field_validator("wacc_adj")
     @classmethod
@@ -567,8 +568,9 @@ class SOTPSegmentResult(BaseModel):
     ebitda: int
     multiple: float
     ev: int
-    method: str = "ev_ebitda"  # "ev_ebitda" | "pbv" | "pe"
+    method: str = "ev_ebitda"  # "ev_ebitda" | "pbv" | "pe" | "ev_revenue"
     is_equity_based: bool = False  # P/BV, P/E → True (equity bridge에서 net_debt 차감 불필요)
+    revenue: int | None = None  # ev_revenue method only
 
 
 class DAAllocation(BaseModel):

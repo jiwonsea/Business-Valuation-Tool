@@ -56,7 +56,6 @@ def save_prediction_snapshot(
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
         "scenario_values": scenario_values,
-        "market_signals_version": 1 if getattr(vi, "market_signals", None) is not None else 0,
     }
 
     try:
@@ -69,8 +68,14 @@ def save_prediction_snapshot(
         logger.info("Upserted prediction snapshot %s for %s", uid, vi.company.name)
         return uid
     except Exception:
-        logger.exception("Failed to save prediction snapshot for %s", vi.company.name)
-        return None
+        try:
+            resp = client.table("prediction_snapshots").insert(row).execute()
+            uid = resp.data[0]["id"]
+            logger.info("Inserted prediction snapshot %s for %s (fallback)", uid, vi.company.name)
+            return uid
+        except Exception:
+            logger.exception("Failed to save prediction snapshot for %s", vi.company.name)
+            return None
 
 
 def list_prediction_snapshots(

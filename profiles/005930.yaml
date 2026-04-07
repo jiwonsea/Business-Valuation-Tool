@@ -11,7 +11,7 @@ company:
   shares_ordinary: 5919637922
   shares_preferred: 815974664
   treasury_shares: 91828987
-  analysis_date: '2026-04-04'
+  analysis_date: '2026-04-07'
 segments:
   SEG1:
     name: 반도체 (메모리/파운드리)
@@ -96,14 +96,14 @@ wacc_params:
   rf: 3.2
   erp: 5.5
   bu: 0.95
-  de: 2.0
+  de: 1.9
   tax: 22.0
   kd_pre: 4.2
-  eq_w: 98.0
+  eq_w: 98.1
 scenarios:
-  Base:
-    name: Base Case
-    prob: 50
+  A:
+    name: 메모리 슈퍼사이클 지속
+    prob: 40.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -111,12 +111,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: 0
-    terminal_growth_adj: 0
-    desc: Base case with consensus estimates
-  Bull:
-    name: Bull Case
-    prob: 25
+    desc: 메모리 가격 강세가 2026년 하반기까지 지속되며 DS부문이 역대급 실적을 기록하는 시나리오. AI 수요 급증과 공급 제약이 맞물려
+      메모리 ASP 상승세가 유지되나, 외국인 매도 압력으로 밸류에이션 상승은 제한적.
+    probability_rationale: '기저율: 메모리 슈퍼사이클 지속 확률 60%. 조건부 분해: P(AI수요 지속)=80% × P(공급
+      제약)=70% × P(가격 유지)=90% ≈ 50%, 외국인 매도 압력 고려하여 40%로 조정'
+    active_drivers:
+      memory_supercycle: 1.0
+      foreign_selloff: 0.3
+    segment_multiples:
+      DS: 12.0
+      IM: 8.5
+      DX: 9.0
+      기타: 7.0
+  B:
+    name: 셀 코리아 심화
+    prob: 25.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -124,13 +133,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: 20
-    terminal_growth_adj: 0.3
-    market_sentiment_pct: 10
-    desc: Upside scenario
-  Bear:
-    name: Bear Case
-    prob: 25
+    desc: 외국인 투자자의 대규모 순매도가 지속되며 한국 주식에 대한 구조적 디스카운트가 심화되는 시나리오. 글로벌 유동성 긴축과 지정학적
+      리스크로 신흥국 자산 기피 현상이 강화되어 밸류에이션 압박이 지속됨.
+    probability_rationale: '기저율: 외국인 대규모 매도 지속 확률 40%. 조건부 분해: P(글로벌 유동성 긴축)=70% ×
+      P(한국 리스크 프리미엄 확대)=60% × P(매도 지속)=80% ≈ 34%, 일부 긍정 요인 고려하여 25%로 조정'
+    active_drivers:
+      foreign_selloff: 1.0
+      legal_risks: 0.5
+    segment_multiples:
+      DS: 9.5
+      IM: 7.0
+      DX: 7.5
+      기타: 6.0
+  C:
+    name: AI 프리미엄 본격화
+    prob: 20.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -138,24 +155,57 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: -25
-    terminal_growth_adj: -0.3
-    market_sentiment_pct: -10
-    desc: Downside scenario
+    desc: AI 기능이 탑재된 프리미엄 제품군이 시장에서 성공하며 IM·DX부문의 수익성이 크게 개선되는 시나리오. 소비자들이 AI 기능에
+      대한 프리미엄을 지불하면서 평균 판매가격과 마진율이 동반 상승함.
+    probability_rationale: '기저율: 신기술 프리미엄 확산 성공 확률 30%. 조건부 분해: P(AI 기능 차별화 성공)=60%
+      × P(소비자 수용)=70% × P(마진 개선)=80% ≈ 34%, 경쟁 심화 리스크 고려하여 20%로 조정'
+    active_drivers:
+      ai_premium_expansion: 1.0
+      memory_supercycle: 0.4
+    segment_multiples:
+      DS: 11.0
+      IM: 10.0
+      DX: 10.5
+      기타: 8.0
+  D:
+    name: 복합 리스크 현실화
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5827808935
+    desc: 법적 분쟁 비용 증가, 외국인 매도 지속, 메모리 사이클 둔화가 동시에 발생하는 최악 시나리오. 특허 소송 비용 급증과 시장 신뢰도
+      하락이 맞물리면서 전 사업부문에 걸쳐 수익성과 밸류에이션이 동반 악화됨.
+    probability_rationale: '기저율: 복합 리스크 동시 발생 확률 10%. 조건부 분해: P(법적 분쟁 악화)=30% × P(외국인
+      매도 지속)=80% × P(메모리 사이클 둔화)=60% ≈ 14%, 반올림하여 15%'
+    active_drivers:
+      legal_risks: 1.0
+      foreign_selloff: 0.8
+      memory_supercycle: -0.3
+    segment_multiples:
+      DS: 8.5
+      IM: 6.5
+      DX: 7.0
+      기타: 5.5
 dcf_params:
   ebitda_growth_rates:
-  - 0.2
-  - 0.16
-  - 0.12
-  - 0.07
+  - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
   - 0.03
   tax_rate: 21.2
-  capex_to_da: 1.1
+  capex_to_da: 1.31
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.0
-pe_multiple: 24.5
-ev_revenue_multiple: 3.3
-pbv_multiple: 2.6
+  actual_capex: 52153149
+  da_to_ebitda_override: 0.6463
+pe_multiple: 25.8
+ev_revenue_multiple: 3.4
+pbv_multiple: 2.7
 cps_principal: 0
 cps_years: 0
 net_debt: -32617239
@@ -308,4 +358,37 @@ news_key_issues: '# 삼성전자 밸류에이션 영향 핵심 이슈 (2026-04-0
 
 
   - [기회] AI 기능 탑재 스마트폰·가전 등 신제품 라인업 강화로 프리미엄 시장 확대 (2026-04-04)'
+news_drivers:
+- id: memory_supercycle
+  name: 메모리 가격 폭등 및 역대급 실적
+  category: industry
+  effects:
+    growth_adj_pct: 25
+    market_sentiment_pct: 8
+  rationale: 메모리 가격 폭등으로 1분기 영업익 50조원 초과 달성. 역사적으로 메모리 슈퍼사이클은 3-4년 주기로 발생하며, 현재 AI
+    수요 급증으로 강화. DS부문 EBITDA 25% 상승 효과 및 시장 프리미엄 평가 반영
+- id: foreign_selloff
+  name: 외국인 대규모 순매도
+  category: macro
+  effects:
+    market_sentiment_pct: -12
+    wacc_adj: 0.3
+  rationale: 외국인 35조원 순매도로 '셀 코리아' 현상 지속. 과거 외국인 대규모 매도 시기(2008, 2020) 분석 시 평균 12%
+    밸류에이션 디스카운트 발생. 유동성 악화로 리스크 프리미엄 상승
+- id: legal_risks
+  name: 법적 분쟁 리스크
+  category: company
+  effects:
+    growth_adj_pct: -8
+    market_sentiment_pct: -3
+  rationale: 버라이즌 특허침해 소송 등 법적 분쟁 노출. 삼성전자 과거 특허 분쟁 사례 분석 시 평균 해결 비용이 연간 EBITDA의 3-5%
+    수준. 불확실성으로 인한 밸류에이션 디스카운트 추가
+- id: ai_premium_expansion
+  name: AI 기능 프리미엄 제품 확대
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 5
+  rationale: AI 탑재 스마트폰·가전 신제품으로 프리미엄 시장 확대. 업계 AI 기능 탑재 제품의 평균 마진율이 기존 대비 20-30%
+    높음. IM·DX부문 수익성 개선 기대
 mc_enabled: true

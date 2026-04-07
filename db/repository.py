@@ -59,8 +59,15 @@ def save_valuation(
         logger.info("Upserted valuation %s for %s", uid, vi.company.name)
         return uid
     except Exception:
-        logger.exception("Failed to save valuation for %s", vi.company.name)
-        return None
+        # Fallback: insert without on_conflict (unique constraint may be missing)
+        try:
+            resp = client.table("valuations").insert(row).execute()
+            uid = resp.data[0]["id"]
+            logger.info("Inserted valuation %s for %s (fallback)", uid, vi.company.name)
+            return uid
+        except Exception:
+            logger.exception("Failed to save valuation for %s", vi.company.name)
+            return None
 
 
 def list_valuations(
@@ -219,8 +226,14 @@ def save_profile(
         logger.info("Upserted profile %s for %s", uid, company_name)
         return uid
     except Exception:
-        logger.exception("Failed to save profile for %s", company_name)
-        return None
+        try:
+            resp = client.table("profiles").insert(row).execute()
+            uid = resp.data[0]["id"]
+            logger.info("Inserted profile %s for %s (fallback)", uid, company_name)
+            return uid
+        except Exception:
+            logger.exception("Failed to save profile for %s", company_name)
+            return None
 
 
 def list_profiles(

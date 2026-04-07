@@ -699,7 +699,12 @@ def auto_analyze(
         shares = _ord - _trs if _trs > 0 else _ord
 
         # Save news drivers (multi-variable approach -- when AI-generated)
+        # Strip structured fields from effects (they belong on scenarios, not drivers)
+        _STRUCTURED_EFFECT_KEYS = {"segment_multiples", "segment_ebitda"}
         ai_news_drivers = sc_result.get("news_drivers", []) if sc_result else []
+        for nd in ai_news_drivers:
+            if "effects" in nd:
+                nd["effects"] = {k: v for k, v in nd["effects"].items() if k not in _STRUCTURED_EFFECT_KEYS}
         if ai_news_drivers:
             raw["news_drivers"] = ai_news_drivers
 

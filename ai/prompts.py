@@ -213,6 +213,9 @@ dcf_primary:
   - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
 
 sotp:
+  - growth_adj_pct: EBITDA % adjustment (e.g., +20 → all segment EBITDAs × 1.2)
+  - segment_multiples: Per-segment EV/EBITDA multiple override (dict, e.g., {"SEG1": 15.0, "SEG2": 8.0})
+  - segment_ebitda: Per-segment EBITDA override (dict, e.g., {"SEG1": 50000})
   - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
   - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
 
@@ -233,6 +236,9 @@ multiples:
   - market_sentiment_pct: Market sentiment EV % adjustment
   - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
 </driver_reference>"""
+
+# Structured (dict-type) driver fields — excluded from news_driver effects (scalar-only)
+_STRUCTURED_FIELDS = {"segment_multiples", "segment_ebitda"}
 
 _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "dcf_primary": {
@@ -352,8 +358,6 @@ def prompt_scenario_design(
     Available driver list varies by valuation_method.
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
-    # Separate scalar drivers from structured (dict) drivers for JSON formatting
-    _STRUCTURED_FIELDS = {"segment_multiples", "segment_ebitda"}
     scalar_drivers = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
     driver_json = ", ".join(f'"{k}": 0' for k in scalar_drivers)
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_drivers)
@@ -368,7 +372,14 @@ def prompt_scenario_design(
     if key_issues.strip():
         sanitized_issues = _sanitize_news(key_issues)
         # News-driven scenario design (multi-variable news drivers)
-        effect_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+        # Exclude structured fields from news_driver effects (they go directly on scenarios)
+        scalar_effect_drivers = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
+        effect_json = ", ".join(f'"{k}": 0' for k in scalar_effect_drivers)
+        # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
+        sotp_segment_block = ""
+        if segment_codes and valuation_method == "sotp":
+            seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
+            sotp_segment_block = f',\n            "segment_multiples": {{{seg_mult_example}}}'
         return f"""\
 <company>{company_name}</company>
 <context>
@@ -390,8 +401,11 @@ Design 2-4 valuation scenarios for this company reflecting the news issues above
 <instructions>
 Design using multi-variable news drivers (multiple regression approach):
 Step 1: Extract 2-5 independent news_drivers from the key news issues (title + description)
-Step 2: Quantify the partial effect of each driver on financial variables within the allowed ranges above
+Step 2: Quantify the partial effect of each driver on SCALAR financial variables within the allowed ranges above
+  IMPORTANT: news_driver effects must contain ONLY scalar values (growth_adj_pct, wacc_adj, market_sentiment_pct, etc.)
+  Do NOT put segment_multiples or segment_ebitda inside news_driver effects — these are per-segment dicts, not scalars.
 Step 3: For each scenario, decide which drivers to apply at what intensity (weight, 0~1)
+  For SOTP: also set "segment_multiples" directly on each scenario with differentiated per-segment multiples.
 
 PROBABILITY ASSIGNMENT (mandatory reasoning chain):
 1. Anchor: Start from base rate — the historical frequency of similar events occurring
@@ -439,7 +453,7 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
             "description": "2-3 sentence scenario narrative",
             "dlom": 0,
             "key_assumptions": ["News-based assumption 1", "Assumption 2"],
-            "active_drivers": {{"driver_id": 1.0}}
+            "active_drivers": {{"driver_id": 1.0}}{sotp_segment_block}
         }}
     ],
     "rationale": "Overall scenario design rationale",
@@ -666,6 +680,7 @@ def prompt_scenario_refine(
     include_optionality: bool = False,
     currency_unit: str = "$M",
     signals: MarketSignals | None = None,
+    segment_codes: list[str] | None = None,
 ) -> str:
     """Pass 2 (Sonnet): Refine a scenario classification draft into a full design.
 
@@ -675,8 +690,9 @@ def prompt_scenario_refine(
     import json as _json
 
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
-    driver_json = ", ".join(f'"{k}": 0' for k in drivers_info)
-    rationale_json = ", ".join(f'"{k}": "rationale"' for k in drivers_info)
+    scalar_only = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
+    driver_json = ", ".join(f'"{k}": 0' for k in scalar_only)
+    rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_only)
     driver_table = _driver_range_table(drivers_info)
 
     draft_str = _json.dumps(draft, ensure_ascii=False, indent=2)
@@ -689,7 +705,7 @@ def prompt_scenario_refine(
 {sanitized_issues}
 </news_issues>
 """
-        effect_json = ", ".join(f'"{k}": 0' for k in drivers_info)
+        effect_json = ", ".join(f'"{k}": 0' for k in scalar_only)
         news_driver_format = f"""
     "news_drivers": [
         {{
@@ -701,9 +717,17 @@ def prompt_scenario_refine(
         }}
     ],"""
         scenario_driver_key = '"active_drivers": {"driver_id": 1.0}'
+        # SOTP: add segment_multiples directly on each scenario
+        if segment_codes and valuation_method == "sotp":
+            seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
+            scenario_driver_key += f',\n            "segment_multiples": {{{seg_mult_example}}}'
     else:
         news_driver_format = ""
         scenario_driver_key = f'"drivers": {{{driver_json}}},\n            "driver_rationale": {{{rationale_json}}}'
+        # SOTP generic path
+        if segment_codes and valuation_method == "sotp":
+            seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
+            scenario_driver_key += f',\n            "segment_multiples": {{{seg_mult_example}}}'
 
     signals_block = _format_market_signals(signals)
 
@@ -736,7 +760,9 @@ For each scenario from the draft:
 5. Verify: all probabilities sum to exactly 100%
 6. Base Case probability MUST be 30-50%. No single scenario may exceed 60%.
 
-If news_drivers are present in the draft, quantify their partial effects on financial variables.
+If news_drivers are present in the draft, quantify their partial effects on SCALAR financial variables.
+IMPORTANT: news_driver effects must contain ONLY scalar values. Do NOT put segment_multiples or segment_ebitda inside effects.
+For SOTP: set "segment_multiples" directly on each scenario with differentiated per-segment multiples.
 
 CORRELATION AWARENESS:
 When multiple drivers affect the same financial variable, note the interaction.

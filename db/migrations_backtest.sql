@@ -60,3 +60,17 @@ CREATE TABLE IF NOT EXISTS backtest_outcomes (
 );
 CREATE INDEX IF NOT EXISTS idx_backtest_ticker
     ON backtest_outcomes(ticker);
+
+-- ============================================================
+-- Schema updates (run if tables already exist)
+-- ============================================================
+
+-- Add market_signals_version to prediction_snapshots (added in Phase 4)
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS market_signals_version INT DEFAULT 0;
+
+-- Add unique constraints for upsert support
+CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
+    ON valuations(company_name, analysis_date);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_company_file
+    ON profiles(company_name, file_name);

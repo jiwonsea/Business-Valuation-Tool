@@ -388,7 +388,7 @@ class AIAnalyst:
             lambda: prompt_scenario_refine(
                 company_name, legal_status, key_issues, draft,
                 valuation_method, include_optionality=include_opt, currency_unit=currency_unit,
-                signals=signals,
+                signals=signals, segment_codes=segment_codes,
             ),
             system=system_p2, max_tokens=4096, extra=pass2_extra, model=MODEL_HEAVY,
         )

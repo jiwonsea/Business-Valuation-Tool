@@ -534,6 +534,7 @@ class ValuationInput(BaseModel):
     mc_enabled: bool = False
     mc_sims: int = 10_000
     mc_multiple_std_pct: float = 15.0  # Multiple std dev (% of applied value)
+    mc_revenue_std_pct: float = 30.0  # Revenue std dev for ev_revenue segments (% of base)
     mc_dlom_mean: float = 0.0  # DLOM mean (%)
     mc_dlom_std: float = 5.0  # DLOM std dev (%)
     distress_max_discount: float = 0.35  # Maximum distress discount cap (0.0~1.0)
@@ -580,6 +581,7 @@ class SOTPSegmentResult(BaseModel):
     method: str = "ev_ebitda"  # "ev_ebitda" | "pbv" | "pe" | "ev_revenue"
     is_equity_based: bool = False  # P/BV, P/E → True (equity bridge에서 net_debt 차감 불필요)
     revenue: int | None = None  # ev_revenue method only
+    revenue_type: str = "ltm"  # "ltm" | "ntm" — display label only, no calculation impact
 
 
 class DAAllocation(BaseModel):
@@ -592,6 +594,14 @@ class SensitivityRow(BaseModel):
     row_val: float
     col_val: float
     value: float
+
+
+class MCScenarioSummary(BaseModel):
+    """Per-scenario MC summary (lightweight — no histogram)."""
+    mean: int = 0
+    median: int = 0
+    p5: int = 0
+    p95: int = 0
 
 
 class MonteCarloResult(BaseModel):
@@ -608,6 +618,7 @@ class MonteCarloResult(BaseModel):
     max_val: int = 0
     histogram_bins: list[int] = []
     histogram_counts: list[int] = []
+    scenario_mc: dict[str, MCScenarioSummary] = {}  # {scenario_code: summary}
 
 
 class MarketComparisonResult(BaseModel):

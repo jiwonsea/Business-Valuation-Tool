@@ -303,7 +303,15 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # ev_revenue and distress_exempt segments keep original multiples
     exempt = {c for c, info in vi.segments.items()
               if info.get("method") == "ev_revenue" or info.get("distress_exempt")}
-    effective_multiples = apply_distress_discount(vi.multiples, distress.discount, exempt)
+    # Healthy segments: profitable (op > 0) in diversified companies get half discount
+    healthy: set[str] = set()
+    if len(vi.segments) >= 3 and distress.applied:
+        base_seg_data = vi.segment_data.get(by, {})
+        healthy = {c for c in vi.segments
+                   if c not in exempt and base_seg_data.get(c, {}).get("op", 0) > 0}
+    effective_multiples = apply_distress_discount(
+        vi.multiples, distress.discount, exempt, healthy,
+    )
     if distress.applied:
         logger.info("[Distress] %s: %s", vi.company.name, distress.detail)
 
@@ -1105,12 +1113,21 @@ def _run_monte_carlo(
     mc_mult_codes = set(seg_ebitdas.keys())
     if segment_methods:
         mc_mult_codes |= {c for c, m in segment_methods.items() if m == "ev_revenue"}
+    # Revenue uncertainty for ev_revenue segments (std = mc_revenue_std_pct of base revenue)
+    rev_params: dict[str, tuple[float, float]] = {}
+    if segment_methods and seg_revenues:
+        for c, m in segment_methods.items():
+            if m == "ev_revenue":
+                rev = seg_revenues.get(c, 0)
+                if rev > 0:
+                    rev_params[c] = (float(rev), rev * vi.mc_revenue_std_pct / 100)
     mc_params = MCInput(
         multiple_params={
             c: (mults[c], mults[c] * vi.mc_multiple_std_pct / 100)
             for c in mc_mult_codes if mults.get(c, 0) > 0
         },
         segment_methods=segment_methods or {},
+        revenue_params=rev_params,
         wacc_mean=wacc_result.wacc,
         wacc_std=1.0,
         dlom_mean=vi.mc_dlom_mean,
@@ -1141,7 +1158,72 @@ def _run_monte_carlo(
         seg_revenues=seg_revenues,
         **dcf_kwargs,
     )
-    return _mc_raw_to_result(mc_raw)
+    result = _mc_raw_to_result(mc_raw)
+
+    # Per-scenario MC (lightweight: fewer sims, no histogram stored)
+    from schemas.models import MCScenarioSummary
+    sc_mc: dict[str, MCScenarioSummary] = {}
+    for sc_code, sc in vi.scenarios.items():
+        has_overrides = sc.segment_multiples or sc.segment_revenue or sc.growth_adj_pct != 0
+        if not has_overrides:
+            continue
+        # Build scenario-specific multiples
+        sc_mults = dict(mults)
+        if sc.segment_multiples:
+            sc_mults.update(sc.segment_multiples)
+        # Build scenario-specific revenues
+        sc_revs = dict(seg_revenues or {})
+        if sc.segment_revenue:
+            sc_revs.update(sc.segment_revenue)
+        # Build scenario-specific EBITDAs (growth_adj_pct)
+        sc_ebitdas = dict(seg_ebitdas)
+        if sc.growth_adj_pct != 0:
+            mult_g = 1 + sc.growth_adj_pct / 100
+            sc_ebitdas = {c: round(e * mult_g) for c, e in seg_ebitdas.items()}
+        if sc.segment_ebitda:
+            sc_ebitdas.update(sc.segment_ebitda)
+
+        sc_rev_params: dict[str, tuple[float, float]] = {}
+        if segment_methods and sc_revs:
+            for c, m in (segment_methods or {}).items():
+                if m == "ev_revenue":
+                    rev = sc_revs.get(c, 0)
+                    if rev > 0:
+                        sc_rev_params[c] = (float(rev), rev * vi.mc_revenue_std_pct / 100)
+
+        sc_params = MCInput(
+            multiple_params={
+                c: (sc_mults[c], sc_mults[c] * vi.mc_multiple_std_pct / 100)
+                for c in mc_mult_codes if sc_mults.get(c, 0) > 0
+            },
+            segment_methods=segment_methods or {},
+            revenue_params=sc_rev_params,
+            wacc_mean=wacc_result.wacc,
+            wacc_std=1.0,
+            dlom_mean=vi.mc_dlom_mean,
+            dlom_std=vi.mc_dlom_std,
+            tg_mean=vi.dcf_params.terminal_growth,
+            tg_std=0.5,
+            n_sims=min(2000, vi.mc_sims),
+            seed=hash(sc_code) % (2**31),
+        )
+        sc_raw = run_monte_carlo(
+            sc_params, sc_ebitdas, vi.net_debt, vi.eco_frontier,
+            vi.cps_principal, vi.cps_years,
+            sc.rcps_repay, sc.buyback, sc.shares,
+            irr=sc.irr if sc.irr else 5.0,
+            unit_multiplier=um,
+            seg_revenues=sc_revs,
+            **dcf_kwargs,
+        )
+        sc_mc[sc_code] = MCScenarioSummary(
+            mean=sc_raw.mean, median=sc_raw.median,
+            p5=sc_raw.p5, p95=sc_raw.p95,
+        )
+
+    if sc_mc:
+        result.scenario_mc = sc_mc
+    return result
 
 
 def _build_seg_ebitdas_from_consolidated(vi, cons) -> dict[str, int]:

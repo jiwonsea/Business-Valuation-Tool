@@ -34,9 +34,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 adj = round(orig * (1 - distress.discount), 2)
                 print(f"  {seg_names.get(code, code)}: {orig:.1f}x → {adj:.1f}x")
 
-    # Mixed SOTP determination
-    is_mixed = bool(vi.segment_net_debt) and any(
-        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
+    # Mixed SOTP determination (any non-default method: ev_revenue, pbv, pe)
+    is_mixed = any(
+        info.get("method") not in (None, "ev_ebitda") for info in vi.segments.values()
     )
 
     # D&A allocation (SOTP only)
@@ -55,8 +55,10 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 a = alloc[code]
                 if is_mixed:
                     method = vi.segments[code].get("method", "ev_ebitda")
+                    rev_type = vi.segments[code].get("revenue_type", "ltm")
+                    rev_tag = f" ({rev_type.upper()})" if method == "ev_revenue" and rev_type != "ltm" else ""
                     m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
-                    print(f"{seg_names.get(code, code):<18} {m_lbl:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+                    print(f"{seg_names.get(code, code):<18} {m_lbl}{rev_tag:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
                 else:
                     print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
 
@@ -69,27 +71,32 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 if code in result.sotp:
                     s = result.sotp[code]
                     method = getattr(s, "method", "ev_ebitda")
+                    rev_type_tag = f" ({s.revenue_type.upper()})" if method == "ev_revenue" and s.revenue_type != "ltm" else ""
                     m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
                     eq_tag = " [Equity]" if getattr(s, "is_equity_based", False) else " [EV]"
-                    print(f"  {seg_names.get(code, code):<18} {m_lbl:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
+                    print(f"  {seg_names.get(code, code):<18} {m_lbl}{rev_type_tag:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
             print(f"  {'합계':<30} {sotp_ev:>14,}{unit}")
-            # Equity Bridge
-            fin_debt = sum(
-                vi.segment_net_debt.get(c, 0)
-                for c, info in vi.segments.items()
-                if info.get("method") in ("pbv", "pe")
+            # Equity Bridge (only when pbv/pe equity-based segments exist)
+            has_equity_methods = any(
+                info.get("method") in ("pbv", "pe") for info in vi.segments.values()
             )
-            eff_nd = vi.net_debt - fin_debt
-            ev_part = sum(s.ev for s in result.sotp.values() if not getattr(s, "is_equity_based", False))
-            eq_part = sum(s.ev for s in result.sotp.values() if getattr(s, "is_equity_based", False))
-            print(f"\n[Equity Bridge]")
-            print(f"  연결 순차입금:     {vi.net_debt:>14,}{unit}")
-            print(f"  (-) 금융부문 부채: {fin_debt:>14,}{unit}")
-            print(f"  유효 순차입금:     {eff_nd:>14,}{unit}")
-            print(f"  제조 EV:           {ev_part:>14,}{unit}")
-            print(f"  제조 Equity:       {ev_part - eff_nd:>14,}{unit}")
-            print(f"  (+) 금융 Equity:   {eq_part:>14,}{unit}")
-            print(f"  Total Equity:      {ev_part - eff_nd + eq_part:>14,}{unit}")
+            if has_equity_methods:
+                fin_debt = sum(
+                    vi.segment_net_debt.get(c, 0)
+                    for c, info in vi.segments.items()
+                    if info.get("method") in ("pbv", "pe")
+                )
+                eff_nd = vi.net_debt - fin_debt
+                ev_part = sum(s.ev for s in result.sotp.values() if not getattr(s, "is_equity_based", False))
+                eq_part = sum(s.ev for s in result.sotp.values() if getattr(s, "is_equity_based", False))
+                print(f"\n[Equity Bridge]")
+                print(f"  연결 순차입금:     {vi.net_debt:>14,}{unit}")
+                print(f"  (-) 금융부문 부채: {fin_debt:>14,}{unit}")
+                print(f"  유효 순차입금:     {eff_nd:>14,}{unit}")
+                print(f"  제조 EV:           {ev_part:>14,}{unit}")
+                print(f"  제조 Equity:       {ev_part - eff_nd:>14,}{unit}")
+                print(f"  (+) 금융 Equity:   {eq_part:>14,}{unit}")
+                print(f"  Total Equity:      {ev_part - eff_nd + eq_part:>14,}{unit}")
         else:
             # Check if any optionality segments are present (ev=0 in base, value in scenarios)
             opt_codes = [c for c, info in vi.segments.items() if info.get("optionality")]
@@ -167,6 +174,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print(f"  Mean: {mc.mean:>10,}{currency_sym}  |  Median: {mc.median:>10,}{currency_sym}  |  Std: {mc.std:>8,}{currency_sym}")
         print(f"  5th: {mc.p5:>11,}{currency_sym}  |  25th: {mc.p25:>12,}{currency_sym}")
         print(f"  75th: {mc.p75:>10,}{currency_sym}  |  95th: {mc.p95:>12,}{currency_sym}")
+        if mc.scenario_mc:
+            print(f"  시나리오별 MC:")
+            for sc_code, sc_mc in mc.scenario_mc.items():
+                sc_name = vi.scenarios.get(sc_code, None)
+                label = sc_name.name if sc_name else sc_code
+                print(f"    {label:<16} P5={sc_mc.p5:>8,}{currency_sym}  Mean={sc_mc.mean:>8,}{currency_sym}  P95={sc_mc.p95:>8,}{currency_sym}")
 
     # Peer
     if result.peer_stats:

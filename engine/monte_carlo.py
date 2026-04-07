@@ -29,6 +29,8 @@ class MCInput:
     seed: int | None = 42
     # Per-segment valuation method: {code: "ev_ebitda"|"ev_revenue"}
     segment_methods: dict[str, str] = field(default_factory=dict)
+    # Per-segment revenue uncertainty: {code: (mean, std)} for ev_revenue segments
+    revenue_params: dict[str, tuple[float, float]] = field(default_factory=dict)
 
 
 @dataclass
@@ -119,6 +121,13 @@ def run_monte_carlo(
     # CPS redemption calculation (IRR-based)
     cps_repay = round(cps_principal * (1 + irr / 100) ** cps_years) if cps_principal > 0 else 0
 
+    # Revenue uncertainty sampling for ev_revenue segments
+    revenue_samples: dict[str, np.ndarray] = {}
+    for code, (r_mu, r_sigma) in mc_input.revenue_params.items():
+        if r_sigma > 0:
+            rev_s = rng.normal(r_mu, r_sigma, n)
+            revenue_samples[code] = np.maximum(rev_s, 0)  # Revenue >= 0
+
     # Vectorized SOTP EV calculation (ev_ebitda: EBITDA*mult, ev_revenue: Revenue*mult)
     ev_ebitda_part = np.zeros(n)
     ev_revenue_part = np.zeros(n)
@@ -127,9 +136,12 @@ def run_monte_carlo(
             continue
         method = mc_input.segment_methods.get(code, "ev_ebitda")
         if method == "ev_revenue":
-            rev = (seg_revenues or {}).get(code, 0)
-            if rev > 0:
-                ev_revenue_part += rev * multiples_samples[code]
+            if code in revenue_samples:
+                ev_revenue_part += revenue_samples[code] * multiples_samples[code]
+            else:
+                rev = (seg_revenues or {}).get(code, 0)
+                if rev > 0:
+                    ev_revenue_part += rev * multiples_samples[code]
         elif ebitda > 0:
             ev_ebitda_part += ebitda * multiples_samples[code]
 

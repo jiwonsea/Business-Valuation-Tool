@@ -107,9 +107,11 @@ def calc_sotp(
             m = (multiple_override or {}).get(code, multiples.get(code, 0))
             rev = (revenue_override or {}).get(code, (revenue_by_seg or {}).get(code, 0))
             ev = round(rev * m) if rev > 0 else 0
+            rev_type = seg_info.get("revenue_type", "ltm")
             result[code] = SOTPSegmentResult(
                 ebitda=alloc.ebitda, multiple=m, ev=ev,
                 method="ev_revenue", is_equity_based=False, revenue=rev,
+                revenue_type=rev_type,
             )
         else:
             # Standard EV/EBITDA — apply ebitda_override and multiple_override if provided

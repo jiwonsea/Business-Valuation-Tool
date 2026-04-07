@@ -11,21 +11,32 @@ company:
   ticker: "GOOGL"
   cik: "1652044"
   corp_code: null
-  shares_total: 5876000000
-  shares_ordinary: 5876000000
+  shares_total: 5822000000
+  shares_ordinary: 5822000000
   shares_preferred: 0
-  analysis_date: "2026-03-31"
+  treasury_shares: 0
+  analysis_date: "2026-04-07"
 
-# TODO: Define business segments (REQUIRED for SOTP)
+# 3 reportable segments per 10-K FY2025
 segments:
-  MAIN:
-    name: "Main Business"
-    multiple: 10.0   # TODO: Set appropriate EV/EBITDA multiple
+  GS:
+    name: "Google Services"
+    multiple: 14.0   # Peer median 13.5x (META 14.3, TTD 13.6, PINS 8.8) + Search moat premium
+  GC:
+    name: "Google Cloud"
+    multiple: 20.0   # Cloud pure-play 20-25x range, conservative end (AMZN blended 15.4x)
+  OB:
+    name: "Other Bets"
+    method: ev_revenue
+    revenue_type: ntm
+    multiple: 5.0    # Waymo/Verily pre-profit; UBER EV/Rev 3.0x + optionality premium
 
-# TODO: Add segment-level financials (revenue, op, assets per segment)
+# FY2025 segment data (10-K)
 segment_data:
   2025:
-    MAIN: {revenue: 402836, gross_profit: 0, op: 129039, assets: 595281}
+    GS:   {revenue: 318148, gross_profit: 0, op: 123233, assets: 350000}
+    GC:   {revenue: 43232, gross_profit: 0, op: 8906, assets: 85000}
+    OB:   {revenue: 2282, gross_profit: 0, op: -4649, assets: 25000}
 
 consolidated:
   2023:
@@ -37,9 +48,9 @@ consolidated:
     equity: 283379
     dep: 11946
     amort: 0
-    gross_borr: 14862
-    net_borr: -9186
-    de_ratio: 42.0
+    gross_borr: 27121
+    net_borr: 3073
+    de_ratio: 9.6
   2024:
     revenue: 350018
     op: 112390
@@ -49,9 +60,9 @@ consolidated:
     equity: 325084
     dep: 15311
     amort: 0
-    gross_borr: 12000
-    net_borr: -11466
-    de_ratio: 38.5
+    gross_borr: 22574
+    net_borr: -892
+    de_ratio: 6.9
   2025:
     revenue: 402836
     op: 129039
@@ -61,20 +72,19 @@ consolidated:
     equity: 415265
     dep: 21136
     amort: 0
-    gross_borr: 49085
-    net_borr: 18377
-    de_ratio: 43.3
+    gross_borr: 59291
+    net_borr: 28583
+    de_ratio: 14.3
 
 wacc_params:
   rf: 4.25
   erp: 5.5
-  bu: 1.0
-  de: 43.3
-  tax: 11.7
-  kd_pre: 5.5
-  eq_w: 69.8
+  bu: 1.097
+  de: 3.4
+  tax: 17.8
+  kd_pre: 4.25
+  eq_w: 96.7
 
-# TODO: Design scenarios appropriate for this company
 scenarios:
   Base:
     name: "Base Case"
@@ -85,8 +95,14 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5876000000
-    desc: "Base case with consensus estimates"
+    shares: 5822000000
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    segment_multiples:
+      GS: 14.0
+      GC: 20.0
+      OB: 5.0
+    desc: "Search ad dominance maintained, Cloud grows at ~25%, Waymo scales slowly"
   Bull:
     name: "Bull Case"
     prob: 25
@@ -96,8 +112,16 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5876000000
-    desc: "Upside scenario"
+    shares: 5822000000
+    growth_adj_pct: 15
+    terminal_growth_adj: 0.3
+    segment_multiples:
+      GS: 17.0
+      GC: 28.0
+      OB: 8.0
+    segment_revenue:
+      OB: 5000
+    desc: "AI Search monetization accelerates, Cloud margin expansion, Waymo commercializes"
   Bear:
     name: "Bear Case"
     prob: 25
@@ -107,28 +131,41 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5876000000
-    desc: "Downside scenario"
+    shares: 5822000000
+    growth_adj_pct: -20
+    terminal_growth_adj: -0.3
+    segment_multiples:
+      GS: 10.0
+      GC: 14.0
+      OB: 2.0
+    segment_revenue:
+      OB: 1000
+    desc: "AI disrupts Search ad model, Cloud competition intensifies, Other Bets restructured"
 
 dcf_params:
-  ebitda_growth_rates: [0.10, 0.08, 0.06, 0.05, 0.04]
-  tax_rate: 11.7
-  capex_to_da: 1.10
+  ebitda_growth_rates: [0.25, 0.20, 0.14, 0.09, 0.04]
+  tax_rate: 17.8
+  capex_to_da: 3.49  # auto-derived from 3-yr historical avg
   nwc_to_rev_delta: 0.05
-  terminal_growth: 2.8
+  terminal_growth: 2.9
+  actual_capex: 91447  # latest-year actual CapEx
+  da_to_ebitda_override: 0.1283  # 3-yr avg D&A/EBITDA
 
-# Cross-validation multiples (Trading Multiple — reverse-calculated from current market price)
-# Recommend replacing with independent peer-based multiples
-pe_multiple: 0.0
-ev_revenue_multiple: 0.0
-pbv_multiple: 0.0
+# Cross-validation multiples (Trading Multiple -- reverse-engineered from current market price)
+# Recommended to replace with independent peer-based multiples
+pe_multiple: 13.2
+ev_revenue_multiple: 4.4
+pbv_multiple: 4.2
 
 cps_principal: 0
 cps_years: 0
-net_debt: 18377
+net_debt: 28583
 eco_frontier: 0
 base_year: 2025
 
-peers: []
-  # TODO: Add peer companies
-  # - {name: "Peer Co", segment_code: "MAIN", ev_ebitda: 10.0, notes: ""}
+peers:
+  - {name: "Meta Platforms", segment_code: "GS", ev_ebitda: 14.3, notes: "Digital ad duopoly peer (2026 TTM)"}
+  - {name: "The Trade Desk", segment_code: "GS", ev_ebitda: 13.6, notes: "Programmatic ad platform (2026 TTM)"}
+  - {name: "Pinterest", segment_code: "GS", ev_ebitda: 8.8, notes: "Visual discovery ad platform (2026 TTM)"}
+  - {name: "Amazon (blended)", segment_code: "GC", ev_ebitda: 15.4, notes: "AWS included, blended 15.4x (2026); cloud-only est. 20-25x"}
+  - {name: "Uber Technologies", segment_code: "OB", ev_ebitda: 21.3, notes: "Ride-hailing, EV/Rev 3.0x; Waymo robotaxi proxy (2026 TTM)"}

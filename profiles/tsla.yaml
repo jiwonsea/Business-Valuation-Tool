@@ -25,10 +25,12 @@ segments:
   SEG4:
     name: FSD / Autonomous Driving
     method: ev_revenue
+    revenue_type: ntm
     multiple: 15.0
   SEG5:
     name: Robotaxi / Mobility Network
     method: ev_revenue
+    revenue_type: ntm
     multiple: 8.0
 segment_data:
   2025:

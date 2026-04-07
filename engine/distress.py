@@ -104,7 +104,8 @@ def calc_distress_discount(
     if loss_streak >= 3:
         loss_penalty = 0.15
     elif loss_streak == 2:
-        loss_penalty = 0.10
+        # Cyclical industries (shipbuilding, shipping, etc.) routinely post 2-year losses
+        loss_penalty = 0.05 if is_cyclical else 0.10
     elif loss_streak == 1:
         loss_penalty = 0.0 if is_cyclical else 0.05
     else:
@@ -164,22 +165,34 @@ def apply_distress_discount(
     multiples: dict[str, float],
     discount: float,
     exempt_segments: set[str] | None = None,
+    healthy_segments: set[str] | None = None,
 ) -> dict[str, float]:
-    """Apply distress discount to segment multiples (exempt segments keep original).
+    """Apply distress discount to segment multiples.
+
+    Three tiers:
+      - exempt: no discount (ev_revenue, distress_exempt)
+      - healthy: half discount (profitable segment in diversified company)
+      - default: full discount
 
     Args:
         multiples: {segment_code: multiple}
         discount: 0.0 to max_discount
-        exempt_segments: segment codes exempt from discount (e.g., ev_revenue segments)
+        exempt_segments: codes fully exempt (e.g., ev_revenue segments)
+        healthy_segments: codes getting half discount (profitable + high asset share)
 
     Returns:
         New dict with discounted multiples (originals unchanged).
     """
     if discount <= 0:
         return multiples
-    factor = 1.0 - discount
     exempt = exempt_segments or set()
-    return {
-        code: m if code in exempt else round(m * factor, 2)
-        for code, m in multiples.items()
-    }
+    healthy = healthy_segments or set()
+    result = {}
+    for code, m in multiples.items():
+        if code in exempt:
+            result[code] = m
+        elif code in healthy:
+            result[code] = round(m * (1.0 - discount * 0.5), 2)
+        else:
+            result[code] = round(m * (1.0 - discount), 2)
+    return result

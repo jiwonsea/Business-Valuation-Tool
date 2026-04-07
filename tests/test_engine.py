@@ -1912,8 +1912,8 @@ class TestDistressDiscount:
         d = calc_distress_discount(cons, 2025, industry="Automotive Parts")
         assert d.loss_penalty == 0.0  # 1-year exemption for cyclicals
 
-    def test_cyclical_two_year_loss_still_penalized(self):
-        """Cyclical industry with 2+ consecutive losses still gets penalty."""
+    def test_cyclical_two_year_loss_reduced_penalty(self):
+        """Cyclical industry with 2 consecutive losses gets reduced penalty."""
         cons = {
             2024: {"de_ratio": 50.0, "net_income": -5000, "op": 2000,
                    "dep": 3000, "amort": 0, "gross_borr": 20000},
@@ -1921,7 +1921,7 @@ class TestDistressDiscount:
                    "dep": 3000, "amort": 0, "gross_borr": 22000},
         }
         d = calc_distress_discount(cons, 2025, industry="Semiconductor Equipment")
-        assert d.loss_penalty == 0.10  # 2 consecutive → penalty applies
+        assert d.loss_penalty == 0.05  # Cyclical 2-year: reduced from 10% to 5%
 
     def test_non_cyclical_single_loss_penalized(self):
         """Non-cyclical industry single-year loss still gets penalty."""
@@ -1941,6 +1941,18 @@ class TestDistressDiscount:
         assert result["AUTO"] == 8.0   # 10.0 * 0.8
         assert result["FSD"] == 15.0   # exempt → original
         assert result["ENERGY"] == 6.4 # 8.0 * 0.8
+
+    def test_healthy_segments_get_half_discount(self):
+        """Healthy (profitable) segments get half the distress discount."""
+        multiples = {"AUTO": 10.0, "FSD": 15.0, "ENERGY": 8.0}
+        result = apply_distress_discount(
+            multiples, 0.20,
+            exempt_segments={"FSD"},
+            healthy_segments={"ENERGY"},
+        )
+        assert result["AUTO"] == 8.0    # full discount: 10.0 * 0.8
+        assert result["FSD"] == 15.0    # exempt
+        assert result["ENERGY"] == 7.2  # half discount: 8.0 * (1 - 0.10)
 
     def test_custom_max_discount_cap(self):
         """Custom max_discount cap limits total discount."""

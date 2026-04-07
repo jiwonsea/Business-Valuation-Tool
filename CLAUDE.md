@@ -91,3 +91,6 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - No hardcoding segment codes ("HI", "ALC", etc.) in sensitivity analysis.
 - New YAML profile fields must always be Optional with defaults (backward compatibility).
 - NAV/Multiples: `market_sentiment_pct` is `elif` (mutually exclusive) with `nav_discount`/`ev_multiple` to prevent double-counting. RIM/DCF/DDM/SOTP apply it cumulatively (`if`). Do not unify — the asymmetry is intentional.
+- `NewsDriver.effects` is `dict[str, float]` (scalar-only). Structured per-segment overrides (`segment_multiples`, `segment_ebitda`) go directly on `ScenarioParams`, not through the news_drivers→resolve_drivers path.
+- `--auto` overwrites the entire profile YAML. Never use on hand-crafted test profiles (`_template`, `nav_test`, `multiples_test`, `kb_financial_rim`) or profiles with manual `valuation_method` override (e.g., `kb_financial` DDM).
+- After changing AI prompts in `ai/prompts.py`, clear `.cache/llm/*_scenarios_*.json` before re-testing — cached responses won't reflect prompt changes.

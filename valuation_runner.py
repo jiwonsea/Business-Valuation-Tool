@@ -149,6 +149,21 @@ def load_profile(path: str) -> ValuationInput:
         company.currency_unit = label
         company.unit_multiplier = multiplier
 
+    # Validate scenario override keys against known segment codes
+    _valid_seg_codes = set(segments.keys())
+    for sc_code, sc in scenarios.items():
+        for attr_name in ("segment_multiples", "segment_ebitda", "segment_revenue"):
+            override_dict = getattr(sc, attr_name, None)
+            if not override_dict:
+                continue
+            bad_keys = set(override_dict.keys()) - _valid_seg_codes
+            if bad_keys:
+                logger.warning(
+                    "[%s] scenario '%s' %s has unrecognized keys %s "
+                    "(valid: %s) — overrides will be ignored",
+                    company.name, sc_code, attr_name, bad_keys, _valid_seg_codes,
+                )
+
     return ValuationInput(
         company=company,
         valuation_method=raw.get("valuation_method", "auto"),

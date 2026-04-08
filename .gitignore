@@ -23,6 +23,9 @@ venv/
 *.xlsx
 *.csv
 
+# Logs (may contain API keys in URLs)
+logs/
+
 # OS
 .DS_Store
 Thumbs.db

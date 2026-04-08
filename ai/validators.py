@@ -250,9 +250,13 @@ def validate_scenarios(scenarios_data: dict | list) -> tuple[dict | list, list[s
         label = s.get("code") or s.get("name", "?")
         active = s.get("active_drivers", {})
         if isinstance(active, dict):
-            for did, weight in active.items():
+            for did, weight in list(active.items()):
                 if isinstance(weight, (int, float)) and not (0 <= weight <= 1):
-                    warnings.append(f"[{label}] driver '{did}' weight={weight} 범위 이탈 [0, 1]")
+                    clamped = max(0.0, min(1.0, weight))
+                    warnings.append(
+                        f"[{label}] driver '{did}' weight={weight} 범위 이탈 [0, 1] → {clamped}로 보정"
+                    )
+                    active[did] = clamped
 
     # ── Scenario differentiation check (includes segment overrides) ──
     driver_signatures = []

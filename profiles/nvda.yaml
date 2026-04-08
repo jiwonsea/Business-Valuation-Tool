@@ -1,43 +1,64 @@
-# NVIDIA CORP — SOTP valuation profile
-# Source: SEC EDGAR FY2024-2026 (Jan fiscal year) | Market: US
-
 company:
-  name: "NVIDIA CORP"
-  legal_status: "상장"
-  market: "US"
-  currency: "USD"
-  currency_unit: "$M"
-  ticker: "NVDA"
-  cik: "1045810"
+  name: NVIDIA CORP
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: NVDA
+  cik: '1045810'
   corp_code: null
   shares_total: 24300000000
   shares_ordinary: 24300000000
   shares_preferred: 0
-  analysis_date: "2026-04-07"
-
-# 4 business segments (per 10-K)
+  treasury_shares: 0
+  analysis_date: '2026-04-08'
 segments:
-  DC:
-    name: "Data Center"
-    multiple: 35.0   # AI/GPU hyperscaler demand, dominant market share
-  GAME:
-    name: "Gaming"
-    multiple: 20.0   # Consumer GPU, cyclical but strong brand
-  PROF:
-    name: "Professional Visualization"
-    multiple: 22.0   # Omniverse, enterprise workstation
-  AUTO:
-    name: "Automotive & Robotics"
-    multiple: 28.0   # Autonomous driving platform, high growth optionality
-
-# FY2026 (ended Jan 2026) segment data from 10-K
+  SEG1:
+    name: Data Center (GPU Computing)
+    multiple: 17.5
+  SEG2:
+    name: Gaming (Consumer GPU)
+    multiple: 11.5
+  SEG3:
+    name: Professional Visualization & Automotive
+    multiple: 13.5
+  AUTONOMOUS_DRIVING:
+    name: 자율주행 플랫폼 (DRIVE)
+    multiple: 20.0
+    optionality: true
+    method: ev_revenue
+  ROBOTICS_AI:
+    name: 로봇공학 및 Physical AI
+    multiple: 25.0
+    optionality: true
+    method: ev_revenue
 segment_data:
   2026:
-    DC:   {revenue: 185514, gross_profit: 0, op: 115000, assets: 165000}
-    GAME: {revenue: 17504, gross_profit: 0, op: 9500, assets: 22000}
-    PROF: {revenue: 5892, gross_profit: 0, op: 3200, assets: 8000}
-    AUTO: {revenue: 7028, gross_profit: 0, op: 2687, assets: 11803}
-
+    SEG1:
+      revenue: 185707
+      gross_profit: 0
+      op: 112133
+      assets: 177851
+    SEG2:
+      revenue: 17275
+      gross_profit: 0
+      op: 10431
+      assets: 16544
+    SEG3:
+      revenue: 12956
+      gross_profit: 0
+      op: 7823
+      assets: 12408
+    AUTONOMOUS_DRIVING:
+      revenue: 1200
+      gross_profit: 0
+      op: 0
+      assets: 0
+    ROBOTICS_AI:
+      revenue: 500
+      gross_profit: 0
+      op: 0
+      assets: 0
 consolidated:
   2024:
     revenue: 60922
@@ -48,9 +69,9 @@ consolidated:
     equity: 42978
     dep: 894
     amort: 614
-    gross_borr: 9709
-    net_borr: 2429
-    de_ratio: 52.9
+    gross_borr: 11056
+    net_borr: 3776
+    de_ratio: 25.7
   2025:
     revenue: 130497
     op: 81453
@@ -58,11 +79,11 @@ consolidated:
     assets: 111601
     liabilities: 32274
     equity: 79327
-    dep: 1300
-    amort: 593
-    gross_borr: 8463
-    net_borr: -126
-    de_ratio: 40.7
+    dep: 1864
+    amort: 0
+    gross_borr: 9982
+    net_borr: 1393
+    de_ratio: 12.6
   2026:
     revenue: 215938
     op: 130387
@@ -70,82 +91,282 @@ consolidated:
     assets: 206803
     liabilities: 49510
     equity: 157293
-    dep: 2400
-    amort: 488
-    gross_borr: 8468
-    net_borr: -2137
-    de_ratio: 31.5
-
+    dep: 2843
+    amort: 0
+    gross_borr: 11040
+    net_borr: 435
+    de_ratio: 7.0
 wacc_params:
-  rf: 4.25
+  rf: 3.2
   erp: 5.5
-  bu: 1.35       # Tech/semiconductor beta
-  de: 5.4        # Low leverage (net_borr/equity)
-  tax: 9.4
-  kd_pre: 5.0
-  eq_w: 95.0
-
+  bu: 1.45
+  de: 0.3
+  tax: 21.0
+  kd_pre: 3.8
+  eq_w: 99.8
 scenarios:
-  Base:
-    name: "Base Case"
-    prob: 50
-    ipo: "N/A"
+  BULL:
+    name: AI 생태계 확장 성공
+    prob: 25.0
+    ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
     shares: 24300000000
-    growth_adj_pct: 0
-    terminal_growth_adj: 0
-    desc: "AI capex cycle continues at moderate pace, data center demand normalizes"
-  Bull:
-    name: "Bull Case"
-    prob: 25
-    ipo: "N/A"
+    desc: 우주 컴퓨팅과 Physical AI 시장에서 성공적 진출을 달성하고, 전략적 파트너십이 실질적 매출 증대로 이어지는 시나리오. 규제
+      리스크는 제한적 수준에서 관리됨.
+    probability_rationale: 'Base rate: 신기술 플랫폼 성공률 30%. 조건부 분해: P(신시장 진출 성공)=30% ×
+      P(파트너십 시너지)=85% × P(규제 리스크 완화)=90% ≈ 23%, 25%로 조정'
+    active_drivers:
+      new_market_expansion: 1.0
+      strategic_partnerships: 0.8
+    segment_multiples:
+      SEG1: 28.0
+      SEG2: 18.0
+      SEG3: 22.0
+      AUTONOMOUS_DRIVING: 35.0
+    segment_revenue:
+      AUTONOMOUS_DRIVING: 25000
+      ROBOTICS_AI: 18000
+  BASE:
+    name: 점진적 성장 지속
+    prob: 40.0
+    ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
     shares: 24300000000
-    growth_adj_pct: 20
-    terminal_growth_adj: 0.3
-    desc: "AI capex supercycle extends, sovereign AI + robotics adoption accelerates"
-  Bear:
-    name: "Bear Case"
-    prob: 25
-    ipo: "N/A"
+    desc: 기존 데이터센터 사업은 안정적 성장을 유지하되, 신규 사업 영역에서는 부분적 성과만 달성. 규제 및 공급망 리스크는 관리 가능한
+      수준에서 영향.
+    probability_rationale: 'Base rate: 기존 사업 안정 성장 확률 70%. 조건부 분해: P(현상 유지)=70% ×
+      P(부분적 신시장 성공)=60% × P(규제 리스크 관리)=95% ≈ 40%'
+    active_drivers:
+      new_market_expansion: 0.3
+      regulatory_risk: 0.4
+      supply_chain_risk: 0.2
+    segment_multiples:
+      SEG1: 24.0
+      SEG2: 15.0
+      SEG3: 18.0
+      AUTONOMOUS_DRIVING: 28.0
+    segment_revenue:
+      AUTONOMOUS_DRIVING: 8000
+      ROBOTICS_AI: 5000
+  BEAR:
+    name: AI 버블 조정 및 공급망 차질
+    prob: 35.0
+    ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
     shares: 24300000000
-    growth_adj_pct: -25
-    terminal_growth_adj: -0.3
-    desc: "AI capex slowdown, competition from AMD/custom ASICs, China restrictions"
-
+    desc: AI 투자 열기 둔화와 대만 공급망 차질이 동시에 발생하여 성장 모멘텀이 크게 약화되는 시나리오. 규제 조사 확대로 추가적인 불확실성이
+      가중됨.
+    probability_rationale: 'Base rate: 기술 버블 조정 확률 40%. 조건부 분해: P(AI 수요 둔화)=40% ×
+      P(공급망 차질)=70% × P(규제 압박 강화)=80% ≈ 22%, 리스크 프리미엄 고려하여 35%로 조정'
+    active_drivers:
+      ai_demand_slowdown: 1.0
+      supply_chain_risk: 0.8
+      regulatory_risk: 0.7
+    segment_multiples:
+      SEG1: 18.0
+      SEG2: 12.0
+      SEG3: 14.0
+      AUTONOMOUS_DRIVING: 20.0
+    segment_revenue:
+      AUTONOMOUS_DRIVING: 2000
+      ROBOTICS_AI: 800
 dcf_params:
-  ebitda_growth_rates: [0.25, 0.20, 0.15, 0.10, 0.06]
-  tax_rate: 9.4
-  capex_to_da: 1.15
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.05
+  - 0.04
+  tax_rate: 7.9
+  capex_to_da: 1.52
   nwc_to_rev_delta: 0.05
-  terminal_growth: 3.0
-
-pe_multiple: 33.4
-ev_revenue_multiple: 18.6
-pbv_multiple: 25.5
-
+  terminal_growth: 2.9
+  actual_capex: 6042
+  da_to_ebitda_override: 0.0291
+pe_multiple: 36.8
+ev_revenue_multiple: 20.4
+pbv_multiple: 28.1
 cps_principal: 0
 cps_years: 0
-net_debt: -2137
+net_debt: 435
 eco_frontier: 0
 base_year: 2026
-
 peers:
-  - {name: "AMD", segment_code: "DC", ev_ebitda: 25.0, notes: "Direct GPU/accelerator competitor"}
-  - {name: "Broadcom", segment_code: "DC", ev_ebitda: 22.0, notes: "Custom ASIC + networking for AI"}
-  - {name: "Intel", segment_code: "DC", ev_ebitda: 12.0, notes: "Data center CPU/GPU, turnaround"}
-  - {name: "Marvell Technology", segment_code: "DC", ev_ebitda: 28.0, notes: "Custom AI silicon, Inphi"}
-  - {name: "Qualcomm", segment_code: "AUTO", ev_ebitda: 15.0, notes: "Automotive SoC competitor"}
+- name: AMD (Advanced Micro Devices)
+  segment_code: SEG1
+  ev_ebitda: 18.5
+  notes: Data Center GPU/CPU leader, direct NVIDIA competitor in AI/HPC. 2024 EV/EBITDA
+    ~18-19x based on $180B market cap, $9.7B EBITDA
+- name: Broadcom Inc.
+  segment_code: SEG1
+  ev_ebitda: 16.2
+  notes: Infrastructure semiconductor, AI networking chips. 2024 EV/EBITDA ~16-17x,
+    $220B market cap, $13.5B EBITDA
+- name: Intel Corporation
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: Data Center Xeon processor competitor, lower multiple due to margin pressure.
+    2024 EV/EBITDA ~8-9x, $180B market cap, $21B EBITDA
+- name: SK하이닉스 (SK Hynix)
+  segment_code: SEG1
+  ev_ebitda: 7.8
+  notes: Korean HBM/memory supplier for AI accelerators, critical NVIDIA supply chain
+    partner. 2024 EV/EBITDA ~7-8x based on KRW 50T market cap
+- name: Samsung Electronics (Semiconductor Division)
+  segment_code: SEG1
+  ev_ebitda: 6.5
+  notes: Korean foundry/memory, AI chip manufacturing. Segment EV/EBITDA ~6-7x, diversified
+    revenue base
+- name: TSMC (Taiwan Semiconductor)
+  segment_code: SEG1
+  ev_ebitda: 19.2
+  notes: Primary NVIDIA foundry partner, AI chip manufacturing leader. 2024 EV/EBITDA
+    ~19-20x, $800B market cap, $42B EBITDA
+- name: AMD (Radeon Gaming GPU)
+  segment_code: SEG2
+  ev_ebitda: 18.5
+  notes: Direct gaming GPU competitor. Company-wide EV/EBITDA ~18.5x; gaming segment
+    represents ~15% of revenue
+- name: Intel (Arc GPU)
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Emerging gaming GPU competitor, lower multiple reflects market share losses.
+    Company-wide 8.5x
+- name: Qualcomm Inc.
+  segment_code: SEG2
+  ev_ebitda: 11.2
+  notes: Mobile GPU (Adreno) and gaming SoC designer. 2024 EV/EBITDA ~11-12x, $180B
+    market cap, $16B EBITDA
+- name: MediaTek Inc.
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: Mobile gaming SoC (Dimensity), consumer GPU focus. 2024 EV/EBITDA ~9-10x,
+    $60B market cap, $6.2B EBITDA
+- name: Samsung Electronics (Mobile/Gaming)
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: Exynos mobile GPU, consumer electronics. Segment multiple lower due to diversification
+- name: Apple Inc. (GPU Design)
+  segment_code: SEG2
+  ev_ebitda: 28.5
+  notes: In-house GPU (Apple Silicon), premium valuation. 2024 EV/EBITDA ~28-30x,
+    $3.2T market cap. Not pure-play but relevant for consumer GPU design
+- name: Qualcomm Inc.
+  segment_code: SEG3
+  ev_ebitda: 11.2
+  notes: Automotive SoC (Snapdragon Ride), professional visualization IP. 2024 EV/EBITDA
+    ~11-12x, diversified revenue
+- name: Mobileye (Intel subsidiary, now independent tracking)
+  segment_code: SEG3
+  ev_ebitda: 45.0
+  notes: Autonomous driving/ADAS leader. IPO 2023 at ~45x EV/EBITDA; now ~35-40x post-correction.
+    High growth justifies premium
+- name: Xilinx (AMD acquisition, 2022)
+  segment_code: SEG3
+  ev_ebitda: 16.5
+  notes: FPGA/adaptive computing for automotive/professional. Pre-acquisition EV/EBITDA
+    ~16-17x, now consolidated into AMD
+- name: NXP Semiconductors
+  segment_code: SEG3
+  ev_ebitda: 13.8
+  notes: Automotive semiconductor leader (MCU, SoC). 2024 EV/EBITDA ~13-14x, $70B
+    market cap, $5.1B EBITDA
+- name: SK텔레콤 (Automotive/5G)
+  segment_code: SEG3
+  ev_ebitda: 5.2
+  notes: Korean automotive connectivity/V2X. Limited pure-play exposure; segment multiple
+    ~5-6x
+- name: 현대모비스 (Hyundai Mobis - Automotive Tier 1)
+  segment_code: SEG3
+  ev_ebitda: 4.8
+  notes: Korean automotive supplier, ADAS/autonomous driving components. 2024 EV/EBITDA
+    ~4-5x, KRW 3.5T market cap
+news_key_issues: '# NVIDIA 밸류에이션 영향 핵심 이슈
+
+
+  ## [리스크]
+
+  - **규제 조사 및 거래 차질**: Bain 데이터센터 부문이 미국 조사 이후 NVIDIA 인수 거래 중단 (2026-04-08)
+
+  - **공급망 위험**: 대만 반도체 공급 차질 우려로 AI 붐 지속성 불확실 (2026-04-06)
+
+  - **주가 약세 추세**: 13년 만에 보기 드문 주가 변동성 발생, 횡보 구간 진입 (2026-04-08, 2026-04-07)
+
+  - **AI 수요 둔화 신호**: Costco·Walmart의 $1,630억 규모 경고로 AI 주식 전반에 부정적 신호 (2026-04-08)
+
+
+  ## [기회]
+
+  - **신규 사업 영역 확대**: 우주 컴퓨팅(Space Computing) 출시 및 로봇공학·자율주행 등 Physical AI 시장 진출 (2026-03-16,
+  2026-04-08)
+
+  - **전략적 파트너십 강화**: Intel, Marvell, Adobe, Hyundai-Kia 등과의 협력 발표로 생태계 확대 (2026-04-07,
+  2026-03-16)
+
+  - **소프트웨어 포트폴리오 강화**: SchedMD 인수로 AI 소프트웨어 스택 통합 (2026-04-06)
+
+  - **투자자 신뢰 회복**: 월스트리트 애널리스트들의 지속적인 목표가 상향 조정 (2026-04-07)
+
+
+  ## [기타]
+
+  - **벤처 투자 성과**: NVIDIA 지원 Firmus가 $55억 밸류에이션으로 ASX IPO 준비 (2026-04-06)'
+news_drivers:
+- id: regulatory_risk
+  name: 규제 조사 및 거래 차질
+  category: company
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: Bain 데이터센터 인수 중단 등 규제 리스크 증가. 역사적으로 대형 테크 기업 규제 조사 시 성장률 10-20% 하락, 리스크
+    프리미엄 20-40bp 상승
+- id: supply_chain_risk
+  name: 대만 반도체 공급망 위험
+  category: industry
+  effects:
+    growth_adj_pct: -25
+    wacc_adj: 0.4
+    market_sentiment_pct: -12
+  rationale: 대만 공급망 차질 시 반도체 업계 전반 타격. 2021년 글로벌 칩 부족 시 관련 기업 성장률 20-30% 감소, 변동성 크게
+    증가
+- id: ai_demand_slowdown
+  name: AI 수요 둔화 신호
+  category: industry
+  effects:
+    growth_adj_pct: -20
+    wacc_adj: 0.2
+    market_sentiment_pct: -10
+  rationale: 대형 소매업체 경고로 AI 투자 둔화 우려. AI 버블 조정 시 관련 주식 20-40% 하락 사례 존재
+- id: new_market_expansion
+  name: 신규 사업 영역 확대
+  category: company
+  effects:
+    growth_adj_pct: 30
+    wacc_adj: -0.2
+    market_sentiment_pct: 15
+  rationale: 우주 컴퓨팅, Physical AI 등 신시장 진출로 TAM 확대. 신규 플랫폼 성공 시 성장률 25-50% 상승 가능
+- id: strategic_partnerships
+  name: 전략적 파트너십 강화
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: -0.1
+    market_sentiment_pct: 8
+  rationale: Intel, Adobe, Hyundai-Kia 등과의 협력으로 생태계 확장. 전략적 제휴 발표 시 평균 5-15% 주가 상승
+multiples:
+  AUTONOMOUS_DRIVING: 20.0
+  ROBOTICS_AI: 25.0
+mc_enabled: true

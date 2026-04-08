@@ -3,6 +3,7 @@
 실행: streamlit run app.py
 """
 
+import _ssl_fix  # noqa: F401 — must run before any yfinance/curl_cffi import
 from pathlib import Path
 
 import streamlit as st

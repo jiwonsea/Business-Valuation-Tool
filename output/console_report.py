@@ -12,6 +12,10 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     unit = vi.company.currency_unit
     currency_sym = "원" if vi.company.market == "KR" else "$"
 
+    # Dynamic column width for segment names
+    _seg_w = max((len(n) for n in seg_names.values()), default=12)
+    _seg_w = max(_seg_w, 8)  # minimum width
+
     print("=" * 60)
     print(f"{vi.company.name} 기업가치평가 모델 [{result.primary_method.upper()}]")
     print("=" * 60)
@@ -45,10 +49,10 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         da_note = " (금융 부문 제외)" if is_mixed else ""
         print(f"\n[D&A 배분{da_note}] 총 D&A = {total_da:,}{unit}")
         if is_mixed:
-            print(f"{'부문':<18} {'Method':<10} {'자산비중':>8} {'D&A':>12} {'EBITDA':>14}")
+            print(f"{'부문':<{_seg_w}} {'Method':<10} {'자산비중':>8} {'D&A':>12} {'EBITDA':>14}")
         else:
-            print(f"{'부문':<20} {'자산비중':>10} {'D&A':>12} {'EBITDA':>14}")
-        print("-" * 65)
+            print(f"{'부문':<{_seg_w + 2}} {'자산비중':>10} {'D&A':>12} {'EBITDA':>14}")
+        print("-" * (_seg_w + 50))
         alloc = result.da_allocations[by]
         for code in vi.segments:
             if code in alloc:
@@ -58,9 +62,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                     rev_type = vi.segments[code].get("revenue_type", "ltm")
                     rev_tag = f" ({rev_type.upper()})" if method == "ev_revenue" and rev_type != "ltm" else ""
                     m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
-                    print(f"{seg_names.get(code, code):<18} {m_lbl}{rev_tag:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+                    print(f"{seg_names.get(code, code):<{_seg_w}} {m_lbl}{rev_tag:<10} {a.asset_share:>7.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
                 else:
-                    print(f"{seg_names.get(code, code):<20} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
+                    print(f"{seg_names.get(code, code):<{_seg_w + 2}} {a.asset_share:>9.2f}% {a.da_allocated:>11,} {a.ebitda:>13,}")
 
     # SOTP (if available)
     if result.sotp:
@@ -74,8 +78,8 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                     rev_type_tag = f" ({s.revenue_type.upper()})" if method == "ev_revenue" and s.revenue_type != "ltm" else ""
                     m_lbl = {"ev_ebitda": "EV/EBITDA", "pbv": "P/BV", "pe": "P/E", "ev_revenue": "EV/Revenue"}.get(method, method)
                     eq_tag = " [Equity]" if getattr(s, "is_equity_based", False) else " [EV]"
-                    print(f"  {seg_names.get(code, code):<18} {m_lbl}{rev_type_tag:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
-            print(f"  {'합계':<30} {sotp_ev:>14,}{unit}")
+                    print(f"  {seg_names.get(code, code):<{_seg_w}} {m_lbl}{rev_type_tag:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}")
+            print(f"  {'합계':<{_seg_w + 12}} {sotp_ev:>14,}{unit}")
             # Equity Bridge (only when pbv/pe equity-based segments exist)
             has_equity_methods = any(
                 info.get("method") in ("pbv", "pe") for info in vi.segments.values()
@@ -184,10 +188,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     # Peer
     if result.peer_stats:
         print(f"\n[Peer 멀티플 통계 (EV/EBITDA)]")
-        print(f"{'부문':<20} {'N':>3} {'Median':>8} {'Mean':>8} {'Q1':>8} {'Q3':>8} {'적용':>8}")
-        print("-" * 68)
+        _pw = max((len(ps.segment_name) for ps in result.peer_stats), default=12)
+        _pw = max(_pw, 8)
+        print(f"{'부문':<{_pw}} {'N':>3} {'Median':>8} {'Mean':>8} {'Q1':>8} {'Q3':>8} {'적용':>8}")
+        print("-" * (_pw + 48))
         for ps in result.peer_stats:
-            print(f"{ps.segment_name:<20} {ps.count:>3} {ps.ev_ebitda_median:>7.1f}x "
+            print(f"{ps.segment_name:<{_pw}} {ps.count:>3} {ps.ev_ebitda_median:>7.1f}x "
                   f"{ps.ev_ebitda_mean:>7.1f}x {ps.ev_ebitda_q1:>7.1f}x "
                   f"{ps.ev_ebitda_q3:>7.1f}x {ps.applied_multiple:>7.1f}x")
 

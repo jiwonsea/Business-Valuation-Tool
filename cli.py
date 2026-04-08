@@ -14,6 +14,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 load_dotenv()
+import _ssl_fix  # noqa: F401, E402 — must run before any yfinance/curl_cffi import
 
 # Prevent Unicode output corruption on Windows cp949 console
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":

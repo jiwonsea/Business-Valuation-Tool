@@ -100,3 +100,4 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - Monte Carlo DCF TV variation (`ev *= dcf_ev_sample/dcf_ev_base`) applies only to `ev_ebitda_part`. `ev_revenue_part` is added after TV adjustment — revenue-based optionality is independent of DCF terminal value assumptions.
 - `segment_method_override` (ev_revenue→ev_ebitda transition) requires `segment_ebitda` for the transitioned segment in the same scenario — D&A re-allocation alone yields near-zero EBITDA for formerly-excluded segments.
 - `console_report.py` `is_mixed` must stay in sync with `_needs_method_dispatch()` in valuation_runner — both should trigger on any non-default method (ev_revenue, pbv, pe). Equity Bridge display is conditional on pbv/pe only.
+- `get_client()` returns `None` silently when `SUPABASE_URL`/`SUPABASE_KEY` are missing. DB-dependent features (backtest, save_valuation) degrade silently — check `.env` exists before debugging "empty results."

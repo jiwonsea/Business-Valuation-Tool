@@ -7,6 +7,7 @@ Usage:
 """
 
 from __future__ import annotations
+import _ssl_fix  # noqa: F401 — must run before any yfinance/curl_cffi import
 
 import argparse
 import calendar

@@ -99,14 +99,18 @@ def _ask_openrouter(
         raise RuntimeError("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.")
 
     # Map Anthropic model IDs to OpenRouter equivalents
+    # OpenRouter uses dot notation (claude-haiku-4.5), not date suffixes (claude-haiku-4-5-20251001)
     _ANTHROPIC_TO_OPENROUTER = {
-        MODEL_LIGHT: "anthropic/claude-haiku-4-5-20251001",
+        MODEL_LIGHT: "anthropic/claude-haiku-4.5",
         MODEL_HEAVY: "anthropic/claude-sonnet-4",
     }
     if not model:
         model = os.getenv("OPENROUTER_MODEL", _OPENROUTER_DEFAULT_MODEL)
     elif model.startswith("claude-"):
         model = _ANTHROPIC_TO_OPENROUTER.get(model, f"anthropic/{model}")
+        # Strip date suffixes (e.g. anthropic/claude-sonnet-4-20250514 -> anthropic/claude-sonnet-4)
+        import re
+        model = re.sub(r"-\d{8}$", "", model)
 
     messages = []
     if system:
@@ -130,6 +134,8 @@ def _ask_openrouter(
         json=payload,
         timeout=120,
     )
+    if resp.status_code >= 400:
+        logger.error("OpenRouter %d [%s]: %s", resp.status_code, model, resp.text[:500])
     resp.raise_for_status()
     data = resp.json()
 

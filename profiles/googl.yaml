@@ -230,6 +230,7 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.9
   actual_capex: 91447
+  capex_fade_to: 1.5
   da_to_ebitda_override: 0.1283
 pe_multiple: 14.0
 ev_revenue_multiple: 4.7

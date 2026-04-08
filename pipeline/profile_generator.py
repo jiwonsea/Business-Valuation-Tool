@@ -290,6 +290,17 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     # Actual capex (latest year) — passed to DCFParams for precise first-year CapEx
     actual_capex_latest = cons.get("capex", 0) or 0
 
+    # Auto capex_fade_to: when latest-year capex/DA spikes above historical avg,
+    # fade back to historical average over projection period (investment cycle normalization)
+    capex_fade_to_auto = None
+    latest_da = cons.get("dep", 0) + cons.get("amort", 0)
+    if actual_capex_latest > 0 and latest_da > 0:
+        latest_ratio = actual_capex_latest / latest_da
+        hist_avg = capex_to_da_auto if capex_ratios else 1.10
+        # Trigger: latest ratio ≥ 3x AND at least 50% above historical average
+        if latest_ratio >= 3.0 and latest_ratio > hist_avg * 1.5:
+            capex_fade_to_auto = round(max(hist_avg, 1.2), 2)
+
     # Diluted shares (reflecting SBC/stock options) -- only if DART share data unavailable
     if identity.ticker and shares_preferred == 0 and treasury_shares == 0:
         diluted = get_diluted_shares(identity.ticker, identity.market)
@@ -421,6 +432,7 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: {terminal_growth}
   actual_capex: {actual_capex_latest if actual_capex_latest > 0 else "null"}{"  # latest-year actual CapEx" if actual_capex_latest > 0 else ""}
+  capex_fade_to: {capex_fade_to_auto if capex_fade_to_auto else "null"}{"  # auto: fade capex/DA " + f"{latest_ratio:.1f}x → {capex_fade_to_auto}x over projection" if capex_fade_to_auto else ""}
   da_to_ebitda_override: {round(da_to_ebitda_avg, 4) if da_to_ebitda_avg else "null"}{"  # 3-yr avg D&A/EBITDA" if da_to_ebitda_avg else "  # null = computed from latest year in DCF engine"}
 
 # Cross-validation multiples (Trading Multiple -- reverse-engineered from current market price)

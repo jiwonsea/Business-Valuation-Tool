@@ -1,6 +1,10 @@
 """DCF (Discounted Cash Flow) engine — FCFF-based."""
 
+import logging
+
 from schemas.models import DCFParams, DCFProjection, DCFResult
+
+logger = logging.getLogger(__name__)
 
 
 def calc_dcf(
@@ -46,8 +50,18 @@ def calc_dcf(
     # If actual Capex available, derive Capex/D&A ratio; otherwise use parameter
     if params.actual_capex is not None and da_base > 0:
         capex_ratio = params.actual_capex / da_base
+        if capex_ratio >= 3.0 and params.capex_fade_to is None:
+            logger.warning(
+                "Capex/D&A = %.1fx (투자 사이클 주의: actual_capex=%s, D&A=%s). "
+                "capex_fade_to 설정으로 정규화 권장.",
+                capex_ratio, f"{params.actual_capex:,}", f"{da_base:,}",
+            )
     else:
         capex_ratio = params.capex_to_da
+
+    # Capex fade: linearly interpolate from actual ratio to normalized target
+    capex_fade_to = params.capex_fade_to
+    use_capex_fade = capex_fade_to is not None and capex_fade_to != capex_ratio
 
     # If actual NWC available, derive delta_NWC/delta_Revenue ratio
     if params.actual_nwc is not None and params.prior_nwc is not None and revenue_base > 0:
@@ -70,7 +84,15 @@ def calc_dcf(
         op = ebitda - da
         # No tax shield when operating at a loss (no NOL schedule modeled)
         nopat = round(op * (1 - tax_rate)) if op > 0 else op
-        capex = round(da * capex_ratio)
+        # Fade capex ratio from actual to normalized target over projection period
+        if use_capex_fade:
+            n_years = len(growth_rates)
+            # Linear interpolation: year 0 = actual ratio, year N-1 = fade target
+            t = i / max(n_years - 1, 1)
+            year_capex_ratio = capex_ratio + (capex_fade_to - capex_ratio) * t
+        else:
+            year_capex_ratio = capex_ratio
+        capex = round(da * year_capex_ratio)
         revenue = round(prev_revenue * (1 + g))
 
         if _use_actual_nwc:

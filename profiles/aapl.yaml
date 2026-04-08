@@ -11,7 +11,7 @@ company:
   shares_ordinary: 14681140000
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-06'
+  analysis_date: '2026-04-08'
 segments:
   SEG1:
     name: iPhone (스마트폰)
@@ -91,7 +91,7 @@ wacc_params:
   de: 2.6
   tax: 15.0
   kd_pre: 4.2
-  eq_w: 97.4
+  eq_w: 97.5
 scenarios:
   A:
     name: 기본 시나리오 (혼재된 신호)
@@ -201,9 +201,9 @@ dcf_params:
   terminal_growth: 2.9
   actual_capex: 12715
   da_to_ebitda_override: 0.0858
-pe_multiple: 33.5
-ev_revenue_multiple: 9.2
-pbv_multiple: 51.0
+pe_multiple: 33.9
+ev_revenue_multiple: 9.3
+pbv_multiple: 51.5
 cps_principal: 0
 cps_years: 0
 net_debt: 62723

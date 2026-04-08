@@ -421,6 +421,9 @@ class DCFParams(BaseModel):
     actual_capex: Optional[int] = None  # Actual Capex (in display units)
     actual_nwc: Optional[int] = None  # Actual NWC (in display units)
     prior_nwc: Optional[int] = None  # Prior-period NWC (for delta NWC calculation)
+    # Capex normalization: fade actual capex/DA ratio to this target over projection period
+    # Use when actual_capex reflects a temporary investment cycle (e.g. AI infra buildout)
+    capex_fade_to: Optional[float] = None  # Target capex/DA ratio at end of projection
     # 3-year average D&A/EBITDA ratio override (if provided, replaces single-year derived ratio)
     da_to_ebitda_override: Optional[float] = None
     # Exit Multiple terminal value (used alongside Gordon Growth for cross-check)

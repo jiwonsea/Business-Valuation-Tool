@@ -17,6 +17,18 @@ logger = logging.getLogger(__name__)
 _openrouter_client = httpx.Client(timeout=120)
 atexit.register(_openrouter_client.close)
 
+_anthropic_client = None
+
+
+def _get_anthropic_client(api_key: str):
+    """Lazy singleton Anthropic client (reuses connection pool)."""
+    global _anthropic_client
+    if _anthropic_client is None:
+        import anthropic
+        _anthropic_client = anthropic.Anthropic(api_key=api_key)
+        atexit.register(_anthropic_client.close)
+    return _anthropic_client
+
 # OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
@@ -56,7 +68,7 @@ def _ask_anthropic(
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    client = anthropic.Anthropic(api_key=key)
+    client = _get_anthropic_client(key)
     messages = [{"role": "user", "content": prompt}]
 
     kwargs = {

@@ -292,6 +292,7 @@ class AIAnalyst:
             return self._design_scenarios_two_pass(
                 company_name, legal_status, key_issues, valuation_method,
                 industry, ev_rev_multiple, currency_unit, signals=signals,
+                segment_codes=segment_codes,
             )
 
         include_opt = _has_optionality_trigger(company_name, industry, key_issues, ev_rev_multiple)
@@ -342,6 +343,7 @@ class AIAnalyst:
         ev_rev_multiple: float,
         currency_unit: str,
         signals=None,
+        segment_codes: list[str] | None = None,
     ) -> dict:
         """Two-pass scenario design: Haiku classification → Sonnet refinement.
 

@@ -128,8 +128,14 @@ def sensitivity_dcf(
     wacc_range: list[float] | None = None,
     tg_range: list[float] | None = None,
     wacc_base: float | None = None,
+    shares: int = 0,
+    net_debt: int = 0,
+    unit_multiplier: int = 1_000_000,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """Sensitivity: WACC x terminal growth -> DCF EV (in display unit).
+    """Sensitivity: WACC x terminal growth -> per-share value (or EV if shares=0).
+
+    When shares > 0, converts DCF EV to per-share: (EV - net_debt) / shares.
+    This makes DCF sensitivity comparable to DDM/RIM/multiples sensitivity tables.
 
     Optimization: FCFF projections are independent of WACC/Tg, computed once;
     only discounting (PV) + Terminal Value recalculated per (WACC, Tg) combination.
@@ -137,6 +143,9 @@ def sensitivity_dcf(
     Args:
         wacc_base: Actual WACC (%). When provided and wacc_range is None,
             generates a dynamic range centered on WACC ± 2%p with 0.5%p steps.
+        shares: Shares outstanding. When > 0, output is per-share value.
+        net_debt: Net debt (display unit). Subtracted from EV before per-share conversion.
+        unit_multiplier: Currency unit multiplier for per-share calculation.
     """
     if wacc_range is None:
         if wacc_base is not None:
@@ -174,7 +183,8 @@ def sensitivity_dcf(
             tv = round(terminal_fcff / (wacc - tg_dec))
             pv_tv = round(tv / (1 + wacc) ** n)
             ev = pv_fcff + pv_tv
-            rows.append(SensitivityRow(row_val=w, col_val=tg, value=ev))
+            value = per_share(ev - net_debt, unit_multiplier, shares) if shares > 0 else ev
+            rows.append(SensitivityRow(row_val=w, col_val=tg, value=value))
     return rows, wacc_range, tg_range
 
 

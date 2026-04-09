@@ -22,6 +22,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Callable
 
+import portalocker
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -110,6 +112,7 @@ class _CircuitState:
 
 _CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
 _USAGE_FILE = _CACHE_DIR / "api_usage.json"
+_USAGE_LOCK = _CACHE_DIR / "api_usage.lock"
 _WARN_THRESHOLD = 0.8  # warn at 80% of daily limit
 
 
@@ -176,20 +179,22 @@ class ApiGuard:
     # -- Usage persistence ---------------------------------------------------
 
     def _load_usage(self) -> None:
-        """Load usage from disk, reset if date changed."""
+        """Load usage from disk with cross-process file lock, reset if date changed."""
         today = date.today().isoformat()
-        if _USAGE_FILE.exists():
-            try:
-                raw = json.loads(_USAGE_FILE.read_text(encoding="utf-8"))
-                if raw.get("date") == today:
-                    self._usage = raw
-                    return
-            except (json.JSONDecodeError, OSError):
-                pass
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            with portalocker.Lock(str(_USAGE_LOCK), timeout=5, fail_when_locked=False):
+                if _USAGE_FILE.exists():
+                    raw = json.loads(_USAGE_FILE.read_text(encoding="utf-8"))
+                    if raw.get("date") == today:
+                        self._usage = raw
+                        return
+        except (json.JSONDecodeError, OSError, portalocker.LockException):
+            pass
         self._usage = {"date": today, "counters": {}}
 
     def _save_usage(self, snapshot: dict | None = None) -> None:
-        """Atomically persist usage to disk.
+        """Atomically persist usage to disk with cross-process file lock.
 
         Args:
             snapshot: Pre-copied usage dict (for saving outside lock).
@@ -198,14 +203,14 @@ class ApiGuard:
         data = snapshot if snapshot is not None else self._usage
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
         try:
-            fd, tmp_path = tempfile.mkstemp(
-                dir=str(_CACHE_DIR), suffix=".tmp"
-            )
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            # Atomic replace (os.replace handles Windows target removal)
-            os.replace(tmp_path, str(_USAGE_FILE))
-        except OSError as exc:
+            with portalocker.Lock(str(_USAGE_LOCK), timeout=5, fail_when_locked=False):
+                fd, tmp_path = tempfile.mkstemp(
+                    dir=str(_CACHE_DIR), suffix=".tmp"
+                )
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                os.replace(tmp_path, str(_USAGE_FILE))
+        except (OSError, portalocker.LockException) as exc:
             logger.debug("Failed to save API usage file: %s", exc)
 
     def _ensure_today(self) -> None:

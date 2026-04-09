@@ -144,6 +144,7 @@ class WACCResult(BaseModel):
     ke: float  # Cost of equity (%)
     kd_at: float  # After-tax cost of debt (%)
     wacc: float  # WACC (%)
+    distress_premium: float = 0.0  # Leverage distress premium added to WACC (%)
 
 
 # ── Equity Bridge Adjustment Items ──

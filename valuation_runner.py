@@ -494,6 +494,9 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                 ebitda_base, dcf_da_base, dcf_revenue,
                 vi.dcf_params, vi.base_year,
                 wacc_base=wacc_result.wacc,
+                shares=vi.company.shares_outstanding,
+                net_debt=vi.net_debt,
+                unit_multiplier=um,
             )
         except ValueError:
             logger.warning("SOTP DCF sensitivity skipped (invalid base DCF)")
@@ -617,6 +620,9 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         ebitda_base, total_da_base, cons["revenue"],
         vi.dcf_params, vi.base_year,
         wacc_base=wacc_result.wacc,
+        shares=vi.company.shares_outstanding,
+        net_debt=vi.net_debt,
+        unit_multiplier=um,
     )
 
     # SOTP cross-validation (calculate SOTP if multi-segment)

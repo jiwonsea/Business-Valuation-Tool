@@ -192,6 +192,36 @@ class TestWACC:
         assert r.bl == 1.0
         assert r.wacc == r.ke
 
+    def test_distress_premium_below_cap(self):
+        """D/E <= 200%: no distress premium."""
+        p = WACCParams(rf=3.0, erp=6.0, bu=1.0, de=200.0, tax=25.0, kd_pre=5.0, eq_w=50.0)
+        r = calc_wacc(p)
+        assert r.distress_premium == 0.0
+
+    def test_distress_premium_above_cap(self):
+        """D/E > 200%: linear distress premium up to 3%."""
+        p = WACCParams(rf=3.0, erp=6.0, bu=1.0, de=350.0, tax=25.0, kd_pre=5.0, eq_w=50.0)
+        r = calc_wacc(p)
+        # (350-200)/(500-200)*3.0 = 150/300*3.0 = 1.5%
+        assert r.distress_premium == 1.5
+        # WACC includes the premium
+        p_at_cap = WACCParams(rf=3.0, erp=6.0, bu=1.0, de=200.0, tax=25.0, kd_pre=5.0, eq_w=50.0)
+        r_cap = calc_wacc(p_at_cap)
+        assert r.wacc > r_cap.wacc
+
+    def test_distress_premium_max_at_500(self):
+        """D/E >= 500%: premium capped at 3%."""
+        p = WACCParams(rf=3.0, erp=6.0, bu=1.0, de=800.0, tax=25.0, kd_pre=5.0, eq_w=50.0)
+        r = calc_wacc(p)
+        assert r.distress_premium == 3.0
+
+    def test_distress_premium_financial_exempt(self):
+        """Financial sector: no distress premium regardless of D/E."""
+        p = WACCParams(rf=3.0, erp=6.0, bu=0.8, de=1500.0, tax=25.0, kd_pre=5.0,
+                       eq_w=100.0, is_financial=True)
+        r = calc_wacc(p)
+        assert r.distress_premium == 0.0
+
 
 # ═══════════════════════════════════════════════════════════
 # SOTP Tests

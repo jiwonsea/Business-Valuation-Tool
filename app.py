@@ -459,7 +459,7 @@ with tabs[tab_idx]:
                 sub_idx += 1
                 _render_heatmap(
                     result.sensitivity_dcf,
-                    f"WACC × 영구성장률 → DCF EV ({unit})",
+                    f"WACC × 영구성장률 → 주당가치 ({unit})",
                     "영구성장률", "WACC",
                 )
 

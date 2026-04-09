@@ -1,5 +1,10 @@
 """Automatic valuation method selection — pure functions."""
 
+import re
+
+# Regex patterns for keywords that need word boundary matching
+_GROWTH_REGEX = re.compile(r'\bev\b', re.IGNORECASE)
+
 # Financial sector keywords
 _FINANCIAL_KEYWORDS = frozenset({
     "은행", "bank", "보험", "insurance", "증권", "securities",
@@ -13,7 +18,6 @@ _GROWTH_KEYWORDS = frozenset({
     "ai", "saas", "바이오", "bio", "제약", "pharma", "게임", "game",
     "인터넷", "internet", "핀테크", "fintech", "반도체", "semiconductor",
     # EV / clean energy / space (high-growth disruptors regardless of legacy sector)
-    "ev ", "(ev",               # "EV & ICE", "(EV & ICE)" segment name patterns
     "electric vehicle", "전기차", "battery storage",
     "autonomous vehicle", "자율주행", "로보택시", "robotaxi",
     "space exploration", "로켓",
@@ -50,7 +54,7 @@ def classify_industry(industry: str) -> str:
     industry_lower = industry.lower()
     if not industry_lower:
         return "default"
-    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS):
+    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(industry_lower):
         return "growth"
     if any(kw in industry_lower for kw in _MATURE_KEYWORDS):
         return "mature"
@@ -127,7 +131,7 @@ def suggest_method(
         return "sotp"
 
     # Growth/tech -> DCF (P/S cross-validation auto-included)
-    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS):
+    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(industry_lower):
         return "dcf_primary"
 
     # Mature/stable + sufficient peers -> relative valuation (Multiples primary)

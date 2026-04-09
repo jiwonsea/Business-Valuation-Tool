@@ -7,6 +7,7 @@ Sheet modules live in output/sheets/.
 """
 
 import os
+import re
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -45,7 +46,8 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     # Save
     if output_dir is None:
         output_dir = str(Path(__file__).parent.parent)
-    filename = f"{vi.company.name}_밸류에이션_모델.xlsx"
+    safe_name = re.sub(r"[^\w\s\-.,()&]", "_", vi.company.name)[:100]
+    filename = f"{safe_name}_밸류에이션_모델.xlsx"
     filepath = os.path.join(output_dir, filename)
     wb.save(filepath)
     return filepath

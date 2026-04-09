@@ -43,8 +43,20 @@ class CompanyProfile(BaseModel):
             raise ValueError(f"총발행주식수는 양수여야 합니다: {v}")
         return v
 
+    @field_validator("treasury_shares")
+    @classmethod
+    def treasury_shares_non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f"자기주식수는 0 이상이어야 합니다: {v}")
+        return v
+
     @model_validator(mode="after")
     def shares_consistency(self):
+        if self.treasury_shares > self.shares_ordinary:
+            raise ValueError(
+                f"자기주식({self.treasury_shares})이 보통주({self.shares_ordinary})보다 "
+                "많을 수 없습니다"
+            )
         if self.shares_ordinary > self.shares_total:
             raise ValueError(
                 f"보통주({self.shares_ordinary:,})가 총주식수({self.shares_total:,})를 초과합니다"

@@ -8,6 +8,7 @@ Three-layer defense for external API calls:
 
 from __future__ import annotations
 
+import copy
 import functools
 import json
 import logging
@@ -187,19 +188,23 @@ class ApiGuard:
                 pass
         self._usage = {"date": today, "counters": {}}
 
-    def _save_usage(self) -> None:
-        """Atomically persist usage to disk."""
+    def _save_usage(self, snapshot: dict | None = None) -> None:
+        """Atomically persist usage to disk.
+
+        Args:
+            snapshot: Pre-copied usage dict (for saving outside lock).
+                      If None, uses self._usage directly (legacy callers).
+        """
+        data = snapshot if snapshot is not None else self._usage
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
         try:
             fd, tmp_path = tempfile.mkstemp(
                 dir=str(_CACHE_DIR), suffix=".tmp"
             )
             with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(self._usage, f, ensure_ascii=False, indent=2)
-            # Atomic rename (Windows: need to remove target first)
-            if _USAGE_FILE.exists():
-                _USAGE_FILE.unlink()
-            Path(tmp_path).rename(_USAGE_FILE)
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            # Atomic replace (os.replace handles Windows target removal)
+            os.replace(tmp_path, str(_USAGE_FILE))
         except OSError as exc:
             logger.debug("Failed to save API usage file: %s", exc)
 
@@ -269,7 +274,8 @@ class ApiGuard:
                 circuit.status = "closed"
                 circuit.consecutive_failures = 0
 
-            self._save_usage()
+            snapshot = copy.deepcopy(self._usage)
+        self._save_usage(snapshot)
 
     def record_failure(self, provider: str, error: Exception | None = None) -> None:
         """Record a failed API call."""
@@ -287,7 +293,7 @@ class ApiGuard:
                 circuit.status = "open"
                 logger.warning(
                     "%s: circuit -> OPEN (half_open probe failed: %s)",
-                    provider, error,
+                    provider, error.__class__.__name__ if error else "unknown",
                 )
             elif circuit.consecutive_failures >= cfg.failure_threshold:
                 circuit.status = "open"
@@ -296,7 +302,8 @@ class ApiGuard:
                     provider, circuit.consecutive_failures, cfg.cooldown_seconds,
                 )
 
-            self._save_usage()
+            snapshot = copy.deepcopy(self._usage)
+        self._save_usage(snapshot)
 
     def record_cache_hit(self, provider: str) -> None:
         """Record a cache hit (does NOT count toward daily limit)."""

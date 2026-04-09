@@ -123,11 +123,15 @@ def calc_dcf(
         pv_fcff += p.pv_fcff
 
     # Terminal Value (Gordon Growth)
-    # NOTE: Assumes ROIC = WACC in terminal period (Damodaran simplification).
-    # If ROIC > WACC, terminal value is understated; if ROIC < WACC, overstated.
-    # Full formula: TV = NOPAT_T × (1 - g/ROIC) / (WACC - g)
-    last_fcff = projections[-1].fcff
-    terminal_fcff = round(last_fcff * (1 + tg))
+    # Use normalized FCFF: maintenance capex = D&A (capex/DA → 1.0) in steady-state.
+    # This avoids perpetuating capex-fade artifacts into terminal value.
+    last_p = projections[-1]
+    last_nopat = last_p.nopat
+    last_da = last_p.da
+    # Steady-state FCFF: NOPAT + DA - DA(maintenance) - delta_NWC ≈ NOPAT - delta_NWC
+    # For terminal, assume NWC grows at terminal growth rate
+    normalized_fcff = last_nopat - last_p.delta_nwc if last_nopat > 0 else last_p.fcff
+    terminal_fcff = round(normalized_fcff * (1 + tg))
     terminal_value = round(terminal_fcff / (wacc - tg))
     n = len(projections)
     pv_terminal = round(terminal_value / (1 + wacc) ** n)

@@ -14,7 +14,7 @@ from pathlib import Path
 # yfinance (curl_cffi-based) cannot read CA cert from unicode paths.
 # Setting os.environ alone doesn't propagate to the already-loaded native curl library,
 # so we call Win32 API SetEnvironmentVariableW directly via ctypes.
-_CA_BUNDLE_PATH = "C:/ProgramData/yfinance_cacert.pem"
+_CA_BUNDLE_PATH = os.path.join(os.path.expanduser("~"), ".cache", "yfinance_cacert.pem")
 
 if os.name == "nt":
     try:

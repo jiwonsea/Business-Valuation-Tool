@@ -4,6 +4,7 @@
 """
 
 import _ssl_fix  # noqa: F401 — must run before any yfinance/curl_cffi import
+import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -51,7 +52,7 @@ def _format_ev(value: int, vi) -> str:
     """EV를 억원/$B 등 읽기 쉬운 형태로 변환."""
     unit = _unit_label(vi)
     if unit == "백만원":
-        return f"{value/100:,.0f}억원"
+        return f"{value // 100:,}억원"
     elif unit == "억원":
         return f"{value:,}억원"
     elif unit == "$M":
@@ -84,8 +85,9 @@ selected = st.sidebar.selectbox(
 if st.sidebar.button("분석 실행", type="primary"):
     with st.spinner("밸류에이션 계산 중..."):
         profile_path = str(profile_names[selected])
-        # 캐싱: 동일 프로필은 재계산 없이 즉시 반환
-        vi, result = _cached_run_valuation(profile_path, profile_path)
+        # 캐싱: 파일 내용 해시 기반 — YAML 수정 시 자동 캐시 무효화
+        content_hash = hashlib.md5(Path(profile_path).read_bytes()).hexdigest()
+        vi, result = _cached_run_valuation(content_hash, profile_path)
         # 상장사 괴리율 자동 비교 (시장가는 실시간이므로 캐싱 미적용)
         result = _fetch_and_compare_market_price(vi, result)
         st.session_state["vi"] = vi

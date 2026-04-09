@@ -11,13 +11,15 @@ from .nav import calc_nav
 from .units import per_share
 
 
-def _seg_metric(code: str, alloc: DAAllocation,
+def _seg_metric(code: str, alloc: DAAllocation | None,
                  segments_info: dict[str, dict] | None,
                  revenue_by_seg: dict[str, int] | None) -> int:
     """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise.
 
     P/BV and P/E segments return 0 (equity-based metrics not supported in SOTP sensitivity).
     """
+    if alloc is None:
+        return 0
     method = (segments_info or {}).get(code, {}).get("method", "ev_ebitda")
     if method == "ev_revenue":
         return (revenue_by_seg or {}).get(code, 0)
@@ -42,6 +44,7 @@ def sensitivity_multiples(
     cps_repay: int = 0,
     rcps_repay: int = 0,
     buyback: int = 0,
+    pbv_pe_ev: int = 0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: two-segment multiple variation -> Scenario A per-share value."""
     # Auto-select segment codes (avoid hardcoding)
@@ -59,7 +62,8 @@ def sensitivity_multiples(
         col_range = [round(base_m + i, 1) for i in range(-3, 4)]
 
     # Pre-compute EV for non-varying segments (uses revenue for ev_revenue method)
-    fixed_ev = 0
+    # pbv_pe_ev: equity-based segment value (P/BV, P/E) — constant, not sensitivity-varied
+    fixed_ev = pbv_pe_ev
     for code, alloc in base_ebitda_by_seg.items():
         if code != row_seg and code != col_seg:
             m = multiples.get(code, 0)
@@ -70,10 +74,11 @@ def sensitivity_multiples(
     rows = []
     row_metric = _seg_metric(row_seg, base_ebitda_by_seg.get(row_seg), segments_info, revenue_by_seg) if row_seg in base_ebitda_by_seg else 0
     col_metric = _seg_metric(col_seg, base_ebitda_by_seg.get(col_seg), segments_info, revenue_by_seg) if col_seg in base_ebitda_by_seg else 0
+    same_seg = row_seg == col_seg
     for row_m in row_range:
         row_ev = round(row_metric * row_m)
         for col_m in col_range:
-            col_ev = round(col_metric * col_m)
+            col_ev = 0 if same_seg else round(col_metric * col_m)
             eq = fixed_ev + row_ev + col_ev - deductions
             ps = per_share(eq, unit_multiplier, shares)
             rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
@@ -106,9 +111,10 @@ def sensitivity_irr_dlom(
         cps_r = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
         claims = net_debt + cps_r + rcps_repay + buyback + eco_frontier
         eq = total_ev - claims
-        base_ps = per_share(eq, unit_multiplier, shares) if eq > 0 else 0
+        base_ps = per_share(eq, unit_multiplier, shares)
         for dlom in dlom_range:
-            ps = round(base_ps * (1 - dlom / 100)) if base_ps > 0 else 0
+            # DLOM not applied to negative equity (consistent with calc_scenario)
+            ps = round(base_ps * (1 - dlom / 100)) if base_ps > 0 else base_ps
             rows.append(SensitivityRow(row_val=irr, col_val=dlom, value=ps))
     return rows, irr_range, dlom_range
 

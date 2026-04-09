@@ -150,13 +150,14 @@ def cross_validate(
             enterprise_value=sotp_ev, equity_value=sotp_equity, per_share=sotp_ps,
         ))
 
-    # 2. DCF (existing)
-    dcf_equity = dcf_ev - net_debt
-    dcf_ps = _per_share(dcf_equity, unit_multiplier, shares)
-    results.append(MultipleValuation(
-        method="DCF (FCFF)", metric_value=ebitda, multiple=0,
-        enterprise_value=dcf_ev, equity_value=dcf_equity, per_share=dcf_ps,
-    ))
+    # 2. DCF (existing) -- skip if DCF failed (EV=0)
+    if dcf_ev > 0:
+        dcf_equity = dcf_ev - net_debt
+        dcf_ps = _per_share(dcf_equity, unit_multiplier, shares)
+        results.append(MultipleValuation(
+            method="DCF (FCFF)", metric_value=ebitda, multiple=0,
+            enterprise_value=dcf_ev, equity_value=dcf_equity, per_share=dcf_ps,
+        ))
 
     # 3. EV/Revenue
     if ev_revenue_multiple > 0 and revenue > 0:

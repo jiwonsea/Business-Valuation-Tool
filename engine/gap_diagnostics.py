@@ -150,7 +150,7 @@ def _binary_search(f, lo: float, hi: float, target: float, tol: float = _TOLERAN
                 lo = mid
             else:
                 hi = mid
-    return (lo + hi) / 2
+    return None  # Did not converge within max iterations
 
 
 def solve_implied_wacc(

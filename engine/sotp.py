@@ -89,8 +89,7 @@ def calc_sotp(
         method = seg_info.get("method", "ev_ebitda")
 
         if method == "pbv":
-            # multiple_override does NOT apply to equity-based segments
-            m = multiples.get(code, 0)
+            m = (multiple_override or {}).get(code, multiples.get(code, 0))
             book_equity = seg_info.get("book_equity", 0)
             if book_equity <= 0:
                 logger.warning("Segment '%s' uses P/BV but book_equity=%s — EV will be 0", code, book_equity)
@@ -100,7 +99,7 @@ def calc_sotp(
                 method="pbv", is_equity_based=True,
             )
         elif method == "pe":
-            m = multiples.get(code, 0)
+            m = (multiple_override or {}).get(code, multiples.get(code, 0))
             net_income = seg_info.get("net_income_segment", 0)
             if net_income <= 0:
                 logger.warning("Segment '%s' uses P/E but net_income=%s — EV will be 0", code, net_income)

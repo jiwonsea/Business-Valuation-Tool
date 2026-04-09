@@ -223,7 +223,7 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     # Generate filename
     safe_name = re.sub(r"[^\w\-]", "_", identity.name.lower().replace(" ", "_"))
     if identity.ticker:
-        safe_name = identity.ticker.lower()
+        safe_name = re.sub(r"[^\w\-]", "_", identity.ticker.lower())
     yaml_filename = f"profiles/{safe_name}.yaml"
     yaml_path = str(_PROJECT_ROOT / yaml_filename)
 
@@ -589,6 +589,7 @@ def auto_analyze(
 
     # AI Step 5a: News collection -> key issues summary
     print("[AI 5/6] 관련 뉴스 수집 중...")
+    news = None
     key_issues = ""
     try:
         from discovery.news_collector import NewsCollector

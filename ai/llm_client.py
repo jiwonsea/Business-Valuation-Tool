@@ -7,8 +7,10 @@ Priority:
 """
 
 import atexit
+import functools
 import logging
 import os
+import threading
 
 import httpx
 
@@ -17,16 +19,19 @@ logger = logging.getLogger(__name__)
 _openrouter_client = httpx.Client(timeout=120)
 atexit.register(_openrouter_client.close)
 
+_anthropic_lock = threading.Lock()
 _anthropic_client = None
 
 
 def _get_anthropic_client(api_key: str):
-    """Lazy singleton Anthropic client (reuses connection pool)."""
+    """Lazy singleton Anthropic client (thread-safe, reuses connection pool)."""
     global _anthropic_client
     if _anthropic_client is None:
-        import anthropic
-        _anthropic_client = anthropic.Anthropic(api_key=api_key)
-        atexit.register(_anthropic_client.close)
+        with _anthropic_lock:
+            if _anthropic_client is None:
+                import anthropic
+                _anthropic_client = anthropic.Anthropic(api_key=api_key)
+                atexit.register(_anthropic_client.close)
     return _anthropic_client
 
 # OpenRouter default model (start with free/low-cost, change as needed)
@@ -195,7 +200,10 @@ def ask(
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
-                return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+                try:
+                    return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+                except Exception as fallback_err:
+                    raise fallback_err from e
             raise
     else:
         anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL

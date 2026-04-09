@@ -10,13 +10,14 @@ import os
 import time
 import zipfile
 from pathlib import Path
+from xml.etree.ElementTree import Element as ET_Element
 from defusedxml.ElementTree import parse as safe_parse, fromstring as safe_fromstring
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-DART_BASE = "https://opendart.fss.or.kr/api"
+DART_BASE = os.getenv("DART_API_BASE", "https://opendart.fss.or.kr/api")
 
 # corpCode.xml disk cache (8MB ZIP -> avoid re-downloading each time)
 _CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
@@ -31,7 +32,7 @@ def _get_api_key() -> str:
     return key
 
 
-def _load_corp_code_xml() -> ET.Element:
+def _load_corp_code_xml() -> ET_Element:
     """Load corpCode.xml (disk cache first, re-download on expiry)."""
     from .api_guard import ApiGuard
 
@@ -153,9 +154,8 @@ def get_report_document(rcept_no: str) -> str:
                      params={"crtfc_key": key, "rcept_no": rcept_no}, timeout=60)
     resp.raise_for_status()
 
-    z = zipfile.ZipFile(io.BytesIO(resp.content))
-    # Usually the first file is the body
-    xml_data = z.read(z.namelist()[0])
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+        xml_data = z.read(z.namelist()[0])
     return xml_data.decode("utf-8", errors="replace")
 
 

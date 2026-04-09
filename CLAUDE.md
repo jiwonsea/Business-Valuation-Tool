@@ -63,6 +63,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - `engine/` functions must be pure (no IO, no state). `import httpx`, `requests` etc. forbidden.
 - IO contract: `ValuationInput` → `ValuationResult` (`schemas/models.py`).
 - New YAML profile fields must be Optional with defaults (backward compatibility).
+- Pydantic models are immutable inputs: never assign fields directly (`obj.field = x`). Use `obj.model_copy(update={...})` to create modified copies.
 
 ## Testing
 
@@ -102,6 +103,10 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - `console_report.py` `is_mixed` must stay in sync with `_needs_method_dispatch()` in valuation_runner — both should trigger on any non-default method (ev_revenue, pbv, pe). Equity Bridge display is conditional on pbv/pe only.
 - `get_client()` returns `None` silently when `SUPABASE_URL`/`SUPABASE_KEY` are missing. DB-dependent features (backtest, save_valuation) degrade silently — check `.env` exists before debugging "empty results."
 - Cross-validation DCF calls in non-DCF methods (Multiples/NAV) are now guarded with try/except. When adding new cross-validation paths, follow the same pattern — `calc_dcf()` raises `ValueError` on `ebitda<=0` or `WACC<=TG`.
-- `rcps_repay` is `Optional[int] = None` (like `cps_repay`). MC/sensitivity calls must use `sc.rcps_repay or 0` — passing `None` to arithmetic functions crashes. The `is not None` vs `> 0` distinction is load-bearing for explicit-zero overrides.
+- `rcps_repay` is `Optional[int] = None` (like `cps_repay`). Use `_derive_rcps_repay(ref_sc, vi)` for all RCPS repay calculations — it handles IRR-based compounding when explicit repay is absent. Raw `sc.rcps_repay or 0` drops compounding. The `is not None` vs `> 0` distinction is load-bearing for explicit-zero overrides.
 - Mixed-method SOTP Monte Carlo must use `effective_net_debt` (via `net_debt_override`), not `vi.net_debt`. PBV/PE segment equity values already embed net_debt — using full net_debt double-deducts.
+- PBV/PE segments are cross-cutting: changes touch SOTP (`sotp.py`), MC (`monte_carlo.py` skip logic), sensitivity (`sensitivity.py` fixed_ev + same_seg guard), and scenario equity bridge (`valuation_runner.py` net_debt add-back). Test all four when modifying PBV/PE behavior.
+- DCF terminal value uses normalized FCFF (NOPAT − ΔNWC, excluding capex-fade artifact from projection years). Raw last-year FCFF overstates TV when capex_fade < 1.0.
+- **Equity-direct methods (DDM, RIM, P/E, P/BV) output equity, not EV.** calc_scenario currently assumes EV input and subtracts net_debt → double-deduction. F-P1-1~3 pending: `is_equity_direct` flag needed in calc_scenario to skip net_debt bridge for these methods.
+- Sensitivity multiples grid: when row_seg == col_seg, col_ev must be 0 to prevent double-counting the same segment's EV contribution.
 - `segment_multiples`/`segment_ebitda`/`segment_revenue` keys in scenario YAML must be segment codes (`SEG1`, `AUTONOMOUS_DRIVING`), not human-readable names. LLM frequently generates Korean labels or ticker names instead. `load_profile()` warns on mismatch but doesn't auto-fix — verify keys after `--auto` generation.

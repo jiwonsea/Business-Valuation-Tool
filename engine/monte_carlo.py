@@ -49,6 +49,7 @@ class MCResult:
     distribution: list[int] = field(default_factory=list)  # Full distribution (for histogram)
     histogram_bins: list[int] = field(default_factory=list)
     histogram_counts: list[int] = field(default_factory=list)
+    pct_negative: float = 0.0  # Percentage of simulations with negative/zero equity
 
 
 def run_monte_carlo(
@@ -144,6 +145,9 @@ def run_monte_carlo(
                 rev = (seg_revenues or {}).get(code, 0)
                 if rev > 0:
                     ev_revenue_part += rev * multiples_samples[code]
+        elif method in ("pbv", "pe"):
+            # PBV/PE segments use book value or net income, not EBITDA — skip in MC
+            continue
         else:
             # Include negative EBITDA segments (consistent with calc_sotp)
             ev_ebitda_part += ebitda * multiples_samples[code]
@@ -165,7 +169,9 @@ def run_monte_carlo(
         dcf_ev_base = dcf_pv_fcff_sum + pv_tv_base
 
         if dcf_ev_base > 0:
-            ev_ebitda_part = np.where(valid, ev_ebitda_part * (dcf_ev_sample / dcf_ev_base), ev_ebitda_part)
+            ratio = np.where(valid, dcf_ev_sample / dcf_ev_base, 1.0)
+            ratio = np.clip(ratio, 0.0, 3.0)  # Cap TV scaling to prevent fat-tail contamination
+            ev_ebitda_part = np.where(valid, ev_ebitda_part * ratio, ev_ebitda_part)
 
     ev = ev_ebitda_part + ev_revenue_part
 
@@ -182,9 +188,12 @@ def run_monte_carlo(
 
     results_int = np.round(results).astype(int)
 
-    # Histogram
-    n_bins = min(50, max(10, n // 200))
+    # Separate positive (valid for display) and track negative %
     valid = results_int[results_int > 0]
+    pct_neg = round((1 - len(valid) / n) * 100, 1) if n > 0 else 0.0
+
+    # Histogram and statistics use same positive-only set for consistency
+    n_bins = min(50, max(10, n // 200))
     if len(valid) > 0:
         counts, bin_edges = np.histogram(valid, bins=n_bins)
         hist_bins = [int(b) for b in bin_edges[:-1]]
@@ -192,18 +201,22 @@ def run_monte_carlo(
     else:
         hist_bins, hist_counts = [], []
 
+    # Statistics on positive-only set (consistent with histogram display)
+    stats_set = valid if len(valid) > 0 else results_int
+
     return MCResult(
         n_sims=n,
-        mean=int(np.mean(results_int)),
-        median=int(np.median(results_int)),
-        std=int(np.std(results_int)),
-        p5=int(np.percentile(results_int, 5)),
-        p25=int(np.percentile(results_int, 25)),
-        p75=int(np.percentile(results_int, 75)),
-        p95=int(np.percentile(results_int, 95)),
-        min_val=int(np.min(results_int)),
-        max_val=int(np.max(results_int)),
+        mean=int(np.mean(stats_set)),
+        median=int(np.median(stats_set)),
+        std=int(np.std(stats_set)),
+        p5=int(np.percentile(stats_set, 5)),
+        p25=int(np.percentile(stats_set, 25)),
+        p75=int(np.percentile(stats_set, 75)),
+        p95=int(np.percentile(stats_set, 95)),
+        min_val=int(np.min(stats_set)),
+        max_val=int(np.max(stats_set)),
         distribution=results_int.tolist(),
         histogram_bins=hist_bins,
         histogram_counts=hist_counts,
+        pct_negative=pct_neg,
     )

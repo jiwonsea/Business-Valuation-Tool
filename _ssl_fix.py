@@ -31,7 +31,7 @@ def apply() -> None:
     except UnicodeEncodeError:
         pass
 
-    dst_dir = os.path.join(os.environ.get("ProgramData", r"C:\ProgramData"), "ssl")
+    dst_dir = os.path.join(os.path.expanduser("~"), ".cache", "ssl")
     dst = os.path.join(dst_dir, "cacert.pem")
 
     if not os.path.exists(dst):

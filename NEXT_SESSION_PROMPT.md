@@ -1,189 +1,142 @@
-# Business Valuation Tool: 6-model Cross Review 결과 (2026-04-09)
+# Business Valuation Tool: Post-4th Cross Review (2026-04-09)
 
 ## 배경
-이번 세션에서:
-1. **Codex+Qwen P2 21건 수정 완료** (커밋 de9428e) — 크래시 4, 로직 6, 리소스 리크 5, 에러핸들링 5, dict mutation 1
-2. **6-model Cross Review 실행** — Claude×3 (Finance/Architecture/TDD) + Codex + Gemini(rate limit) + Qwen(minimal)
-3. **P0 1건 + P1 2건 즉시 수정** (커밋 3219e6f, 1dd9773)
-   - P0: `_design_scenarios_two_pass()` NameError (segment_codes 미전달)
-   - P1: Anthropic client per-call 생성 → lazy singleton
-   - P1: sensitivity_multiples CPS repay에 cps_dividend_rate 미반영
-4. 415/415 테스트 통과, 31 커밋 ahead of origin/main
+4차 크로스 리뷰 50건 중 **43건 수정 완료** (1세션).
+- 415/415 tests pass, 21 files changed, 미커밋 상태
+- 수정 범위: CR 5건 + VL 22건 + AR 10건 + SEC 6건
 
-## 이번 세션 작업
-
-### 1단계: Finance P1 구조 변경 (DDM/RIM/NAV equity bridge)
-가장 영향 큰 Finance 이슈 — calc_scenario 인터페이스 변경 필요.
-
-### 2단계: P2 수정 (아래 이슈 중 선택)
-테스트 추가 + 로직 수정.
-
-### 3단계: 테스트 커버리지 확대 (TDD 에이전트 Gap 1-5)
-
-### 4단계: NEXT_SESSION_PROMPT.md 갱신
+## 현재 상태
+- 415/415 tests pass
+- **커밋 필요**: 4차 리뷰 43건 일괄 수정 (21파일)
+- P0 전부 해소, P1 3건(equity bridge) 미수정
 
 ---
 
-## Finance P1 이슈 (3건, 최우선)
+## 즉시 할 일
 
-### F-P1-1. DDM equity bridge 이중차감 (valuation_runner.py:684,690)
-- DDM은 equity_per_share 직접 산출 (배당 → Ke 할인 = equity value)
-- 코드가 pseudo-EV로 변환 후 `calc_scenario()`에서 net_debt/CPS/RCPS 재차감
-- **수정**: DDM/RIM에 대해 `calc_scenario()`에 `net_debt=0, cps_principal=0, rcps_principal=0` 전달, 또는 equity-direct scenario path 분리
+### 0. 커밋
+- `git add` + 커밋 (4차 리뷰 43건 수정)
 
-### F-P1-2. RIM equity bridge — 우연히 net_debt 상쇄되지만 구조 위험 (valuation_runner.py:789,808)
-- RIM equity_value + net_debt → calc_scenario에서 net_debt 재차감 = 수학적으로 상쇄
-- 그러나 CPS/RCPS/buyback은 book_value에 이미 포함됐는지 불분명 → 이중차감 가능
-- **수정**: consolidated["equity"]가 total equity인지 common equity인지 문서화 + 테스트
+### 1. F-P1-1~3: Equity Bridge 구조 변경 (P1, 3건)
+- **calc_scenario 인터페이스 변경 필요** — 가장 큰 잔존 리스크
 
-### F-P1-3. NAV CPS/RCPS 이중차감 (valuation_runner.py:1001,1015)
-- NAV = adjusted_assets - total_liabilities (부채 전체 포함)
-- total_liabilities에 CPS/RCPS 이미 포함 → calc_scenario에서 재차감
-- **수정**: NAV valuation에서 `cps_principal=0, rcps_principal=0` 전달
+**F-P1-1. DDM equity bridge 이중차감** (valuation_runner.py:684,690)
+- DDM은 equity-per-share 직접 산출 → calc_scenario에 EV로 전달하면서 net_debt 이중차감
+- **수정**: DDM path에서 calc_scenario의 net_debt=0 또는 equity-direct 분기 추가
 
----
+**F-P1-2. RIM equity bridge 구조 위험** (valuation_runner.py:789,808)
+- RIM도 equity value 직접 산출 → 동일 이중차감 패턴
+- **수정**: F-P1-1과 동일 패턴 적용
 
-## Finance P2 이슈 (10건)
+**F-P1-3. NAV CPS/RCPS 이중차감** (valuation_runner.py:1001,1015)
+- NAV는 자산-부채 기반 → CPS/RCPS가 부채에 이미 포함될 수 있음
+- **수정**: NAV path에서 CPS/RCPS 이미 반영 여부 검증 후 분기
 
-**F-P2-1. MC 음수 per-share 강제 0 처리** (monte_carlo.py:179)
-- `np.maximum(ps, 0)` → 분포 상향 편향. calc_scenario는 음수 전파
-- **수정**: 통계 계산은 음수 포함, 히스토그램만 0 바닥
-
-**F-P2-2. MC 멀티플 정규분포 → 로그정규 전환 필요** (monte_carlo.py:107)
-- 멀티플은 0 이상 + 우측 꼬리. 정규→clip은 분포 왜곡
-- **수정**: `rng.lognormal()` 사용 (Damodaran 표준)
-
-**F-P2-3. DCF revenue=EBITDA 동일 성장률 → 마진 동태 무시** (dcf.py:98)
-- revenue_growth_rates 별도 파라미터 추가 옵션
-
-**F-P2-4. SOTP total_ev에 equity-based 값 혼합** (sotp.py:135)
-- cross_validate의 implied EV/EBITDA가 equity 부분 포함 → 과대
-- **수정**: CV에서 equity-based segment 제외 후 EV/EBITDA 계산
-
-**F-P2-5. DDM/RIM market_sentiment_pct가 pseudo-EV에 적용** (valuation_runner.py:687-688)
-- equity-direct 방식에서 EV 기준 %는 레버리지 증폭 효과
-- **수정**: equity-direct에서는 equity에 직접 적용 또는 문서화
-
-**F-P2-6. DCF Terminal Value ROIC=WACC 단순화** (dcf.py:127-131)
-- 이미 NOTE 코멘트 있음. terminal_roic 옵션 파라미터 추가 가능
-
-**F-P2-7. sensitivity_irr_dlom 음수 equity → 0 처리** (sensitivity.py:109,111)
-- calc_scenario와 불일치. 음수 전파 필요
-
-**F-P2-8. sensitivity_multiple_range 동일 패턴** (sensitivity.py:278-280)
-
-**F-P2-9. CPS/RCPS 동일 IRR 사용** (scenario.py:32-34,41-43)
-- CPS와 RCPS는 다른 투자자/조건 → 별도 cps_irr/rcps_irr 필드 추가
-
-**F-P2-10. distress ICR에 추정 이자비용 사용** (distress.py:119-120)
-- kd_pre × gross_borr 대신 실제 이자비용 옵션 추가
+**설계 방향**: calc_scenario에 `is_equity_direct: bool` 파라미터 추가
+- True: net_debt 차감 스킵 (DDM, RIM, P/E, P/BV)
+- False: 기존 EV→equity bridge 유지 (SOTP, DCF, NAV, EV/EBITDA)
 
 ---
 
-## Architecture P1 이슈 (2건, 구조)
+## 2단계: 잔존 VL (3건)
 
-**A-P1-1. Untyped dict 데이터 경계** (valuation_runner.py:80-88)
-- consolidated, segment_data, segments가 raw dict → KeyError 위험
-- ConsolidatedFinancials Pydantic 모델 존재하나 미사용
-- **수정**: load_profile()에서 Pydantic 모델로 파싱
+**VL-12. WACC D/E cap 200% + distress discount 이중벌칙** (wacc.py:25)
+- D/E>200% → WACC 과소(DCF 과대) + distress discount(SOTP 과소)
+- **설계 논의 필요**: WACC premium 보정 vs distress discount 조건부 비활성
 
-**A-P1-2. God module valuation_runner.py (1315줄)**
-- YAML 파싱 + 6개 방법론 + CV + MC 오케스트레이션 전부 한 파일
-- 6개 `_run_*_valuation()` 메서드 80% 보일러플레이트 중복
-- **수정**: profile_loader.py + scenario_evaluator.py + thin dispatcher 분리
+**VL-15. DCF sensitivity가 EV 출력 (per-share 아님)** (sensitivity.py:153-171)
+- 다른 sensitivity는 per-share, DCF만 EV → UI에서 비교 불가
+- **수정**: per-share 변환 또는 console_report/app.py에 단위 레이블
 
----
-
-## Architecture P2 이슈 (5건 선별)
-
-**A-P2-1. _seg_names 등 private 함수가 외부 import됨** (valuation_runner.py:38)
-- 3개 모듈에서 import → 리팩토링 시 깨짐. public으로 전환 또는 유틸 분리
-
-**A-P2-2. calc_scenario 10+ 위치 인자** (engine/scenario.py:7-18)
-- EquityBridgeConfig dataclass로 묶기
-
-**A-P2-3. MC 전체 분포 메모리 저장** (monte_carlo.py:49,206)
-- histogram만 유지, raw distribution 폐기 (DB/API 페이로드 비대)
-
-**A-P2-4. lazy import in hot path** (valuation_runner.py:1175,1232)
-- monte_carlo, MCScenarioSummary → top-level import로 이동
-
-**A-P2-5. ApiGuard._reset_singleton() 락 미획득** (api_guard.py)
-- pytest-xdist 병렬 테스트 시 경쟁 조건
+**VL-12는 설계 결정, VL-15는 UI 연동이 필요해 별도 세션 권장**
 
 ---
 
-## TDD Gap (15건, 우선순위별 선별)
+## 3단계: SEC P3~P4 잔존 (2건)
 
-### P1 Gap (테스트 완전 부재)
+**SEC-4. Cross-process API usage race** (pipeline/api_guard.py:157) [P3]
+- threading lock만 → 멀티프로세스(CLI+Streamlit) 동시 실행 시 usage 파일 손상
+- **수정**: `portalocker` 파일 락 (pip install 필요)
 
-**T-P1-1. RIM 파이프라인 통합 테스트 없음**
-- `_run_rim_valuation()` 전체 미커버. kb_financial_rim.yaml 존재하나 미사용
-
-**T-P1-2. NAV 파이프라인 통합 테스트 없음**
-- nav_test.yaml 존재하나 미사용
-
-**T-P1-3. Multiples 파이프라인 통합 테스트 없음**
-- multiples_test.yaml 존재하나 미사용
-
-**T-P1-4. Quality scoring 통합 없음**
-- result.quality 할당 검증 없음
-
-**T-P1-5. DCF exit multiple terminal value 미테스트**
-- terminal_ev_ebitda 코드 경로 전체 미커버
-
-### P2 Gap (엣지 케이스)
-
-**T-P2-1. DCF capex_fade_to 미테스트**
-**T-P2-2. DCF 음수 NOPAT 분기 미테스트**
-**T-P2-3. WACC financial sector beta bypass 미테스트**
-**T-P2-4. SOTP P/BV·P/E segment 미테스트**
-**T-P2-5. sensitivity dict mutation 회귀 테스트 미작성** (F1 수정 검증)
-**T-P2-6. _adjust_wacc 직접 테스트 없음**
-**T-P2-7. _make_scenario_dcf_params safety floor 미테스트**
-**T-P2-8. MC cps_dividend_rate 회귀 테스트 미작성** (B5 수정 검증)
+**SEC-5. DB upsert insecure fallback** (db/repository.py:53) [P3]
+- upsert 실패 → blind insert fallback → 중복 가능
+- **수정**: 특정 예외 catch + conflict handling
 
 ---
 
-## Qwen 요약 (상세 없음, CLI 불안정)
+## 4단계: 기존 미수정 P2 (이전 리뷰, 10건)
 
-- P0: sensitivity 중복 공식 로직
-- P0: 핵심 함수 untyped dict/Any
-- P1: 모듈레벨 I/O (import 시 생성)
-- P1: CPS 공식 4곳 중복 + 미세 차이
+F-P2-1~10, A-P2-1~5 — 이전 NEXT_SESSION 참조
+(MC 로그정규, DCF revenue growth, SOTP equity mixing 등)
 
 ---
 
-## Codex (미완료)
-파일 읽기 단계에서 세션 종료. 다음 세션에서 재실행.
+## 5단계: TDD Gap (이전 리뷰 기준, 13건)
 
-## Gemini (rate limit)
-gemini-3-flash-preview 용량 부족. 반복 실패.
+T-P1-1~5: RIM/NAV/Multiples 통합, quality scoring, DCF exit multiple
+T-P2-1~8: capex_fade, 음수 NOPAT, financial beta, SOTP P/BV·P/E 등
 
 ---
 
-## 이전 세션 보류 (별도 세션)
+## 이번 세션 수정 완료 목록 (43건)
 
-### Finance 구조 변경
-- ~~DDM/RIM net_debt 이중차감~~ → 이번 리뷰에서 재확인 (F-P1-1~3)
-- CPS effective rate 복리 계산 오류 — 금융 수학 검증 필요
-- ~~MC 정규→로그정규 전환~~ → F-P2-2로 통합
+### 크래시 경로 (5건)
+- CR-1: DDM 시나리오 calc_ddm_engine try/except + base fallback
+- CR-2: DCF sensitivity → dcf_result None이면 스킵
+- CR-3: auto_analyze() news = None 초기화
+- CR-4: dcf_params conditional 파싱 (equity-only 프로필 지원)
+- CR-5: scenarios → .get({})
 
-### 아키텍처 리팩토링
-- ~~valuation_runner God module~~ → A-P1-2로 통합
-- ~~consolidated/segments 타입 강화~~ → A-P1-1로 통합
-- _seg_names public 전환
+### 밸류에이션 로직 (22건)
+- VL-1: MC RCPS → _derive_rcps_repay(sc, vi) 통일
+- VL-2: RIM TV → end-of-period BV 사용
+- VL-3: DCF TV → normalized FCFF (capex-fade artifact 제거)
+- VL-4: MC DCF ratio → np.clip(0, 3.0) cap
+- VL-5: P/E·P/BV 시나리오 ev_multiple → net_debt add-back
+- VL-6: PBV/PE + segment_net_debt 미설정 경고 로그
+- VL-7: MC에서 pbv/pe 세그먼트 skip (continue)
+- VL-8: sensitivity_multiples에 pbv_pe_ev 고정값 전달
+- VL-9: row_seg == col_seg → col_ev = 0 (2x 방지)
+- VL-10: SOTP PBV/PE → multiple_override 적용
+- VL-11: Sensitivity IRR/DLOM 음수 equity 전파, DLOM만 스킵
+- VL-13+20: Quality score → sr.post_dlom 직접 + 확률가중 평균
+- VL-14: DCF EV=0 → cross-validation 제외
+- VL-16: MC histogram/stats 동일 set + pct_negative 필드
+- VL-17: 단일 세그먼트 MC → 균등 배분
+- VL-18: DCF primary에 MC 호출 추가
+- VL-19: "ev " → \bev\b regex word boundary
+- VL-21: binary_search 미수렴 → None 반환
+- VL-22: hashlib.md5 결정적 seed
+- VL-23: mc_revenue_std_pct, distress_max_discount, market_signals 파싱
+- VL-24: treasury_shares 검증 (0 ≤ treasury ≤ ordinary)
+- VL-25: _make_scenario_dcf_params → model_copy(update=...)
 
-### Security
-- Streamlit 인증 없음 (P2)
-- ai/prompts.py prompt injection (P2)
-- db/repository.py ilike wildcard (P3)
+### 코드 품질 (10건)
+- AR-1: ET_Element import (mypy 호환)
+- AR-2: ZipFile context manager
+- AR-3: vi.wacc_params mutation → model_copy
+- AR-4: os.replace 원자적 파일 교체
+- AR-5: _save_usage() disk I/O → lock 밖으로
+- AR-6: 캐시 키 → md5 content hash
+- AR-7: _seg_metric alloc None guard
+- AR-8: Anthropic client → threading.Lock double-check
+- AR-9: LLM fallback → raise from e 예외 체인
+- AR-10: 억원 → // 정수 나눗셈
 
-### P3 보류 (Codex)
-- SOTP/DCF `weighted_value=0` when no scenarios
-- DCF primary에 MC 미연결
-- 시나리오 MC `has_overrides`에 `segment_ebitda` 미포함
-- `_build_seg_ebitdas_from_consolidated` multi-segment collapse
-- RIM `terminal_ri` 필드명 오용
+### 보안 (6건)
+- SEC-1: Excel export filename sanitization
+- SEC-2: Profile ticker path traversal sanitization
+- SEC-3: SSL cert → user-specific ~/.cache/ 디렉토리
+- SEC-6: API guard 로그 → class name만 출력
+- SEC-7: DART base URL → env var
+- SEC-8: 이미 errors="replace" 적용 확인
+
+## 작업 우선순위
+
+1. **커밋** (즉시)
+2. **F-P1-1~3**: equity bridge 구조 변경 (calc_scenario 인터페이스)
+3. **VL-12**: WACC D/E 이중벌칙 설계 논의
+4. **SEC-4~5**: portalocker + DB upsert
+5. **기존 P2 + TDD gap**: 점진적 수정
 
 ## 모드: normal

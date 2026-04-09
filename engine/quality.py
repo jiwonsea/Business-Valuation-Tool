@@ -195,10 +195,10 @@ def _scenario_consistency_score(
             warnings.append("시나리오가 없습니다")
             return 0, warnings
 
-    # Collect per-share values from scenario results
+    # Collect per-share values from scenario results (probability-weighted)
     per_share_values = []
     for sr in scenarios_out.values():
-        ps = getattr(sr, "post_dlom", 0) or getattr(sr, "weighted", 0)
+        ps = sr.post_dlom
         if ps > 0:
             per_share_values.append(ps)
 
@@ -206,9 +206,15 @@ def _scenario_consistency_score(
         warnings.append("시나리오 결과값이 부족합니다")
         return count_pts, warnings
 
-    # (b) Weighted vs base case deviation: 8 / 4 / 0
-    base_values = per_share_values  # use mean of scenario per-share as proxy
-    mean_ps = statistics.mean(base_values)
+    # (b) Weighted vs probability-weighted mean deviation: 8 / 4 / 0
+    # Use probability-weighted mean (same basis as weighted_value) for consistency
+    total_prob = sum(sc.prob for sc in scenarios_in.values()) if scenarios_in else 100
+    weighted_mean_ps = sum(
+        sr.post_dlom * scenarios_in[code].prob / total_prob
+        for code, sr in scenarios_out.items()
+        if code in scenarios_in and sr.post_dlom > 0
+    ) if scenarios_in else statistics.mean(per_share_values)
+    mean_ps = weighted_mean_ps if weighted_mean_ps > 0 else statistics.mean(per_share_values)
     deviation_pct = abs(weighted_value - mean_ps) / mean_ps * 100 if mean_ps > 0 else 0
 
     if deviation_pct < 20:

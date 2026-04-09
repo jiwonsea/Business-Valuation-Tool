@@ -700,10 +700,11 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                 vi.ddm_params.dps, sc_growth, sc_ke,
                 buyback_per_share=buyback_ps,
             )
-            sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
+            # DDM yields equity directly; add net_debt to get EV for calc_scenario bridge
+            sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
         except ValueError:
             logger.warning("DDM scenario '%s' failed (growth>=Ke), using base DDM", code)
-            sc_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+            sc_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
 
         # Market sentiment is cumulative
         if sc.market_sentiment_pct != 0:
@@ -716,8 +717,8 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         scenario_results[code] = r
         total_weighted += r.weighted
 
-    # DDM base EV (for cross-validation)
-    total_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+    # DDM base EV (for cross-validation): DDM equity + net_debt = EV
+    total_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
 
     # Use DDM value directly when no scenarios are set
     if not scenario_results:
@@ -1042,10 +1043,9 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = discounted_nav + vi.net_debt
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
+        # NAV liabilities already include CPS/RCPS principal (K-IFRS) → skip to avoid double deduction
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+                          0, 0, 0, 0, um, 0.0, 0.0)
         scenario_results[code] = r
         total_weighted += r.weighted
 

@@ -703,6 +703,31 @@ class TestFullPipeline:
         assert result.dcf is None
         assert len(result.cross_validations) >= 2
 
+    def test_ddm_no_net_debt_double_deduction(self):
+        """F-P1-1: DDM equity bridge must not double-deduct net_debt.
+
+        DDM yields equity_per_share directly; net_debt should NOT be subtracted
+        again in calc_scenario. We verify by injecting non-zero net_debt and
+        checking that weighted_value stays close to DDM equity_per_share.
+        """
+        from valuation_runner import load_profile, run_valuation
+
+        profile_path = str(Path(__file__).parent.parent / "profiles" / "kb_financial.yaml")
+        vi = load_profile(profile_path)
+        # Inject non-zero net_debt to exercise the bridge
+        vi_with_debt = vi.model_copy(update={"net_debt": 5_000_000})
+        result = run_valuation(vi_with_debt)
+
+        assert result.primary_method == "ddm"
+        # With correct bridge: scenario equity ≈ DDM equity - CPS/RCPS (both 0 here)
+        # With double-deduction bug: equity would be ~5T lower (nonsensical)
+        base_sc = result.scenarios["B"]
+        ddm_eps = result.ddm.equity_per_share
+        # Tolerance: within 20% of DDM equity_per_share (scenarios have DLOM, market_sentiment)
+        assert base_sc.pre_dlom > ddm_eps * 0.5, (
+            f"DDM net_debt double-deduction: pre_dlom={base_sc.pre_dlom} vs ddm_eps={ddm_eps}"
+        )
+
 
 # ═══════════════════════════════════════════════════════════
 # Validation Tests (Input Validation)

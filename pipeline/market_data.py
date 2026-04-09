@@ -3,6 +3,7 @@
 Data collected from KRX, 38.co.kr, etc.
 """
 
+import atexit
 import re
 
 import httpx
@@ -10,6 +11,7 @@ from bs4 import BeautifulSoup
 
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
 _client = httpx.Client(headers=_HEADERS, timeout=15, follow_redirects=True)
+atexit.register(_client.close)
 
 from .api_guard import api_guard
 

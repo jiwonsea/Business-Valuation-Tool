@@ -132,8 +132,8 @@ def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
     try:
         from db.repository import save_ai_analysis
         save_ai_analysis(company_name, step, result_data, model)
-    except Exception:
-        logger.debug("AI analysis DB save skipped for [%s] %s", step, company_name)
+    except (ImportError, ConnectionError, OSError) as e:
+        logger.warning("AI analysis DB save failed for [%s] %s: %s", step, company_name, e)
 
 
 class AIAnalyst:

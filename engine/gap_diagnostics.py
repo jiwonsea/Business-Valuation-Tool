@@ -12,7 +12,10 @@ Results are stored in ValuationResult.gap_diagnostic and surfaced in console/Exc
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -169,7 +172,8 @@ def solve_implied_wacc(
     def f(wacc: float) -> float:
         try:
             return _eval_dcf_ev(ebitda_base, da_base, revenue_base, wacc, params)
-        except Exception:
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning("solve_implied_wacc: DCF eval failed at wacc=%.2f: %s", wacc, e)
             return 0.0
 
     return _binary_search(f, lo=lo, hi=_WACC_HI, target=target_ev)
@@ -197,7 +201,8 @@ def solve_implied_tgr(
         p = params.model_copy(update={"terminal_growth": tgr})
         try:
             return _eval_dcf_ev(ebitda_base, da_base, revenue_base, wacc_pct, p)
-        except Exception:
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning("solve_implied_tgr: DCF eval failed at tgr=%.2f: %s", tgr, e)
             return 0.0
 
     return _binary_search(f, lo=_TGR_LO, hi=tgr_hi, target=target_ev)
@@ -224,7 +229,8 @@ def solve_implied_growth_multiplier(
         p = params.model_copy(update={"ebitda_growth_rates": new_rates})
         try:
             return _eval_dcf_ev(ebitda_base, da_base, revenue_base, wacc_pct, p)
-        except Exception:
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning("solve_implied_growth: DCF eval failed at mult=%.2f: %s", mult, e)
             return 0.0
 
     return _binary_search(f, lo=_GMULT_LO, hi=_GMULT_HI, target=target_ev)

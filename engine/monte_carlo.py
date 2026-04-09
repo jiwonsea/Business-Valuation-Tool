@@ -68,6 +68,7 @@ def run_monte_carlo(
     dcf_pv_fcff_sum: int = 0,
     dcf_n_periods: int = 5,
     seg_revenues: dict[str, int] | None = None,
+    cps_dividend_rate: float = 0.0,
 ) -> MCResult:
     """Run Monte Carlo simulation.
 
@@ -118,8 +119,9 @@ def run_monte_carlo(
 
     use_dcf_tv = wacc_for_dcf > 0 and dcf_last_fcff > 0
 
-    # CPS redemption calculation (IRR-based)
-    cps_repay = round(cps_principal * (1 + irr / 100) ** cps_years) if cps_principal > 0 else 0
+    # CPS redemption calculation (effective_rate = IRR - dividend_rate, consistent with calc_scenario)
+    effective_irr = max(irr - cps_dividend_rate, 0.0)
+    cps_repay = round(cps_principal * (1 + effective_irr / 100) ** cps_years) if cps_principal > 0 else 0
 
     # Revenue uncertainty sampling for ev_revenue segments
     revenue_samples: dict[str, np.ndarray] = {}

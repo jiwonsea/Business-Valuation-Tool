@@ -14,10 +14,15 @@ from .units import per_share
 def _seg_metric(code: str, alloc: DAAllocation,
                  segments_info: dict[str, dict] | None,
                  revenue_by_seg: dict[str, int] | None) -> int:
-    """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise."""
+    """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise.
+
+    P/BV and P/E segments return 0 (equity-based metrics not supported in SOTP sensitivity).
+    """
     method = (segments_info or {}).get(code, {}).get("method", "ev_ebitda")
     if method == "ev_revenue":
         return (revenue_by_seg or {}).get(code, 0)
+    if method in ("pbv", "pe"):
+        return 0
     return alloc.ebitda
 
 
@@ -63,23 +68,15 @@ def sensitivity_multiples(
     deductions = net_debt + eco_frontier + cps_repay + rcps_repay + buyback
 
     rows = []
-    orig_row = multiples.get(row_seg)
-    orig_col = multiples.get(col_seg)
     row_metric = _seg_metric(row_seg, base_ebitda_by_seg.get(row_seg), segments_info, revenue_by_seg) if row_seg in base_ebitda_by_seg else 0
     col_metric = _seg_metric(col_seg, base_ebitda_by_seg.get(col_seg), segments_info, revenue_by_seg) if col_seg in base_ebitda_by_seg else 0
-    try:
-        for row_m in row_range:
-            row_ev = round(row_metric * row_m)
-            for col_m in col_range:
-                col_ev = round(col_metric * col_m)
-                eq = fixed_ev + row_ev + col_ev - deductions
-                ps = per_share(eq, unit_multiplier, shares)
-                rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
-    finally:
-        if orig_row is not None:
-            multiples[row_seg] = orig_row
-        if orig_col is not None:
-            multiples[col_seg] = orig_col
+    for row_m in row_range:
+        row_ev = round(row_metric * row_m)
+        for col_m in col_range:
+            col_ev = round(col_metric * col_m)
+            eq = fixed_ev + row_ev + col_ev - deductions
+            ps = per_share(eq, unit_multiplier, shares)
+            rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))
     return rows, row_range, col_range
 
 

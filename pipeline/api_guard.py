@@ -400,6 +400,8 @@ def api_guard(provider: str) -> Callable:
                     result = func(*args, **kwargs)
                     guard.record_success(provider)
                     return result
+                except (ValueError, TypeError, KeyError) as exc:
+                    raise  # Programming errors bypass circuit breaker
                 except Exception as exc:
                     last_exc = exc
 

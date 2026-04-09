@@ -53,8 +53,8 @@ def _load_corp_code_xml() -> ET.Element:
     resp.raise_for_status()
     guard.record_success("dart")
 
-    z = zipfile.ZipFile(io.BytesIO(resp.content))
-    xml_data = z.read(z.namelist()[0])
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+        xml_data = z.read(z.namelist()[0])
 
     # Save to disk
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)

@@ -6,10 +6,16 @@ Priority:
 3. Neither set -> RuntimeError
 """
 
+import atexit
 import logging
 import os
 
+import httpx
+
 logger = logging.getLogger(__name__)
+
+_openrouter_client = httpx.Client(timeout=120)
+atexit.register(_openrouter_client.close)
 
 # OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
@@ -128,11 +134,10 @@ def _ask_openrouter(
         "Content-Type": "application/json",
     }
 
-    resp = httpx.post(
+    resp = _openrouter_client.post(
         "https://openrouter.ai/api/v1/chat/completions",
         headers=headers,
         json=payload,
-        timeout=120,
     )
     if resp.status_code >= 400:
         logger.error("OpenRouter %d [%s]: %s", resp.status_code, model, resp.text[:500])
@@ -173,7 +178,7 @@ def ask(
     if provider == "openrouter":
         try:
             return _ask_openrouter(prompt, system, model, max_tokens, temperature)
-        except Exception as e:
+        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError) as e:
             # Fallback to Anthropic when OpenRouter exhausts retries (e.g. 429 rate limit)
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)

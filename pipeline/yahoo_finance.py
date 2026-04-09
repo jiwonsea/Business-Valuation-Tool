@@ -3,6 +3,7 @@
 Via yfinance library or direct API calls.
 """
 
+import atexit
 import re
 
 import httpx
@@ -12,6 +13,7 @@ _TICKER_RE = re.compile(r"^[A-Za-z0-9.\-^]{1,15}$")
 
 _HEADERS = {"User-Agent": "Mozilla/5.0"}
 _client = httpx.Client(headers=_HEADERS, timeout=10, follow_redirects=True)
+atexit.register(_client.close)
 
 from .api_guard import api_guard
 

@@ -1,59 +1,83 @@
-# Business Valuation Tool: P2 보류 이슈 + Phase 3
+# Business Valuation Tool: Codex P2 크래시/로직 버그 수정
 
 ## 배경
-직전 세션(2026-04-09)에서 완료한 것:
-- **P0 5건 수정** (커밋 640d8a6): MC net_debt 이중차감, segment_revenue 미저장, 음수 EBITDA 제외, cross-validation DCF crash, rcps_repay=0 override
-- **P1 4건 수정** (커밋 6d8a3e4): gap_diagnostics 테스트 20개, silent except→로깅, engine/ 순수성(peer_fetcher 제거), f-string YAML→yaml.dump()
-- **P2 10건 수정** (이번 세션, 미커밋):
-  - F1: RIM ROE 수렴 `range(5)` → `range(1, 6)` — year5에서 80%만 수렴하던 버그
-  - F2: SOTP P/BV·P/E 세그먼트 book_equity=0/net_income=0 시 `logger.warning` 추가
-  - F3: `sensitivity_multiples` deductions에 CPS/RCPS/buyback 추가 — 시나리오 대비 과대평가 수정
-  - F4: DCF terminal value ROIC=WACC 가정 독스트링 문서화 + NOL 미반영 limitation 명시
-  - F5: WACC에서 CPS/RCPS 존재 시 preferred equity 미분리 경고 로그
-  - A1: `load_profile` peers/news_drivers except 범위 `(ValueError, Exception)` → `(ValueError, TypeError, KeyError)` + warning 로그
-  - A2: `engine.quality` inline import → top-level import
-  - T1: MC zero shares 경계값 테스트
-  - T2: gap_diagnostics zero EBITDA 경계값 테스트
-  - T3: DDM params=None 에러 경로 테스트
-- 415/415 테스트 통과
-- 27+ 커밋 ahead of origin/main
+이번 세션(2026-04-09)에서 6모델 Cross Review를 실행:
+- **Claude×3** (Finance/Architecture/TDD): 39건 → P2 10건 수정 완료 (커밋 56b62ae)
+- **Codex GPT-5.4**: 15건 — **크래시 버그 4건 + 로직 버그 6건** 신규 발견
+- Gemini: rate limit로 부분 결과만 (security 4건, 기존 known issues)
+- Qwen: API 연결 실패
+- 415/415 테스트 통과, 27 커밋 ahead of origin/main
 
-## 이번 세션 작업
+## 이번 세션 작업: Codex P2 수정 (10건)
 
-### 1단계: P2 보류 이슈 (구조 변경 필요)
-리뷰에서 도출되었으나 영향 범위가 커서 보류한 항목:
+### 그룹 A: 크래시 버그 (4건, 최우선)
 
-1. **DDM/RIM net_debt 이중차감** (Finance P2)
-   - DDM은 equity value를 직접 반환하는데 `calc_scenario`에서 net_debt를 재차감
-   - RIM도 동일 패턴 (`equity_value + net_debt` → `calc_scenario`에서 다시 차감)
-   - `calc_scenario` 공통 인터페이스 변경 또는 DDM/RIM 전용 경로 필요
-   - CPS/RCPS/eco_frontier가 0이 아닌 경우 equity 과소평가
+**A1. `_run_multiples_valuation` dcf_result 미초기화** (valuation_runner.py:922)
+- `dcf_result`가 `try` 안에서만 할당 → DCF CV 실패 시 `UnboundLocalError` crash
+- MC 호출(L943)과 return(L952)에서 참조
+- **수정**: `dcf_result = None` 초기화 + consumer guard
 
-2. **CPS effective rate 계산 오류** (Finance P2)
-   - `effective_rate = max(sc.irr - cps_dividend_rate, 0.0)` 후 복리 적용은 수학적 부정확
-   - 배당이 매년 지급되면 compound에서 차감이 아닌 연금 합산 방식이어야 함
-   - 시뮬레이션 테스트 설계 후 수정 필요
+**A2. `_run_nav_valuation` 동일 패턴** (valuation_runner.py:1017)
+- MC(L1038), return(L1049)에서 미초기화 `dcf_result` 참조
+- **수정**: A1과 동일
 
-3. **MC 정규분포 → 로그정규 전환** (Finance P2)
-   - `np.maximum(samples, 0)` floor 절단이 left-truncated bias 유발
-   - 로그정규 파라미터 변환: `mu_ln = log(mu²/sqrt(mu²+sigma²))`
-   - 기존 모든 MC 테스트 결과값이 변경됨 — 캘리브레이션 필요
+**A3. SOTP DCF CV에 try/except 없음** (valuation_runner.py:445)
+- mixed-SOTP에서 manufacturing EBITDA<=0이면 전체 밸류에이션 crash
+- **수정**: `try/except ValueError` 래핑, DCF 패널 skip
 
-### 2단계: Phase 3 아이템 (calibration 인프라)
-- Monte Carlo 캘리브레이션 인프라
-- GOOGL/TSLA 프로필 검증
-- 감사 보고서에서 도출된 추가 백로그
+**A4. DCF 시나리오 recalc 미보호** (valuation_runner.py:567)
+- `wacc_adj`/`terminal_growth_adj`가 `WACC<=TGR` 만들면 crash
+- **수정**: per-scenario `calc_dcf` try/except + base EV fallback
 
-### 3단계: NEXT_SESSION_PROMPT.md 갱신
+### 그룹 B: 로직 버그 (6건)
 
-## 이전 리뷰 참고 (문서화 완료 / 수정 불필요)
-- Terminal FCFF 재투자율: ROIC=WACC 가정 독스트링 추가됨 (F4)
-- NOL 미반영: limitation 독스트링 추가됨 (F4)
-- Hamada D/E cap 200%: 의도적 설계, 경고 로그 검토만
+**B1. `segment_method_override` 무시됨** (valuation_runner.py:302)
+- `needs_dispatch` 1회 계산 → 시나리오에서 method override해도 적용 안 됨
+- **수정**: scenario에 `segment_method_override` 있으면 dispatch 강제 활성화
 
-## 아키텍처 보류 (별도 리팩토링 세션)
+**B2. `_seg_metric()` P/BV·P/E 잘못된 metric** (engine/sensitivity.py:14)
+- P/BV→book_equity, P/E→net_income이어야 하는데 EBITDA 기준으로 평가
+- **수정**: method별 분기 추가 또는 equity-based 세그먼트 제외
+
+**B3. 시나리오 MC net_debt_override 미사용** (valuation_runner.py:1247)
+- mixed-SOTP 시나리오 MC가 `vi.net_debt` 사용 → 이중차감 재발
+- **수정**: `effective_net_debt` 전달
+
+**B4. rcps_repay IRR 파생값 sensitivity/MC 누락** (valuation_runner.py:458)
+- `sc.rcps_repay or 0`으로만 처리 → override가 None이면 0원으로 처리됨
+- **수정**: None일 때 `calc_scenario()`와 동일한 IRR 파생 로직 적용
+
+**B5. MC CPS 배당률 미반영** (engine/monte_carlo.py:122)
+- MC가 full IRR로 CPS 복리 계산 — 시나리오 브릿지(`IRR - dividend_rate`)와 불일치
+- **수정**: MC에 dividend_rate 파라미터 추가, effective_rate 공식 재사용
+
+**B6. Multiples/NAV market_sentiment_pct elif 가림** (valuation_runner.py:907)
+- `ev_multiple` 설정 시 `elif`로 인해 `market_sentiment_pct` 무시
+- **수정**: `elif` → 별도 `if`로 변경 (SOTP/DDM/RIM 패턴과 동일하게)
+
+### 그룹 C: P3 보류 (시간 남으면)
+
+- P3-11: SOTP/DCF `weighted_value=0` when no scenarios
+- P3-12: DCF primary에 MC 미연결
+- P3-13: 시나리오 MC `has_overrides`에 `segment_ebitda` 미포함
+- P3-14: `_build_seg_ebitdas_from_consolidated` multi-segment collapse
+- P3-15: RIM `terminal_ri` 필드명 오용
+
+## 이전 세션 보류 이슈 (별도 세션)
+
+### Finance 구조 변경 필요
+- DDM/RIM net_debt 이중차감 — `calc_scenario` 인터페이스 변경
+- CPS effective rate 복리 계산 오류 — 금융 수학 검증 필요
+- MC 정규→로그정규 전환 — 전체 캘리브레이션 필요
+
+### 아키텍처 리팩토링
 - valuation_runner God module (1260줄) 분리
-- consolidated/segments 타입 강화 (ConsolidatedFinancials/SegmentInfo)
-- _seg_names private 함수 public 전환
+- consolidated/segments 타입 강화
+- _seg_names public 전환
+
+### Security (Gemini 부분 결과)
+- Streamlit 인증 없음 (P2)
+- ai/prompts.py prompt injection (P2)
+- db/repository.py ilike wildcard (P3)
 
 ## 모드: normal

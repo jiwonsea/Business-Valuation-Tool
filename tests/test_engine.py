@@ -25,6 +25,7 @@ from engine.growth import linear_fade, calc_ebitda_growth, generate_growth_rates
 from engine.distress import calc_distress_discount, apply_distress_discount
 from engine.method_selector import classify_industry
 from engine.drivers import resolve_drivers
+from engine.gap_diagnostics import diagnose_gap
 from schemas.models import NewsDriver
 
 
@@ -2159,3 +2160,73 @@ class TestFormatGapDiagnostic:
         )
         output = format_gap_diagnostic(diag, is_listed=True)
         assert "옵셔널리티 구간" in output
+
+
+# ═══════════════════════════════════════════════════════════
+# P2 Edge Case Tests (from cross-model review 2026-04-09)
+# ═══════════════════════════════════════════════════════════
+
+class TestP2EdgeCases:
+    """Tests for edge cases identified by 6-model cross review."""
+
+    def test_mc_zero_shares_returns_zero_distribution(self):
+        """T1: MC with shares=0 should produce all-zero distribution."""
+        mc_input = MCInput(
+            multiple_params={"A": (10.0, 1.5)},
+            wacc_mean=8.0, wacc_std=1.0,
+            dlom_mean=0.0, dlom_std=0.0,
+            tg_mean=2.5, tg_std=0.5,
+            n_sims=100, seed=42,
+        )
+        result = run_monte_carlo(
+            mc_input, {"A": 100_000},
+            net_debt=50_000, eco_frontier=0,
+            cps_principal=0, cps_years=0,
+            rcps_repay=0, buyback=0, shares=0,
+        )
+        assert result.mean == 0
+        assert result.max_val == 0
+        assert result.p5 == 0
+        assert result.p95 == 0
+
+    def test_gap_diagnostics_zero_ebitda_returns_none(self):
+        """T2: diagnose_gap with ebitda_base=0 should return None (boundary)."""
+        dcf_params = DCFParams(
+            growth_rates=[0.05] * 5,
+            terminal_growth=0.02,
+            capex_ratio=0.15,
+            nwc_ratio=0.05,
+            tax_rate=0.25,
+        )
+        result = diagnose_gap(
+            gap_ratio=-0.30,
+            market_price=50000,
+            intrinsic_per_share=35000,
+            market_ev=5_000_000,
+            ebitda_base=0,
+            da_base=10_000,
+            revenue_base=500_000,
+            wacc_pct=9.0,
+            params=dcf_params,
+        )
+        assert result is None
+
+    def test_ddm_without_params_raises(self):
+        """T3: DDM method without ddm_params should raise ValueError."""
+        import pytest
+        from valuation_runner import run_valuation, load_profile
+        from pathlib import Path
+
+        # Build minimal VI with ddm method but no ddm_params
+        yaml_path = Path(__file__).parent.parent / "profiles"
+        # Find any existing profile to use as base
+        profiles = list(yaml_path.glob("*.yaml")) if yaml_path.exists() else []
+        if not profiles:
+            pytest.skip("No profile YAML available for DDM test")
+
+        vi = load_profile(profiles[0])
+        vi.valuation_method = "ddm"
+        vi.ddm_params = None
+
+        with pytest.raises(ValueError, match="ddm_params"):
+            run_valuation(vi)

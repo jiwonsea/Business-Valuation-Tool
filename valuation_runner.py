@@ -29,6 +29,7 @@ from engine.sensitivity import (
 )
 from engine.multiples import cross_validate, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
+from engine.quality import calc_quality_score
 from engine.nav import calc_nav
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial
@@ -129,16 +130,16 @@ def load_profile(path: str) -> ValuationInput:
     for p in raw.get("peers", []):
         try:
             peers.append(PeerCompany(**p))
-        except (ValueError, Exception):
-            pass
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Skipping invalid peer entry %s: %s", p, e)
 
     # News drivers (multi-variable scenario approach)
     news_drivers = []
     for nd_raw in raw.get("news_drivers", []):
         try:
             news_drivers.append(NewsDriver(**nd_raw))
-        except (ValueError, Exception):
-            pass
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Skipping invalid news_driver entry %s: %s", nd_raw, e)
     news_key_issues = raw.get("news_key_issues")
 
     # Auto-detect unit_multiplier (when not specified in YAML)
@@ -212,6 +213,11 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
         vi.wacc_params.is_financial = True
 
     # Common: WACC (needed before method selection -- Ke used for DDM/RIM decision)
+    # NOTE: WACC uses 2-component capital structure (equity + debt). When CPS/RCPS exist,
+    # their cost differs from kd_pre but is not separately weighted — WACC may be understated.
+    if vi.cps_principal or vi.rcps_principal:
+        logger.warning("CPS/RCPS present but WACC uses 2-component structure (Ke/Kd only) "
+                        "— preferred equity cost is not separately weighted")
     wacc_result = calc_wacc(vi.wacc_params)
     um = vi.company.unit_multiplier
 
@@ -250,7 +256,6 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
     result = runner(vi, wacc_result, um)
 
     # Quality scoring (pure function, zero IO)
-    from engine.quality import calc_quality_score
     result.quality = calc_quality_score(vi, result)
 
     return result
@@ -443,13 +448,16 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     )
 
     # Sensitivity
+    ref_sc = _get_reference_scenario(vi.scenarios)
     sens_mult, _, _ = sensitivity_multiples(
         base_alloc, effective_multiples, effective_net_debt, vi.eco_frontier,
         vi.company.shares_outstanding, unit_multiplier=um,
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
+        cps_repay=round(vi.cps_principal * (1 + (ref_sc.irr if ref_sc else 0) / 100) ** vi.cps_years) if vi.cps_principal else 0,
+        rcps_repay=(ref_sc.rcps_repay or 0) if ref_sc else 0,
+        buyback=ref_sc.buyback if ref_sc else 0,
     )
-    ref_sc = _get_reference_scenario(vi.scenarios)
     sens_irr, _, _ = sensitivity_irr_dlom(
         total_ev, effective_net_debt, vi.eco_frontier,
         vi.cps_principal, vi.cps_years,
@@ -732,10 +740,10 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         # Back-calculate ROE from recent financials for 5-year forecast (gradual convergence)
         net_income = cons.get("net_income", 0)
         current_roe = (net_income / equity_bv * 100) if equity_bv > 0 else ke
-        # ROE gradually converges toward Ke (5 years)
+        # ROE gradually converges toward Ke (5 years, fully reaching Ke at year 5)
         roe_forecasts = [
             round(current_roe + (ke - current_roe) * i / 5, 1)
-            for i in range(5)
+            for i in range(1, 6)
         ]
         tg = 0.0
         payout = 30.0

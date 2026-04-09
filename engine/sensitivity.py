@@ -34,6 +34,9 @@ def sensitivity_multiples(
     unit_multiplier: int = 1_000_000,
     segments_info: dict[str, dict] | None = None,
     revenue_by_seg: dict[str, int] | None = None,
+    cps_repay: int = 0,
+    rcps_repay: int = 0,
+    buyback: int = 0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: two-segment multiple variation -> Scenario A per-share value."""
     # Auto-select segment codes (avoid hardcoding)
@@ -57,7 +60,7 @@ def sensitivity_multiples(
             m = multiples.get(code, 0)
             metric = _seg_metric(code, alloc, segments_info, revenue_by_seg)
             fixed_ev += round(metric * m)
-    deductions = net_debt + eco_frontier
+    deductions = net_debt + eco_frontier + cps_repay + rcps_repay + buyback
 
     rows = []
     orig_row = multiples.get(row_seg)

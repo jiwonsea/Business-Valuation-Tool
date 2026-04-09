@@ -1,6 +1,10 @@
 """SOTP valuation engine: D&A allocation + EV calculation (mixed method support)."""
 
+import logging
+
 from schemas.models import DAAllocation, SOTPSegmentResult
+
+logger = logging.getLogger(__name__)
 
 
 def allocate_da(
@@ -88,6 +92,8 @@ def calc_sotp(
             # multiple_override does NOT apply to equity-based segments
             m = multiples.get(code, 0)
             book_equity = seg_info.get("book_equity", 0)
+            if book_equity <= 0:
+                logger.warning("Segment '%s' uses P/BV but book_equity=%s — EV will be 0", code, book_equity)
             ev = round(book_equity * m) if book_equity > 0 else 0
             result[code] = SOTPSegmentResult(
                 ebitda=alloc.ebitda, multiple=m, ev=ev,
@@ -96,6 +102,8 @@ def calc_sotp(
         elif method == "pe":
             m = multiples.get(code, 0)
             net_income = seg_info.get("net_income_segment", 0)
+            if net_income <= 0:
+                logger.warning("Segment '%s' uses P/E but net_income=%s — EV will be 0", code, net_income)
             ev = round(net_income * m) if net_income > 0 else 0
             result[code] = SOTPSegmentResult(
                 ebitda=alloc.ebitda, multiple=m, ev=ev,

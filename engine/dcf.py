@@ -82,7 +82,9 @@ def calc_dcf(
         ebitda = round(prev_ebitda * (1 + g))
         da = round(ebitda * da_to_ebitda)
         op = ebitda - da
-        # No tax shield when operating at a loss (no NOL schedule modeled)
+        # No tax shield when operating at a loss (no NOL schedule modeled).
+        # Limitation: companies with accumulated NOLs will have NOPAT understated
+        # in early profitable years because NOL carryforward tax shelter is not applied.
         nopat = round(op * (1 - tax_rate)) if op > 0 else op
         # Fade capex ratio from actual to normalized target over projection period
         if use_capex_fade:
@@ -121,6 +123,9 @@ def calc_dcf(
         pv_fcff += p.pv_fcff
 
     # Terminal Value (Gordon Growth)
+    # NOTE: Assumes ROIC = WACC in terminal period (Damodaran simplification).
+    # If ROIC > WACC, terminal value is understated; if ROIC < WACC, overstated.
+    # Full formula: TV = NOPAT_T × (1 - g/ROIC) / (WACC - g)
     last_fcff = projections[-1].fcff
     terminal_fcff = round(last_fcff * (1 + tg))
     terminal_value = round(terminal_fcff / (wacc - tg))

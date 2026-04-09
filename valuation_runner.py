@@ -458,7 +458,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         vi.company.shares_outstanding, unit_multiplier=um,
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
-        cps_repay=round(vi.cps_principal * (1 + (ref_sc.irr if ref_sc else 0) / 100) ** vi.cps_years) if vi.cps_principal else 0,
+        cps_repay=round(vi.cps_principal * (1 + max((ref_sc.irr if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100) ** vi.cps_years) if vi.cps_principal else 0,
         rcps_repay=_derive_rcps_repay(ref_sc, vi),
         buyback=ref_sc.buyback if ref_sc else 0,
     )

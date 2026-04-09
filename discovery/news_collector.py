@@ -87,8 +87,8 @@ class NewsCollector:
             try:
                 from pipeline.api_guard import ApiGuard
                 ApiGuard.get().record_failure("naver", e)
-            except Exception:
-                pass
+            except Exception as guard_err:
+                print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")
 
         return results
 
@@ -152,8 +152,8 @@ class NewsCollector:
             try:
                 from pipeline.api_guard import ApiGuard
                 ApiGuard.get().record_failure("google_rss", e)
-            except Exception:
-                pass
+            except Exception as guard_err:
+                print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")
 
         return results
 

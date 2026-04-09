@@ -1966,3 +1966,196 @@ class TestDistressDiscount:
         }
         d = calc_distress_discount(cons, 2025, max_discount=0.25)
         assert d.discount <= 0.25
+
+
+# ═══════════════════════════════════════════════════════════
+# Gap Diagnostics Tests
+# ═══════════════════════════════════════════════════════════
+
+from engine.gap_diagnostics import (
+    _binary_search, solve_implied_wacc, solve_implied_tgr,
+    solve_implied_growth_multiplier, diagnose_gap, format_gap_diagnostic,
+    GapDiagnostic, GAP_THRESHOLD,
+)
+
+
+class TestBinarySearch:
+    def test_increasing_function(self):
+        """Binary search on increasing f(x) = x."""
+        result = _binary_search(lambda x: x, 0, 10, 5.0)
+        assert result is not None
+        assert abs(result - 5.0) < 0.01
+
+    def test_decreasing_function(self):
+        """Binary search on decreasing f(x) = -x."""
+        result = _binary_search(lambda x: -x, 0, 10, -7.0)
+        assert result is not None
+        assert abs(result - 7.0) < 0.01
+
+    def test_target_out_of_range_returns_none(self):
+        """Target outside [f(lo), f(hi)] returns None."""
+        result = _binary_search(lambda x: x, 0, 10, 15.0)
+        assert result is None
+
+    def test_target_at_boundary(self):
+        """Target at boundary is found."""
+        result = _binary_search(lambda x: x * 2, 0, 10, 0.0)
+        assert result is not None
+        assert abs(result) < 0.1
+
+
+class TestReverseDCFSolvers:
+    """Reverse-DCF solver tests using realistic financial data."""
+
+    @staticmethod
+    def _default_params():
+        return DCFParams(
+            ebitda_growth_rates=[0.10, 0.08, 0.06, 0.05, 0.03],
+            terminal_growth=2.5,
+            tax_rate=22.0,
+        )
+
+    def test_solve_implied_wacc_returns_value(self):
+        """Implied WACC solver finds a reasonable value."""
+        params = self._default_params()
+        # First compute baseline DCF EV at 10% WACC
+        from engine.dcf import calc_dcf
+        baseline = calc_dcf(500_000, 100_000, 2_000_000, 10.0, params)
+        # Now solve: target = baseline EV * 0.8 (needs higher WACC)
+        target_ev = baseline.ev_dcf * 0.8
+        result = solve_implied_wacc(target_ev, 500_000, 100_000, 2_000_000, params)
+        assert result is not None
+        assert result > 10.0  # Higher WACC needed for lower EV
+
+    def test_solve_implied_tgr_returns_value(self):
+        """Implied TGR solver finds a reasonable value."""
+        params = self._default_params()
+        from engine.dcf import calc_dcf
+        baseline = calc_dcf(500_000, 100_000, 2_000_000, 10.0, params)
+        # Target = baseline EV * 1.2 (needs higher TGR)
+        target_ev = baseline.ev_dcf * 1.2
+        result = solve_implied_tgr(target_ev, 500_000, 100_000, 2_000_000, 10.0, params)
+        assert result is not None
+        assert result > params.terminal_growth
+
+    def test_solve_implied_growth_mult_returns_value(self):
+        """Growth multiplier solver finds a value."""
+        params = self._default_params()
+        from engine.dcf import calc_dcf
+        baseline = calc_dcf(500_000, 100_000, 2_000_000, 10.0, params)
+        target_ev = baseline.ev_dcf * 1.3
+        result = solve_implied_growth_multiplier(
+            target_ev, 500_000, 100_000, 2_000_000, 10.0, params
+        )
+        assert result is not None
+        assert result > 1.0
+
+    def test_solve_implied_wacc_unreachable_returns_none(self):
+        """Extremely high target EV cannot be reached — returns None."""
+        params = self._default_params()
+        result = solve_implied_wacc(999_999_999, 500_000, 100_000, 2_000_000, params)
+        assert result is None
+
+    def test_solve_growth_mult_no_rates_returns_none(self):
+        """Empty growth rates → returns None."""
+        params = DCFParams(ebitda_growth_rates=[], terminal_growth=2.5)
+        result = solve_implied_growth_multiplier(
+            100_000, 500_000, 100_000, 2_000_000, 10.0, params
+        )
+        assert result is None
+
+
+class TestDiagnoseGap:
+    """diagnose_gap() category routing tests."""
+
+    @staticmethod
+    def _default_params():
+        return DCFParams(
+            ebitda_growth_rates=[0.10, 0.08, 0.06, 0.05, 0.03],
+            terminal_growth=2.5,
+            tax_rate=22.0,
+        )
+
+    def test_below_threshold_returns_none(self):
+        """Gap below 20% returns None."""
+        result = diagnose_gap(
+            gap_ratio=0.15, market_price=50_000, intrinsic_per_share=57_500,
+            market_ev=5_000_000, ebitda_base=500_000, da_base=100_000,
+            revenue_base=2_000_000, wacc_pct=10.0, params=self._default_params(),
+        )
+        assert result is None
+
+    def test_negative_ebitda_returns_none(self):
+        """EBITDA <= 0 returns None (DCF not applicable)."""
+        result = diagnose_gap(
+            gap_ratio=-0.50, market_price=50_000, intrinsic_per_share=25_000,
+            market_ev=5_000_000, ebitda_base=-100_000, da_base=50_000,
+            revenue_base=2_000_000, wacc_pct=10.0, params=self._default_params(),
+        )
+        assert result is None
+
+    def test_market_premium_returns_diagnostic(self):
+        """Large market premium (gap_ratio < -0.20) returns diagnostic."""
+        result = diagnose_gap(
+            gap_ratio=-0.50, market_price=100_000, intrinsic_per_share=50_000,
+            market_ev=10_000_000, ebitda_base=500_000, da_base=100_000,
+            revenue_base=2_000_000, wacc_pct=10.0, params=self._default_params(),
+        )
+        assert result is not None
+        assert result.direction == "market_premium"
+        assert result.gap_pct < 0
+
+    def test_market_discount_returns_pessimism(self):
+        """Large market discount (intrinsic > market) → market_pessimism."""
+        params = self._default_params()
+        from engine.dcf import calc_dcf
+        baseline = calc_dcf(500_000, 100_000, 2_000_000, 10.0, params)
+        # Set market_ev much lower than baseline → intrinsic > market
+        low_market_ev = baseline.ev_dcf * 0.5
+        result = diagnose_gap(
+            gap_ratio=0.80, market_price=30_000, intrinsic_per_share=54_000,
+            market_ev=low_market_ev, ebitda_base=500_000, da_base=100_000,
+            revenue_base=2_000_000, wacc_pct=10.0, params=params,
+        )
+        assert result is not None
+        assert result.direction == "market_discount"
+        assert result.category == "market_pessimism"
+
+    def test_gap_diagnostic_has_suggestions(self):
+        """Diagnostic always includes at least one suggestion."""
+        result = diagnose_gap(
+            gap_ratio=-0.30, market_price=80_000, intrinsic_per_share=56_000,
+            market_ev=8_000_000, ebitda_base=500_000, da_base=100_000,
+            revenue_base=2_000_000, wacc_pct=10.0, params=self._default_params(),
+        )
+        assert result is not None
+        assert len(result.suggestions) > 0
+
+
+class TestFormatGapDiagnostic:
+    def test_format_basic(self):
+        """format_gap_diagnostic produces non-empty string."""
+        diag = GapDiagnostic(
+            gap_pct=-35.0, direction="market_premium",
+            implied_wacc=7.5, category="wacc_overestimated",
+            explanation="테스트 설명", suggestions=["테스트 권고"],
+        )
+        output = format_gap_diagnostic(diag, is_listed=True)
+        assert "역방향 DCF 진단" in output
+        assert "7.50%" in output
+
+    def test_format_unlisted_returns_empty(self):
+        """Unlisted company returns empty string."""
+        diag = GapDiagnostic(gap_pct=-35.0, direction="market_premium")
+        assert format_gap_diagnostic(diag, is_listed=False) == ""
+
+    def test_format_irreconcilable(self):
+        """Irreconcilable gap shows warning."""
+        diag = GapDiagnostic(
+            gap_pct=-60.0, direction="market_premium",
+            category="optionality_premium",
+            explanation="옵셔널리티", suggestions=["검토"],
+            reconcilable=False,
+        )
+        output = format_gap_diagnostic(diag, is_listed=True)
+        assert "옵셔널리티 구간" in output

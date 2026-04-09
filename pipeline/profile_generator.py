@@ -227,22 +227,18 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     yaml_filename = f"profiles/{safe_name}.yaml"
     yaml_path = str(_PROJECT_ROOT / yaml_filename)
 
-    # Consolidated financials YAML block
-    cons_blocks = []
+    # Consolidated financials YAML block (via yaml.dump for safe serialization)
+    _cons_fields = [
+        "revenue", "op", "net_income", "assets", "liabilities",
+        "equity", "dep", "amort", "gross_borr", "net_borr", "de_ratio",
+    ]
+    cons_dict = {}
     for yr in years:
         d = financials[yr]
-        cons_blocks.append(f"""  {yr}:
-    revenue: {d.get('revenue', 0)}
-    op: {d.get('op', 0)}
-    net_income: {d.get('net_income', 0)}
-    assets: {d.get('assets', 0)}
-    liabilities: {d.get('liabilities', 0)}
-    equity: {d.get('equity', 0)}
-    dep: {d.get('dep', 0)}
-    amort: {d.get('amort', 0)}
-    gross_borr: {d.get('gross_borr', 0)}
-    net_borr: {d.get('net_borr', 0)}
-    de_ratio: {d.get('de_ratio', 0)}""")
+        cons_dict[yr] = {k: d.get(k, 0) for k in _cons_fields}
+    cons_yaml = yaml.dump(cons_dict, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # Indent to match top-level "consolidated:" key
+    cons_block = "\n".join("  " + line for line in cons_yaml.strip().splitlines())
 
     net_debt = cons.get("net_borr", 0)
 
@@ -372,7 +368,7 @@ segment_data:
     MAIN: {{revenue: {cons.get('revenue', 0)}, gross_profit: 0, op: {cons.get('op', 0)}, assets: {cons.get('assets', 0)}}}
 
 consolidated:
-{chr(10).join(cons_blocks)}
+{cons_block}
 
 wacc_params:
   rf: {rf}

@@ -5,7 +5,6 @@ from .scenario import calc_scenario
 from .sensitivity import sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf
 from .multiples import cross_validate, calc_ev_revenue, calc_pe, calc_pbv, calc_ps, calc_pffo
 from .peer_analysis import calc_peer_stats
-from pipeline.peer_fetcher import fetch_peer_multiples
 from .units import detect_unit, per_share
 from .method_selector import suggest_method, classify_industry
 from .ddm import calc_ddm
@@ -31,7 +30,6 @@ __all__ = [
     "calc_ps",
     "calc_pffo",
     "calc_peer_stats",
-    "fetch_peer_multiples",
     "detect_unit",
     "per_share",
     "suggest_method",

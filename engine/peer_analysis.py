@@ -79,11 +79,3 @@ def calc_peer_stats(
     return results
 
 
-def fetch_peer_multiples(peers: list[PeerCompany]) -> list[PeerCompany]:
-    """Deprecated: moved to pipeline.peer_fetcher.fetch_peer_multiples().
-
-    IO logic separated to pipeline to maintain engine module's pure function rule.
-    Kept as re-export for backward compatibility.
-    """
-    from pipeline.peer_fetcher import fetch_peer_multiples as _fetch
-    return _fetch(peers)

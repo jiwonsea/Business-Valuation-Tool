@@ -45,8 +45,8 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
         md = fetch_market_data(vi.company.ticker, vi.company.market)
         if md:
             price = md.get("price", 0)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("yfinance_fetcher 조회 실패 (%s): %s", vi.company.ticker, e)
 
     # Fallback: yahoo_finance REST
     if not price:

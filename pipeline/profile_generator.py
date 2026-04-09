@@ -752,7 +752,7 @@ def auto_analyze(
                         val = None
                     sc_dict[field] = val
             # Structured per-segment overrides (SOTP scenarios)
-            for seg_field in ("segment_ebitda", "segment_multiples"):
+            for seg_field in ("segment_ebitda", "segment_multiples", "segment_revenue"):
                 val = sc.get(seg_field) or drivers.get(seg_field)
                 if val and isinstance(val, dict):
                     sc_dict[seg_field] = val

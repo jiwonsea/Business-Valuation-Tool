@@ -142,7 +142,8 @@ def run_monte_carlo(
                 rev = (seg_revenues or {}).get(code, 0)
                 if rev > 0:
                     ev_revenue_part += rev * multiples_samples[code]
-        elif ebitda > 0:
+        else:
+            # Include negative EBITDA segments (consistent with calc_sotp)
             ev_ebitda_part += ebitda * multiples_samples[code]
 
     # DCF TV variation applies only to EBITDA-based EV (not revenue-based optionality)

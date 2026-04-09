@@ -155,7 +155,7 @@ class TestSchemaModels:
         assert sp.irr is None
         assert sp.cps_repay is None
         assert sp.dlom == 0
-        assert sp.rcps_repay == 0
+        assert sp.rcps_repay is None
         assert sp.buyback == 0
 
     def test_dcf_params_optional_actuals(self):

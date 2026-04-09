@@ -226,7 +226,7 @@ class ScenarioParams(BaseModel):
     irr: Optional[float] = None  # FI IRR (%)
     dlom: float = 0  # DLOM (%)
     cps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
-    rcps_repay: int = 0
+    rcps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
     buyback: int = 0
     shares: int  # Applicable share count
     desc: str = ""

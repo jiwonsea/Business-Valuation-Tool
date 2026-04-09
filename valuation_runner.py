@@ -453,7 +453,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     sens_irr, _, _ = sensitivity_irr_dlom(
         total_ev, effective_net_debt, vi.eco_frontier,
         vi.cps_principal, vi.cps_years,
-        ref_sc.rcps_repay if ref_sc else 0,
+        (ref_sc.rcps_repay or 0) if ref_sc else 0,
         ref_sc.buyback if ref_sc else 0,
         vi.company.shares_outstanding,
         unit_multiplier=um,
@@ -477,6 +477,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         vi, wacc_result, sotp_seg_ebitdas, um,
         dcf_result=dcf_result, effective_multiples=effective_multiples,
         seg_revenues=seg_revenue, segment_methods=seg_methods,
+        net_debt_override=effective_net_debt if is_mixed else None,
     )
 
     # Peer statistics
@@ -907,13 +908,18 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     if not scenario_results:
         total_weighted = primary_mv.per_share
 
-    # DCF cross-validation
-    dcf_result = calc_dcf(
-        ebitda_base, total_da_base, cons["revenue"],
-        wacc_result.wacc, vi.dcf_params, vi.base_year,
-    )
+    # DCF cross-validation (may fail for ebitda<=0 or wacc<=tg)
+    dcf_ev = 0
+    try:
+        dcf_result = calc_dcf(
+            ebitda_base, total_da_base, cons["revenue"],
+            wacc_result.wacc, vi.dcf_params, vi.base_year,
+        )
+        dcf_ev = dcf_result.ev_dcf
+    except ValueError:
+        pass
 
-    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_result.ev_dcf, um)
+    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_ev, um)
 
     # Peer statistics
     seg_names = _seg_names(vi)
@@ -995,15 +1001,20 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     if not scenario_results:
         total_weighted = nav_raw.per_share
 
-    # DCF cross-validation
+    # DCF cross-validation (may fail for ebitda<=0 or wacc<=tg)
     total_da_base = cons["dep"] + cons["amort"]
     ebitda_base = cons["op"] + total_da_base
-    dcf_result = calc_dcf(
-        ebitda_base, total_da_base, cons["revenue"],
-        wacc_result.wacc, vi.dcf_params, vi.base_year,
-    )
+    dcf_ev = 0
+    try:
+        dcf_result = calc_dcf(
+            ebitda_base, total_da_base, cons["revenue"],
+            wacc_result.wacc, vi.dcf_params, vi.base_year,
+        )
+        dcf_ev = dcf_result.ev_dcf
+    except ValueError:
+        pass
 
-    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_result.ev_dcf, um)
+    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_ev, um)
 
     # Peer statistics
     seg_names = _seg_names(vi)
@@ -1109,6 +1120,7 @@ def _run_monte_carlo(
     effective_multiples: dict[str, float] | None = None,
     seg_revenues: dict[str, int] | None = None,
     segment_methods: dict[str, str] | None = None,
+    net_debt_override: int | None = None,
 ) -> MonteCarloResult | None:
     """Run Monte Carlo -- common entry point for SOTP/non-SOTP.
 
@@ -1162,10 +1174,11 @@ def _run_monte_carlo(
             dcf_n_periods=len(dcf_result.projections),
         )
 
+    mc_net_debt = net_debt_override if net_debt_override is not None else vi.net_debt
     mc_raw = run_monte_carlo(
-        mc_params, seg_ebitdas, vi.net_debt, vi.eco_frontier,
+        mc_params, seg_ebitdas, mc_net_debt, vi.eco_frontier,
         vi.cps_principal, vi.cps_years,
-        ref_sc.rcps_repay if ref_sc else 0,
+        (ref_sc.rcps_repay or 0) if ref_sc else 0,
         ref_sc.buyback if ref_sc else 0,
         ref_sc.shares if ref_sc else vi.company.shares_outstanding,
         irr=ref_sc.irr if ref_sc and ref_sc.irr else 5.0,
@@ -1225,7 +1238,7 @@ def _run_monte_carlo(
         sc_raw = run_monte_carlo(
             sc_params, sc_ebitdas, vi.net_debt, vi.eco_frontier,
             vi.cps_principal, vi.cps_years,
-            sc.rcps_repay, sc.buyback, sc.shares,
+            sc.rcps_repay or 0, sc.buyback, sc.shares,
             irr=sc.irr if sc.irr else 5.0,
             unit_multiplier=um,
             seg_revenues=sc_revs,

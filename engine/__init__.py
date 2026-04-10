@@ -13,6 +13,7 @@ from .nav import calc_nav
 from .market_comparison import compare_to_market
 from .growth import linear_fade, calc_ebitda_growth, generate_growth_rates
 from .drivers import resolve_drivers
+from .rnpv import calc_rnpv, PHASE_POS
 
 __all__ = [
     "calc_wacc",
@@ -42,4 +43,6 @@ __all__ = [
     "calc_ebitda_growth",
     "generate_growth_rates",
     "resolve_drivers",
+    "calc_rnpv",
+    "PHASE_POS",
 ]

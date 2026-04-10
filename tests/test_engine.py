@@ -21,6 +21,7 @@ from engine.rim import calc_rim
 from engine.multiples import calc_ps, calc_pffo
 from engine.market_comparison import compare_to_market
 from engine.nav import calc_nav
+from engine.rnpv import calc_rnpv, PHASE_POS
 from engine.growth import linear_fade, calc_ebitda_growth, generate_growth_rates
 from engine.distress import calc_distress_discount, apply_distress_discount
 from engine.method_selector import classify_industry
@@ -241,24 +242,24 @@ class TestSOTP:
         sotp, total_ev = calc_sotp(alloc, SK_MULTIPLES)
         assert 6_300_000 < total_ev < 6_400_000
 
-    def test_negative_ebitda_negative_ev(self):
-        """W-8: negative EBITDA produces negative EV (restructuring/divestiture)."""
+    def test_negative_ebitda_floored_to_zero(self):
+        """W-8: negative EBITDA → EV floored to 0 (conservative approach)."""
         alloc = allocate_da({"A": {"op": -100, "assets": 100}}, 50)
         sotp, ev = calc_sotp(alloc, {"A": 10.0})
-        # EBITDA = -100 + 50 = -50, EV = -50 * 10 = -500
-        assert sotp["A"].ev < 0
-        assert ev < 0
+        # EBITDA = -100 + 50 = -50, EV floored to 0
+        assert sotp["A"].ev == 0
+        assert ev == 0
 
     def test_mixed_positive_negative_ebitda(self):
-        """W-8: mixed segments — negative EV segment reduces total."""
+        """W-8: mixed segments — negative EBITDA segment floored to EV=0."""
         alloc = allocate_da({
             "A": {"op": 200, "assets": 100},
             "B": {"op": -200, "assets": 100},
         }, 100)
         sotp, ev = calc_sotp(alloc, {"A": 10.0, "B": 5.0})
         assert sotp["A"].ev > 0
-        assert sotp["B"].ev < 0
-        assert ev < sotp["A"].ev  # Negative segment reduces total
+        assert sotp["B"].ev == 0  # Negative EBITDA floored to 0
+        assert ev == sotp["A"].ev  # Only positive segment contributes
 
     def test_ev_revenue_basic(self):
         """ev_revenue: EV = revenue × multiple."""
@@ -2285,3 +2286,181 @@ class TestP2EdgeCases:
 
         with pytest.raises(ValueError, match="ddm_params"):
             run_valuation(vi)
+
+
+class TestRNPV:
+    """rNPV engine tests."""
+
+    def test_single_approved_drug(self):
+        """Approved drug (PoS=100%) NPV should equal rNPV."""
+        pipeline = [{
+            "name": "DrugA",
+            "phase": "approved",
+            "peak_sales": 10_000,
+            "years_to_peak": 3,
+            "years_at_peak": 5,
+            "patent_expiry_years": 15,
+            "existing_revenue": 8_000,
+            "launch_year_offset": 0,
+        }]
+        result = calc_rnpv(pipeline, discount_rate=10.0)
+        assert len(result.drug_results) == 1
+        dr = result.drug_results[0]
+        assert dr.success_prob == 1.0
+        assert dr.npv == dr.rnpv  # 100% PoS → NPV = rNPV
+        assert result.total_rnpv > 0
+        assert result.enterprise_value == result.pipeline_value
+
+    def test_phase2_probability(self):
+        """Phase 2 drug should use ~25% PoS default."""
+        pipeline = [{
+            "name": "DrugB",
+            "phase": "phase2",
+            "peak_sales": 5_000,
+            "years_to_peak": 5,
+            "years_at_peak": 5,
+            "patent_expiry_years": 15,
+            "launch_year_offset": 3,
+        }]
+        result = calc_rnpv(pipeline, discount_rate=10.0)
+        dr = result.drug_results[0]
+        assert dr.success_prob == PHASE_POS["phase2"]  # 0.25
+        assert dr.rnpv == round(dr.npv * 0.25)
+
+    def test_custom_success_prob(self):
+        """Custom success_prob should override phase default."""
+        pipeline = [{
+            "name": "DrugC",
+            "phase": "phase1",
+            "peak_sales": 3_000,
+            "success_prob": 0.40,
+            "years_to_peak": 4,
+            "years_at_peak": 4,
+            "patent_expiry_years": 12,
+            "launch_year_offset": 5,
+        }]
+        result = calc_rnpv(pipeline, discount_rate=10.0)
+        dr = result.drug_results[0]
+        assert dr.success_prob == 0.40
+        assert dr.rnpv == round(dr.npv * 0.40)
+
+    def test_r_and_d_deduction(self):
+        """R&D cost should be deducted from pipeline value."""
+        pipeline = [{
+            "name": "DrugD",
+            "phase": "approved",
+            "peak_sales": 20_000,
+            "existing_revenue": 20_000,
+            "years_at_peak": 5,
+            "patent_expiry_years": 10,
+            "launch_year_offset": 0,
+        }]
+        result_no_rd = calc_rnpv(pipeline, discount_rate=10.0, r_and_d_cost=0)
+        result_with_rd = calc_rnpv(pipeline, discount_rate=10.0, r_and_d_cost=2_000)
+        assert result_with_rd.pipeline_value < result_no_rd.pipeline_value
+        assert result_with_rd.r_and_d_cost_pv > 0
+
+    def test_multi_drug_pipeline(self):
+        """Multiple drugs should sum to total rNPV."""
+        pipeline = [
+            {"name": "A", "phase": "approved", "peak_sales": 10_000,
+             "existing_revenue": 10_000, "years_at_peak": 5,
+             "patent_expiry_years": 10, "launch_year_offset": 0},
+            {"name": "B", "phase": "phase3", "peak_sales": 8_000,
+             "years_to_peak": 3, "years_at_peak": 5,
+             "patent_expiry_years": 12, "launch_year_offset": 2},
+            {"name": "C", "phase": "phase1", "peak_sales": 15_000,
+             "years_to_peak": 6, "years_at_peak": 4,
+             "patent_expiry_years": 15, "launch_year_offset": 6},
+        ]
+        result = calc_rnpv(pipeline, discount_rate=10.0)
+        assert len(result.drug_results) == 3
+        manual_sum = sum(dr.rnpv for dr in result.drug_results)
+        assert result.total_rnpv == manual_sum
+
+    def test_zero_discount_rate(self):
+        """Zero discount rate should still work (no discounting)."""
+        pipeline = [{
+            "name": "E",
+            "phase": "approved",
+            "peak_sales": 1_000,
+            "existing_revenue": 1_000,
+            "years_at_peak": 3,
+            "patent_expiry_years": 5,
+            "launch_year_offset": 0,
+        }]
+        result = calc_rnpv(pipeline, discount_rate=0.0)
+        assert result.total_rnpv > 0
+
+    def test_existing_revenue_below_peak_ramps(self):
+        """Drug with existing_revenue < peak_sales should ramp to peak (Wegovy case)."""
+        from engine.rnpv import _build_revenue_curve
+        curve = _build_revenue_curve(
+            peak_sales=18_000,
+            years_to_peak=3,
+            years_at_peak=5,
+            patent_expiry_years=20,
+            decline_rate=20.0,
+            launch_year_offset=0,
+            existing_revenue=12_500,
+        )
+        # Should ramp from 12,500 toward 18,000, then plateau at 18,000
+        assert curve[0] > 12_500, "First year should grow beyond existing_revenue"
+        assert 18_000 in curve, "Curve should reach peak_sales"
+        plateau_count = sum(1 for v in curve if v == 18_000)
+        assert plateau_count >= 5, f"Should plateau for years_at_peak=5, got {plateau_count}"
+
+    def test_existing_revenue_at_peak_no_ramp(self):
+        """Drug with existing_revenue >= peak_sales should plateau immediately."""
+        from engine.rnpv import _build_revenue_curve
+        curve = _build_revenue_curve(
+            peak_sales=10_000,
+            years_to_peak=3,
+            years_at_peak=5,
+            patent_expiry_years=15,
+            decline_rate=20.0,
+            launch_year_offset=0,
+            existing_revenue=10_000,
+        )
+        # Should plateau at existing_revenue, no ramp
+        assert curve[0] == 10_000
+        plateau_count = sum(1 for v in curve if v == 10_000)
+        assert plateau_count >= 5
+
+    def test_wegovy_rnpv_higher_than_flat(self):
+        """Wegovy-like drug with ramp should have higher rNPV than flat existing_revenue."""
+        # With ramp: existing 12,500 → peak 18,000
+        pipeline_ramp = [{
+            "name": "Wegovy", "phase": "approved", "peak_sales": 18_000,
+            "existing_revenue": 12_500, "years_to_peak": 3,
+            "years_at_peak": 5, "patent_expiry_years": 15, "launch_year_offset": 0,
+        }]
+        # Hypothetical flat: existing = peak = 12,500
+        pipeline_flat = [{
+            "name": "Wegovy", "phase": "approved", "peak_sales": 12_500,
+            "existing_revenue": 12_500, "years_to_peak": 3,
+            "years_at_peak": 5, "patent_expiry_years": 15, "launch_year_offset": 0,
+        }]
+        result_ramp = calc_rnpv(pipeline_ramp, discount_rate=10.0)
+        result_flat = calc_rnpv(pipeline_flat, discount_rate=10.0)
+        assert result_ramp.total_rnpv > result_flat.total_rnpv, \
+            "Ramping to higher peak should yield higher rNPV"
+
+    def test_method_selector_rnpv(self):
+        """suggest_method should return 'rnpv' when has_rnpv_params=True."""
+        method = suggest_method(
+            n_segments=1,
+            industry="pharma",
+            has_rnpv_params=True,
+        )
+        assert method == "rnpv"
+
+    def test_method_selector_pharma_without_rnpv(self):
+        """Pharma without rnpv_params should fall through to DCF."""
+        method = suggest_method(
+            n_segments=1,
+            industry="pharma",
+            has_rnpv_params=False,
+        )
+        # pharma is in _GROWTH_KEYWORDS → dcf_primary
+        assert method == "dcf_primary"

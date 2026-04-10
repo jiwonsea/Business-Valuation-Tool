@@ -56,6 +56,18 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - **Real Options (B-S) → REJECTED** for individual segment valuation: stock IV already embeds the optionality being valued (circular), total stock IV cannot be disaggregated per segment (FSD vs. Robotaxi), and GBM assumption is violated by discrete binary outcomes. Exception (sanity check only): IV premium over sector average ≈ aggregate optionality premium the market prices in — compare directionally against reverse DCF implied growth multiplier.
 - **Currency units**: Auto-determined from financial statement scale (`engine/units.py`). No hardcoding.
 
+## rNPV Engine Rules
+
+- **Revenue curve**: Ramp-up → Plateau → Decline (patent expiry). Three branches:
+  - `existing_revenue >= peak_sales`: plateau at existing, then decline
+  - `0 < existing_revenue < peak_sales`: ramp from existing to peak, plateau, then decline (Wegovy case)
+  - `existing_revenue == 0`: ramp from 0 to peak, plateau, then decline
+- **PoS override**: drug-level `success_prob` takes priority over `PHASE_POS` lookup table
+- **R&D cost**: `r_and_d_cost=0` means R&D is embedded in operating margin (no deduction). Setting both `r_and_d_cost > 0` AND high `default_margin` risks double-counting.
+- **NPV discount**: `_npv()` starts at t=0 (first cash flow undiscounted). This is intentional — `launch_year_offset` handles pre-launch zeros, so t=0 is the launch year.
+- **enterprise_value = pipeline_value**: `existing_revenue_value` is already included in `total_rnpv` (approved drugs have PoS=1.0). The `existing_revenue_value` field is a reporting-only subset — do not add it to `pipeline_value`.
+- **Decline base**: Decline always starts from `peak_sales` unless `existing_revenue >= peak_sales` (then from `existing_revenue`). Never from a mid-ramp value.
+
 ## Conventions
 
 - English code/comments; Korean user-facing output.
@@ -107,6 +119,6 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - Mixed-method SOTP Monte Carlo must use `effective_net_debt` (via `net_debt_override`), not `vi.net_debt`. PBV/PE segment equity values already embed net_debt — using full net_debt double-deducts.
 - PBV/PE segments are cross-cutting: changes touch SOTP (`sotp.py`), MC (`monte_carlo.py` skip logic), sensitivity (`sensitivity.py` fixed_ev + same_seg guard), and scenario equity bridge (`valuation_runner.py` net_debt add-back). Test all four when modifying PBV/PE behavior.
 - DCF terminal value uses normalized FCFF (NOPAT − ΔNWC, excluding capex-fade artifact from projection years). Raw last-year FCFF overstates TV when capex_fade < 1.0.
-- **Equity-direct methods (DDM, RIM, P/E, P/BV) output equity, not EV.** calc_scenario currently assumes EV input and subtracts net_debt → double-deduction. F-P1-1~3 pending: `is_equity_direct` flag needed in calc_scenario to skip net_debt bridge for these methods.
+- **Equity-direct methods (DDM, RIM, P/E, P/BV) output equity, not EV.** DDM/RIM add `net_debt` to convert equity→EV before `calc_scenario` (so the bridge subtracts it back correctly). NAV passes CPS/RCPS=0 because K-IFRS `total_liabilities` already includes them.
 - Sensitivity multiples grid: when row_seg == col_seg, col_ev must be 0 to prevent double-counting the same segment's EV contribution.
 - `segment_multiples`/`segment_ebitda`/`segment_revenue` keys in scenario YAML must be segment codes (`SEG1`, `AUTONOMOUS_DRIVING`), not human-readable names. LLM frequently generates Korean labels or ticker names instead. `load_profile()` warns on mismatch but doesn't auto-fix — verify keys after `--auto` generation.

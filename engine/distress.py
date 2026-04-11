@@ -106,13 +106,16 @@ def calc_distress_discount(
     else:
         de_penalty = 0.0
 
-    # ── Signal 2: Consecutive net losses ──
+    # ── Signal 2: Consecutive EBITDA losses ──
+    # Use EBITDA (op + dep + amort) instead of net income to avoid penalising
+    # one-off below-the-line items (tax charges, FX losses, impairments).
     loss_streak = 0
     for yr in reversed(years):
         if yr > base_year:
             continue
-        ni = consolidated[yr].get("net_income", 0)
-        if ni < 0:
+        d = consolidated[yr]
+        ebitda_yr = d.get("op", 0) + d.get("dep", 0) + d.get("amort", 0)
+        if ebitda_yr < 0:
             loss_streak += 1
         else:
             break
@@ -161,7 +164,7 @@ def calc_distress_discount(
     if de_penalty > 0:
         parts.append(f"D/E {de_ratio:.0f}% (−{de_penalty:.0%})")
     if loss_penalty > 0:
-        parts.append(f"연속적자 {loss_streak}년 (−{loss_penalty:.0%})")
+        parts.append(f"연속EBITDA적자 {loss_streak}년 (−{loss_penalty:.0%})")
     if icr_penalty > 0:
         icr_val = (
             ebitda / interest_expense if interest_expense > 0 and ebitda > 0 else 0

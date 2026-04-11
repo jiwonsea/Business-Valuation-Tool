@@ -40,9 +40,21 @@ if os.name == "nt":
     except Exception:
         pass
 
+import time
+
 import yfinance as yf
 
 logger = logging.getLogger(__name__)
+
+# ── Retry configuration for transient yfinance errors (401 / 429) ──
+_YF_MAX_RETRIES = 3
+_YF_RETRY_BASE_DELAY = 2.0  # seconds; doubles each attempt
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """Return True for transient HTTP errors worth retrying."""
+    msg = str(exc).lower()
+    return "401" in msg or "429" in msg or "too many" in msg or "rate" in msg
 
 # ── Cache ──
 _TICKER_CACHE_FILE = (
@@ -216,23 +228,32 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         KR=million KRW, US=$M. None if fetch fails.
     """
     resolved = _resolve_ticker(ticker, market)
-    try:
-        t = _get_ticker_obj(resolved)
-        info = _ticker_info_cache.get(resolved, {})
-        currency = info.get("currency", "USD" if market == "US" else "KRW")
+    t = inc = bs = cf = None
+    for attempt in range(_YF_MAX_RETRIES):
+        try:
+            t = _get_ticker_obj(resolved)
+            info = _ticker_info_cache.get(resolved, {})
+            currency = info.get("currency", "USD" if market == "US" else "KRW")
 
-        # Annual financial statements (DataFrame, columns = dates)
-        inc = t.financials  # Income Statement
-        bs = t.balance_sheet  # Balance Sheet
-        cf = t.cashflow  # Cashflow
+            inc = t.financials   # Income Statement
+            bs = t.balance_sheet  # Balance Sheet
+            cf = t.cashflow      # Cashflow
 
-        if inc is None or inc.empty:
-            logger.warning("yfinance 손익계산서 없음: %s", resolved)
+            if inc is None or inc.empty:
+                logger.warning("yfinance 손익계산서 없음: %s", resolved)
+                return None
+            break  # success
+        except Exception as e:
+            if _is_retryable(e) and attempt < _YF_MAX_RETRIES - 1:
+                delay = _YF_RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "yfinance 일시적 오류 (%s) %ds 후 재시도 (attempt %d/%d): %s",
+                    resolved, delay, attempt + 1, _YF_MAX_RETRIES, e,
+                )
+                time.sleep(delay)
+                continue
+            logger.warning("yfinance 데이터 수집 실패 (%s): %s", resolved, e)
             return None
-
-    except Exception as e:
-        logger.warning("yfinance 데이터 수집 실패 (%s): %s", resolved, e)
-        return None
 
     result = {}
     # Process each column (date) -- up to 3 years
@@ -387,29 +408,62 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
          currency, exchange, exchange_code}
     """
     resolved = _resolve_ticker(ticker, market)
-    try:
-        info = _get_ticker_info(resolved)
-        if not info.get("regularMarketPrice") and not info.get("currentPrice"):
-            logger.warning("yfinance 시장 데이터 없음: %s", resolved)
-            return None
+    for attempt in range(_YF_MAX_RETRIES):
+        try:
+            info = _get_ticker_info(resolved)
+            if not info.get("regularMarketPrice") and not info.get("currentPrice"):
+                logger.warning("yfinance 시장 데이터 없음: %s", resolved)
+                break  # not a transient error; fall through to KRX fallback
 
-        price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
-        market_cap_raw = info.get("marketCap", 0)
-        currency = info.get("currency", "USD" if market == "US" else "KRW")
+            price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
+            market_cap_raw = info.get("marketCap", 0)
+            currency = info.get("currency", "USD" if market == "US" else "KRW")
+            market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
 
-        # market_cap: convert to million KRW or $M
-        market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
+            return {
+                "price": price,
+                "market_cap": market_cap,  # million KRW / $M
+                "beta": info.get("beta"),
+                "industry": info.get("industry", ""),
+                "shares_outstanding": info.get("sharesOutstanding", 0),
+                "currency": currency,
+                "exchange": info.get("exchange", ""),
+                "exchange_code": info.get("exchangeTimezoneName", ""),
+            }
+        except Exception as e:
+            if _is_retryable(e) and attempt < _YF_MAX_RETRIES - 1:
+                delay = _YF_RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "yfinance 시장 데이터 일시적 오류 (%s) %ds 후 재시도 (attempt %d/%d): %s",
+                    resolved, delay, attempt + 1, _YF_MAX_RETRIES, e,
+                )
+                time.sleep(delay)
+                continue
+            logger.warning("yfinance 시장 데이터 실패 (%s): %s", resolved, e)
+            break
 
-        return {
-            "price": price,
-            "market_cap": market_cap,  # million KRW / $M
-            "beta": info.get("beta"),
-            "industry": info.get("industry", ""),
-            "shares_outstanding": info.get("sharesOutstanding", 0),
-            "currency": currency,
-            "exchange": info.get("exchange", ""),
-            "exchange_code": info.get("exchangeTimezoneName", ""),
-        }
-    except Exception as e:
-        logger.warning("yfinance 시장 데이터 실패 (%s): %s", resolved, e)
-        return None
+    # KRX fallback: direct Yahoo Finance API (KR tickers only)
+    # Uses get_quote_summary (not get_stock_info) — the latter lacks shares_outstanding.
+    if market == "KR":
+        try:
+            from .yahoo_finance import get_quote_summary as _yf_summary
+
+            fallback = _yf_summary(resolved)
+            if fallback and fallback.get("price", 0) > 0:
+                logger.info("KRX fallback 성공: %s", resolved)
+                _price = fallback["price"]
+                _mktcap = round(fallback.get("market_cap", 0) / 1_000_000) if fallback.get("market_cap") else 0
+                return {
+                    "price": _price,
+                    "market_cap": _mktcap,  # million KRW
+                    "beta": fallback.get("beta") or None,
+                    "industry": "",
+                    "shares_outstanding": fallback.get("shares_outstanding", 0),
+                    "currency": fallback.get("currency", "KRW"),
+                    "exchange": "",
+                    "exchange_code": "",
+                }
+        except Exception as e:
+            logger.warning("KRX fallback 실패 (%s): %s", resolved, e)
+
+    return None

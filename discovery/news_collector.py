@@ -13,6 +13,8 @@ from html import unescape
 
 import httpx
 
+from pipeline.api_guard import ApiGuard, ApiGuardError
+
 
 class NewsCollector:
     """News collector."""
@@ -47,10 +49,14 @@ class NewsCollector:
         results = []
         display = min(max_items, 100)  # Naver API max 100 items/request
 
+        # Guard check (circuit breaker / quota) -- do NOT call record_failure on guard blocks
         try:
-            from pipeline.api_guard import ApiGuard
-
             ApiGuard.get().check("naver")
+        except ApiGuardError as e:
+            print(f"[WARN] Naver API 가드 차단됨: {e}")
+            return results
+
+        try:
             with httpx.Client(timeout=self._timeout) as client:
                 resp = client.get(
                     url,
@@ -91,8 +97,6 @@ class NewsCollector:
         except Exception as e:
             print(f"[ERROR] 네이버 뉴스 수집 실패: {e}")
             try:
-                from pipeline.api_guard import ApiGuard
-
                 ApiGuard.get().record_failure("naver", e)
             except Exception as guard_err:
                 print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")
@@ -119,10 +123,14 @@ class NewsCollector:
         results = []
         cutoff = datetime.now() - timedelta(days=days)
 
+        # Guard check (circuit breaker / quota) -- do NOT call record_failure on guard blocks
         try:
-            from pipeline.api_guard import ApiGuard
-
             ApiGuard.get().check("google_rss")
+        except ApiGuardError as e:
+            print(f"[WARN] Google RSS API 가드 차단됨: {e}")
+            return results
+
+        try:
             with httpx.Client(timeout=self._timeout) as client:
                 resp = client.get(url)
                 resp.raise_for_status()
@@ -159,8 +167,6 @@ class NewsCollector:
         except Exception as e:
             print(f"[ERROR] Google News RSS 수집 실패: {e}")
             try:
-                from pipeline.api_guard import ApiGuard
-
                 ApiGuard.get().record_failure("google_rss", e)
             except Exception as guard_err:
                 print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")

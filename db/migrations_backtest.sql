@@ -69,6 +69,10 @@ CREATE INDEX IF NOT EXISTS idx_backtest_ticker
 ALTER TABLE prediction_snapshots
     ADD COLUMN IF NOT EXISTS market_signals_version INT DEFAULT 0;
 
+-- Add primary_method to prediction_snapshots (added in Phase 5)
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS primary_method TEXT DEFAULT '';
+
 -- Add unique constraints for upsert support
 CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
     ON valuations(company_name, analysis_date);

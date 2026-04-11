@@ -290,3 +290,37 @@ def calc_calibration_curve(
         )
 
     return bins if bins else None
+
+
+# ── 6-5. Method-Level Breakdown ──
+
+
+def calc_forecast_error_by_method(
+    records: list[BacktestRecord],
+    horizon: str = "t6m",
+    min_n: int = 3,
+) -> dict[str, dict]:
+    """Compute forecast error metrics grouped by primary_method.
+
+    Skips methods with fewer than min_n valid records to avoid noisy estimates.
+
+    Returns:
+        {method_name: {mape, median_ape, log_ratio_mean, n}}
+        Methods with primary_method=None are grouped under "unknown".
+    """
+    from collections import defaultdict
+
+    by_method: dict[str, list[BacktestRecord]] = defaultdict(list)
+    for r in records:
+        if not r.is_listed:
+            continue
+        key = r.primary_method or "unknown"
+        by_method[key].append(r)
+
+    result = {}
+    for method, method_records in sorted(by_method.items()):
+        err = calc_forecast_price_error(method_records, horizon)
+        if err["n"] >= min_n:
+            result[method] = err
+
+    return result

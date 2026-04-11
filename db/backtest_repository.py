@@ -55,6 +55,7 @@ def save_prediction_snapshot(
         "predicted_gap_ratio": mc.gap_ratio if mc else None,
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
+        "primary_method": result.primary_method,
         "scenario_values": scenario_values,
     }
 

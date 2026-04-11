@@ -56,7 +56,7 @@ def _get_provider() -> str:
     )
 
 
-from pipeline.api_guard import api_guard
+from pipeline.api_guard import ApiGuardError, api_guard
 
 
 @api_guard("anthropic")
@@ -199,8 +199,8 @@ def ask(
     if provider == "openrouter":
         try:
             return _ask_openrouter(prompt, system, model, max_tokens, temperature)
-        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError) as e:
-            # Fallback to Anthropic when OpenRouter exhausts retries (e.g. 429 rate limit)
+        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ApiGuardError) as e:
+            # Fallback to Anthropic when OpenRouter fails or circuit is open
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL

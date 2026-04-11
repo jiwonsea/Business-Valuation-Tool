@@ -3,7 +3,10 @@
 KRW -> million KRW unit conversion, with account mapping.
 """
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 # DART account names -> internal key mapping
 ACCOUNT_MAP = {
@@ -28,6 +31,13 @@ NONCASH_MAP = {
     "감가상각비": "dep",
     "유형자산감가상각비": "dep",
     "무형자산상각비": "amort",
+}
+
+# Cash flow statement capital expenditures (PP&E acquisition = investing outflow)
+CAPEX_MAP = {
+    "유형자산의 취득": "capex",
+    "유형자산취득": "capex",
+    "유형자산의취득": "capex",
 }
 
 
@@ -57,19 +67,34 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
         year: Target fiscal year
 
     Returns:
-        {"revenue": int, "op": int, ..., "dep": int, "amort": int} (million KRW)
+        {"revenue": int, "op": int, ..., "dep": int, "amort": int,
+         "capex": int, "gross_borr": int, "net_borr": int} (million KRW)
     """
     result = {}
+    capex_raw = None  # None = not found; track separately to take abs()
 
     for item in items:
         acct_name = item.get("account_nm", "")
-        # Prefer current period amount, fallback to thstrm_amount
         amount_str = item.get("thstrm_amount", "")
 
-        # Account mapping
+        # IS / BS account mapping
         internal_key = ACCOUNT_MAP.get(acct_name)
         if internal_key and internal_key not in result:
             result[internal_key] = _to_millions(amount_str)
+
+        # Capex: first matching CF item wins (CF outflows are reported as negative)
+        if capex_raw is None and acct_name in CAPEX_MAP:
+            capex_raw = _to_millions(amount_str)
+
+    # Capex: DART reports investing outflows as negative; store absolute value
+    if capex_raw is not None:
+        result["capex"] = abs(capex_raw)
+    else:
+        logger.debug("parse_financial_statements: capex 항목 미발견 (year=%d) — profile_generator가 capex_to_da fallback 사용", year)
+
+    # Interest-bearing debt + net debt (from balance sheet items)
+    borrowings = estimate_borrowings(items)
+    result.update(borrowings)
 
     return result
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 
@@ -101,31 +102,48 @@ def get_download_url(
 
 
 def _sanitize_key(name: str) -> str:
-    """Remove characters that Supabase Storage rejects or that break presigned URLs."""
-    return (
-        name.replace("(", "")
-        .replace(")", "")
-        .replace(" ", "_")
-        .replace(",", "")
-        .replace("#", "")
-        .replace("?", "")
-        .replace("&", "")
-    )
+    """Convert to ASCII-safe Supabase Storage key.
+
+    Replaces non-ASCII characters (e.g., Korean) with underscores, then
+    removes characters that Supabase Storage rejects or that break presigned URLs.
+    """
+    result = []
+    for ch in name:
+        if ord(ch) < 128 and (ch.isalnum() or ch in "-_."):
+            result.append(ch)
+        elif ch in " \t":
+            result.append("_")
+        else:
+            result.append("_")  # Replace Korean and other non-ASCII with _
+    sanitized = "".join(result)
+    # Collapse consecutive underscores and strip leading/trailing ones
+    while "__" in sanitized:
+        sanitized = sanitized.replace("__", "_")
+    stripped = sanitized.strip("_")
+    if stripped:
+        return stripped
+    # All characters were non-ASCII (e.g., Korean-only filename): use short hash
+    return hashlib.md5(name.encode("utf-8", errors="replace")).hexdigest()[:8]
 
 
-def upload_and_get_url(local_path: str, week_label: str) -> dict | None:
+def upload_and_get_url(
+    local_path: str, week_label: str, remote_filename: str | None = None
+) -> dict | None:
     """Upload an Excel file and return its download URL.
 
     Args:
         local_path: Local path to .xlsx file.
         week_label: Already-sanitized week folder key (no parentheses/spaces).
+        remote_filename: Optional override for the storage filename.
+            When provided, used as-is (caller is responsible for ASCII safety).
+            When omitted, derived from local_path via _sanitize_key().
 
     Returns:
         {"remote_path": "...", "download_url": "https://..."} or None.
     """
     ensure_bucket()
 
-    filename = _sanitize_key(Path(local_path).name)
+    filename = remote_filename if remote_filename else _sanitize_key(Path(local_path).name)
     remote_path = f"{week_label}/{filename}"
 
     uploaded = upload_excel(local_path, remote_path)

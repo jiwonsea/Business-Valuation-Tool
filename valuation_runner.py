@@ -296,6 +296,9 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
         roe = (net_income / equity_bv * 100) if equity_bv > 0 else 0.0
 
         seg_names = [info["name"] for info in vi.segments.values()]
+        # de_ratio is pre-computed (interest-bearing debt / equity) during profile generation
+        # Do NOT recompute from liabilities (that would include trade payables, inflating D/E)
+        de_ratio = cons.get("de_ratio", 0.0)
         method = suggest_method(
             n_segments=len(vi.segments),
             legal_status=vi.company.legal_status,
@@ -307,6 +310,7 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
             has_rim_params=vi.rim_params is not None,
             has_rnpv_params=vi.rnpv_params is not None,
             segment_names=seg_names,
+            de_ratio=de_ratio,
         )
 
     dispatch = {
@@ -1687,6 +1691,7 @@ def _run_monte_carlo(
             irr=sc.irr if sc.irr else 5.0,
             unit_multiplier=um,
             seg_revenues=sc_revs,
+            cps_dividend_rate=vi.cps_dividend_rate,
             **dcf_kwargs,
         )
         sc_mc[sc_code] = MCScenarioSummary(

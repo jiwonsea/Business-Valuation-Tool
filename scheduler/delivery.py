@@ -8,6 +8,18 @@ from __future__ import annotations
 
 from datetime import datetime
 from html import escape as _esc
+from urllib.parse import urlparse
+
+
+def _safe_url(url: str) -> str:
+    """Return url only if scheme is http/https; empty string otherwise.
+
+    Prevents javascript: protocol injection in href attributes.
+    """
+    if not url:
+        return ""
+    scheme = urlparse(url).scheme.lower()
+    return url if scheme in ("http", "https") else ""
 
 
 def build_company_gamma_text(entry: dict) -> str:
@@ -234,7 +246,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     label = _esc(summary.get("label", ""))
     status = summary.get("status_summary", {})
     valuations = summary.get("valuations", [])
-    summary_gamma = _esc(gamma_urls.get("_summary", ""))
+    summary_gamma = _esc(_safe_url(gamma_urls.get("_summary", "")))
 
     # Build company cards
     company_cards = ""
@@ -250,8 +262,8 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
             if cap and cap >= 1_000_000_000
             else (f"${cap / 1_000_000:,.0f}M" if cap else "-")
         )
-        gamma_url = _esc(gamma_urls.get(v.get("company", ""), ""))
-        download_url = _esc(v.get("download_url", ""))
+        gamma_url = _esc(_safe_url(gamma_urls.get(v.get("company", ""), "")))
+        download_url = _esc(_safe_url(v.get("download_url", "")))
 
         links = ""
         if gamma_url:
@@ -267,6 +279,14 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
                 f"📥 Excel</a>"
             )
 
+        reason = _esc(v.get("reason", ""))
+        reason_html = (
+            f'<div style="margin:4px 0 6px;font-size:12px;color:#555;">'
+            f'📰 {reason}</div>'
+            if reason
+            else ""
+        )
+
         cv_html = _extract_cross_validation_html(v.get("summary_md", ""))
         company_cards += f"""\
 <tr>
@@ -274,6 +294,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     <strong>{name}</strong>
     <span style="color:#666;font-size:12px;margin-left:8px;">{market} · {cap_str}</span>
     <br>
+    {reason_html}
     {f'<div style="margin:6px 0 4px;line-height:1.7;">{cv_html}</div>' if cv_html else ""}
     <span style="font-size:13px;margin-top:4px;display:inline-block;">{links}</span>
   </td>

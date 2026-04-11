@@ -9,6 +9,7 @@ from .metrics import (
     calc_gap_closure,
     calc_interval_score,
     calc_calibration_curve,
+    calc_forecast_error_by_method,
 )
 from .models import BacktestRecord
 
@@ -162,6 +163,22 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
                 "gap_closure": gc,
                 "interval_score": iv,
             }
+        lines.append("")
+
+    # ── Method-Level Breakdown ──
+    method_errors = calc_forecast_error_by_method(listed, "t6m")
+    report["method_breakdown"] = method_errors
+    if method_errors:
+        lines.append("Method Breakdown (T+6m MAPE):")
+        lines.append(
+            f"  {'Method':<18} │ {'MAPE':>6} │ {'Median':>7} │ {'Log Ratio':>10} │ {'N':>4}"
+        )
+        lines.append(f"  {'─' * 18} │ {'─' * 6} │ {'─' * 7} │ {'─' * 10} │ {'─' * 4}")
+        for method, err in method_errors.items():
+            lines.append(
+                f"  {method:<18} │ {err['mape']:>5.0%} │ {err['median_ape']:>6.0%} │ "
+                f"{err['log_ratio_mean']:>+9.2f} │ {err['n']:>4}"
+            )
         lines.append("")
 
     # ── Systematic Bias Warning ──

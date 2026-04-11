@@ -16,6 +16,7 @@ import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from html import escape as _esc
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +137,9 @@ def send_error_alert(phase: str, error: str) -> bool:
 
     subject = f"[자동 발행 실패] {phase}"
     body_html = (
-        f"<p><b>Phase:</b> {phase}<br>"
+        f"<p><b>Phase:</b> {_esc(phase)}<br>"
         f"<b>Time:</b> {datetime.now().isoformat()}<br>"
-        f"<b>Error:</b></p><pre>{error}</pre>"
+        f"<b>Error:</b></p><pre>{_esc(error)}</pre>"
     )
     body_plain = (
         f"Phase: {phase}\nTime: {datetime.now().isoformat()}\nError:\n{error}\n"

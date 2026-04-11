@@ -115,6 +115,32 @@ _MATURE_KEYWORDS = frozenset(
     }
 )
 
+# Cyclical / capital-intensive sectors where high D/E makes DCF unreliable.
+# When D/E > 100%, peer EV/EBITDA multiples are more robust than a DCF
+# whose terminal value explodes due to WACC compressed by excess leverage.
+_HIGH_LEVERAGE_CYCLICAL_KEYWORDS = frozenset(
+    {
+        "해운",
+        "shipping",
+        "marine",
+        "해운업",
+        "벌크",
+        "bulk carrier",
+        "탱커",
+        "tanker",
+        "조선",
+        "shipbuilding",
+        "항공",
+        "airline",
+        "aviation",
+        "정유",
+        "refining",
+        "oil refinery",
+        "광업",
+        "mining",
+    }
+)
+
 
 def classify_industry(industry: str) -> str:
     """Classify an industry string into a growth category.
@@ -151,6 +177,7 @@ def suggest_method(
     has_rim_params: bool = False,
     has_rnpv_params: bool = False,
     segment_names: list[str] | None = None,
+    de_ratio: float = 0.0,
 ) -> str:
     """Suggest the primary valuation method based on company characteristics.
 
@@ -164,6 +191,7 @@ def suggest_method(
         has_ddm_params: Whether DDM parameters are provided
         has_rim_params: Whether RIM parameters are provided
         segment_names: Segment name list (for mixed financial/non-financial detection)
+        de_ratio: Debt-to-equity ratio (%). >100 = more debt than equity.
 
     Returns:
         "sotp" | "dcf_primary" | "ddm" | "rim" | "multiples" | "nav"
@@ -219,6 +247,17 @@ def suggest_method(
     # Mature/stable + sufficient peers -> relative valuation (Multiples primary)
     if has_peers and any(kw in industry_lower for kw in _MATURE_KEYWORDS):
         return "multiples"
+
+    # High-leverage cyclical companies: D/E > 100% makes DCF terminal value
+    # unreliable (WACC collapses under leverage, perpetuity explodes).
+    # Route to peer multiples when available; DCF as fallback cross-validation only.
+    if de_ratio > 100 and any(
+        kw in industry_lower for kw in _HIGH_LEVERAGE_CYCLICAL_KEYWORDS
+    ):
+        if has_peers:
+            return "multiples"
+        # No peers: DCF is still unreliable but it's the only option
+        return "dcf_primary"
 
     # Single-segment -> DCF primary
     return "dcf_primary"

@@ -265,7 +265,7 @@ def run_weekly(
         llm_budget = estimate["remaining_quota"].get("openrouter", 0) + anthropic_bonus
     else:
         llm_budget = estimate["remaining_quota"].get("anthropic", 50)
-    calls_per_company = 4  # classify + peers_batch + wacc + scenarios
+    calls_per_company = 6  # classify + peers_batch + wacc + scenarios + news_summary + profile_gen
     max_affordable = max(llm_budget // calls_per_company, 1)
     if len(targets) > max_affordable:
         logger.warning(
@@ -288,6 +288,8 @@ def run_weekly(
 
     def _run_valuation(co: dict) -> dict:
         name = co.get("name", "")
+        ticker = co.get("ticker")
+        reason = co.get("reason", "")
         try:
             logger.info("Valuation start: %s %s", co.get("stars", ""), name)
             analyze_result = auto_analyze(
@@ -296,6 +298,8 @@ def run_weekly(
             if analyze_result:
                 return {
                     "company": name,
+                    "ticker": ticker,
+                    "reason": reason,
                     "market": co.get("market", ""),
                     "status": "success",
                     "excel_path": analyze_result.excel_path,
@@ -304,6 +308,8 @@ def run_weekly(
                 }
             return {
                 "company": name,
+                "ticker": ticker,
+                "reason": reason,
                 "market": co.get("market", ""),
                 "status": "no_result",
             }
@@ -311,6 +317,8 @@ def run_weekly(
             logger.error("Valuation failed [%s]: %s", name, e)
             return {
                 "company": name,
+                "ticker": ticker,
+                "reason": reason,
                 "market": co.get("market", ""),
                 "status": "failed",
                 "error": str(e),
@@ -372,19 +380,19 @@ def run_weekly(
         logger.warning("Naver Blog posting failed: %s", e)
         _alert("Naver Blog", str(e))
 
-    # ── Phase 7: YouTube video creation + upload (best-effort) ──
-    try:
-        from .video_creator import create_weekly_video
-        from .youtube_uploader import upload_to_youtube
-
-        video_path = create_weekly_video(summary, output_dir=week_dir)
-        if video_path:
-            yt_url = upload_to_youtube(video_path, summary)
-            if yt_url:
-                summary["youtube_url"] = yt_url
-    except Exception as e:
-        logger.warning("YouTube pipeline failed: %s", e)
-        _alert("YouTube", str(e))
+    # ── Phase 7: YouTube video creation + upload (disabled) ──
+    # TODO: Re-enable when YouTube pipeline is ready
+    # try:
+    #     from .video_creator import create_weekly_video
+    #     from .youtube_uploader import upload_to_youtube
+    #     video_path = create_weekly_video(summary, output_dir=week_dir)
+    #     if video_path:
+    #         yt_url = upload_to_youtube(video_path, summary)
+    #         if yt_url:
+    #             summary["youtube_url"] = yt_url
+    # except Exception as e:
+    #     logger.warning("YouTube pipeline failed: %s", e)
+    #     _alert("YouTube", str(e))
 
     # ── Phase 8: Completion ──
     duration = time.time() - start
@@ -413,13 +421,28 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
         logger.debug("db.storage not available — skipping upload")
         return
 
-    for entry in summary["valuations"]:
+    for i, entry in enumerate(summary["valuations"]):
         if entry["status"] == "success" and entry.get("excel_path"):
             try:
-                upload = upload_and_get_url(entry["excel_path"], week_folder_name)
+                ticker = entry.get("ticker")
+                if ticker and str(ticker).strip():
+                    remote_filename = f"{ticker}_valuation.xlsx"
+                else:
+                    # Fallback: sanitize company name; if result is empty (Korean-only),
+                    # use positional index to guarantee a valid non-empty key
+                    from db.storage import _sanitize_key as _sk
+                    safe = _sk(Path(entry["excel_path"]).stem)
+                    remote_filename = f"{safe}_valuation.xlsx" if safe else f"company_{i}_valuation.xlsx"
+                upload = upload_and_get_url(
+                    entry["excel_path"], week_folder_name, remote_filename
+                )
                 if upload:
                     entry["download_url"] = upload["download_url"]
                     entry["remote_path"] = upload["remote_path"]
+                    logger.info(
+                        "Storage upload OK [%s] ticker=%s → %s",
+                        entry["company"], ticker, upload["remote_path"],
+                    )
             except Exception as e:
                 logger.warning("Storage upload failed [%s]: %s", entry["company"], e)
 

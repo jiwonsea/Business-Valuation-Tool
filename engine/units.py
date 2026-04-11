@@ -13,6 +13,9 @@ def detect_unit(revenue: int, market: str) -> tuple[str, int]:
         - KR: revenue < 10,000 (under 10B KRW) -> ("백만원", 1_000_000)
               revenue 10,000~1,000,000 (10B~1T KRW) -> ("억원", 100_000_000)
               revenue > 1,000,000 (over 1T KRW) -> ("백만원", 1_000_000)
+              NOTE: >1T KRW returns "백만원" (not 억원) because per_share() requires
+              multiplier=1_000_000 when equity is stored in millions KRW (DART unit).
+              "억원" is only safe when total_ev is already in 억원 units.
         - US: always ("$M", 1_000_000)
     """
     if market == "US":

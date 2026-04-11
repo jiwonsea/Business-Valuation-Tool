@@ -101,9 +101,20 @@ class TestUnits:
         assert mult == 100_000_000
 
     def test_detect_unit_kr_large(self):
+        """Revenue > 1T KRW: returns 백만원/1_000_000 (per_share formula compatibility).
+        DART stores all financials in millions KRW; per_share() needs multiplier=1_000_000."""
         label, mult = detect_unit(5_000_000, "KR")
         assert label == "백만원"
         assert mult == 1_000_000
+
+    def test_detect_unit_kr_boundary_1t(self):
+        """1T KRW falls in the 억원 band (<=1,000,000); 1T+1 falls in 백만원 band (>1,000,000)"""
+        label_at, mult_at = detect_unit(1_000_000, "KR")
+        assert label_at == "억원"
+        assert mult_at == 100_000_000
+        label_over, mult_over = detect_unit(1_000_001, "KR")
+        assert label_over == "백만원"
+        assert mult_over == 1_000_000
 
     def test_detect_unit_us(self):
         label, mult = detect_unit(100_000, "US")
@@ -154,6 +165,36 @@ class TestMethodSelector:
     def test_mature_without_peers_dcf(self):
         """No peers available: mature industry falls back to DCF"""
         assert suggest_method(1, industry="유통", has_peers=False) == "dcf_primary"
+
+    def test_high_leverage_cyclical_with_peers_multiples(self):
+        """Shipping company with D/E > 100% and peers -> multiples (DCF unreliable)"""
+        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=150.0) == "multiples"
+        assert suggest_method(1, industry="shipping", has_peers=True, de_ratio=200.0) == "multiples"
+        assert suggest_method(1, industry="항공", has_peers=True, de_ratio=120.0) == "multiples"
+
+    def test_high_leverage_cyclical_no_peers_dcf(self):
+        """High D/E cyclical without peers still falls back to DCF"""
+        assert suggest_method(1, industry="해운", has_peers=False, de_ratio=150.0) == "dcf_primary"
+
+    def test_high_leverage_cyclical_low_de_dcf(self):
+        """Cyclical keywords but D/E <= 100%: normal DCF path (not high leverage)"""
+        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=80.0) == "dcf_primary"
+
+    def test_high_leverage_cyclical_boundary_de_equals_100(self):
+        """D/E exactly 100 does NOT trigger cyclical routing (only >100 does)"""
+        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=100.0) == "dcf_primary"
+
+    def test_high_leverage_cyclical_default_de_zero(self):
+        """No de_ratio passed (defaults to 0): backward-compatible, no cyclical routing"""
+        assert suggest_method(1, industry="해운", has_peers=True) == "dcf_primary"
+
+    def test_high_leverage_cyclical_shipbuilding(self):
+        """조선 (shipbuilding) in _HIGH_LEVERAGE_CYCLICAL_KEYWORDS routes to multiples"""
+        assert suggest_method(1, industry="조선", has_peers=True, de_ratio=150.0) == "multiples"
+
+    def test_construction_high_de_still_multiples(self):
+        """건설 with high D/E: _MATURE_KEYWORDS match fires first -> multiples (correct outcome)"""
+        assert suggest_method(1, industry="건설", has_peers=True, de_ratio=150.0) == "multiples"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2478,12 +2519,12 @@ class TestDistressDiscount:
         assert d.loss_penalty == 0
 
     def test_consecutive_losses(self):
-        """Two consecutive loss years trigger loss penalty."""
+        """Two consecutive EBITDA-loss years trigger loss penalty."""
         cons = {
             2023: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,
+                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2491,30 +2532,30 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": 2000,
-                "dep": 3000,
+                "op": -5000,   # EBITDA = -5000+1000 = -4000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
             },
             2025: {
                 "de_ratio": 60.0,
                 "net_income": -8000,
-                "op": -1000,
-                "dep": 3000,
+                "op": -7000,   # EBITDA = -7000+1000 = -6000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 25000,
             },
         }
         d = calc_distress_discount(cons, 2025)
-        assert d.loss_penalty == 0.10  # 2 consecutive losses
+        assert d.loss_penalty == 0.10  # 2 consecutive EBITDA losses
 
     def test_three_year_loss_streak(self):
-        """Three consecutive losses get maximum loss penalty."""
+        """Three consecutive EBITDA losses get maximum loss penalty."""
         cons = {
             2023: {
                 "de_ratio": 50.0,
                 "net_income": -1000,
-                "op": 0,
+                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 10000,
@@ -2522,7 +2563,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 55.0,
                 "net_income": -2000,
-                "op": -500,
+                "op": -3000,   # EBITDA = -3000+1000 = -2000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 12000,
@@ -2530,7 +2571,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 60.0,
                 "net_income": -3000,
-                "op": -1000,
+                "op": -4000,   # EBITDA = -4000+1000 = -3000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 15000,
@@ -2599,12 +2640,12 @@ class TestDistressDiscount:
         assert result is multiples  # Same object (no copy needed)
 
     def test_cyclical_single_loss_exempt(self):
-        """Cyclical industry with single-year loss gets no loss penalty."""
+        """Cyclical industry with single-year EBITDA loss gets no loss penalty."""
         cons = {
             2024: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,
+                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2612,8 +2653,8 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": 2000,
-                "dep": 3000,
+                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
             },
@@ -2622,21 +2663,21 @@ class TestDistressDiscount:
         assert d.loss_penalty == 0.0  # 1-year exemption for cyclicals
 
     def test_cyclical_two_year_loss_reduced_penalty(self):
-        """Cyclical industry with 2 consecutive losses gets reduced penalty."""
+        """Cyclical industry with 2 consecutive EBITDA losses gets reduced penalty."""
         cons = {
             2024: {
                 "de_ratio": 50.0,
                 "net_income": -5000,
-                "op": 2000,
-                "dep": 3000,
+                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 20000,
             },
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -8000,
-                "op": -1000,
-                "dep": 3000,
+                "op": -3000,   # EBITDA = -3000+1000 = -2000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
             },
@@ -2645,12 +2686,12 @@ class TestDistressDiscount:
         assert d.loss_penalty == 0.05  # Cyclical 2-year: reduced from 10% to 5%
 
     def test_non_cyclical_single_loss_penalized(self):
-        """Non-cyclical industry single-year loss still gets penalty."""
+        """Non-cyclical industry single-year EBITDA loss still gets penalty."""
         cons = {
             2024: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,
+                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2658,8 +2699,8 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": 2000,
-                "dep": 3000,
+                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
             },

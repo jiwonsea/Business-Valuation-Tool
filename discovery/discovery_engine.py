@@ -237,7 +237,7 @@ class DiscoveryEngine:
 </output_format>"""
 
         response = ask(
-            prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1536
+            prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1200
         )
 
         try:

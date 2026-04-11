@@ -13,6 +13,7 @@ from backtest.metrics import (
     calc_gap_closure,
     calc_interval_score,
     calc_calibration_curve,
+    calc_forecast_error_by_method,
 )
 
 
@@ -392,6 +393,88 @@ class TestBacktestRecord:
         assert r.get_price("t3m") == 42.0
         assert r.get_price("t6m") == 45.0
         assert r.get_price("t12m") is None
+
+
+# ═══ 6-5. Method-Level Breakdown ═══
+
+
+class TestForecastErrorByMethod:
+    def _make_method_record(self, predicted: int, actual: float, method: str) -> BacktestRecord:
+        return BacktestRecord(
+            snapshot_id="snap-x",
+            valuation_id="val-x",
+            ticker="T",
+            market="US",
+            currency="USD",
+            unit_multiplier=1,
+            company_name="Co",
+            legal_status="listed",
+            analysis_date=date(2025, 1, 1),
+            predicted_value=predicted,
+            price_t6m=actual,
+            primary_method=method,
+        )
+
+    def test_groups_by_method(self):
+        """Results are split by primary_method."""
+        records = [
+            self._make_method_record(100, 100.0, "sotp"),
+            self._make_method_record(100, 100.0, "sotp"),
+            self._make_method_record(100, 100.0, "sotp"),
+            self._make_method_record(120, 100.0, "dcf_primary"),
+            self._make_method_record(120, 100.0, "dcf_primary"),
+            self._make_method_record(120, 100.0, "dcf_primary"),
+        ]
+        result = calc_forecast_error_by_method(records, "t6m", min_n=3)
+        assert "sotp" in result
+        assert "dcf_primary" in result
+        assert result["sotp"]["mape"] == pytest.approx(0.0)
+        assert result["dcf_primary"]["mape"] == pytest.approx(0.2)
+
+    def test_none_method_grouped_as_unknown(self):
+        """primary_method=None is grouped under 'unknown'."""
+        records = [
+            BacktestRecord(
+                snapshot_id="s", valuation_id="v", ticker="T", market="US",
+                currency="USD", unit_multiplier=1, company_name="Co",
+                legal_status="listed", analysis_date=date(2025, 1, 1),
+                predicted_value=100, price_t6m=100.0, primary_method=None,
+            )
+            for _ in range(3)
+        ]
+        result = calc_forecast_error_by_method(records, "t6m", min_n=3)
+        assert "unknown" in result
+
+    def test_method_below_min_n_excluded(self):
+        """Methods with fewer than min_n records are excluded."""
+        records = [
+            self._make_method_record(100, 100.0, "sotp"),
+            self._make_method_record(100, 100.0, "sotp"),  # only 2 sotp records
+            self._make_method_record(100, 100.0, "ddm"),
+            self._make_method_record(100, 100.0, "ddm"),
+            self._make_method_record(100, 100.0, "ddm"),
+        ]
+        result = calc_forecast_error_by_method(records, "t6m", min_n=3)
+        assert "sotp" not in result  # excluded (n=2 < 3)
+        assert "ddm" in result       # included (n=3 >= 3)
+
+    def test_unlisted_excluded_from_method_breakdown(self):
+        """Unlisted companies are excluded from method breakdown."""
+        records = [
+            BacktestRecord(
+                snapshot_id="s", valuation_id="v", ticker="T", market="US",
+                currency="USD", unit_multiplier=1, company_name="Co",
+                legal_status="비상장", analysis_date=date(2025, 1, 1),
+                predicted_value=100, price_t6m=100.0, primary_method="sotp",
+            )
+            for _ in range(5)
+        ]
+        result = calc_forecast_error_by_method(records, "t6m", min_n=3)
+        assert result == {}
+
+    def test_empty_records(self):
+        result = calc_forecast_error_by_method([], "t6m")
+        assert result == {}
 
 
 # ═══ Price Tracker (unit tests, no yfinance call) ═══

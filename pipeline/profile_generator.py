@@ -689,6 +689,7 @@ def auto_analyze(
             n_segments=len(segments) if segments else 1,
             legal_status=legal,
             industry=getattr(identity, "industry", "") or "",
+            de_ratio=cons.get("de_ratio", 0.0),
         )
     except Exception:
         val_method = "dcf_primary"

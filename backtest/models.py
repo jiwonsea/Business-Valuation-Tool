@@ -48,6 +48,9 @@ class BacktestRecord(BaseModel):
     # Scenario snapshots
     scenarios: list[ScenarioSnapshot] = []
 
+    # Primary valuation method used (e.g., "sotp", "dcf_primary", "ddm", "rim", "rnpv")
+    primary_method: Optional[str] = None
+
     # Phase 4: Market signals version for A/B comparison
     # 0 = pre-Phase 4 (no signals), 1 = Phase 4 (with market signals)
     market_signals_version: int = 0

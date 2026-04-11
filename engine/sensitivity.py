@@ -295,7 +295,7 @@ def sensitivity_multiple_range(
         ev = round(metric_value * m)
         eq = ev - net_debt
         for disc in discount_range:
-            if eq > 0:
+            if shares > 0:
                 ps = round(per_share(eq, unit_multiplier, shares) * (1 - disc / 100))
             else:
                 ps = 0

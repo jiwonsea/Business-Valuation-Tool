@@ -1484,6 +1484,15 @@ class TestSensitivityExtended:
         vals = [r.value for r in rows]
         assert vals[0] < vals[1] < vals[2]
 
+    def test_multiple_range_negative_equity_propagated(self):
+        """Negative equity must propagate as negative per-share value, not zero."""
+        rows = sensitivity_multiple_range(
+            metric_value=100_000, net_debt=900_000,  # EV << net_debt → equity < 0
+            shares=50_000_000, base_multiple=5.0,
+            mult_range=[5.0], discount_range=[0],
+        )
+        assert rows[0].value < 0
+
 
 # ═══════════════════════════════════════════════════════════
 # Growth — Linear Fade & CAGR Tests

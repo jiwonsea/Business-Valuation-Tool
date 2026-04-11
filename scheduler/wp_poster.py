@@ -14,6 +14,7 @@ import logging
 import os
 from base64 import b64encode
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 
@@ -101,7 +102,8 @@ def _build_post_content(summary: dict) -> str:
         lines.append("\n")
 
         # Add download link if available
-        download_url = v.get("download_url", "")
+        raw_url = v.get("download_url", "")
+        download_url = raw_url if urlparse(raw_url).scheme in ("http", "https") else ""
         if download_url:
             lines.append(f"[📥 Download Full Excel Report]({download_url})\n")
 

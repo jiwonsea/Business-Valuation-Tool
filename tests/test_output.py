@@ -148,6 +148,44 @@ class TestWpPosterBuildContent:
         assert "<script>" not in html.lower()
         assert "alert" not in html
 
+    def test_download_url_scheme_validation(self):
+        from scheduler.wp_poster import _build_post_content
+
+        for bad_url in ["javascript:alert(1)", "data:text/html,<h1>xss</h1>", "vbscript:x"]:
+            summary = self._make_summary(
+                valuations=[
+                    {
+                        "company": "TestCo",
+                        "market": "US",
+                        "status": "success",
+                        "market_cap_usd": 1_000_000_000,
+                        "summary_md": "Summary.",
+                        "download_url": bad_url,
+                    }
+                ]
+            )
+            html = _build_post_content(summary)
+            assert bad_url not in html, f"Unsafe URL must be blocked: {bad_url}"
+
+    def test_download_url_valid_https_passes(self):
+        from scheduler.wp_poster import _build_post_content
+
+        valid_url = "https://storage.supabase.com/file.xlsx"
+        summary = self._make_summary(
+            valuations=[
+                {
+                    "company": "TestCo",
+                    "market": "US",
+                    "status": "success",
+                    "market_cap_usd": 1_000_000_000,
+                    "summary_md": "Summary.",
+                    "download_url": valid_url,
+                }
+            ]
+        )
+        html = _build_post_content(summary)
+        assert valid_url in html
+
     def test_dead_label_statement_removed(self):
         """Line 51 dead statement is removed — no AttributeError or side effect."""
         import inspect

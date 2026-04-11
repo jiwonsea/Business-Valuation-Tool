@@ -102,11 +102,18 @@ def run_monte_carlo(
     rng = np.random.default_rng(mc_input.seed)
     n = mc_input.n_sims
 
-    # Sampling
+    # Sampling — multiples use lognormal (Damodaran standard: always ≥ 0, right-skewed)
+    # Convert desired mean/std to lognormal parameters:
+    #   mu_ln = ln(m² / sqrt(m² + s²)),  sigma_ln = sqrt(ln(1 + (s/m)²))
     multiples_samples = {}
     for code, (mu, sigma) in mc_input.multiple_params.items():
-        samples = rng.normal(mu, sigma, n)
-        samples = np.maximum(samples, 0)  # Multiple >= 0
+        if mu > 0 and sigma > 0:
+            sigma_ln = np.sqrt(np.log(1 + (sigma / mu) ** 2))
+            mu_ln = np.log(mu) - 0.5 * sigma_ln ** 2
+            samples = rng.lognormal(mu_ln, sigma_ln, n)
+        else:
+            samples = rng.normal(mu, sigma, n)
+            samples = np.maximum(samples, 0)  # fallback: normal with floor
         multiples_samples[code] = samples
 
     dlom_samples = rng.normal(mc_input.dlom_mean, mc_input.dlom_std, n)

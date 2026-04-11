@@ -105,6 +105,13 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - **Target: ≤4 LLM calls/company** (classify + peers_batch + wacc + scenarios). Optionality segment detection is merged into the scenarios call — no extra quota. Daily LLM quota: 50 calls.
 - **Quota safety net**: `weekly_run.py` auto-trims targets if `len(targets) * 4 > remaining_llm_quota`.
 
+## Distress Discount Engine Rules
+
+- **Cap = 25% (default)**: Damodaran empirical studies show public-company peer-multiple haircuts cluster at 20-25% median, ~30% at 90th percentile. 35%+ applies only to Chapter 11 / near-bankruptcy proceedings, not going-concern SOTP. Profiles needing >25% must set `distress_max_discount` explicitly in YAML.
+- **Cyclical 1-year loss exemption**: `loss_streak == 1` triggers no penalty for auto/steel/shipping/semiconductor/oil/construction/chemical industries (`_CYCLICAL_KEYWORDS` in `distress.py`). 2-year streak → 5% (vs 10% for non-cyclical). 3+ years → 15% regardless.
+- **Segment-level differentiation**: `apply_distress_discount()` supports three tiers — `exempt_segments` (0% haircut: ev_revenue, distress_exempt), `healthy_segments` (50% of discount: profitable segments in companies with ≥3 segments), and default (full discount). `valuation_runner.py` auto-populates `healthy` when `len(segments) >= 3 and distress.applied`.
+- **ev_revenue segments always exempt**: distress discount is excluded for ev_revenue segments because comp multiples already embed balance sheet risk.
+
 ## Gotchas
 
 - `per_share()` propagates negative equity (no zero-clamping). Distress scenarios yield negative per-share values. DLOM is not applied to negative equity.
@@ -131,4 +138,5 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - Sensitivity multiples grid: when row_seg == col_seg, col_ev must be 0 to prevent double-counting the same segment's EV contribution.
 - `segment_multiples`/`segment_ebitda`/`segment_revenue` keys in scenario YAML must be segment codes (`SEG1`, `AUTONOMOUS_DRIVING`), not human-readable names. LLM frequently generates Korean labels or ticker names instead. `load_profile()` warns on mismatch but doesn't auto-fix — verify keys after `--auto` generation.
 - `pos_override` keys are drug name strings (exact match against YAML pipeline `name` field). Renaming a drug in YAML without updating scenario `pos_override` keys silently drops the override.
+- rNPV cross-validation: the first CV item is labeled `"SOTP (EV/EBITDA)"` but holds the rNPV primary EV (passed as `sotp_ev` to `cross_validate()`). The DCF entry is exactly `"DCF (FCFF)"` — used in `_RNPV_EXCLUDED_CV_METHODS` in `engine/quality.py` to exclude it from rNPV convergence scoring.
 - **Quality score rNPV restructuring**: For `primary_method=="rnpv"`, `cv_convergence` (25pts) is NOT a single CV — it's `rnpv_weighted_cv` (0-10, DCF excluded) + `rnpv_pipeline_diversity` (0-8) + `rnpv_pos_grounding` (0-7). Similarly `market_alignment` splits into price gap (0-15) + `rnpv_reverse_consistency` (0-10). Standard `_cv_convergence_score()` is NOT called for rNPV. `format_quality_report()` in `engine/quality.py` handles both modes; called from `console_report.py`.

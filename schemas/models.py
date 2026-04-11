@@ -663,7 +663,7 @@ class ValuationInput(BaseModel):
     mc_revenue_std_pct: float = 30.0  # Revenue std dev for ev_revenue segments (% of base)
     mc_dlom_mean: float = 0.0  # DLOM mean (%)
     mc_dlom_std: float = 5.0  # DLOM std dev (%)
-    distress_max_discount: float = 0.35  # Maximum distress discount cap (0.0~1.0)
+    distress_max_discount: float = 0.25  # Maximum distress discount cap (0.0~1.0); default 25% (Damodaran empirical median for going-concern SOTP)
     news_key_issues: Optional[str] = None  # News-based key issues summary
     market_signals: Optional[MarketSignals] = None  # External market data signals (Phase 4)
 

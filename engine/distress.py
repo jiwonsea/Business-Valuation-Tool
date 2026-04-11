@@ -49,7 +49,7 @@ class DistressResult:
 def calc_distress_discount(
     consolidated: dict[int, dict],
     base_year: int,
-    max_discount: float = 0.35,
+    max_discount: float = 0.25,
     market: str = "US",
     kd_pre: float = 5.0,
     industry: str = "",
@@ -60,7 +60,11 @@ def calc_distress_discount(
         consolidated: {year: {"de_ratio", "net_income", "dep", "amort", "op",
                               "gross_borr", ...}}
         base_year: The valuation base year
-        max_discount: Maximum total discount (default 35%)
+        max_discount: Maximum total discount (default 25%). Empirical basis:
+            Damodaran distress discount studies show public-company peer-multiple
+            haircuts cluster at 20-25% (median) and ~30% (90th percentile).
+            35% applies only to near-bankruptcy proceedings, not going-concern SOTP.
+            Override via ValuationInput.distress_max_discount if needed.
         market: "KR" or "US" — affects D/E threshold
         kd_pre: Pre-tax cost of debt (%) from wacc_params
 

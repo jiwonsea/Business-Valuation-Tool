@@ -221,7 +221,7 @@ def load_profile(path: str) -> ValuationInput:
         mc_dlom_mean=raw.get("mc_dlom_mean", 0.0),
         mc_dlom_std=raw.get("mc_dlom_std", 5.0),
         mc_revenue_std_pct=raw.get("mc_revenue_std_pct", 30.0),
-        distress_max_discount=raw.get("distress_max_discount", 0.35),
+        distress_max_discount=raw.get("distress_max_discount", 0.25),
         news_drivers=news_drivers,
         news_key_issues=news_key_issues,
         market_signals=raw.get("market_signals"),

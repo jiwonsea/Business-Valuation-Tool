@@ -36,7 +36,7 @@ def sheet_scenarios(ctx: Ctx):
     style_header_row(ws, r, len(sc_headers))
 
     is_listed = ctx.vi.company.legal_status == "상장"
-    any(ctx.vi.scenarios[c].dlom > 0 for c in sc_codes)
+    has_dlom = any(ctx.vi.scenarios[c].dlom > 0 for c in sc_codes)
 
     # ── Scenario base assumptions ──
     r += 1
@@ -47,8 +47,8 @@ def sheet_scenarios(ctx: Ctx):
     # Method-specific key drivers (figures that differentiate scenarios)
     r = _write_scenario_drivers(ws, r, ctx)
 
-    # DLOM -- only shown for private (unlisted) companies
-    if not is_listed:
+    # DLOM -- only shown for private (unlisted) companies that actually apply a discount
+    if not is_listed and has_dlom:
         r += 1
         write_cell(ws, r, 1, "DLOM")
         for i, sc_code in enumerate(sc_codes, 2):

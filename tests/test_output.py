@@ -1,4 +1,4 @@
-"""output package tests — dashboard + wp_poster fixes."""
+"""output package tests — dashboard + wp_poster + Excel sheet fixes."""
 
 import pytest
 
@@ -198,3 +198,75 @@ class TestWpPosterBuildContent:
         dead_pattern = 'summary.get("label"'
         standalone = [l for l in lines if l.startswith(dead_pattern)]
         assert not standalone, f"Dead statement still present: {standalone}"
+
+
+# ── scenarios.py: has_dlom dead statement fix ──
+
+
+class TestScenariosDlomGuard:
+    """DLOM row must only appear for unlisted companies with actual DLOM set."""
+
+    def test_dead_has_dlom_statement_removed(self):
+        """any() result is now assigned to has_dlom — not discarded."""
+        import inspect
+        from output.sheets.scenarios import sheet_scenarios
+
+        src = inspect.getsource(sheet_scenarios)
+        lines = [l.strip() for l in src.split("\n")]
+        # Standalone any() starting with 'any(ctx.vi.scenarios' must not exist
+        dead = [l for l in lines if l.startswith("any(ctx.vi.scenarios")]
+        assert not dead, f"Dead statement still present: {dead}"
+
+    def test_has_dlom_assigned(self):
+        """has_dlom is assigned and used in conditional."""
+        import inspect
+        from output.sheets.scenarios import sheet_scenarios
+
+        src = inspect.getsource(sheet_scenarios)
+        assert "has_dlom = any(" in src, "has_dlom must be assigned"
+        assert "not is_listed and has_dlom" in src, "DLOM row must be gated on has_dlom"
+
+
+# ── sensitivity.py: _get_ref_label_value SOTP fix ──
+
+
+class TestSensitivityRefLabel:
+    """SOTP valuation must show weighted per-share, not DCF EV, as reference."""
+
+    def _make_ctx(self, method: str, weighted=40_000, total_ev=500_000, dcf_ev=300_000):
+        from types import SimpleNamespace
+
+        dcf = SimpleNamespace(ev_dcf=dcf_ev) if dcf_ev else None
+        result = SimpleNamespace(
+            weighted_value=weighted,
+            total_ev=total_ev,
+            dcf=dcf,
+            ddm=None,
+            rim=None,
+            nav=None,
+            multiples_primary=None,
+        )
+        return SimpleNamespace(method=method, result=result, unit="백만원", currency_sym="원")
+
+    def test_sotp_returns_weighted_value(self):
+        from output.sheets.sensitivity import _get_ref_label_value
+
+        ctx = self._make_ctx("sotp", weighted=40_000)
+        label, value = _get_ref_label_value(ctx)
+        assert "주당" in label, f"Expected per-share label, got: {label}"
+        assert "40,000" in value, f"Expected weighted value in output, got: {value}"
+
+    def test_sotp_with_dcf_cv_does_not_show_dcf_ev(self):
+        """SOTP + DCF cross-validation must not show 'DCF EV' as reference."""
+        from output.sheets.sensitivity import _get_ref_label_value
+
+        ctx = self._make_ctx("sotp", weighted=40_000, dcf_ev=300_000)
+        label, _ = _get_ref_label_value(ctx)
+        assert label != "DCF EV", "SOTP should not show 'DCF EV' as reference label"
+
+    def test_dcf_primary_shows_dcf_ev(self):
+        from output.sheets.sensitivity import _get_ref_label_value
+
+        ctx = self._make_ctx("dcf_primary", weighted=0, dcf_ev=500_000)
+        label, _ = _get_ref_label_value(ctx)
+        assert label == "DCF EV"

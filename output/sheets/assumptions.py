@@ -448,3 +448,13 @@ def _write_assumption_drivers(ws, r: int, ctx: Ctx):
                 f"{ctx.vi.scenarios[sc_code].nav_discount:.0f}%",
                 fill=BLUE_FILL,
             )
+
+    elif method in ("sotp", "dcf_primary"):
+        has_growth = any(ctx.vi.scenarios[c].growth_adj_pct != 0 for c in sc_codes)
+        if has_growth:
+            write_cell(ws, r, 1, "성장률 조정")
+            for i, sc_code in enumerate(sc_codes, 2):
+                adj = ctx.vi.scenarios[sc_code].growth_adj_pct
+                write_cell(
+                    ws, r, i, f"{adj:+.0f}%" if adj != 0 else "기본", fill=BLUE_FILL
+                )

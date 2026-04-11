@@ -205,6 +205,8 @@ def _get_ref_label_value(ctx: Ctx) -> tuple[str, str]:
             "Multiples 주당가치",
             f"{ctx.result.multiples_primary.per_share:,}{ctx.currency_sym}",
         )
+    elif ctx.method == "sotp" and ctx.result.weighted_value > 0:
+        return "확률가중 주당가치", f"{ctx.result.weighted_value:,}{ctx.currency_sym}"
     elif ctx.result.dcf:
         return "DCF EV", f"{ctx.result.dcf.ev_dcf:,}{ctx.unit}"
     else:

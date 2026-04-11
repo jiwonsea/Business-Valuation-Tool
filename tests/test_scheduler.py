@@ -11,6 +11,7 @@ from scheduler.scoring import (
     _time_decay_weight,
     score_companies,
 )
+from scheduler.weekly_run import _is_real_company
 
 
 # ── scoring unit tests ──
@@ -163,6 +164,42 @@ class TestScoreCompanies:
         scored = score_companies(companies, [])
         assert len(scored) == 1
         assert scored[0]["news_count"] == 0.0
+
+
+# ── _is_real_company filter tests ──
+
+
+class TestIsRealCompany:
+    def test_korean_real_company(self):
+        assert _is_real_company({"name": "삼성전자"}) is True
+
+    def test_english_real_company(self):
+        assert _is_real_company({"name": "NVIDIA"}) is True
+
+    def test_korean_sector_name_blocked(self):
+        assert _is_real_company({"name": "반도체 관련주"}) is False
+        assert _is_real_company({"name": "방위산업 관련 기업군"}) is False
+
+    def test_english_sector_lowercase_blocked(self):
+        assert _is_real_company({"name": "ai sector"}) is False
+        assert _is_real_company({"name": "cloud companies"}) is False
+        assert _is_real_company({"name": "tech firms"}) is False
+
+    def test_english_sector_mixed_case_blocked(self):
+        """Case-insensitive: AI Sector, Tech Companies must be filtered."""
+        assert _is_real_company({"name": "AI Sector"}) is False
+        assert _is_real_company({"name": "Tech Companies"}) is False
+        assert _is_real_company({"name": "Cloud Computing Firms"}) is False
+        assert _is_real_company({"name": "Healthcare Industry"}) is False
+
+    def test_english_sector_uppercase_blocked(self):
+        assert _is_real_company({"name": "SEMICONDUCTOR SECTOR"}) is False
+
+    def test_empty_name(self):
+        assert _is_real_company({"name": ""}) is True
+
+    def test_missing_name_key(self):
+        assert _is_real_company({}) is True
 
 
 # ── weekly_run orchestration tests ──

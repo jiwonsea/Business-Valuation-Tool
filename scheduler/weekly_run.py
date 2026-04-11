@@ -32,6 +32,29 @@ except ImportError:
 
 from .scoring import score_companies
 
+# Sector/theme names to exclude from per-market selection
+# (e.g. '반도체 관련주', 'AI Sector Companies')
+_SECTOR_KEYWORDS: tuple[str, ...] = (
+    "관련주",
+    "관련 기업",
+    "관련기업",
+    "기업군",
+    "관련 종목",
+    "관련종목",
+    # English sector/group expressions (US market AI outputs)
+    # Stored lowercase; matching uses name.lower() for case-insensitive check.
+    " sector",
+    " companies",
+    " firms",
+    " industry",
+)
+
+
+def _is_real_company(co: dict) -> bool:
+    """Return True if *co* looks like an individual listed company, not a sector/theme group."""
+    name_lower = co.get("name", "").lower()
+    return not any(kw in name_lower for kw in _SECTOR_KEYWORDS)
+
 _RESULTS_BASE = Path(
     os.environ.get(
         "VALUATION_RESULTS_DIR",
@@ -196,26 +219,8 @@ def run_weekly(
     summary["scored_companies"] = scored
 
     # ── Per-market selection: top N per market ──
-    # Filter out sector/theme names (e.g. '반도체 관련주', '방위산업 관련 기업군')
-    _SECTOR_KEYWORDS = (
-        "관련주",
-        "관련 기업",
-        "관련기업",
-        "기업군",
-        "관련 종목",
-        "관련종목",
-        # English sector/group expressions (US market AI outputs)
-        " sector",
-        " companies",
-        " firms",
-        " industry",
-    )
-
-    def _is_real_company(co: dict) -> bool:
-        name = co.get("name", "")
-        return not any(kw in name for kw in _SECTOR_KEYWORDS)
-
     targets: list[dict] = []
+
     for market in markets:
         market_companies = [
             c for c in scored if c.get("market") == market and _is_real_company(c)

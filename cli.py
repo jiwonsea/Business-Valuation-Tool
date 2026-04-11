@@ -294,6 +294,12 @@ def main():
     # Listed company market price comparison
     result = _fetch_and_compare_market_price(vi, result)
 
+    # Recompute quality score now that market_comparison is attached
+    # (run_valuation computes quality before market price is available)
+    if result.market_comparison and result.market_comparison.market_price > 0:
+        from engine.quality import calc_quality_score
+        result.quality = calc_quality_score(vi, result)
+
     print_report(vi, result)
 
     # Save to DB (when Supabase is configured)

@@ -90,6 +90,9 @@ if st.sidebar.button("분석 실행", type="primary"):
         vi, result = _cached_run_valuation(content_hash, profile_path)
         # 상장사 괴리율 자동 비교 (시장가는 실시간이므로 캐싱 미적용)
         result = _fetch_and_compare_market_price(vi, result)
+        if result.market_comparison and result.market_comparison.market_price > 0:
+            from engine.quality import calc_quality_score
+            result.quality = calc_quality_score(vi, result)
         st.session_state["vi"] = vi
         st.session_state["result"] = result
         # DB 저장

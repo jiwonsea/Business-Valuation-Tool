@@ -12,7 +12,7 @@ KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML
 ValuationInput (YAML) → run_valuation() → ValuationResult → print_report() / Excel
 ```
 
-- `engine/` — Pure functions (no IO). `method_selector.py` auto-selects methodology by company type. `rnpv.py` — risk-adjusted NPV for pharma/biotech pipeline valuation.
+- `engine/` — Pure functions (no IO). `method_selector.py` auto-selects methodology by company type. `rnpv.py` — risk-adjusted NPV for pharma/biotech pipeline valuation. `quality.py` — composite 0-100 quality score (`calc_quality_score()`); rNPV restructures cv_convergence bucket (DCF excluded) and market_alignment bucket (15+10 split).
 - `schemas/models.py` — Pydantic models. Core contract: `ValuationInput` → `ValuationResult`.
 - `pipeline/` — Data collection (DART, SEC EDGAR, Yahoo Finance). IO only here.
 - `ai/` — LLM-based segment classification, peer recommendation, scenario design (Claude Sonnet 4).
@@ -131,3 +131,4 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - Sensitivity multiples grid: when row_seg == col_seg, col_ev must be 0 to prevent double-counting the same segment's EV contribution.
 - `segment_multiples`/`segment_ebitda`/`segment_revenue` keys in scenario YAML must be segment codes (`SEG1`, `AUTONOMOUS_DRIVING`), not human-readable names. LLM frequently generates Korean labels or ticker names instead. `load_profile()` warns on mismatch but doesn't auto-fix — verify keys after `--auto` generation.
 - `pos_override` keys are drug name strings (exact match against YAML pipeline `name` field). Renaming a drug in YAML without updating scenario `pos_override` keys silently drops the override.
+- **Quality score rNPV restructuring**: For `primary_method=="rnpv"`, `cv_convergence` (25pts) is NOT a single CV — it's `rnpv_weighted_cv` (0-10, DCF excluded) + `rnpv_pipeline_diversity` (0-8) + `rnpv_pos_grounding` (0-7). Similarly `market_alignment` splits into price gap (0-15) + `rnpv_reverse_consistency` (0-10). Standard `_cv_convergence_score()` is NOT called for rNPV. `format_quality_report()` in `engine/quality.py` handles both modes; called from `console_report.py`.

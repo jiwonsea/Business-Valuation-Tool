@@ -11,20 +11,24 @@ import shutil
 from pathlib import Path
 
 # ── Fix Windows unicode username SSL certificate path issue ──
-# yfinance (curl_cffi-based) cannot read CA cert from unicode paths.
-# Setting os.environ alone doesn't propagate to the already-loaded native curl library,
-# so we call Win32 API SetEnvironmentVariableW directly via ctypes.
-_CA_BUNDLE_PATH = os.path.join(os.path.expanduser("~"), ".cache", "yfinance_cacert.pem")
+# yfinance (curl_cffi-based) uses libcurl's C file I/O which reads CURL_CA_BUNDLE via
+# getenv() (ANSI codepage). Paths containing non-ASCII chars (e.g. Korean username)
+# fail with curl error 77. Fix: copy cacert to a guaranteed ASCII path under %ALLUSERSPROFILE%
+# (always C:\ProgramData on all Windows versions).
+_CA_BUNDLE_PATH = os.path.join(
+    os.environ.get("ALLUSERSPROFILE", "C:\\ProgramData"),
+    "python-ssl", "cacert.pem",
+)
 
 if os.name == "nt":
     try:
         import certifi
         ca_src = certifi.where()
-        if not ca_src.isascii():
+        if not ca_src.isascii() or not os.environ.get("CURL_CA_BUNDLE", "").isascii():
             os.makedirs(os.path.dirname(_CA_BUNDLE_PATH), exist_ok=True)
             if not os.path.exists(_CA_BUNDLE_PATH):
                 shutil.copy2(ca_src, _CA_BUNDLE_PATH)
-            # Set both Python os.environ and Win32 API
+            # Use both Python env and Win32 Unicode API to cover all read paths
             os.environ["CURL_CA_BUNDLE"] = _CA_BUNDLE_PATH
             import ctypes
             ctypes.windll.kernel32.SetEnvironmentVariableW("CURL_CA_BUNDLE", _CA_BUNDLE_PATH)

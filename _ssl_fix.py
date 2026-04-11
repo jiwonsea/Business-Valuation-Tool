@@ -31,7 +31,9 @@ def apply() -> None:
     except UnicodeEncodeError:
         pass
 
-    dst_dir = os.path.join(os.path.expanduser("~"), ".cache", "ssl")
+    # Use %ALLUSERSPROFILE% (always C:\ProgramData) — guaranteed ASCII on all Windows.
+    # os.path.expanduser("~") contains the Korean username and cannot be used.
+    dst_dir = os.path.join(os.environ.get("ALLUSERSPROFILE", "C:\\ProgramData"), "python-ssl")
     dst = os.path.join(dst_dir, "cacert.pem")
 
     if not os.path.exists(dst):

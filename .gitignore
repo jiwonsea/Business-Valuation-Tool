@@ -49,3 +49,7 @@ naver_cookies.pkl
 
 # Misc artifacts
 *.docx
+
+# Local test artifacts
+test_output/
+prompt.txt

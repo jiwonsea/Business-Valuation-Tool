@@ -168,21 +168,39 @@ class TestMethodSelector:
 
     def test_high_leverage_cyclical_with_peers_multiples(self):
         """Shipping company with D/E > 100% and peers -> multiples (DCF unreliable)"""
-        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=150.0) == "multiples"
-        assert suggest_method(1, industry="shipping", has_peers=True, de_ratio=200.0) == "multiples"
-        assert suggest_method(1, industry="항공", has_peers=True, de_ratio=120.0) == "multiples"
+        assert (
+            suggest_method(1, industry="해운", has_peers=True, de_ratio=150.0)
+            == "multiples"
+        )
+        assert (
+            suggest_method(1, industry="shipping", has_peers=True, de_ratio=200.0)
+            == "multiples"
+        )
+        assert (
+            suggest_method(1, industry="항공", has_peers=True, de_ratio=120.0)
+            == "multiples"
+        )
 
     def test_high_leverage_cyclical_no_peers_dcf(self):
         """High D/E cyclical without peers still falls back to DCF"""
-        assert suggest_method(1, industry="해운", has_peers=False, de_ratio=150.0) == "dcf_primary"
+        assert (
+            suggest_method(1, industry="해운", has_peers=False, de_ratio=150.0)
+            == "dcf_primary"
+        )
 
     def test_high_leverage_cyclical_low_de_dcf(self):
         """Cyclical keywords but D/E <= 100%: normal DCF path (not high leverage)"""
-        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=80.0) == "dcf_primary"
+        assert (
+            suggest_method(1, industry="해운", has_peers=True, de_ratio=80.0)
+            == "dcf_primary"
+        )
 
     def test_high_leverage_cyclical_boundary_de_equals_100(self):
         """D/E exactly 100 does NOT trigger cyclical routing (only >100 does)"""
-        assert suggest_method(1, industry="해운", has_peers=True, de_ratio=100.0) == "dcf_primary"
+        assert (
+            suggest_method(1, industry="해운", has_peers=True, de_ratio=100.0)
+            == "dcf_primary"
+        )
 
     def test_high_leverage_cyclical_default_de_zero(self):
         """No de_ratio passed (defaults to 0): backward-compatible, no cyclical routing"""
@@ -190,11 +208,17 @@ class TestMethodSelector:
 
     def test_high_leverage_cyclical_shipbuilding(self):
         """조선 (shipbuilding) in _HIGH_LEVERAGE_CYCLICAL_KEYWORDS routes to multiples"""
-        assert suggest_method(1, industry="조선", has_peers=True, de_ratio=150.0) == "multiples"
+        assert (
+            suggest_method(1, industry="조선", has_peers=True, de_ratio=150.0)
+            == "multiples"
+        )
 
     def test_construction_high_de_still_multiples(self):
         """건설 with high D/E: _MATURE_KEYWORDS match fires first -> multiples (correct outcome)"""
-        assert suggest_method(1, industry="건설", has_peers=True, de_ratio=150.0) == "multiples"
+        assert (
+            suggest_method(1, industry="건설", has_peers=True, de_ratio=150.0)
+            == "multiples"
+        )
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2524,7 +2548,7 @@ class TestDistressDiscount:
             2023: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
+                "op": 15000,  # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2532,7 +2556,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": -5000,   # EBITDA = -5000+1000 = -4000 < 0
+                "op": -5000,  # EBITDA = -5000+1000 = -4000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
@@ -2540,7 +2564,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 60.0,
                 "net_income": -8000,
-                "op": -7000,   # EBITDA = -7000+1000 = -6000 < 0
+                "op": -7000,  # EBITDA = -7000+1000 = -6000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 25000,
@@ -2555,7 +2579,7 @@ class TestDistressDiscount:
             2023: {
                 "de_ratio": 50.0,
                 "net_income": -1000,
-                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "op": -2000,  # EBITDA = -2000+1000 = -1000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 10000,
@@ -2563,7 +2587,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 55.0,
                 "net_income": -2000,
-                "op": -3000,   # EBITDA = -3000+1000 = -2000 < 0
+                "op": -3000,  # EBITDA = -3000+1000 = -2000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 12000,
@@ -2571,7 +2595,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 60.0,
                 "net_income": -3000,
-                "op": -4000,   # EBITDA = -4000+1000 = -3000 < 0
+                "op": -4000,  # EBITDA = -4000+1000 = -3000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 15000,
@@ -2645,7 +2669,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
+                "op": 15000,  # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2653,7 +2677,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "op": -2000,  # EBITDA = -2000+1000 = -1000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
@@ -2668,7 +2692,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 50.0,
                 "net_income": -5000,
-                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "op": -2000,  # EBITDA = -2000+1000 = -1000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2676,7 +2700,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -8000,
-                "op": -3000,   # EBITDA = -3000+1000 = -2000 < 0
+                "op": -3000,  # EBITDA = -3000+1000 = -2000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,
@@ -2691,7 +2715,7 @@ class TestDistressDiscount:
             2024: {
                 "de_ratio": 50.0,
                 "net_income": 10000,
-                "op": 15000,   # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
+                "op": 15000,  # EBITDA = 15000+3000 = 18000 > 0 → streak breaks
                 "dep": 3000,
                 "amort": 0,
                 "gross_borr": 20000,
@@ -2699,7 +2723,7 @@ class TestDistressDiscount:
             2025: {
                 "de_ratio": 55.0,
                 "net_income": -5000,
-                "op": -2000,   # EBITDA = -2000+1000 = -1000 < 0
+                "op": -2000,  # EBITDA = -2000+1000 = -1000 < 0
                 "dep": 1000,
                 "amort": 0,
                 "gross_borr": 22000,

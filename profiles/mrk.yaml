@@ -1,0 +1,134 @@
+company:
+  name: Merck & Co., Inc.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: MRK
+  cik: '310158'
+  corp_code: null
+  shares_total: 2472392003
+  shares_ordinary: 2472392003
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-11'
+segments:
+  MAIN:
+    name: Main Business
+    multiple: 10.0
+segment_data:
+  2025:
+    MAIN:
+      revenue: 65011
+      gross_profit: 0
+      op: 22107
+      assets: 136866
+consolidated:
+  2023:
+    revenue: 60115
+    op: 2954
+    net_income: 365
+    assets: 106675
+    liabilities: 69040
+    equity: 37581
+    dep: 1828
+    amort: 2044
+    gross_borr: 35055
+    net_borr: 28214
+    de_ratio: 93.3
+  2024:
+    revenue: 64168
+    op: 20221
+    net_income: 17117
+    assets: 117106
+    liabilities: 70734
+    equity: 46313
+    dep: 2104
+    amort: 2395
+    gross_borr: 37111
+    net_borr: 23869
+    de_ratio: 80.1
+  2025:
+    revenue: 65011
+    op: 22107
+    net_income: 18254
+    assets: 136866
+    liabilities: 84204
+    equity: 52606
+    dep: 3045
+    amort: 2793
+    gross_borr: 49339
+    net_borr: 34774
+    de_ratio: 93.8
+wacc_params:
+  rf: 4.25
+  erp: 5.5
+  bu: 0.242
+  de: 16.4
+  tax: 17.4
+  kd_pre: 4.25
+  eq_w: 85.9
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2472392003
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2472392003
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2472392003
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.3
+  - 0.23
+  - 0.17
+  - 0.1
+  - 0.04
+  tax_rate: 17.4
+  capex_to_da: 0.82
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.8
+  actual_capex: 4112
+  capex_fade_to: null
+  da_to_ebitda_override: 0.3194
+pe_multiple: 16.4
+ev_revenue_multiple: 5.2
+pbv_multiple: 5.7
+cps_principal: 0
+cps_years: 0
+net_debt: 34774
+eco_frontier: 0
+base_year: 2025
+peers: []
+mc_enabled: true

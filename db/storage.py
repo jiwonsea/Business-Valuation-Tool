@@ -143,7 +143,9 @@ def upload_and_get_url(
     """
     ensure_bucket()
 
-    filename = remote_filename if remote_filename else _sanitize_key(Path(local_path).name)
+    filename = (
+        remote_filename if remote_filename else _sanitize_key(Path(local_path).name)
+    )
     remote_path = f"{week_label}/{filename}"
 
     uploaded = upload_excel(local_path, remote_path)

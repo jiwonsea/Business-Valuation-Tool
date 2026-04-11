@@ -56,6 +56,7 @@ def _is_retryable(exc: Exception) -> bool:
     msg = str(exc).lower()
     return "401" in msg or "429" in msg or "too many" in msg or "rate" in msg
 
+
 # ── Cache ──
 _TICKER_CACHE_FILE = (
     Path(__file__).resolve().parent.parent / ".cache" / "kr_tickers.json"
@@ -235,9 +236,9 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
             info = _ticker_info_cache.get(resolved, {})
             currency = info.get("currency", "USD" if market == "US" else "KRW")
 
-            inc = t.financials   # Income Statement
+            inc = t.financials  # Income Statement
             bs = t.balance_sheet  # Balance Sheet
-            cf = t.cashflow      # Cashflow
+            cf = t.cashflow  # Cashflow
 
             if inc is None or inc.empty:
                 logger.warning("yfinance 손익계산서 없음: %s", resolved)
@@ -245,10 +246,14 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
             break  # success
         except Exception as e:
             if _is_retryable(e) and attempt < _YF_MAX_RETRIES - 1:
-                delay = _YF_RETRY_BASE_DELAY * (2 ** attempt)
+                delay = _YF_RETRY_BASE_DELAY * (2**attempt)
                 logger.warning(
                     "yfinance 일시적 오류 (%s) %ds 후 재시도 (attempt %d/%d): %s",
-                    resolved, delay, attempt + 1, _YF_MAX_RETRIES, e,
+                    resolved,
+                    delay,
+                    attempt + 1,
+                    _YF_MAX_RETRIES,
+                    e,
                 )
                 time.sleep(delay)
                 continue
@@ -420,6 +425,15 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
             currency = info.get("currency", "USD" if market == "US" else "KRW")
             market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
 
+            # KR: yfinance often returns price but omits marketCap/shares.
+            # Fall through to get_quote_summary fallback which provides complete data.
+            if market == "KR" and not market_cap_raw:
+                logger.warning(
+                    "yfinance KR 시총 누락 (%s) — get_quote_summary fallback 시도",
+                    resolved,
+                )
+                break
+
             return {
                 "price": price,
                 "market_cap": market_cap,  # million KRW / $M
@@ -432,10 +446,14 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
             }
         except Exception as e:
             if _is_retryable(e) and attempt < _YF_MAX_RETRIES - 1:
-                delay = _YF_RETRY_BASE_DELAY * (2 ** attempt)
+                delay = _YF_RETRY_BASE_DELAY * (2**attempt)
                 logger.warning(
                     "yfinance 시장 데이터 일시적 오류 (%s) %ds 후 재시도 (attempt %d/%d): %s",
-                    resolved, delay, attempt + 1, _YF_MAX_RETRIES, e,
+                    resolved,
+                    delay,
+                    attempt + 1,
+                    _YF_MAX_RETRIES,
+                    e,
                 )
                 time.sleep(delay)
                 continue
@@ -452,7 +470,11 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
             if fallback and fallback.get("price", 0) > 0:
                 logger.info("KRX fallback 성공: %s", resolved)
                 _price = fallback["price"]
-                _mktcap = round(fallback.get("market_cap", 0) / 1_000_000) if fallback.get("market_cap") else 0
+                _mktcap = (
+                    round(fallback.get("market_cap", 0) / 1_000_000)
+                    if fallback.get("market_cap")
+                    else 0
+                )
                 return {
                     "price": _price,
                     "market_cap": _mktcap,  # million KRW

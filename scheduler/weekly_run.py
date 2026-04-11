@@ -265,7 +265,9 @@ def run_weekly(
         llm_budget = estimate["remaining_quota"].get("openrouter", 0) + anthropic_bonus
     else:
         llm_budget = estimate["remaining_quota"].get("anthropic", 50)
-    calls_per_company = 6  # classify + peers_batch + wacc + scenarios + news_summary + profile_gen
+    calls_per_company = (
+        6  # classify + peers_batch + wacc + scenarios + news_summary + profile_gen
+    )
     max_affordable = max(llm_budget // calls_per_company, 1)
     if len(targets) > max_affordable:
         logger.warning(
@@ -431,8 +433,13 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                     # Fallback: sanitize company name; if result is empty (Korean-only),
                     # use positional index to guarantee a valid non-empty key
                     from db.storage import _sanitize_key as _sk
+
                     safe = _sk(Path(entry["excel_path"]).stem)
-                    remote_filename = f"{safe}_valuation.xlsx" if safe else f"company_{i}_valuation.xlsx"
+                    remote_filename = (
+                        f"{safe}_valuation.xlsx"
+                        if safe
+                        else f"company_{i}_valuation.xlsx"
+                    )
                 upload = upload_and_get_url(
                     entry["excel_path"], week_folder_name, remote_filename
                 )
@@ -441,7 +448,9 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                     entry["remote_path"] = upload["remote_path"]
                     logger.info(
                         "Storage upload OK [%s] ticker=%s → %s",
-                        entry["company"], ticker, upload["remote_path"],
+                        entry["company"],
+                        ticker,
+                        upload["remote_path"],
                     )
             except Exception as e:
                 logger.warning("Storage upload failed [%s]: %s", entry["company"], e)

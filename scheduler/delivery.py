@@ -282,7 +282,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
         reason = _esc(v.get("reason", ""))
         reason_html = (
             f'<div style="margin:4px 0 6px;font-size:12px;color:#555;">'
-            f'📰 {reason}</div>'
+            f"📰 {reason}</div>"
             if reason
             else ""
         )

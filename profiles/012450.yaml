@@ -1,0 +1,150 @@
+company:
+  name: 한화에어로스페이스
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '012450'
+  cik: null
+  corp_code: '00126566'
+  shares_total: 51563401
+  shares_ordinary: 51563401
+  shares_preferred: 0
+  treasury_shares: 114613
+  analysis_date: '2026-04-11'
+segments:
+  SEG1:
+    name: 항공우주 방위사업 (Defense & Aerospace)
+    multiple: 10.0
+  SEG2:
+    name: 민간항공기 부품 (Commercial Aerospace)
+    multiple: 10.0
+  SEG3:
+    name: 우주/위성 사업 (Space & Satellite)
+    multiple: 10.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 14686596
+      gross_profit: 0
+      op: 1701894
+      assets: 29674519
+    SEG2:
+      revenue: 8010870
+      gross_profit: 0
+      op: 928306
+      assets: 16186101
+    SEG3:
+      revenue: 4005435
+      gross_profit: 0
+      op: 464153
+      assets: 8093050
+consolidated:
+  2023:
+    revenue: 7889687
+    op: 594337
+    net_income: 817510
+    assets: 19542900
+    liabilities: 14858675
+    equity: 3528357
+    dep: 339098
+    amort: 0
+    gross_borr: 4170017
+    net_borr: 2363658
+    de_ratio: 118.2
+  2024:
+    revenue: 11240121
+    op: 1732072
+    net_income: 2298945
+    assets: 43561934
+    liabilities: 32069927
+    equity: 4995125
+    dep: 330948
+    amort: 0
+    gross_borr: 10693211
+    net_borr: 7725478
+    de_ratio: 214.1
+  2025:
+    revenue: 26702901
+    op: 3094352
+    net_income: 1404962
+    assets: 53953670
+    liabilities: 37165485
+    equity: 9684907
+    dep: 872742
+    amort: 0
+    gross_borr: 12825374
+    net_borr: 5112018
+    de_ratio: 132.4
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 0.828
+  de: 16.5
+  tax: 25.0
+  kd_pre: 3.82
+  eq_w: 85.8
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 51448788
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 51448788
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 51448788
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.0675
+  - 0.055
+  - 0.0425
+  - 0.03
+  tax_rate: 25.0
+  capex_to_da: 2.08
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 1994082
+  capex_fade_to: null
+  da_to_ebitda_override: 0.2479
+pe_multiple: 55.2
+ev_revenue_multiple: 3.1
+pbv_multiple: 8.0
+cps_principal: 0
+cps_years: 0
+net_debt: 5112018
+eco_frontier: 0
+base_year: 2025
+peers: []
+mc_enabled: true

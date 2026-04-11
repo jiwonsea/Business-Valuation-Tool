@@ -399,7 +399,9 @@ class TestBacktestRecord:
 
 
 class TestForecastErrorByMethod:
-    def _make_method_record(self, predicted: int, actual: float, method: str) -> BacktestRecord:
+    def _make_method_record(
+        self, predicted: int, actual: float, method: str
+    ) -> BacktestRecord:
         return BacktestRecord(
             snapshot_id="snap-x",
             valuation_id="val-x",
@@ -435,10 +437,18 @@ class TestForecastErrorByMethod:
         """primary_method=None is grouped under 'unknown'."""
         records = [
             BacktestRecord(
-                snapshot_id="s", valuation_id="v", ticker="T", market="US",
-                currency="USD", unit_multiplier=1, company_name="Co",
-                legal_status="listed", analysis_date=date(2025, 1, 1),
-                predicted_value=100, price_t6m=100.0, primary_method=None,
+                snapshot_id="s",
+                valuation_id="v",
+                ticker="T",
+                market="US",
+                currency="USD",
+                unit_multiplier=1,
+                company_name="Co",
+                legal_status="listed",
+                analysis_date=date(2025, 1, 1),
+                predicted_value=100,
+                price_t6m=100.0,
+                primary_method=None,
             )
             for _ in range(3)
         ]
@@ -456,16 +466,24 @@ class TestForecastErrorByMethod:
         ]
         result = calc_forecast_error_by_method(records, "t6m", min_n=3)
         assert "sotp" not in result  # excluded (n=2 < 3)
-        assert "ddm" in result       # included (n=3 >= 3)
+        assert "ddm" in result  # included (n=3 >= 3)
 
     def test_unlisted_excluded_from_method_breakdown(self):
         """Unlisted companies are excluded from method breakdown."""
         records = [
             BacktestRecord(
-                snapshot_id="s", valuation_id="v", ticker="T", market="US",
-                currency="USD", unit_multiplier=1, company_name="Co",
-                legal_status="비상장", analysis_date=date(2025, 1, 1),
-                predicted_value=100, price_t6m=100.0, primary_method="sotp",
+                snapshot_id="s",
+                valuation_id="v",
+                ticker="T",
+                market="US",
+                currency="USD",
+                unit_multiplier=1,
+                company_name="Co",
+                legal_status="비상장",
+                analysis_date=date(2025, 1, 1),
+                predicted_value=100,
+                price_t6m=100.0,
+                primary_method="sotp",
             )
             for _ in range(5)
         ]

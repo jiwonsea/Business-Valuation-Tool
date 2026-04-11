@@ -90,7 +90,10 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
     if capex_raw is not None:
         result["capex"] = abs(capex_raw)
     else:
-        logger.debug("parse_financial_statements: capex 항목 미발견 (year=%d) — profile_generator가 capex_to_da fallback 사용", year)
+        logger.debug(
+            "parse_financial_statements: capex 항목 미발견 (year=%d) — profile_generator가 capex_to_da fallback 사용",
+            year,
+        )
 
     # Interest-bearing debt + net debt (from balance sheet items)
     borrowings = estimate_borrowings(items)

@@ -199,7 +199,12 @@ def ask(
     if provider == "openrouter":
         try:
             return _ask_openrouter(prompt, system, model, max_tokens, temperature)
-        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ApiGuardError) as e:
+        except (
+            httpx.HTTPError,
+            httpx.TimeoutException,
+            RuntimeError,
+            ApiGuardError,
+        ) as e:
             # Fallback to Anthropic when OpenRouter fails or circuit is open
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)

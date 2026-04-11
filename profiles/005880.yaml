@@ -1,0 +1,134 @@
+company:
+  name: 대한해운
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: 005880
+  cik: null
+  corp_code: '00113535'
+  shares_total: 322747340
+  shares_ordinary: 322747340
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-11'
+segments:
+  MAIN:
+    name: Main Business
+    multiple: 10.0
+segment_data:
+  2025:
+    MAIN:
+      revenue: 1276968
+      gross_profit: 0
+      op: 208465
+      assets: 4109190
+consolidated:
+  2023:
+    revenue: 1397365
+    op: 250149
+    net_income: 68279
+    assets: 4727804
+    liabilities: 2880989
+    equity: 1609162
+    dep: 160862
+    amort: 0
+    gross_borr: 2477161
+    net_borr: 2367387
+    de_ratio: 153.9
+  2024:
+    revenue: 1747187
+    op: 328714
+    net_income: 162090
+    assets: 4580381
+    liabilities: 2290699
+    equity: 2019940
+    dep: 157851
+    amort: 0
+    gross_borr: 2051221
+    net_borr: 1791420
+    de_ratio: 101.5
+  2025:
+    revenue: 1276968
+    op: 208465
+    net_income: 180205
+    assets: 4109190
+    liabilities: 1694536
+    equity: 2157268
+    dep: 138430
+    amort: 0
+    gross_borr: 1509782
+    net_borr: 1159182
+    de_ratio: 70.0
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 0.34
+  de: 151.4
+  tax: 13.6
+  kd_pre: 6.42
+  eq_w: 39.8
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 322747340
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 322747340
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 322747340
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.04
+  - 0.03
+  tax_rate: 13.6
+  capex_to_da: 1.36
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 149021
+  capex_fade_to: null
+  da_to_ebitda_override: 0.3716
+pe_multiple: 5.5
+ev_revenue_multiple: 1.7
+pbv_multiple: 0.5
+cps_principal: 0
+cps_years: 0
+net_debt: 1159182
+eco_frontier: 0
+base_year: 2025
+peers: []
+mc_enabled: true

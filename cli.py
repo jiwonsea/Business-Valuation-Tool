@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv()
 import _ssl_fix  # noqa: F401, E402 — must run before any yfinance/curl_cffi import
 
@@ -30,7 +31,9 @@ from output.console_report import print_report
 logger = logging.getLogger(__name__)
 
 
-def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult) -> ValuationResult:
+def _fetch_and_compare_market_price(
+    vi: ValuationInput, result: ValuationResult
+) -> ValuationResult:
     """Fetch market price for listed companies and calculate the gap ratio."""
     is_listed = vi.company.legal_status in ("상장", "listed")
     if not is_listed or not vi.company.ticker or result.weighted_value <= 0:
@@ -42,6 +45,7 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
     # Primary: yfinance_fetcher (leverages existing _ticker_info_cache)
     try:
         from pipeline.yfinance_fetcher import fetch_market_data
+
         md = fetch_market_data(vi.company.ticker, vi.company.market)
         if md:
             price = md.get("price", 0)
@@ -52,10 +56,12 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
     if not price:
         try:
             from pipeline.yahoo_finance import get_stock_info
+
             ticker = vi.company.ticker
             if vi.company.market == "KR" and not ticker.endswith((".KS", ".KQ")):
                 try:
                     from pipeline.yfinance_fetcher import resolve_kr_ticker
+
                     ticker = resolve_kr_ticker(ticker)
                 except (ImportError, Exception):
                     ticker = f"{ticker}.KS"
@@ -69,6 +75,7 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
     if not price and vi.company.market == "KR":
         try:
             from pipeline.market_data import get_krx_market_cap
+
             data = get_krx_market_cap(vi.company.ticker)
             if data:
                 price = data.get("price", 0)
@@ -138,6 +145,7 @@ def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
         )
         if diag:
             from schemas.models import GapDiagnostic as _GD
+
             result.gap_diagnostic = _GD(
                 gap_pct=diag.gap_pct,
                 direction=diag.direction,
@@ -164,7 +172,8 @@ def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
 
     from engine.reverse_rnpv import reverse_rnpv
     from schemas.models import (
-        ReverseRNPVResult as _RR, ReverseRNPVDrugImplied as _DI,
+        ReverseRNPVResult as _RR,
+        ReverseRNPVDrugImplied as _DI,
         ReverseRNPVDrugSolo as _DS,
     )
 
@@ -197,11 +206,19 @@ def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
             implied_peak_scale=raw.implied_peak_scale,
             implied_discount_rate=raw.implied_discount_rate,
             implied_pos_per_drug=[
-                _DI(name=d["name"], base_value=d["base_pos"], implied_value=d["implied_pos"])
+                _DI(
+                    name=d["name"],
+                    base_value=d["base_pos"],
+                    implied_value=d["implied_pos"],
+                )
                 for d in raw.implied_pos_per_drug
             ],
             implied_peak_per_drug=[
-                _DI(name=d["name"], base_value=d["base_peak"], implied_value=d["implied_peak"])
+                _DI(
+                    name=d["name"],
+                    base_value=d["base_peak"],
+                    implied_value=d["implied_peak"],
+                )
                 for d in raw.implied_peak_per_drug
             ],
             implied_pos_solo=[
@@ -226,33 +243,64 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", "-p", help="YAML 프로필 경로")
     group.add_argument("--company", "-c", help="기업명/ticker (자동 데이터 수집)")
-    group.add_argument("--discover", "-d", action="store_true",
-                       help="뉴스 기반 기업 추천 (AI Discovery 모드)")
-    group.add_argument("--weekly", "-w", action="store_true",
-                       help="주간 자동 뉴스 수집 + 밸류에이션")
-    group.add_argument("--backtest", action="store_true",
-                       help="캘리브레이션 백테스트 리포트")
-    parser.add_argument("--auto", action="store_true", help="AI 자동 분석 (--company와 함께 사용)")
+    group.add_argument(
+        "--discover",
+        "-d",
+        action="store_true",
+        help="뉴스 기반 기업 추천 (AI Discovery 모드)",
+    )
+    group.add_argument(
+        "--weekly", "-w", action="store_true", help="주간 자동 뉴스 수집 + 밸류에이션"
+    )
+    group.add_argument(
+        "--backtest", action="store_true", help="캘리브레이션 백테스트 리포트"
+    )
+    parser.add_argument(
+        "--auto", action="store_true", help="AI 자동 분석 (--company와 함께 사용)"
+    )
     parser.add_argument("--excel", action="store_true", help="Excel 내보내기")
     parser.add_argument("--output-dir", "-o", default=None, help="Excel 출력 디렉토리")
-    parser.add_argument("--market", default="KR", choices=["KR", "US"],
-                        help="Discovery 모드 시장 선택 (기본: KR)")
-    parser.add_argument("--markets", default="KR,US",
-                        help="Weekly mode: target markets (comma-separated, default: KR,US)")
-    parser.add_argument("--max-per-market", type=int, default=5,
-                        help="Weekly mode: max companies per market (default: 5)")
-    parser.add_argument("--max-companies", type=int, default=None,
-                        help="(deprecated: use --max-per-market)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Weekly mode: discovery only, skip valuation")
-    parser.add_argument("--backtest-min-age", type=int, default=90,
-                        help="Backtest: 최소 밸류에이션 경과일 (기본: 90)")
+    parser.add_argument(
+        "--market",
+        default="KR",
+        choices=["KR", "US"],
+        help="Discovery 모드 시장 선택 (기본: KR)",
+    )
+    parser.add_argument(
+        "--markets",
+        default="KR,US",
+        help="Weekly mode: target markets (comma-separated, default: KR,US)",
+    )
+    parser.add_argument(
+        "--max-per-market",
+        type=int,
+        default=5,
+        help="Weekly mode: max companies per market (default: 5)",
+    )
+    parser.add_argument(
+        "--max-companies",
+        type=int,
+        default=None,
+        help="(deprecated: use --max-per-market)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Weekly mode: discovery only, skip valuation",
+    )
+    parser.add_argument(
+        "--backtest-min-age",
+        type=int,
+        default=90,
+        help="Backtest: 최소 밸류에이션 경과일 (기본: 90)",
+    )
     args = parser.parse_args()
 
     # Backtest mode
     if args.backtest:
         from backtest.dataset import build_backtest_dataset
         from backtest.report import generate_report
+
         records = build_backtest_dataset(min_age_days=args.backtest_min_age)
         text, _ = generate_report(records)
         print(text)
@@ -261,12 +309,14 @@ def main():
     # Discovery mode
     if args.discover:
         from discovery.discovery_engine import DiscoveryEngine
+
         engine = DiscoveryEngine()
         return engine.discover(market=args.market)
 
     # Weekly auto-analysis mode
     if args.weekly:
         from scheduler.weekly_run import run_weekly
+
         max_val = args.max_per_market
         if args.max_companies is not None:
             max_val = args.max_companies
@@ -279,6 +329,7 @@ def main():
     # Auto-fetch mode
     if args.company:
         from pipeline.profile_generator import auto_fetch, auto_analyze
+
         if args.auto:
             return auto_analyze(args.company, args.output_dir)
         return auto_fetch(args.company)
@@ -298,6 +349,7 @@ def main():
     # (run_valuation computes quality before market price is available)
     if result.market_comparison and result.market_comparison.market_price > 0:
         from engine.quality import calc_quality_score
+
         result.quality = calc_quality_score(vi, result)
 
     print_report(vi, result)
@@ -309,6 +361,7 @@ def main():
 
     if args.excel:
         from output.excel_builder import export
+
         path = export(vi, result, args.output_dir)
         print(f"\n[Excel] 저장 완료: {path}")
 

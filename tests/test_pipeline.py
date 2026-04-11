@@ -1,6 +1,5 @@
 """Pipeline unit tests — exchange classification, CompanyIdentity, schema model validation."""
 
-import pytest
 from pipeline.yahoo_finance import classify_exchange
 from pipeline.data_fetcher import CompanyIdentity, _is_korean, _is_likely_ticker
 from schemas.models import (
@@ -9,7 +8,6 @@ from schemas.models import (
     ScenarioParams,
     DCFParams,
     PeerCompany,
-    ValuationInput,
     ConsolidatedFinancials,
 )
 
@@ -17,6 +15,7 @@ from schemas.models import (
 # ═══════════════════════════════════════════════════════════
 # classify_exchange Tests
 # ═══════════════════════════════════════════════════════════
+
 
 class TestClassifyExchange:
     """Yahoo Finance exchange code -> listed/OTC/unlisted classification."""
@@ -68,6 +67,7 @@ class TestClassifyExchange:
 # CompanyIdentity Tests
 # ═══════════════════════════════════════════════════════════
 
+
 class TestCompanyIdentity:
     def test_us_listed(self):
         ci = CompanyIdentity("Apple", "US", ticker="AAPL", legal_status="상장")
@@ -99,6 +99,7 @@ class TestCompanyIdentity:
 # Helper Function Tests
 # ═══════════════════════════════════════════════════════════
 
+
 class TestHelpers:
     def test_is_korean(self):
         assert _is_korean("삼성전자") is True
@@ -118,10 +119,13 @@ class TestHelpers:
 # Pydantic Schema Tests
 # ═══════════════════════════════════════════════════════════
 
+
 class TestSchemaModels:
     def test_company_profile_defaults(self):
         cp = CompanyProfile(
-            name="테스트", shares_total=100_000, shares_ordinary=80_000,
+            name="테스트",
+            shares_total=100_000,
+            shares_ordinary=80_000,
         )
         assert cp.legal_status == "비상장"
         assert cp.market == "KR"
@@ -132,25 +136,40 @@ class TestSchemaModels:
 
     def test_company_profile_us(self):
         cp = CompanyProfile(
-            name="TestCo", market="US", currency="USD", currency_unit="$M",
-            shares_total=1_000_000, shares_ordinary=1_000_000,
-            legal_status="상장", ticker="TEST",
+            name="TestCo",
+            market="US",
+            currency="USD",
+            currency_unit="$M",
+            shares_total=1_000_000,
+            shares_ordinary=1_000_000,
+            legal_status="상장",
+            ticker="TEST",
         )
         assert cp.market == "US"
         assert cp.ticker == "TEST"
 
     def test_consolidated_properties(self):
         cf = ConsolidatedFinancials(
-            year=2025, revenue=10_000, op=1_000, net_income=700,
-            assets=50_000, liabilities=30_000, equity=20_000,
-            dep=500, amort=200,
+            year=2025,
+            revenue=10_000,
+            op=1_000,
+            net_income=700,
+            assets=50_000,
+            liabilities=30_000,
+            equity=20_000,
+            dep=500,
+            amort=200,
         )
         assert cf.da == 700
         assert cf.ebitda == 1_700
 
     def test_scenario_params_optional_fields(self):
         sp = ScenarioParams(
-            code="A", name="테스트", prob=50, ipo="N/A", shares=10_000,
+            code="A",
+            name="테스트",
+            prob=50,
+            ipo="N/A",
+            shares=10_000,
         )
         assert sp.irr is None
         assert sp.cps_repay is None
@@ -173,6 +192,8 @@ class TestSchemaModels:
         assert pc.market_cap is None
 
     def test_wacc_params_validation(self):
-        wp = WACCParams(rf=3.5, erp=7.0, bu=0.75, de=192.0, tax=22.0, kd_pre=5.5, eq_w=34.2)
+        wp = WACCParams(
+            rf=3.5, erp=7.0, bu=0.75, de=192.0, tax=22.0, kd_pre=5.5, eq_w=34.2
+        )
         assert wp.rf == 3.5
         assert wp.eq_w == 34.2

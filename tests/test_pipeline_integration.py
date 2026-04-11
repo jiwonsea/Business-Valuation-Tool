@@ -4,7 +4,6 @@ Tests data flow through pipeline clients without hitting real APIs.
 Uses unittest.mock to patch httpx calls at the module level.
 """
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,15 +18,17 @@ def _mock_yahoo_chart_response(ticker="AAPL"):
     resp.status_code = 200
     resp.json.return_value = {
         "chart": {
-            "result": [{
-                "meta": {
-                    "regularMarketPrice": 185.50,
-                    "currency": "USD",
-                    "shortName": "Apple Inc.",
-                    "exchangeName": "NMS",
-                    "exchange": "NMS",
+            "result": [
+                {
+                    "meta": {
+                        "regularMarketPrice": 185.50,
+                        "currency": "USD",
+                        "shortName": "Apple Inc.",
+                        "exchangeName": "NMS",
+                        "exchange": "NMS",
+                    }
                 }
-            }]
+            ]
         }
     }
     resp.raise_for_status = MagicMock()
@@ -40,22 +41,24 @@ def _mock_yahoo_summary_response():
     resp.status_code = 200
     resp.json.return_value = {
         "quoteSummary": {
-            "result": [{
-                "defaultKeyStatistics": {
-                    "sharesOutstanding": {"raw": 15_000_000_000},
-                    "beta": {"raw": 1.25},
-                    "enterpriseValue": {"raw": 2_800_000_000_000},
-                    "enterpriseToEbitda": {"raw": 22.5},
-                    "trailingPE": {"raw": 28.3},
-                    "forwardPE": {"raw": 25.1},
-                },
-                "financialData": {
-                    "currentPrice": {"raw": 185.50},
-                },
-                "price": {
-                    "marketCap": {"raw": 2_900_000_000_000},
-                },
-            }]
+            "result": [
+                {
+                    "defaultKeyStatistics": {
+                        "sharesOutstanding": {"raw": 15_000_000_000},
+                        "beta": {"raw": 1.25},
+                        "enterpriseValue": {"raw": 2_800_000_000_000},
+                        "enterpriseToEbitda": {"raw": 22.5},
+                        "trailingPE": {"raw": 28.3},
+                        "forwardPE": {"raw": 25.1},
+                    },
+                    "financialData": {
+                        "currentPrice": {"raw": 185.50},
+                    },
+                    "price": {
+                        "marketCap": {"raw": 2_900_000_000_000},
+                    },
+                }
+            ]
         }
     }
     resp.raise_for_status = MagicMock()
@@ -72,6 +75,7 @@ def test_get_stock_info_returns_parsed_data(mock_guard_cls, mock_client):
     mock_client.get.return_value = _mock_yahoo_chart_response()
 
     from pipeline.yahoo_finance import get_stock_info
+
     result = get_stock_info("AAPL")
 
     assert result is not None
@@ -91,6 +95,7 @@ def test_get_quote_summary_returns_multiples(mock_guard_cls, mock_client):
     mock_client.get.return_value = _mock_yahoo_summary_response()
 
     from pipeline.yahoo_finance import get_quote_summary
+
     result = get_quote_summary("AAPL")
 
     assert result is not None
@@ -105,12 +110,14 @@ def test_get_quote_summary_returns_multiples(mock_guard_cls, mock_client):
 def test_get_stock_info_handles_http_error(mock_guard_cls, mock_client):
     """Yahoo Finance gracefully returns None on HTTP error."""
     import httpx
+
     mock_guard = MagicMock()
     mock_guard_cls.return_value = mock_guard
     mock_guard.check.return_value = None
     mock_client.get.side_effect = httpx.HTTPError("Connection refused")
 
     from pipeline.yahoo_finance import get_stock_info
+
     result = get_stock_info("INVALID")
 
     assert result is None
@@ -129,6 +136,7 @@ def test_get_stock_info_handles_empty_result(mock_guard_cls, mock_client):
     mock_client.get.return_value = resp
 
     from pipeline.yahoo_finance import get_stock_info
+
     result = get_stock_info("AAPL")
 
     assert result is None
@@ -162,23 +170,41 @@ def _mock_edgar_company_facts():
                 "Revenues": {
                     "units": {
                         "USD": [
-                            {"val": 365_817_000_000, "fy": 2022, "fp": "FY", "form": "10-K",
-                             "end": "2022-09-24", "filed": "2022-10-28"},
-                            {"val": 394_328_000_000, "fy": 2023, "fp": "FY", "form": "10-K",
-                             "end": "2023-09-30", "filed": "2023-11-03"},
+                            {
+                                "val": 365_817_000_000,
+                                "fy": 2022,
+                                "fp": "FY",
+                                "form": "10-K",
+                                "end": "2022-09-24",
+                                "filed": "2022-10-28",
+                            },
+                            {
+                                "val": 394_328_000_000,
+                                "fy": 2023,
+                                "fp": "FY",
+                                "form": "10-K",
+                                "end": "2023-09-30",
+                                "filed": "2023-11-03",
+                            },
                         ]
                     }
                 },
                 "NetIncomeLoss": {
                     "units": {
                         "USD": [
-                            {"val": 94_680_000_000, "fy": 2023, "fp": "FY", "form": "10-K",
-                             "end": "2023-09-30", "filed": "2023-11-03"},
+                            {
+                                "val": 94_680_000_000,
+                                "fy": 2023,
+                                "fp": "FY",
+                                "form": "10-K",
+                                "end": "2023-09-30",
+                                "filed": "2023-11-03",
+                            },
                         ]
                     }
                 },
             }
-        }
+        },
     }
     resp.raise_for_status = MagicMock()
     return resp
@@ -194,6 +220,7 @@ def test_search_company_filters_by_ticker(mock_guard_cls, mock_client):
     mock_client.get.return_value = _mock_edgar_company_tickers()
 
     from pipeline.edgar_client import search_company
+
     results = search_company("AAPL")
 
     assert len(results) == 1
@@ -212,6 +239,7 @@ def test_search_company_filters_by_name(mock_guard_cls, mock_client):
     mock_client.get.return_value = _mock_edgar_company_tickers()
 
     from pipeline.edgar_client import search_company
+
     results = search_company("microsoft")
 
     assert len(results) == 1
@@ -228,6 +256,7 @@ def test_get_company_facts_returns_financials(mock_guard_cls, mock_client):
     mock_client.get.return_value = _mock_edgar_company_facts()
 
     from pipeline.edgar_client import get_company_facts
+
     facts = get_company_facts("320193")
 
     assert facts is not None
@@ -243,6 +272,7 @@ def test_get_company_facts_returns_financials(mock_guard_cls, mock_client):
 def test_classify_exchange_major():
     """Major exchanges -> listed."""
     from pipeline.yahoo_finance import classify_exchange
+
     assert classify_exchange("NMS", "NMS") == "상장"
     assert classify_exchange("NYSE", "NYQ") == "상장"
     assert classify_exchange("NASDAQ", "") == "상장"
@@ -251,6 +281,7 @@ def test_classify_exchange_major():
 def test_classify_exchange_otc():
     """OTC exchanges -> OTC."""
     from pipeline.yahoo_finance import classify_exchange
+
     assert classify_exchange("PNK", "PNK") == "OTC"
     assert classify_exchange("OTC Pink Sheets", "") == "OTC"
 
@@ -258,6 +289,7 @@ def test_classify_exchange_otc():
 def test_classify_exchange_unknown():
     """Unknown exchanges -> unlisted."""
     from pipeline.yahoo_finance import classify_exchange
+
     assert classify_exchange("", "") == "비상장"
     assert classify_exchange("UNKNOWN", "XYZ") == "비상장"
 
@@ -287,6 +319,7 @@ def test_peer_fetcher_collects_multiples(mock_summary):
     ]
 
     from pipeline.peer_fetcher import fetch_peer_multiples
+
     result = fetch_peer_multiples(peers)
 
     assert len(result) == 2
@@ -302,23 +335,31 @@ def test_peer_fetcher_preserves_on_failure(mock_summary):
     from schemas.models import PeerCompany
 
     mock_summary.side_effect = [
-        {"ev_ebitda": 12.0, "trailing_pe": 18.0,
-         "market_cap": 50_000_000_000, "beta": 0.9,
-         "enterprise_value": 60_000_000_000, "forward_pe": 16.0},
+        {
+            "ev_ebitda": 12.0,
+            "trailing_pe": 18.0,
+            "market_cap": 50_000_000_000,
+            "beta": 0.9,
+            "enterprise_value": 60_000_000_000,
+            "forward_pe": 16.0,
+        },
         None,  # second peer fails
     ]
 
     peers = [
         PeerCompany(name="Apple", segment_code="TECH", ev_ebitda=8.0, ticker="AAPL"),
-        PeerCompany(name="Unknown", segment_code="TECH", ev_ebitda=5.0, ticker="INVALID"),
+        PeerCompany(
+            name="Unknown", segment_code="TECH", ev_ebitda=5.0, ticker="INVALID"
+        ),
     ]
 
     from pipeline.peer_fetcher import fetch_peer_multiples
+
     result = fetch_peer_multiples(peers)
 
     assert len(result) == 2
     assert result[0].ev_ebitda == 12.0  # updated from Yahoo
-    assert result[1].ev_ebitda == 5.0   # preserved original
+    assert result[1].ev_ebitda == 5.0  # preserved original
 
 
 # ── Ticker Validation ──
@@ -327,6 +368,7 @@ def test_peer_fetcher_preserves_on_failure(mock_summary):
 def test_yahoo_ticker_validation_rejects_injection():
     """Ticker validation prevents URL injection."""
     from pipeline.yahoo_finance import _validate_ticker
+
     with pytest.raises(ValueError):
         _validate_ticker("../../../etc/passwd")
     with pytest.raises(ValueError):
@@ -338,6 +380,7 @@ def test_yahoo_ticker_validation_rejects_injection():
 def test_yahoo_ticker_validation_accepts_valid():
     """Valid tickers pass validation."""
     from pipeline.yahoo_finance import _validate_ticker
+
     assert _validate_ticker("AAPL") == "AAPL"
     assert _validate_ticker("005930.KS") == "005930.KS"
     assert _validate_ticker("BRK-B") == "BRK-B"
@@ -346,6 +389,7 @@ def test_yahoo_ticker_validation_accepts_valid():
 def test_edgar_cik_validation_rejects_non_numeric():
     """CIK validation prevents non-numeric input."""
     from pipeline.edgar_client import _validate_cik
+
     with pytest.raises(ValueError):
         _validate_cik("abc")
     with pytest.raises(ValueError):

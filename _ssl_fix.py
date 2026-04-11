@@ -33,11 +33,14 @@ def apply() -> None:
 
     # Use %ALLUSERSPROFILE% (always C:\ProgramData) — guaranteed ASCII on all Windows.
     # os.path.expanduser("~") contains the Korean username and cannot be used.
-    dst_dir = os.path.join(os.environ.get("ALLUSERSPROFILE", "C:\\ProgramData"), "python-ssl")
+    dst_dir = os.path.join(
+        os.environ.get("ALLUSERSPROFILE", "C:\\ProgramData"), "python-ssl"
+    )
     dst = os.path.join(dst_dir, "cacert.pem")
 
     if not os.path.exists(dst):
         import shutil
+
         os.makedirs(dst_dir, exist_ok=True)
         shutil.copy2(src, dst)
 

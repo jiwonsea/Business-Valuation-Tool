@@ -18,12 +18,14 @@ logger = logging.getLogger(__name__)
 
 # Market-specific long-term expected growth rate (nominal GDP growth ~ inflation + real GDP)
 _DEFAULT_TERMINAL_GROWTH = {
-    "US": 2.5,   # US: ~2% inflation + ~0.5% real growth (conservative)
-    "KR": 2.0,   # KR: ~2% target inflation + ~0% potential growth (aging demographics)
+    "US": 2.5,  # US: ~2% inflation + ~0.5% real growth (conservative)
+    "KR": 2.0,  # KR: ~2% target inflation + ~0% potential growth (aging demographics)
 }
 
 # ── FRED persistent disk cache ──
-_FRED_CACHE_PATH = Path(__file__).resolve().parent.parent / ".cache" / "fred" / "breakeven.json"
+_FRED_CACHE_PATH = (
+    Path(__file__).resolve().parent.parent / ".cache" / "fred" / "breakeven.json"
+)
 _FRED_CACHE_TTL = 86400  # 24 hours
 
 
@@ -107,6 +109,7 @@ def _fetch_fred_breakeven() -> float | None:
 
 # ── Effective tax rate ──
 
+
 def calc_effective_tax_rate(financials: dict[int, dict]) -> float | None:
     """Reverse-calculate effective tax rate from financial statements (%).
 
@@ -140,6 +143,7 @@ def calc_effective_tax_rate(financials: dict[int, dict]) -> float | None:
 
 # ── Diluted shares outstanding ──
 
+
 def get_diluted_shares(ticker: str, market: str = "US") -> int | None:
     """Fetch diluted shares outstanding from Yahoo Finance.
 
@@ -150,6 +154,7 @@ def get_diluted_shares(ticker: str, market: str = "US") -> int | None:
     if market == "KR":
         try:
             from . import yfinance_fetcher
+
             ticker = yfinance_fetcher.resolve_kr_ticker(ticker)
         except ImportError:
             ticker = f"{ticker}.KS"

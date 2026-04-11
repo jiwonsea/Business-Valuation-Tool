@@ -34,15 +34,27 @@ if TYPE_CHECKING:
 # ── Market-specific WACC parameter ranges ──
 
 _WACC_RANGES = {
-    "KR": {"rf": (2.5, 5.0), "erp": (4.0, 8.0), "beta": (0.3, 2.0), "kd_pre": (2.0, 10.0)},
-    "US": {"rf": (3.0, 5.5), "erp": (4.0, 7.0), "beta": (0.3, 2.0), "kd_pre": (2.0, 8.0)},
+    "KR": {
+        "rf": (2.5, 5.0),
+        "erp": (4.0, 8.0),
+        "beta": (0.3, 2.0),
+        "kd_pre": (2.0, 10.0),
+    },
+    "US": {
+        "rf": (3.0, 5.5),
+        "erp": (4.0, 7.0),
+        "beta": (0.3, 2.0),
+        "kd_pre": (2.0, 8.0),
+    },
 }
 
 # Methods unsuitable for pharma pipeline convergence (EBITDA-based TV misses pipeline option value)
 _RNPV_EXCLUDED_CV_METHODS = {"DCF (FCFF)"}
 
 
-def calc_quality_score(vi: "ValuationInput", result: "ValuationResult") -> "QualityScore":
+def calc_quality_score(
+    vi: "ValuationInput", result: "ValuationResult"
+) -> "QualityScore":
     """Compute composite quality score (0-100) from valuation I/O."""
     from schemas.models import QualityScore
 
@@ -136,7 +148,8 @@ def _cv_convergence_score(
     n_excluded = len(values) - len(filtered)
     if n_excluded > 0:
         excluded_methods = [
-            cv.method for cv in cross_vals
+            cv.method
+            for cv in cross_vals
             if cv.per_share > 0 and not (median / 3 <= cv.per_share <= median * 3)
         ]
         warnings.append(f"극단값 {n_excluded}개 제외 ({', '.join(excluded_methods)})")
@@ -293,8 +306,7 @@ def _rnpv_scenario_coverage(vi: "ValuationInput") -> tuple[int, list[str]]:
     warnings: list[str] = []
 
     has_pos_override = any(
-        sc.pos_override for sc in vi.scenarios.values()
-        if sc.pos_override
+        sc.pos_override for sc in vi.scenarios.values() if sc.pos_override
     )
 
     if has_pos_override:
@@ -328,23 +340,33 @@ def _reverse_rnpv_consistency(result: "ValuationResult") -> tuple[int, list[str]
         if 0.3 <= rr.implied_pos_scale <= 3.0:
             score += 3
         else:
-            warnings.append(f"implied PoS 배수 극단값 ({rr.implied_pos_scale:.2f}×) — 시장 수렴 불가")
+            warnings.append(
+                f"implied PoS 배수 극단값 ({rr.implied_pos_scale:.2f}×) — 시장 수렴 불가"
+            )
 
     # implied_peak_scale: plausible range [0.3, 3.0]
     if rr.implied_peak_scale is not None:
         if 0.3 <= rr.implied_peak_scale <= 3.0:
             score += 3
         else:
-            warnings.append(f"implied Peak Sales 배수 극단값 ({rr.implied_peak_scale:.2f}×) — 시장 수렴 불가")
+            warnings.append(
+                f"implied Peak Sales 배수 극단값 ({rr.implied_peak_scale:.2f}×) — 시장 수렴 불가"
+            )
 
     # implied_discount_rate: plausible range [5, 30]%
     if rr.implied_discount_rate is not None:
         if 5.0 <= rr.implied_discount_rate <= 30.0:
             score += 4
         else:
-            warnings.append(f"implied 할인율 극단값 ({rr.implied_discount_rate:.1f}%) — 시장 수렴 불가")
+            warnings.append(
+                f"implied 할인율 극단값 ({rr.implied_discount_rate:.1f}%) — 시장 수렴 불가"
+            )
 
-    if rr.implied_pos_scale is None and rr.implied_peak_scale is None and rr.implied_discount_rate is None:
+    if (
+        rr.implied_pos_scale is None
+        and rr.implied_peak_scale is None
+        and rr.implied_discount_rate is None
+    ):
         return 5, ["Reverse rNPV 파라미터 수렴 실패 — 시장가격 정합 불가"]
 
     return score, warnings
@@ -368,7 +390,9 @@ def _wacc_plausibility_score(
     lo, hi = ranges["rf"]
     if not lo <= wacc_params.rf <= hi:
         deductions += 5
-        warnings.append(f"무위험이자율 범위 이탈 (Rf={wacc_params.rf:.1f}%, 적정 {lo}-{hi}%)")
+        warnings.append(
+            f"무위험이자율 범위 이탈 (Rf={wacc_params.rf:.1f}%, 적정 {lo}-{hi}%)"
+        )
 
     # Equity risk premium
     lo, hi = ranges["erp"]
@@ -380,13 +404,17 @@ def _wacc_plausibility_score(
     lo, hi = ranges["beta"]
     if not lo <= wacc_result.bl <= hi:
         deductions += 5
-        warnings.append(f"레버드 베타 범위 이탈 (βL={wacc_result.bl:.2f}, 적정 {lo}-{hi})")
+        warnings.append(
+            f"레버드 베타 범위 이탈 (βL={wacc_result.bl:.2f}, 적정 {lo}-{hi})"
+        )
 
     # Pre-tax cost of debt
     lo, hi = ranges["kd_pre"]
     if not lo <= wacc_params.kd_pre <= hi:
         deductions += 5
-        warnings.append(f"세전타인자본비용 범위 이탈 (Kd={wacc_params.kd_pre:.1f}%, 적정 {lo}-{hi}%)")
+        warnings.append(
+            f"세전타인자본비용 범위 이탈 (Kd={wacc_params.kd_pre:.1f}%, 적정 {lo}-{hi}%)"
+        )
 
     # Overall WACC sanity (final check)
     if wacc_result.wacc < 4.0 or wacc_result.wacc > 18.0:
@@ -433,12 +461,18 @@ def _scenario_consistency_score(
     # (b) Weighted vs probability-weighted mean deviation: 8 / 4 / 0
     # Use probability-weighted mean (same basis as weighted_value) for consistency
     total_prob = sum(sc.prob for sc in scenarios_in.values()) if scenarios_in else 100
-    weighted_mean_ps = sum(
-        sr.post_dlom * scenarios_in[code].prob / total_prob
-        for code, sr in scenarios_out.items()
-        if code in scenarios_in and sr.post_dlom > 0
-    ) if scenarios_in else statistics.mean(per_share_values)
-    mean_ps = weighted_mean_ps if weighted_mean_ps > 0 else statistics.mean(per_share_values)
+    weighted_mean_ps = (
+        sum(
+            sr.post_dlom * scenarios_in[code].prob / total_prob
+            for code, sr in scenarios_out.items()
+            if code in scenarios_in and sr.post_dlom > 0
+        )
+        if scenarios_in
+        else statistics.mean(per_share_values)
+    )
+    mean_ps = (
+        weighted_mean_ps if weighted_mean_ps > 0 else statistics.mean(per_share_values)
+    )
     deviation_pct = abs(weighted_value - mean_ps) / mean_ps * 100 if mean_ps > 0 else 0
 
     if deviation_pct < 20:
@@ -450,7 +484,11 @@ def _scenario_consistency_score(
         warnings.append(f"가중평균과 시나리오 평균 괴리 과대 ({deviation_pct:.0f}%)")
 
     # (c) Spread reasonableness: 9 / 5 / 2
-    spread_pct = (max(per_share_values) - min(per_share_values)) / mean_ps * 100 if mean_ps > 0 else 0
+    spread_pct = (
+        (max(per_share_values) - min(per_share_values)) / mean_ps * 100
+        if mean_ps > 0
+        else 0
+    )
 
     if 5 <= spread_pct <= 200:
         spread_pts = 9
@@ -579,9 +617,13 @@ def format_quality_report(quality: "QualityScore", is_listed: bool) -> str:
     if is_listed:
         if quality.is_rnpv:
             lines.append(f"  - 시장가격 정합 [rNPV]: {quality.market_alignment}/25")
-            price_component = quality.market_alignment - quality.rnpv_reverse_consistency
+            price_component = (
+                quality.market_alignment - quality.rnpv_reverse_consistency
+            )
             lines.append(f"      · 가격 괴리: {price_component}/15")
-            lines.append(f"      · Reverse rNPV 정합: {quality.rnpv_reverse_consistency}/10")
+            lines.append(
+                f"      · Reverse rNPV 정합: {quality.rnpv_reverse_consistency}/10"
+            )
         else:
             lines.append(f"  - 시장가격 정합: {quality.market_alignment}/25")
 

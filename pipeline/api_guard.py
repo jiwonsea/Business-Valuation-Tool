@@ -17,7 +17,7 @@ import random
 import tempfile
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable
@@ -42,9 +42,7 @@ class QuotaExceededError(ApiGuardError):
         self.provider = provider
         self.calls = calls
         self.limit = limit
-        super().__init__(
-            f"{provider}: daily quota exceeded ({calls}/{limit})"
-        )
+        super().__init__(f"{provider}: daily quota exceeded ({calls}/{limit})")
 
 
 class CircuitOpenError(ApiGuardError):
@@ -80,17 +78,96 @@ class ProviderConfig:
 
 
 PROVIDER_DEFAULTS: dict[str, ProviderConfig] = {
-    "dart": ProviderConfig("dart", daily_limit=100, failure_threshold=3, cooldown_seconds=60, max_retries=3, base_delay=2.0),
-    "edgar": ProviderConfig("edgar", daily_limit=100, failure_threshold=3, cooldown_seconds=60, max_retries=3, base_delay=2.0),
-    "yahoo": ProviderConfig("yahoo", daily_limit=100, failure_threshold=5, cooldown_seconds=120, max_retries=3, base_delay=1.0),
-    "yfinance": ProviderConfig("yfinance", daily_limit=200, failure_threshold=5, cooldown_seconds=120, max_retries=2, base_delay=1.0),
-    "krx": ProviderConfig("krx", daily_limit=50, failure_threshold=3, cooldown_seconds=60, max_retries=2, base_delay=2.0),
-    "fred": ProviderConfig("fred", daily_limit=30, failure_threshold=3, cooldown_seconds=300, max_retries=2, base_delay=2.0),
-    "naver": ProviderConfig("naver", daily_limit=50, failure_threshold=3, cooldown_seconds=60, max_retries=2, base_delay=1.0),
-    "google_rss": ProviderConfig("google_rss", daily_limit=50, failure_threshold=3, cooldown_seconds=60, max_retries=2, base_delay=1.0),
-    "openrouter": ProviderConfig("openrouter", daily_limit=200, failure_threshold=3, cooldown_seconds=120, max_retries=2, base_delay=5.0, max_delay=30.0),
-    "anthropic": ProviderConfig("anthropic", daily_limit=200, failure_threshold=3, cooldown_seconds=120, max_retries=5, base_delay=10.0, max_delay=120.0),
-    "supabase": ProviderConfig("supabase", daily_limit=200, failure_threshold=5, cooldown_seconds=30, max_retries=3, base_delay=1.0),
+    "dart": ProviderConfig(
+        "dart",
+        daily_limit=100,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=3,
+        base_delay=2.0,
+    ),
+    "edgar": ProviderConfig(
+        "edgar",
+        daily_limit=100,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=3,
+        base_delay=2.0,
+    ),
+    "yahoo": ProviderConfig(
+        "yahoo",
+        daily_limit=100,
+        failure_threshold=5,
+        cooldown_seconds=120,
+        max_retries=3,
+        base_delay=1.0,
+    ),
+    "yfinance": ProviderConfig(
+        "yfinance",
+        daily_limit=200,
+        failure_threshold=5,
+        cooldown_seconds=120,
+        max_retries=2,
+        base_delay=1.0,
+    ),
+    "krx": ProviderConfig(
+        "krx",
+        daily_limit=50,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=2,
+        base_delay=2.0,
+    ),
+    "fred": ProviderConfig(
+        "fred",
+        daily_limit=30,
+        failure_threshold=3,
+        cooldown_seconds=300,
+        max_retries=2,
+        base_delay=2.0,
+    ),
+    "naver": ProviderConfig(
+        "naver",
+        daily_limit=50,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=2,
+        base_delay=1.0,
+    ),
+    "google_rss": ProviderConfig(
+        "google_rss",
+        daily_limit=50,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=2,
+        base_delay=1.0,
+    ),
+    "openrouter": ProviderConfig(
+        "openrouter",
+        daily_limit=200,
+        failure_threshold=3,
+        cooldown_seconds=120,
+        max_retries=2,
+        base_delay=5.0,
+        max_delay=30.0,
+    ),
+    "anthropic": ProviderConfig(
+        "anthropic",
+        daily_limit=200,
+        failure_threshold=3,
+        cooldown_seconds=120,
+        max_retries=5,
+        base_delay=10.0,
+        max_delay=120.0,
+    ),
+    "supabase": ProviderConfig(
+        "supabase",
+        daily_limit=200,
+        failure_threshold=5,
+        cooldown_seconds=30,
+        max_retries=3,
+        base_delay=1.0,
+    ),
 }
 
 
@@ -204,9 +281,7 @@ class ApiGuard:
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
         try:
             with portalocker.Lock(str(_USAGE_LOCK), timeout=5, fail_when_locked=False):
-                fd, tmp_path = tempfile.mkstemp(
-                    dir=str(_CACHE_DIR), suffix=".tmp"
-                )
+                fd, tmp_path = tempfile.mkstemp(dir=str(_CACHE_DIR), suffix=".tmp")
                 with os.fdopen(fd, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 os.replace(tmp_path, str(_USAGE_FILE))
@@ -265,10 +340,16 @@ class ApiGuard:
             # Warn at 80% threshold
             if cfg.daily_limit > 0:
                 ratio = counter["calls"] / cfg.daily_limit
-                if ratio >= _WARN_THRESHOLD and (counter["calls"] - 1) / cfg.daily_limit < _WARN_THRESHOLD:
+                if (
+                    ratio >= _WARN_THRESHOLD
+                    and (counter["calls"] - 1) / cfg.daily_limit < _WARN_THRESHOLD
+                ):
                     logger.warning(
                         "%s: approaching daily limit (%d/%d = %.0f%%)",
-                        provider, counter["calls"], cfg.daily_limit, ratio * 100,
+                        provider,
+                        counter["calls"],
+                        cfg.daily_limit,
+                        ratio * 100,
                     )
 
             # Circuit breaker: success -> closed
@@ -298,13 +379,16 @@ class ApiGuard:
                 circuit.status = "open"
                 logger.warning(
                     "%s: circuit -> OPEN (half_open probe failed: %s)",
-                    provider, error.__class__.__name__ if error else "unknown",
+                    provider,
+                    error.__class__.__name__ if error else "unknown",
                 )
             elif circuit.consecutive_failures >= cfg.failure_threshold:
                 circuit.status = "open"
                 logger.warning(
                     "%s: circuit -> OPEN after %d consecutive failures (cooldown=%ds)",
-                    provider, circuit.consecutive_failures, cfg.cooldown_seconds,
+                    provider,
+                    circuit.consecutive_failures,
+                    cfg.cooldown_seconds,
                 )
 
             snapshot = copy.deepcopy(self._usage)
@@ -329,7 +413,9 @@ class ApiGuard:
                     "calls": counter["calls"],
                     "cache_hits": counter["cache_hits"],
                     "limit": cfg.daily_limit,
-                    "remaining": max(0, cfg.daily_limit - counter["calls"]) if cfg.daily_limit > 0 else -1,
+                    "remaining": max(0, cfg.daily_limit - counter["calls"])
+                    if cfg.daily_limit > 0
+                    else -1,
                     "circuit": circuit.status,
                 }
             return summary
@@ -358,6 +444,7 @@ def _is_retryable(exc: Exception, retryable_codes: tuple[int, ...]) -> bool:
     """Check if an exception should trigger a retry."""
     try:
         import httpx
+
         if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
             return True
         if isinstance(exc, httpx.HTTPStatusError):
@@ -371,6 +458,7 @@ def _get_retry_after(exc: Exception) -> float | None:
     """Extract Retry-After header value from a 429 response."""
     try:
         import httpx
+
         if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
             val = exc.response.headers.get("retry-after")
             if val and val.isdigit():
@@ -412,12 +500,15 @@ def api_guard(provider: str) -> Callable:
                     result = func(*args, **kwargs)
                     guard.record_success(provider)
                     return result
-                except (ValueError, TypeError, KeyError) as exc:
+                except (ValueError, TypeError, KeyError):
                     raise  # Programming errors bypass circuit breaker
                 except Exception as exc:
                     last_exc = exc
 
-                    if not _is_retryable(exc, cfg.retryable_codes) or attempt == cfg.max_retries:
+                    if (
+                        not _is_retryable(exc, cfg.retryable_codes)
+                        or attempt == cfg.max_retries
+                    ):
                         guard.record_failure(provider, exc)
                         raise
 
@@ -427,13 +518,17 @@ def api_guard(provider: str) -> Callable:
                         delay = retry_after
                     else:
                         delay = min(
-                            cfg.base_delay * (2 ** attempt) + random.uniform(0, 1),
+                            cfg.base_delay * (2**attempt) + random.uniform(0, 1),
                             cfg.max_delay,
                         )
 
                     logger.warning(
                         "%s: retry %d/%d after error (delay=%.1fs): %s",
-                        provider, attempt + 1, cfg.max_retries, delay, exc,
+                        provider,
+                        attempt + 1,
+                        cfg.max_retries,
+                        delay,
+                        exc,
                     )
                     time.sleep(delay)
 
@@ -442,6 +537,7 @@ def api_guard(provider: str) -> Callable:
                 raise last_exc
 
         return wrapper
+
     return decorator
 
 
@@ -492,8 +588,16 @@ def estimate_weekly_cost(
 
     if not dry_run:
         # Valuation phase per company (estimates)
-        kr_companies = max_companies // 2 + 1 if has_kr and has_us else (max_companies if has_kr else 0)
-        us_companies = max_companies - kr_companies if has_kr and has_us else (max_companies if has_us else 0)
+        kr_companies = (
+            max_companies // 2 + 1
+            if has_kr and has_us
+            else (max_companies if has_kr else 0)
+        )
+        us_companies = (
+            max_companies - kr_companies
+            if has_kr and has_us
+            else (max_companies if has_us else 0)
+        )
 
         estimates["dart"] = kr_companies * 4  # financial + company + stock + report
         estimates["edgar"] = us_companies * 2  # facts + submissions

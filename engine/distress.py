@@ -18,14 +18,27 @@ from dataclasses import dataclass
 
 
 # Cyclical industries: single-year loss is expected during downcycles
-_CYCLICAL_KEYWORDS = frozenset({
-    "auto", "automotive", "automobile",
-    "steel", "metals",
-    "shipping", "marine",
-    "semiconductor", "semiconductors",
-    "oil", "oil & gas", "upstream", "refining", "mining",
-    "construction", "chemical", "chemicals",
-})
+_CYCLICAL_KEYWORDS = frozenset(
+    {
+        "auto",
+        "automotive",
+        "automobile",
+        "steel",
+        "metals",
+        "shipping",
+        "marine",
+        "semiconductor",
+        "semiconductors",
+        "oil",
+        "oil & gas",
+        "upstream",
+        "refining",
+        "mining",
+        "construction",
+        "chemical",
+        "chemicals",
+    }
+)
 
 # Market-specific D/E thresholds (Korean chaebol routinely operate at 150-300%)
 _DE_THRESHOLDS = {
@@ -38,12 +51,13 @@ _DE_DEFAULT = _DE_THRESHOLDS["US"]
 @dataclass(frozen=True)
 class DistressResult:
     """Distress discount computation result."""
-    discount: float          # 0.0 (healthy) to max_discount (severe distress)
-    de_penalty: float        # D/E ratio contribution
-    loss_penalty: float      # Consecutive loss contribution
-    icr_penalty: float       # Interest coverage contribution
-    applied: bool            # Whether discount > 0 (for reporting)
-    detail: str              # Human-readable summary (Korean)
+
+    discount: float  # 0.0 (healthy) to max_discount (severe distress)
+    de_penalty: float  # D/E ratio contribution
+    loss_penalty: float  # Consecutive loss contribution
+    icr_penalty: float  # Interest coverage contribution
+    applied: bool  # Whether discount > 0 (for reporting)
+    detail: str  # Human-readable summary (Korean)
 
 
 def calc_distress_discount(
@@ -103,7 +117,9 @@ def calc_distress_discount(
         else:
             break
 
-    is_cyclical = any(kw in industry.lower() for kw in _CYCLICAL_KEYWORDS) if industry else False
+    is_cyclical = (
+        any(kw in industry.lower() for kw in _CYCLICAL_KEYWORDS) if industry else False
+    )
 
     if loss_streak >= 3:
         loss_penalty = 0.15
@@ -147,7 +163,9 @@ def calc_distress_discount(
     if loss_penalty > 0:
         parts.append(f"연속적자 {loss_streak}년 (−{loss_penalty:.0%})")
     if icr_penalty > 0:
-        icr_val = ebitda / interest_expense if interest_expense > 0 and ebitda > 0 else 0
+        icr_val = (
+            ebitda / interest_expense if interest_expense > 0 and ebitda > 0 else 0
+        )
         parts.append(f"ICR {icr_val:.1f}x (−{icr_penalty:.0%})")
 
     if parts:

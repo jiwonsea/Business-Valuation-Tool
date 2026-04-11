@@ -35,10 +35,27 @@ logger = logging.getLogger(__name__)
 
 # ── Optionality pre-screen (no LLM cost) ──
 _OPTIONALITY_KEYWORDS = [
-    "autonomous", "fsd", "full self-driving", "robotaxi", "humanoid", "optimus",
-    "robot", "biotech", "drug pipeline", "clinical trial", "phase 3", "phase 2",
-    "space", "fusion", "ai platform", "self-driving", "waymo", "generative ai",
-    "autonomous vehicle", "large language model", "foundation model",
+    "autonomous",
+    "fsd",
+    "full self-driving",
+    "robotaxi",
+    "humanoid",
+    "optimus",
+    "robot",
+    "biotech",
+    "drug pipeline",
+    "clinical trial",
+    "phase 3",
+    "phase 2",
+    "space",
+    "fusion",
+    "ai platform",
+    "self-driving",
+    "waymo",
+    "generative ai",
+    "autonomous vehicle",
+    "large language model",
+    "foundation model",
 ]
 
 
@@ -50,10 +67,7 @@ def _has_optionality_trigger(
 ) -> bool:
     """Rule-based pre-screen — returns True if optionality segment generation should be attempted."""
     text = f"{company_name} {industry} {news}".lower()
-    return (
-        any(kw in text for kw in _OPTIONALITY_KEYWORDS)
-        or ev_rev_multiple > 10.0
-    )
+    return any(kw in text for kw in _OPTIONALITY_KEYWORDS) or ev_rev_multiple > 10.0
 
 
 # ── LLM response disk cache ──
@@ -65,7 +79,7 @@ def _cache_key(company: str, step: str, extra: str = "") -> str:
     """Generate cache filename (company + step + extra hash)."""
     raw = f"{company}:{step}:{extra}"
     h = hashlib.md5(raw.encode()).hexdigest()[:12]
-    safe_name = re.sub(r'[^\w\-]', '_', company)[:30]
+    safe_name = re.sub(r"[^\w\-]", "_", company)[:30]
     return f"{safe_name}_{step}_{h}.json"
 
 
@@ -131,9 +145,12 @@ def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
     """Save AI analysis result to Supabase (silently ignore on failure)."""
     try:
         from db.repository import save_ai_analysis
+
         save_ai_analysis(company_name, step, result_data, model)
     except (ImportError, ConnectionError, OSError) as e:
-        logger.warning("AI analysis DB save failed for [%s] %s: %s", step, company_name, e)
+        logger.warning(
+            "AI analysis DB save failed for [%s] %s: %s", step, company_name, e
+        )
 
 
 class AIAnalyst:
@@ -141,21 +158,33 @@ class AIAnalyst:
 
     def __init__(self, model: str = ""):
         from .llm_client import _ANTHROPIC_DEFAULT_MODEL
+
         self.model = model or _ANTHROPIC_DEFAULT_MODEL
 
-    def _ask_json(self, prompt: str, system: str, max_tokens: int, model: str = "") -> dict:
+    def _ask_json(
+        self, prompt: str, system: str, max_tokens: int, model: str = ""
+    ) -> dict:
         """Request structured JSON response + retry once on parse failure."""
         use_model = model or self.model
         response = ask_structured(
-            prompt, system=system, model=use_model, max_tokens=max_tokens,
+            prompt,
+            system=system,
+            model=use_model,
+            max_tokens=max_tokens,
         )
         try:
             return _parse_json(response)
         except (json.JSONDecodeError, ValueError):
             logger.warning("JSON 파싱 실패 — 재시도 중")
-            retry_prompt = prompt + "\n\n순수 JSON 객체만 출력하세요. 설명 텍스트 없이 JSON만 응답하세요."
+            retry_prompt = (
+                prompt
+                + "\n\n순수 JSON 객체만 출력하세요. 설명 텍스트 없이 JSON만 응답하세요."
+            )
             response = ask_structured(
-                retry_prompt, system=system, model=use_model, max_tokens=max_tokens,
+                retry_prompt,
+                system=system,
+                model=use_model,
+                max_tokens=max_tokens,
             )
             return _parse_json(response)
 
@@ -184,7 +213,9 @@ class AIAnalyst:
         if cached:
             return cached
         use_model = model or self.model
-        result = self._ask_json(prompt_fn(), system=system, max_tokens=max_tokens, model=use_model)
+        result = self._ask_json(
+            prompt_fn(), system=system, max_tokens=max_tokens, model=use_model
+        )
         _set_cached(company, step, result, extra)
         _save_analysis(company, step, result, use_model)
         return result
@@ -192,15 +223,18 @@ class AIAnalyst:
     def identify_company(self, user_input: str) -> dict:
         """Step 1: Natural language -> company identification."""
         return self._cached_json_step(
-            user_input, "identify",
+            user_input,
+            "identify",
             lambda: prompt_identify_company(user_input),
-            max_tokens=512, model=MODEL_LIGHT,
+            max_tokens=512,
+            model=MODEL_LIGHT,
         )
 
     def classify_segments(self, company_name: str, revenue_breakdown: str) -> dict:
         """Step 2: Revenue breakdown -> segment classification."""
         return self._cached_json_step(
-            company_name, "classify",
+            company_name,
+            "classify",
             lambda: prompt_segment_classification(company_name, revenue_breakdown),
             model=MODEL_LIGHT,
         )
@@ -214,11 +248,16 @@ class AIAnalyst:
     ) -> dict:
         """Step 3: Per-segment peer/multiple recommendation."""
         return self._cached_json_step(
-            company_name, "peers",
+            company_name,
+            "peers",
             lambda: prompt_peer_recommendation(
-                company_name, segment_code, segment_name, segment_description,
+                company_name,
+                segment_code,
+                segment_name,
+                segment_description,
             ),
-            extra=segment_code, model=MODEL_LIGHT,
+            extra=segment_code,
+            model=MODEL_LIGHT,
         )
 
     def recommend_peers_batch(
@@ -231,15 +270,17 @@ class AIAnalyst:
 
         Returns {segment_code: {peers, recommended_multiple, multiple_range, rationale}}.
         """
-        codes_joined = ",".join(
-            sorted(s.get("code", "MAIN") for s in segments)
-        )
+        codes_joined = ",".join(sorted(s.get("code", "MAIN") for s in segments))
         result = self._cached_json_step(
-            company_name, "peers_batch",
+            company_name,
+            "peers_batch",
             lambda: prompt_peer_recommendation_batch(company_name, segments),
-            max_tokens=2048, extra=codes_joined, model=MODEL_LIGHT,
+            max_tokens=2048,
+            extra=codes_joined,
+            model=MODEL_LIGHT,
         )
         from ai.validators import validate_peers
+
         result, warnings = validate_peers(result, market)
         for w in warnings:
             logger.warning("[peers] %s: %s", company_name, w)
@@ -254,11 +295,13 @@ class AIAnalyst:
     ) -> dict:
         """Step 4: WACC draft."""
         result = self._cached_json_step(
-            company_name, "wacc",
+            company_name,
+            "wacc",
             lambda: prompt_wacc_suggestion(company_name, de_ratio, industry),
             model=MODEL_LIGHT,
         )
         from ai.validators import validate_wacc
+
         result, warnings = validate_wacc(result, market)
         for w in warnings:
             logger.warning("[wacc] %s: %s", company_name, w)
@@ -290,30 +333,53 @@ class AIAnalyst:
         """
         if two_pass:
             return self._design_scenarios_two_pass(
-                company_name, legal_status, key_issues, valuation_method,
-                industry, ev_rev_multiple, currency_unit, signals=signals,
+                company_name,
+                legal_status,
+                key_issues,
+                valuation_method,
+                industry,
+                ev_rev_multiple,
+                currency_unit,
+                signals=signals,
                 segment_codes=segment_codes,
             )
 
-        include_opt = _has_optionality_trigger(company_name, industry, key_issues, ev_rev_multiple)
+        include_opt = _has_optionality_trigger(
+            company_name, industry, key_issues, ev_rev_multiple
+        )
         if include_opt:
-            logger.info("[scenarios] Optionality trigger detected for %s — requesting segment generation", company_name)
+            logger.info(
+                "[scenarios] Optionality trigger detected for %s — requesting segment generation",
+                company_name,
+            )
 
         # Include key_issues content hash in cache key for invalidation
-        issues_hash = hashlib.md5(key_issues.encode()).hexdigest()[:8] if key_issues else ""
+        issues_hash = (
+            hashlib.md5(key_issues.encode()).hexdigest()[:8] if key_issues else ""
+        )
         opt_flag = "opt1" if include_opt else "opt0"
         extra = f"{valuation_method}:{issues_hash}:{opt_flag}"
         system = SYSTEM_ANALYST + "\n" + SYSTEM_ANALYST_DRIVERS
         result = self._cached_json_step(
-            company_name, "scenarios",
+            company_name,
+            "scenarios",
             lambda: prompt_scenario_design(
-                company_name, legal_status, key_issues, valuation_method,
-                include_optionality=include_opt, currency_unit=currency_unit,
-                signals=signals, segment_codes=segment_codes,
+                company_name,
+                legal_status,
+                key_issues,
+                valuation_method,
+                include_optionality=include_opt,
+                currency_unit=currency_unit,
+                signals=signals,
+                segment_codes=segment_codes,
             ),
-            system=system, max_tokens=4096, extra=extra, model=MODEL_HEAVY,
+            system=system,
+            max_tokens=4096,
+            extra=extra,
+            model=MODEL_HEAVY,
         )
         from ai.validators import validate_scenarios
+
         scenarios = result.get("scenarios", result)
         validated, warnings = validate_scenarios(scenarios)
         if scenarios is not result:
@@ -326,7 +392,14 @@ class AIAnalyst:
         # Signal-aware validation (advisory warnings only)
         if signals is not None:
             from ai.validators import validate_scenarios_with_signals
-            sc_list = validated if isinstance(validated, list) else list(validated.values()) if isinstance(validated, dict) else []
+
+            sc_list = (
+                validated
+                if isinstance(validated, list)
+                else list(validated.values())
+                if isinstance(validated, dict)
+                else []
+            )
             sig_warnings = validate_scenarios_with_signals(sc_list, signals)
             for w in sig_warnings:
                 logger.warning("[scenarios:signals] %s: %s", company_name, w)
@@ -352,51 +425,78 @@ class AIAnalyst:
         Pass 2 (Sonnet): Precision refinement — exact driver values, probabilities,
         detailed rationale, optionality segments.
         """
-        include_opt = _has_optionality_trigger(company_name, industry, key_issues, ev_rev_multiple)
+        include_opt = _has_optionality_trigger(
+            company_name, industry, key_issues, ev_rev_multiple
+        )
         if include_opt:
-            logger.info("[scenarios:2pass] Optionality trigger detected for %s", company_name)
+            logger.info(
+                "[scenarios:2pass] Optionality trigger detected for %s", company_name
+            )
 
-        issues_hash = hashlib.md5(key_issues.encode()).hexdigest()[:8] if key_issues else ""
+        issues_hash = (
+            hashlib.md5(key_issues.encode()).hexdigest()[:8] if key_issues else ""
+        )
         opt_flag = "opt1" if include_opt else "opt0"
 
         # ── Pass 1: Haiku classification draft ──
         pass1_extra = f"2pass_p1:{valuation_method}:{issues_hash}"
         system_p1 = SYSTEM_ANALYST
         draft = self._cached_json_step(
-            company_name, "scenarios_draft",
+            company_name,
+            "scenarios_draft",
             lambda: prompt_scenario_classify(
-                company_name, legal_status, key_issues, valuation_method, currency_unit,
+                company_name,
+                legal_status,
+                key_issues,
+                valuation_method,
+                currency_unit,
                 signals=signals,
             ),
-            system=system_p1, max_tokens=2048, extra=pass1_extra, model=MODEL_LIGHT,
+            system=system_p1,
+            max_tokens=2048,
+            extra=pass1_extra,
+            model=MODEL_LIGHT,
         )
 
         # Validate draft structure
         from ai.validators import validate_scenario_draft
+
         draft, draft_warnings = validate_scenario_draft(draft)
         for w in draft_warnings:
             logger.warning("[scenarios:2pass:draft] %s: %s", company_name, w)
 
         logger.info(
             "[scenarios:2pass] Pass 1 complete for %s — %d scenarios classified",
-            company_name, len(draft.get("scenario_draft", [])),
+            company_name,
+            len(draft.get("scenario_draft", [])),
         )
 
         # ── Pass 2: Sonnet precision refinement ──
         pass2_extra = f"2pass_p2:{valuation_method}:{issues_hash}:{opt_flag}"
         system_p2 = SYSTEM_ANALYST + "\n" + SYSTEM_ANALYST_DRIVERS
         result = self._cached_json_step(
-            company_name, "scenarios_refined",
+            company_name,
+            "scenarios_refined",
             lambda: prompt_scenario_refine(
-                company_name, legal_status, key_issues, draft,
-                valuation_method, include_optionality=include_opt, currency_unit=currency_unit,
-                signals=signals, segment_codes=segment_codes,
+                company_name,
+                legal_status,
+                key_issues,
+                draft,
+                valuation_method,
+                include_optionality=include_opt,
+                currency_unit=currency_unit,
+                signals=signals,
+                segment_codes=segment_codes,
             ),
-            system=system_p2, max_tokens=4096, extra=pass2_extra, model=MODEL_HEAVY,
+            system=system_p2,
+            max_tokens=4096,
+            extra=pass2_extra,
+            model=MODEL_HEAVY,
         )
 
         # ── Validate final output ──
         from ai.validators import validate_scenarios
+
         scenarios = result.get("scenarios", result)
         validated, warnings = validate_scenarios(scenarios)
         if scenarios is not result:
@@ -409,7 +509,14 @@ class AIAnalyst:
         # Signal-aware validation (advisory warnings only)
         if signals is not None:
             from ai.validators import validate_scenarios_with_signals
-            sc_list = validated if isinstance(validated, list) else list(validated.values()) if isinstance(validated, dict) else []
+
+            sc_list = (
+                validated
+                if isinstance(validated, list)
+                else list(validated.values())
+                if isinstance(validated, dict)
+                else []
+            )
             sig_warnings = validate_scenarios_with_signals(sc_list, signals)
             for w in sig_warnings:
                 logger.warning("[scenarios:2pass:signals] %s: %s", company_name, w)

@@ -17,10 +17,13 @@ from output.excel_builder import export
 logger = logging.getLogger(__name__)
 
 
-def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str | None = None) -> str | None:
+def _save_to_db(
+    vi: ValuationInput, result: ValuationResult, profile_path: str | None = None
+) -> str | None:
     """Save valuation result to Supabase (silently ignore on failure)."""
     try:
         from db.repository import save_valuation, save_profile
+
         val_id = save_valuation(vi, result)
         if val_id and profile_path:
             yaml_text = Path(profile_path).read_text(encoding="utf-8")
@@ -34,6 +37,7 @@ def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str |
         if val_id:
             try:
                 from db.backtest_repository import save_prediction_snapshot
+
                 save_prediction_snapshot(vi, result, val_id)
             except Exception:
                 logger.debug("Prediction snapshot save skipped")
@@ -43,7 +47,9 @@ def _save_to_db(vi: ValuationInput, result: ValuationResult, profile_path: str |
         return None
 
 
-def run_from_profile(profile_path: str, output_dir: str | None = None) -> tuple[ValuationInput, ValuationResult, str]:
+def run_from_profile(
+    profile_path: str, output_dir: str | None = None
+) -> tuple[ValuationInput, ValuationResult, str]:
     """YAML profile -> valuation -> Excel.
 
     Returns:
@@ -64,7 +70,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     seg_names = _seg_names(vi)
 
     lines.append(f"# {vi.company.name} 기업가치평가 요약")
-    lines.append(f"분석일: {vi.company.analysis_date}  |  방법론: **{result.primary_method.upper()}**")
+    lines.append(
+        f"분석일: {vi.company.analysis_date}  |  방법론: **{result.primary_method.upper()}**"
+    )
     lines.append("")
 
     # WACC section
@@ -76,8 +84,10 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     # DDM (financial sector)
     if result.ddm:
         ddm = result.ddm
-        lines.append(f"## DDM 밸류에이션")
-        lines.append(f"- DPS: {ddm.dps:,.0f}{sym}  |  배당성장률: {ddm.growth:.2f}%  |  Ke: {ddm.ke:.2f}%")
+        lines.append("## DDM 밸류에이션")
+        lines.append(
+            f"- DPS: {ddm.dps:,.0f}{sym}  |  배당성장률: {ddm.growth:.2f}%  |  Ke: {ddm.ke:.2f}%"
+        )
         lines.append(f"- **주당 내재가치: {ddm.equity_per_share:,}{sym}**")
         lines.append("")
 
@@ -85,16 +95,22 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     if result.multiples_primary:
         mp = result.multiples_primary
         lines.append(f"## 상대가치평가 ({mp.primary_multiple_method})")
-        lines.append(f"- 지표값: {mp.metric_value:,.0f}{unit}  |  배수: {mp.multiple:.1f}x")
+        lines.append(
+            f"- 지표값: {mp.metric_value:,.0f}{unit}  |  배수: {mp.multiple:.1f}x"
+        )
         lines.append(f"- **주당 가치: {mp.per_share:,}{sym}**")
         lines.append("")
 
     # NAV (net asset value)
     if result.nav:
         nv = result.nav
-        lines.append(f"## 순자산가치(NAV)")
-        lines.append(f"- 총자산: {nv.total_assets:,}{unit}  |  재평가: {nv.revaluation:+,}{unit}")
-        lines.append(f"- 부채: {nv.total_liabilities:,}{unit}  |  NAV: {nv.nav:,}{unit}")
+        lines.append("## 순자산가치(NAV)")
+        lines.append(
+            f"- 총자산: {nv.total_assets:,}{unit}  |  재평가: {nv.revaluation:+,}{unit}"
+        )
+        lines.append(
+            f"- 부채: {nv.total_liabilities:,}{unit}  |  NAV: {nv.nav:,}{unit}"
+        )
         lines.append(f"- **주당 NAV: {nv.per_share:,}{sym}**")
         lines.append("")
 
@@ -107,7 +123,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
                     _m_lbl, _m_val = "Revenue", getattr(s, "revenue", 0) or 0
                 else:
                     _m_lbl, _m_val = "EBITDA", s.ebitda
-                lines.append(f"- {seg_names.get(code, code)}: {_m_lbl} {_m_val:,} × {s.multiple:.1f}x = {s.ev:,}{unit}")
+                lines.append(
+                    f"- {seg_names.get(code, code)}: {_m_lbl} {_m_val:,} × {s.multiple:.1f}x = {s.ev:,}{unit}"
+                )
         lines.append("")
 
     # DCF
@@ -125,7 +143,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         for code, sc in vi.scenarios.items():
             if code in result.scenarios:
                 sr = result.scenarios[code]
-                lines.append(f"- {sc.name} ({sc.prob}%): 주당 {sr.post_dlom:,}{sym} → 가중 {sr.weighted:,}{sym}")
+                lines.append(
+                    f"- {sc.name} ({sc.prob}%): 주당 {sr.post_dlom:,}{sym} → 가중 {sr.weighted:,}{sym}"
+                )
         lines.append(f"- **확률가중 주당 가치: {result.weighted_value:,}{sym}**")
         lines.append("")
 
@@ -133,7 +153,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     if result.market_comparison and result.market_comparison.market_price > 0:
         mc = result.market_comparison
         lines.append("## 시장가격 비교")
-        lines.append(f"- 내재가치: {mc.intrinsic_value:,}{sym}  |  시장가: {mc.market_price:,.0f}{sym}")
+        lines.append(
+            f"- 내재가치: {mc.intrinsic_value:,}{sym}  |  시장가: {mc.market_price:,.0f}{sym}"
+        )
         lines.append(f"- 괴리율: {mc.gap_ratio:+.1%}")
         if mc.flag:
             lines.append(f"- ⚠ {mc.flag}")
@@ -143,7 +165,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     if result.reverse_rnpv:
         rv = result.reverse_rnpv
         lines.append("## 역방향 rNPV")
-        lines.append(f"- 모델 EV: {rv.model_ev:,}{unit} → 시장 EV: {rv.target_ev:,}{unit} (괴리 {rv.gap_pct:+.1f}%)")
+        lines.append(
+            f"- 모델 EV: {rv.model_ev:,}{unit} → 시장 EV: {rv.target_ev:,}{unit} (괴리 {rv.gap_pct:+.1f}%)"
+        )
         if rv.implied_pos_scale is not None:
             lines.append(f"- 시장 내재 PoS 배수: {rv.implied_pos_scale:.3f}x")
         if rv.implied_peak_scale is not None:

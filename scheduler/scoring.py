@@ -6,20 +6,29 @@ Score = news_score(0-50) + size_score(0-50) -> 5-level star rating.
 from __future__ import annotations
 
 import logging
-import math
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 # Market cap bracket scores (USD basis, KRW converted)
-_LARGE_CAP_USD = 10_000_000_000    # $10B+
-_MID_CAP_USD = 2_000_000_000      # $2B+
-_KRW_TO_USD = 1_350               # Approximate exchange rate
+_LARGE_CAP_USD = 10_000_000_000  # $10B+
+_MID_CAP_USD = 2_000_000_000  # $2B+
+_KRW_TO_USD = 1_350  # Approximate exchange rate
 
 
 def _stars(score: int) -> str:
     """Convert score to 5-level star string."""
-    n = 5 if score >= 80 else 4 if score >= 60 else 3 if score >= 40 else 2 if score >= 20 else 1
+    n = (
+        5
+        if score >= 80
+        else 4
+        if score >= 60
+        else 3
+        if score >= 40
+        else 2
+        if score >= 20
+        else 1
+    )
     try:
         result = "\u2605" * n + "\u2606" * (5 - n)
         result.encode("utf-8")
@@ -78,9 +87,19 @@ def _size_score(market_cap_usd: int | None) -> int:
 
 
 # Ticker values that mean "unknown" — should not be passed to Yahoo Finance
-_INVALID_TICKERS: frozenset[str] = frozenset({
-    "미지정", "n/a", "unknown", "없음", "미확인", "tbd", "null", "none", "-",
-})
+_INVALID_TICKERS: frozenset[str] = frozenset(
+    {
+        "미지정",
+        "n/a",
+        "unknown",
+        "없음",
+        "미확인",
+        "tbd",
+        "null",
+        "none",
+        "-",
+    }
+)
 
 
 def _fetch_market_cap_usd(ticker: str | None, market: str) -> int | None:
@@ -95,6 +114,7 @@ def _fetch_market_cap_usd(ticker: str | None, market: str) -> int | None:
         if market == "KR" and not ticker.endswith((".KS", ".KQ")):
             try:
                 from pipeline.yfinance_fetcher import resolve_kr_ticker
+
                 yahoo_ticker = resolve_kr_ticker(ticker)
             except (ImportError, Exception):
                 yahoo_ticker = f"{ticker}.KS"

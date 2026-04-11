@@ -23,22 +23,23 @@ _TOLERANCE = 1e-4
 _MAX_ITER = 60
 
 # Bounds
-_POS_SCALE_LO, _POS_SCALE_HI = 0.1, 5.0      # 10% to 500% of base PoS
-_PEAK_SCALE_LO, _PEAK_SCALE_HI = 0.1, 5.0     # 10% to 500% of base peak sales
-_DISCOUNT_LO, _DISCOUNT_HI = 1.0, 25.0         # 1% to 25% discount rate
+_POS_SCALE_LO, _POS_SCALE_HI = 0.1, 5.0  # 10% to 500% of base PoS
+_PEAK_SCALE_LO, _PEAK_SCALE_HI = 0.1, 5.0  # 10% to 500% of base peak sales
+_DISCOUNT_LO, _DISCOUNT_HI = 1.0, 25.0  # 1% to 25% discount rate
 
 
 @dataclass
 class ReverseRNPVResult:
     """Result of reverse rNPV analysis."""
-    target_ev: int                   # Market EV we're trying to match ($M)
-    model_ev: int                    # Model rNPV enterprise value ($M)
-    gap_pct: float                   # (model_ev - target_ev) / target_ev * 100
+
+    target_ev: int  # Market EV we're trying to match ($M)
+    model_ev: int  # Model rNPV enterprise value ($M)
+    gap_pct: float  # (model_ev - target_ev) / target_ev * 100
 
     # Implied parameters (None = solver couldn't find solution in bounds)
-    implied_pos_scale: float | None = None       # Multiplier on all PoS
-    implied_peak_scale: float | None = None      # Multiplier on all peak_sales
-    implied_discount_rate: float | None = None   # Discount rate (%) that reconciles
+    implied_pos_scale: float | None = None  # Multiplier on all PoS
+    implied_peak_scale: float | None = None  # Multiplier on all peak_sales
+    implied_discount_rate: float | None = None  # Discount rate (%) that reconciles
 
     # Per-drug implied PoS at the solved scale (for reporting)
     implied_pos_per_drug: list[dict] = field(default_factory=list)
@@ -116,10 +117,14 @@ def solve_implied_pos_scale(
         adj = []
         for d in pipeline:
             ad = dict(d)
-            base_pos = d.get("success_prob") or PHASE_POS.get(d.get("phase", "preclinical"), 0.10)
+            base_pos = d.get("success_prob") or PHASE_POS.get(
+                d.get("phase", "preclinical"), 0.10
+            )
             ad["success_prob"] = min(base_pos * scale, 1.0)
             adj.append(ad)
-        return _eval_rnpv_ev(adj, discount_rate, r_and_d_cost, decline_rate, default_margin, tax_rate)
+        return _eval_rnpv_ev(
+            adj, discount_rate, r_and_d_cost, decline_rate, default_margin, tax_rate
+        )
 
     return _binary_search(f, _POS_SCALE_LO, _POS_SCALE_HI, target_ev)
 
@@ -138,6 +143,7 @@ def solve_implied_peak_scale(
     Each drug's peak_sales and existing_revenue are multiplied by k.
     rNPV EV is monotone-increasing in k.
     """
+
     def f(scale: float) -> float:
         adj = []
         for d in pipeline:
@@ -146,7 +152,9 @@ def solve_implied_peak_scale(
             if d.get("existing_revenue", 0) > 0:
                 ad["existing_revenue"] = round(d["existing_revenue"] * scale)
             adj.append(ad)
-        return _eval_rnpv_ev(adj, discount_rate, r_and_d_cost, decline_rate, default_margin, tax_rate)
+        return _eval_rnpv_ev(
+            adj, discount_rate, r_and_d_cost, decline_rate, default_margin, tax_rate
+        )
 
     return _binary_search(f, _PEAK_SCALE_LO, _PEAK_SCALE_HI, target_ev)
 
@@ -163,8 +171,11 @@ def solve_implied_discount_rate(
 
     rNPV EV is monotone-decreasing in discount rate.
     """
+
     def f(dr: float) -> float:
-        return _eval_rnpv_ev(pipeline, dr, r_and_d_cost, decline_rate, default_margin, tax_rate)
+        return _eval_rnpv_ev(
+            pipeline, dr, r_and_d_cost, decline_rate, default_margin, tax_rate
+        )
 
     return _binary_search(f, _DISCOUNT_LO, _DISCOUNT_HI, target_ev)
 
@@ -193,7 +204,6 @@ def solve_implied_per_drug_pos(
         name, phase, base_pos, implied_pos (None if unsolvable),
         solvable, max_ev_contribution, skipped.
     """
-    from engine.rnpv import PHASE_POS
 
     if target_ev <= 0:
         return []
@@ -217,15 +227,17 @@ def solve_implied_per_drug_pos(
         # Skip drugs already at PoS >= 1.0 (no room to adjust upward,
         # and reducing them changes the "approved" semantics)
         if base_pos >= 1.0:
-            results.append({
-                "name": dr.name,
-                "phase": dr.phase,
-                "base_pos": base_pos,
-                "implied_pos": None,
-                "solvable": False,
-                "max_ev_contribution": 0,
-                "skipped": True,
-            })
+            results.append(
+                {
+                    "name": dr.name,
+                    "phase": dr.phase,
+                    "base_pos": base_pos,
+                    "implied_pos": None,
+                    "solvable": False,
+                    "max_ev_contribution": 0,
+                    "skipped": True,
+                }
+            )
             continue
 
         # Max marginal EV contribution: what if this drug had PoS=1.0?
@@ -233,30 +245,34 @@ def solve_implied_per_drug_pos(
 
         # Drug with zero NPV contributes nothing regardless of PoS
         if npv_i == 0:
-            results.append({
-                "name": dr.name,
-                "phase": dr.phase,
-                "base_pos": base_pos,
-                "implied_pos": None,
-                "solvable": False,
-                "max_ev_contribution": 0,
-                "skipped": False,
-            })
+            results.append(
+                {
+                    "name": dr.name,
+                    "phase": dr.phase,
+                    "base_pos": base_pos,
+                    "implied_pos": None,
+                    "solvable": False,
+                    "max_ev_contribution": 0,
+                    "skipped": False,
+                }
+            )
             continue
 
         # Linear solve: implied_pos = gap / npv_i + current_pos
         implied_pos = gap / npv_i + base_pos
         solvable = 0.0 <= implied_pos <= 1.0
 
-        results.append({
-            "name": dr.name,
-            "phase": dr.phase,
-            "base_pos": base_pos,
-            "implied_pos": round(implied_pos, 4) if solvable else None,
-            "solvable": solvable,
-            "max_ev_contribution": max_contribution,
-            "skipped": False,
-        })
+        results.append(
+            {
+                "name": dr.name,
+                "phase": dr.phase,
+                "base_pos": base_pos,
+                "implied_pos": round(implied_pos, 4) if solvable else None,
+                "solvable": solvable,
+                "max_ev_contribution": max_contribution,
+                "skipped": False,
+            }
+        )
 
     return results
 
@@ -299,43 +315,60 @@ def reverse_rnpv(
 
     # 1. Implied PoS scale
     pos_scale = solve_implied_pos_scale(
-        target_ev, pipeline, discount_rate, **kwargs,
+        target_ev,
+        pipeline,
+        discount_rate,
+        **kwargs,
     )
 
     # 2. Implied peak-sales scale
     peak_scale = solve_implied_peak_scale(
-        target_ev, pipeline, discount_rate, **kwargs,
+        target_ev,
+        pipeline,
+        discount_rate,
+        **kwargs,
     )
 
     # 3. Implied discount rate
     impl_dr = solve_implied_discount_rate(
-        target_ev, pipeline, **kwargs,
+        target_ev,
+        pipeline,
+        **kwargs,
     )
 
     # Build per-drug implied PoS
     implied_pos_drugs = []
     if pos_scale is not None:
         for d in pipeline:
-            base_pos = d.get("success_prob") or PHASE_POS.get(d.get("phase", "preclinical"), 0.10)
-            implied_pos_drugs.append({
-                "name": d["name"],
-                "base_pos": base_pos,
-                "implied_pos": min(base_pos * pos_scale, 1.0),
-            })
+            base_pos = d.get("success_prob") or PHASE_POS.get(
+                d.get("phase", "preclinical"), 0.10
+            )
+            implied_pos_drugs.append(
+                {
+                    "name": d["name"],
+                    "base_pos": base_pos,
+                    "implied_pos": min(base_pos * pos_scale, 1.0),
+                }
+            )
 
     # Build per-drug implied peak sales
     implied_peak_drugs = []
     if peak_scale is not None:
         for d in pipeline:
-            implied_peak_drugs.append({
-                "name": d["name"],
-                "base_peak": d.get("peak_sales", 0),
-                "implied_peak": round(d.get("peak_sales", 0) * peak_scale),
-            })
+            implied_peak_drugs.append(
+                {
+                    "name": d["name"],
+                    "base_peak": d.get("peak_sales", 0),
+                    "implied_peak": round(d.get("peak_sales", 0) * peak_scale),
+                }
+            )
 
     # 4. Per-drug independent PoS (linear solve, O(1))
     implied_pos_solo = solve_implied_per_drug_pos(
-        target_ev, pipeline, discount_rate, **kwargs,
+        target_ev,
+        pipeline,
+        discount_rate,
+        **kwargs,
     )
 
     return ReverseRNPVResult(

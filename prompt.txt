@@ -1,0 +1,12 @@
+﻿Review these files for bugs in a new per-scenario SOTP optionality segment implementation:
+- engine/sotp.py: calc_sotp() added ebitda_override and multiple_override params
+- valuation_runner.py lines 276-300: scenario loop re-calls calc_sotp with overrides
+- schemas/models.py: ScenarioParams added segment_ebitda and segment_multiples fields
+- ai/analyst.py: _has_optionality_trigger() keyword pre-screen function
+- pipeline/profile_generator.py: parses AI optionality_segments and writes to YAML
+
+Key concerns to investigate:
+1. Silent data loss: AI generates scenario codes in scenarios list vs optionality_segments.scenario_ebitda keys - if they differ, data is silently dropped with only an if-guard and no warning
+2. multiple_override is applied before method branching in calc_sotp so it affects pbv and pe segments unintentionally
+3. Base SOTP shows EV=0 for optionality segments while only probability-weighted scenario values include them - potential UX confusion
+4. allocate_da receives optionality segments with op=0 and assets=0 - verify D&A allocation denominator is not distorted

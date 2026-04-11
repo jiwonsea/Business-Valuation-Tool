@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 from pathlib import Path
 
 from google.auth.transport.requests import Request
@@ -34,7 +33,7 @@ def _get_youtube_service():
     """Build authenticated YouTube API service."""
     if not TOKEN_FILE.exists():
         raise FileNotFoundError(
-            f"token.json not found. Run: python scripts/setup_youtube_auth.py"
+            "token.json not found. Run: python scripts/setup_youtube_auth.py"
         )
 
     creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
@@ -78,13 +77,15 @@ def _build_description(summary: dict) -> str:
         market = v.get("market", "")
         lines.append(f"  • {name} ({market})")
 
-    lines.extend([
-        "",
-        "---",
-        _DISCLAIMER_KO,
-        "",
-        "#주식분석 #밸류에이션 #AI분석 #투자 #주간리포트",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            _DISCLAIMER_KO,
+            "",
+            "#주식분석 #밸류에이션 #AI분석 #투자 #주간리포트",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -156,14 +157,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Upload video to YouTube")
     parser.add_argument("--video", type=str, required=True, help="Path to MP4 file")
     parser.add_argument("--summary-json", type=str, help="Path to _weekly_summary.json")
-    parser.add_argument("--test", action="store_true", help="Validate auth only, don't upload")
+    parser.add_argument(
+        "--test", action="store_true", help="Validate auth only, don't upload"
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     if args.test:
         try:
-            youtube = _get_youtube_service()
+            _get_youtube_service()
             logger.info("YouTube auth valid — ready to upload.")
         except Exception as e:
             logger.error("YouTube auth check failed: %s", e)

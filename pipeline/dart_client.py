@@ -88,14 +88,16 @@ def get_corp_info(company_name: str) -> dict | None:
         name = corp.findtext("corp_name", "")
         if company_name in name or name in company_name:
             stock_code = (corp.findtext("stock_code") or "").strip()
-            is_exact = (name == company_name)
+            is_exact = name == company_name
             is_listed = bool(stock_code)
-            candidates.append({
-                "corp_code": corp.findtext("corp_code", ""),
-                "stock_code": stock_code if stock_code else None,
-                "is_listed": is_listed,
-                "_exact": is_exact,
-            })
+            candidates.append(
+                {
+                    "corp_code": corp.findtext("corp_code", ""),
+                    "stock_code": stock_code if stock_code else None,
+                    "is_listed": is_listed,
+                    "_exact": is_exact,
+                }
+            )
 
     if not candidates:
         return None
@@ -150,8 +152,11 @@ def get_report_document(rcept_no: str) -> str:
         XML body text
     """
     key = _get_api_key()
-    resp = httpx.get(f"{DART_BASE}/document.xml",
-                     params={"crtfc_key": key, "rcept_no": rcept_no}, timeout=60)
+    resp = httpx.get(
+        f"{DART_BASE}/document.xml",
+        params={"crtfc_key": key, "rcept_no": rcept_no},
+        timeout=60,
+    )
     resp.raise_for_status()
 
     with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
@@ -166,8 +171,11 @@ def get_single_company_info(corp_code: str) -> dict:
     Returns: CEO name, industry, address, shares, etc.
     """
     key = _get_api_key()
-    resp = httpx.get(f"{DART_BASE}/company.json",
-                     params={"crtfc_key": key, "corp_code": corp_code}, timeout=15)
+    resp = httpx.get(
+        f"{DART_BASE}/company.json",
+        params={"crtfc_key": key, "corp_code": corp_code},
+        timeout=15,
+    )
     resp.raise_for_status()
     data = resp.json()
     if data.get("status") != "000":
@@ -212,7 +220,9 @@ def get_stock_total_info(
         "reprt_code": reprt_code,
     }
     resp = httpx.get(
-        f"{DART_BASE}/stockTotqySttus.json", params=params, timeout=15,
+        f"{DART_BASE}/stockTotqySttus.json",
+        params=params,
+        timeout=15,
     )
     resp.raise_for_status()
     data = resp.json()

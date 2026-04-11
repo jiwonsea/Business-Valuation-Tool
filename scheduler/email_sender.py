@@ -38,12 +38,14 @@ def _send_via_resend(subject: str, html_body: str, recipient: str) -> bool:
 
     resend.api_key = api_key
     try:
-        resp = resend.Emails.send({
-            "from": sender,
-            "to": [recipient],
-            "subject": subject,
-            "html": html_body,
-        })
+        resp = resend.Emails.send(
+            {
+                "from": sender,
+                "to": [recipient],
+                "subject": subject,
+                "html": html_body,
+            }
+        )
         logger.info("Resend email sent: id=%s", resp.get("id", "?"))
         return True
     except Exception as e:
@@ -51,7 +53,9 @@ def _send_via_resend(subject: str, html_body: str, recipient: str) -> bool:
         return False
 
 
-def _send_via_gmail(subject: str, html_body: str, sender: str, password: str, recipient: str) -> bool:
+def _send_via_gmail(
+    subject: str, html_body: str, sender: str, password: str, recipient: str
+) -> bool:
     """Send email via Gmail SMTP. Returns True on success."""
     msg = MIMEMultipart("alternative")
     msg["From"] = sender
@@ -72,10 +76,7 @@ def _send_via_gmail(subject: str, html_body: str, sender: str, password: str, re
 
 def _get_recipient() -> str:
     """Resolve email recipient from env vars."""
-    return (
-        os.getenv("GMAIL_RECIPIENT", "")
-        or os.getenv("GMAIL_ADDRESS", "")
-    )
+    return os.getenv("GMAIL_RECIPIENT", "") or os.getenv("GMAIL_ADDRESS", "")
 
 
 def send_weekly_email(summary: dict) -> bool:
@@ -91,7 +92,9 @@ def send_weekly_email(summary: dict) -> bool:
 
     recipient = _get_recipient()
     if not recipient:
-        logger.warning("No email recipient configured (GMAIL_RECIPIENT / GMAIL_ADDRESS).")
+        logger.warning(
+            "No email recipient configured (GMAIL_RECIPIENT / GMAIL_ADDRESS)."
+        )
         return False
 
     label = summary.get("label", "Weekly Report")
@@ -137,7 +140,9 @@ def send_error_alert(phase: str, error: str) -> bool:
         f"<b>Time:</b> {datetime.now().isoformat()}<br>"
         f"<b>Error:</b></p><pre>{error}</pre>"
     )
-    body_plain = f"Phase: {phase}\nTime: {datetime.now().isoformat()}\nError:\n{error}\n"
+    body_plain = (
+        f"Phase: {phase}\nTime: {datetime.now().isoformat()}\nError:\n{error}\n"
+    )
 
     # Try Resend first
     if os.getenv("RESEND_API_KEY"):

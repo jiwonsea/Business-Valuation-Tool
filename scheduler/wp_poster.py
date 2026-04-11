@@ -48,12 +48,16 @@ def _build_post_content(summary: dict) -> str:
     """
     import markdown
 
-    label = summary.get("label", "Weekly Report")
+    summary.get("label", "Weekly Report")
     valuations = summary.get("valuations", [])
     discoveries = summary.get("discoveries", [])
 
     # Filter US-only valuations
-    us_valuations = [v for v in valuations if v.get("market") == "US" and v.get("status") == "success"]
+    us_valuations = [
+        v
+        for v in valuations
+        if v.get("market") == "US" and v.get("status") == "success"
+    ]
 
     if not us_valuations:
         return ""
@@ -125,7 +129,9 @@ def post_to_wordpress(summary: dict) -> str | None:
     """
     site_url, username, password = _get_credentials()
     if not all([site_url, username, password]):
-        logger.warning("WP_SITE_URL, WP_USERNAME, or WP_APP_PASSWORD not set — skipping WordPress.")
+        logger.warning(
+            "WP_SITE_URL, WP_USERNAME, or WP_APP_PASSWORD not set — skipping WordPress."
+        )
         return None
 
     html_content = _build_post_content(summary)
@@ -161,11 +167,15 @@ def post_to_wordpress(summary: dict) -> str | None:
 def main() -> None:
     """CLI entry point for standalone testing."""
     parser = argparse.ArgumentParser(description="Post weekly report to WordPress")
-    parser.add_argument("--test", action="store_true", help="Test with latest summary JSON")
+    parser.add_argument(
+        "--test", action="store_true", help="Test with latest summary JSON"
+    )
     parser.add_argument("--summary-json", type=str, help="Path to _weekly_summary.json")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     if args.summary_json:
         summary_path = Path(args.summary_json)

@@ -67,10 +67,7 @@ def summarize_key_issues(
     from ai.llm_client import ask
     from ai.prompts import SYSTEM_DISCOVERY
 
-    news_text = "\n".join(
-        f"- [{n['pub_date'][:10]}] {n['title']}"
-        for n in news
-    )
+    news_text = "\n".join(f"- [{n['pub_date'][:10]}] {n['title']}" for n in news)
 
     market_label = "한국" if market == "KR" else "미국"
     prompt = f"""\
@@ -114,9 +111,9 @@ class DiscoveryEngine:
         Returns:
             {"news_count": int, "analysis": str, "companies": list, "scenarios": list}
         """
-        _safe_print(f"\n{'='*60}")
+        _safe_print(f"\n{'=' * 60}")
         _safe_print(f"[Discovery Mode] {market} 시장 뉴스 분석")
-        _safe_print(f"{'='*60}")
+        _safe_print(f"{'=' * 60}")
 
         # Step 1: Collect news
         queries = _KR_QUERIES if market == "KR" else _US_QUERIES
@@ -142,7 +139,13 @@ class DiscoveryEngine:
 
         if not unique_news:
             _safe_print("[WARN] 수집된 뉴스가 없습니다.")
-            return {"news_count": 0, "analysis": "", "companies": [], "scenarios": [], "news": []}
+            return {
+                "news_count": 0,
+                "analysis": "",
+                "companies": [],
+                "scenarios": [],
+                "news": [],
+            }
 
         # Step 2: AI analysis
         _safe_print("[AI 분석 시작]")
@@ -162,27 +165,29 @@ class DiscoveryEngine:
             }
 
         # Step 3: Output results
-        _safe_print(f"\n{'='*60}")
+        _safe_print(f"\n{'=' * 60}")
         _safe_print("[분석 결과]")
-        _safe_print(f"{'='*60}")
+        _safe_print(f"{'=' * 60}")
         _safe_print(analysis.get("summary", ""))
 
         if analysis.get("companies"):
-            _safe_print(f"\n[추천 기업]")
+            _safe_print("\n[추천 기업]")
             for i, co in enumerate(analysis["companies"], 1):
                 _safe_print(f"  {i}. {co.get('name', '')} — {co.get('reason', '')}")
 
         if analysis.get("scenarios"):
-            _safe_print(f"\n[시나리오 제안]")
+            _safe_print("\n[시나리오 제안]")
             for sc in analysis["scenarios"]:
-                _safe_print(f"  {sc.get('name', '')}: 확률 {sc.get('prob', 0)}% — {sc.get('description', '')}")
+                _safe_print(
+                    f"  {sc.get('name', '')}: 확률 {sc.get('prob', 0)}% — {sc.get('description', '')}"
+                )
 
-        _safe_print(f"\n{'='*60}")
+        _safe_print(f"\n{'=' * 60}")
         _safe_print("위 결과를 검토한 후, 다음 단계를 진행하세요:")
         _safe_print("  1. 추천 기업 중 분석 대상 선택")
         _safe_print("  2. 시나리오/확률 조정")
         _safe_print("  3. python cli.py --company <기업명> --auto")
-        _safe_print(f"{'='*60}")
+        _safe_print(f"{'=' * 60}")
 
         return {
             "news_count": len(unique_news),
@@ -231,8 +236,9 @@ class DiscoveryEngine:
 }}
 </output_format>"""
 
-        response = ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2,
-                       max_tokens=1536)
+        response = ask(
+            prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1536
+        )
 
         try:
             return _parse_json(response)

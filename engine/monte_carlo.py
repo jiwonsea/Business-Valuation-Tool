@@ -14,6 +14,7 @@ import numpy as np
 @dataclass
 class MCInput:
     """Monte Carlo simulation input parameters."""
+
     # Per-segment multiples: {code: (mean, std)}
     multiple_params: dict[str, tuple[float, float]]
     # WACC: (mean, std)
@@ -36,17 +37,20 @@ class MCInput:
 @dataclass
 class MCResult:
     """Monte Carlo simulation result."""
+
     n_sims: int
     mean: int
     median: int
     std: int
-    p5: int   # 5th percentile
+    p5: int  # 5th percentile
     p25: int
     p75: int
     p95: int
     min_val: int
     max_val: int
-    distribution: list[int] = field(default_factory=list)  # Full distribution (for histogram)
+    distribution: list[int] = field(
+        default_factory=list
+    )  # Full distribution (for histogram)
     histogram_bins: list[int] = field(default_factory=list)
     histogram_counts: list[int] = field(default_factory=list)
     pct_negative: float = 0.0  # Percentage of simulations with negative/zero equity
@@ -109,7 +113,7 @@ def run_monte_carlo(
     for code, (mu, sigma) in mc_input.multiple_params.items():
         if mu > 0 and sigma > 0:
             sigma_ln = np.sqrt(np.log(1 + (sigma / mu) ** 2))
-            mu_ln = np.log(mu) - 0.5 * sigma_ln ** 2
+            mu_ln = np.log(mu) - 0.5 * sigma_ln**2
             samples = rng.lognormal(mu_ln, sigma_ln, n)
         else:
             samples = rng.normal(mu, sigma, n)
@@ -129,7 +133,11 @@ def run_monte_carlo(
 
     # CPS redemption calculation (effective_rate = IRR - dividend_rate, consistent with calc_scenario)
     effective_irr = max(irr - cps_dividend_rate, 0.0)
-    cps_repay = round(cps_principal * (1 + effective_irr / 100) ** cps_years) if cps_principal > 0 else 0
+    cps_repay = (
+        round(cps_principal * (1 + effective_irr / 100) ** cps_years)
+        if cps_principal > 0
+        else 0
+    )
 
     # Revenue uncertainty sampling for ev_revenue segments
     revenue_samples: dict[str, np.ndarray] = {}
@@ -177,7 +185,9 @@ def run_monte_carlo(
 
         if dcf_ev_base > 0:
             ratio = np.where(valid, dcf_ev_sample / dcf_ev_base, 1.0)
-            ratio = np.clip(ratio, 0.0, 3.0)  # Cap TV scaling to prevent fat-tail contamination
+            ratio = np.clip(
+                ratio, 0.0, 3.0
+            )  # Cap TV scaling to prevent fat-tail contamination
             ev_ebitda_part = np.where(valid, ev_ebitda_part * ratio, ev_ebitda_part)
 
     ev = ev_ebitda_part + ev_revenue_part
@@ -188,7 +198,7 @@ def run_monte_carlo(
 
     if shares > 0:
         ps = equity * (unit_multiplier / shares)
-        ps *= (1 - dlom_samples / 100)
+        ps *= 1 - dlom_samples / 100
         results = ps  # preserve negatives — clipping upward-biases mean/percentiles
     else:
         results = np.zeros(n)

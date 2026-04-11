@@ -34,7 +34,9 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
 
     # ── Forecast-to-Price Error ──
     lines.append("Forecast-to-Price Error:")
-    lines.append(f"  {'Horizon':<9} │ {'MAPE':>6} │ {'Median':>7} │ {'Log Ratio':>10} │ {'N':>4}")
+    lines.append(
+        f"  {'Horizon':<9} │ {'MAPE':>6} │ {'Median':>7} │ {'Log Ratio':>10} │ {'N':>4}"
+    )
     lines.append(f"  {'─' * 9} │ {'─' * 6} │ {'─' * 7} │ {'─' * 10} │ {'─' * 4}")
 
     report["forecast_error"] = {}
@@ -52,7 +54,9 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
 
     # ── Gap Closure ──
     lines.append("Gap Closure:")
-    lines.append(f"  {'Horizon':<9} │ {'Mean':>6} │ {'Median':>7} │ {'Pos Rate':>9} │ {'N':>4}")
+    lines.append(
+        f"  {'Horizon':<9} │ {'Mean':>6} │ {'Median':>7} │ {'Pos Rate':>9} │ {'N':>4}"
+    )
     lines.append(f"  {'─' * 9} │ {'─' * 6} │ {'─' * 7} │ {'─' * 9} │ {'─' * 4}")
 
     report["gap_closure"] = {}
@@ -70,7 +74,9 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
 
     # ── Interval Score ──
     lines.append("Interval Score:")
-    lines.append(f"  {'Horizon':<9} │ {'Coverage':>9} │ {'Width':>7} │ {'Pinball':>8} │ {'N':>4}")
+    lines.append(
+        f"  {'Horizon':<9} │ {'Coverage':>9} │ {'Width':>7} │ {'Pinball':>8} │ {'N':>4}"
+    )
     lines.append(f"  {'─' * 9} │ {'─' * 9} │ {'─' * 7} │ {'─' * 8} │ {'─' * 4}")
 
     report["interval_score"] = {}
@@ -78,8 +84,16 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
         iv = calc_interval_score(listed, horizon)
         report["interval_score"][horizon] = iv
         if iv["n"] > 0 and iv["coverage_rate"] is not None:
-            width_str = f"{iv['mean_interval_width']:>6.0%}" if iv["mean_interval_width"] is not None else "    --"
-            pinball_str = f"{iv['pinball_loss']:>7.2f}" if iv["pinball_loss"] is not None else "     --"
+            width_str = (
+                f"{iv['mean_interval_width']:>6.0%}"
+                if iv["mean_interval_width"] is not None
+                else "    --"
+            )
+            pinball_str = (
+                f"{iv['pinball_loss']:>7.2f}"
+                if iv["pinball_loss"] is not None
+                else "     --"
+            )
             lines.append(
                 f"  {label:<9} │ {iv['coverage_rate']:>8.0%} │ {width_str} │ {pinball_str} │ {iv['n']:>4}"
             )
@@ -91,10 +105,14 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
     cal = calc_calibration_curve(listed, "t6m")
     report["calibration_curve"] = cal
     if cal is None:
-        lines.append("Calibration Curve: insufficient data (need 30+ scenario observations)")
+        lines.append(
+            "Calibration Curve: insufficient data (need 30+ scenario observations)"
+        )
     else:
         lines.append("Calibration Curve (T+6m):")
-        lines.append(f"  {'Bin':<10} │ {'Assigned':>9} │ {'Realized':>9} │ {'Count':>6}")
+        lines.append(
+            f"  {'Bin':<10} │ {'Assigned':>9} │ {'Realized':>9} │ {'Count':>6}"
+        )
         lines.append(f"  {'─' * 10} │ {'─' * 9} │ {'─' * 9} │ {'─' * 6}")
         for b in cal:
             lines.append(
@@ -110,7 +128,9 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
 
     if by_company:
         lines.append("Per-Company Breakdown:")
-        lines.append(f"  {'Company':<16} │ {'T+6m MAPE':>10} │ {'Gap Closure':>12} │ {'Coverage':>9}")
+        lines.append(
+            f"  {'Company':<16} │ {'T+6m MAPE':>10} │ {'Gap Closure':>12} │ {'Coverage':>9}"
+        )
         lines.append(f"  {'─' * 16} │ {'─' * 10} │ {'─' * 12} │ {'─' * 9}")
 
         report["per_company"] = {}
@@ -119,9 +139,19 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
             gc = calc_gap_closure(company_records, "t6m")
             iv = calc_interval_score(company_records, "t6m")
 
-            mape_str = f"{err['mape']:>9.0%}" if err["mape"] is not None else "       --"
-            gc_str = f"{gc['mean_closure']:>11.2f}" if gc["mean_closure"] is not None else "         --"
-            cov_str = "YES" if (iv["coverage_rate"] is not None and iv["coverage_rate"] > 0.5) else "NO"
+            mape_str = (
+                f"{err['mape']:>9.0%}" if err["mape"] is not None else "       --"
+            )
+            gc_str = (
+                f"{gc['mean_closure']:>11.2f}"
+                if gc["mean_closure"] is not None
+                else "         --"
+            )
+            cov_str = (
+                "YES"
+                if (iv["coverage_rate"] is not None and iv["coverage_rate"] > 0.5)
+                else "NO"
+            )
             if iv["coverage_rate"] is None:
                 cov_str = "--"
 
@@ -140,7 +170,9 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
     if log_ratio is not None and abs(log_ratio) > 0.05:
         direction = "과대추정" if log_ratio > 0 else "과소추정"
         pct = abs(log_ratio) * 100
-        lines.append(f"⚠ Systematic Bias: Log ratio {log_ratio:+.2f} → {pct:.0f}% 체계적 {direction} 경향")
+        lines.append(
+            f"⚠ Systematic Bias: Log ratio {log_ratio:+.2f} → {pct:.0f}% 체계적 {direction} 경향"
+        )
         report["systematic_bias"] = {"log_ratio": log_ratio, "direction": direction}
 
     # ── Phase 4 A/B Comparison (signals v0 vs v1) ──
@@ -154,10 +186,22 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
             if grp.get("n", 0) == 0:
                 continue
             label = "Baseline (v0)" if key == "v0" else "Signals (v1)"
-            mape_str = f"{grp['mape_t6m']:.0%}" if grp.get("mape_t6m") is not None else "--"
-            gc_str = f"{grp['gap_closure_t6m']:.2f}" if grp.get("gap_closure_t6m") is not None else "--"
-            cov_str = f"{grp['coverage_t6m']:.0%}" if grp.get("coverage_t6m") is not None else "--"
-            lines.append(f"  {label:<18} │ N={grp['n']:>3} │ MAPE={mape_str:>5} │ GapClosure={gc_str:>5} │ Coverage={cov_str:>5}")
+            mape_str = (
+                f"{grp['mape_t6m']:.0%}" if grp.get("mape_t6m") is not None else "--"
+            )
+            gc_str = (
+                f"{grp['gap_closure_t6m']:.2f}"
+                if grp.get("gap_closure_t6m") is not None
+                else "--"
+            )
+            cov_str = (
+                f"{grp['coverage_t6m']:.0%}"
+                if grp.get("coverage_t6m") is not None
+                else "--"
+            )
+            lines.append(
+                f"  {label:<18} │ N={grp['n']:>3} │ MAPE={mape_str:>5} │ GapClosure={gc_str:>5} │ Coverage={cov_str:>5}"
+            )
 
     return "\n".join(lines), report
 

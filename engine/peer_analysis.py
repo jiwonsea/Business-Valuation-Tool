@@ -56,26 +56,26 @@ def calc_peer_stats(
 
         if n >= 4:
             q1 = statistics.median(vals_sorted[: n // 2])
-            q3 = statistics.median(vals_sorted[(n + 1) // 2:])
+            q3 = statistics.median(vals_sorted[(n + 1) // 2 :])
         elif n >= 2:
             q1 = vals_sorted[0]
             q3 = vals_sorted[-1]
         else:
             q1 = q3 = vals_sorted[0]
 
-        results.append(PeerSegmentStats(
-            segment_code=code,
-            segment_name=name,
-            count=n,
-            ev_ebitda_median=round(median_val, 1),
-            ev_ebitda_mean=round(mean_val, 1),
-            ev_ebitda_q1=round(q1, 1),
-            ev_ebitda_q3=round(q3, 1),
-            ev_ebitda_min=round(min(vals_sorted), 1),
-            ev_ebitda_max=round(max(vals_sorted), 1),
-            applied_multiple=multiples.get(code, 0.0),
-        ))
+        results.append(
+            PeerSegmentStats(
+                segment_code=code,
+                segment_name=name,
+                count=n,
+                ev_ebitda_median=round(median_val, 1),
+                ev_ebitda_mean=round(mean_val, 1),
+                ev_ebitda_q1=round(q1, 1),
+                ev_ebitda_q3=round(q3, 1),
+                ev_ebitda_min=round(min(vals_sorted), 1),
+                ev_ebitda_max=round(max(vals_sorted), 1),
+                applied_multiple=multiples.get(code, 0.0),
+            )
+        )
 
     return results
-
-

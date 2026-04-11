@@ -29,7 +29,9 @@ def allocate_da(
 
     # Only EV-based (manufacturing) segments are D&A allocation targets
     ev_codes = [c for c in seg_data if methods.get(c, "ev_ebitda") == "ev_ebitda"]
-    ev_total_assets = sum(seg_data[c].get("assets", 0) for c in ev_codes) if ev_codes else 0
+    ev_total_assets = (
+        sum(seg_data[c].get("assets", 0) for c in ev_codes) if ev_codes else 0
+    )
 
     results = {}
     for code, s in seg_data.items():
@@ -92,32 +94,52 @@ def calc_sotp(
             m = (multiple_override or {}).get(code, multiples.get(code, 0))
             book_equity = seg_info.get("book_equity", 0)
             if book_equity <= 0:
-                logger.warning("Segment '%s' uses P/BV but book_equity=%s — EV will be 0", code, book_equity)
+                logger.warning(
+                    "Segment '%s' uses P/BV but book_equity=%s — EV will be 0",
+                    code,
+                    book_equity,
+                )
             ev = round(book_equity * m) if book_equity > 0 else 0
             result[code] = SOTPSegmentResult(
-                ebitda=alloc.ebitda, multiple=m, ev=ev,
-                method="pbv", is_equity_based=True,
+                ebitda=alloc.ebitda,
+                multiple=m,
+                ev=ev,
+                method="pbv",
+                is_equity_based=True,
             )
         elif method == "pe":
             m = (multiple_override or {}).get(code, multiples.get(code, 0))
             net_income = seg_info.get("net_income_segment", 0)
             if net_income <= 0:
-                logger.warning("Segment '%s' uses P/E but net_income=%s — EV will be 0", code, net_income)
+                logger.warning(
+                    "Segment '%s' uses P/E but net_income=%s — EV will be 0",
+                    code,
+                    net_income,
+                )
             ev = round(net_income * m) if net_income > 0 else 0
             result[code] = SOTPSegmentResult(
-                ebitda=alloc.ebitda, multiple=m, ev=ev,
-                method="pe", is_equity_based=True,
+                ebitda=alloc.ebitda,
+                multiple=m,
+                ev=ev,
+                method="pe",
+                is_equity_based=True,
             )
         elif method == "ev_revenue":
             # EV/Revenue for pre-profit optionality segments (FSD, Robotaxi, AI platform)
             # multiple_override applies (scenario-level multiple variation)
             m = (multiple_override or {}).get(code, multiples.get(code, 0))
-            rev = (revenue_override or {}).get(code, (revenue_by_seg or {}).get(code, 0))
+            rev = (revenue_override or {}).get(
+                code, (revenue_by_seg or {}).get(code, 0)
+            )
             ev = round(rev * m) if rev > 0 else 0
             rev_type = seg_info.get("revenue_type", "ltm")
             result[code] = SOTPSegmentResult(
-                ebitda=alloc.ebitda, multiple=m, ev=ev,
-                method="ev_revenue", is_equity_based=False, revenue=rev,
+                ebitda=alloc.ebitda,
+                multiple=m,
+                ev=ev,
+                method="ev_revenue",
+                is_equity_based=False,
+                revenue=rev,
                 revenue_type=rev_type,
             )
         else:
@@ -127,8 +149,11 @@ def calc_sotp(
             # Negative EBITDA floored to 0 EV for valuation conservative
             ev = max(round(eb * m), 0) if eb > 0 else 0
             result[code] = SOTPSegmentResult(
-                ebitda=eb, multiple=m, ev=ev,
-                method="ev_ebitda", is_equity_based=False,
+                ebitda=eb,
+                multiple=m,
+                ev=ev,
+                method="ev_ebitda",
+                is_equity_based=False,
             )
 
     total_ev = sum(r.ev for r in result.values())

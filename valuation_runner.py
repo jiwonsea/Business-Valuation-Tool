@@ -9,13 +9,29 @@ import yaml
 logger = logging.getLogger(__name__)
 
 from schemas.models import (
-    CompanyProfile, WACCParams, WACCResult, ScenarioParams,
-    DCFParams, DDMParams, NAVParams, RNPVParams,
-    RIMParams, RIMProjectionResult, RIMValuationResult,
-    PeerCompany, ValuationInput, ValuationResult, CrossValidationItem,
-    MonteCarloResult, DDMValuationResult, NAVResult, MultiplesResult,
-    RNPVValuationResult, RNPVDrugResult,
-    NewsDriver, PipelineDrug,
+    CompanyProfile,
+    WACCParams,
+    WACCResult,
+    ScenarioParams,
+    DCFParams,
+    DDMParams,
+    NAVParams,
+    RNPVParams,
+    RIMParams,
+    RIMProjectionResult,
+    RIMValuationResult,
+    PeerCompany,
+    ValuationInput,
+    ValuationResult,
+    CrossValidationItem,
+    MonteCarloResult,
+    DDMValuationResult,
+    NAVResult,
+    MultiplesResult,
+    RNPVValuationResult,
+    RNPVDrugResult,
+    NewsDriver,
+    PipelineDrug,
 )
 from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
@@ -26,9 +42,15 @@ from engine.ddm import calc_ddm as calc_ddm_engine
 from engine.rim import calc_rim as calc_rim_engine
 from engine.scenario import calc_scenario
 from engine.sensitivity import (
-    sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf,
-    sensitivity_ddm, sensitivity_rim, sensitivity_nav, sensitivity_multiple_range,
-    sensitivity_rnpv, sensitivity_rnpv_tornado,
+    sensitivity_multiples,
+    sensitivity_irr_dlom,
+    sensitivity_dcf,
+    sensitivity_ddm,
+    sensitivity_rim,
+    sensitivity_nav,
+    sensitivity_multiple_range,
+    sensitivity_rnpv,
+    sensitivity_rnpv_tornado,
 )
 from engine.multiples import cross_validate, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
@@ -107,12 +129,17 @@ def load_profile(path: str) -> ValuationInput:
     # Auto-generate from financial data when ebitda_growth_rates not specified
     if dcf_params.ebitda_growth_rates is None:
         from engine.growth import generate_growth_rates
+
         _industry = raw.get("industry", "") or co_raw.get("industry", "")
-        dcf_params = dcf_params.model_copy(update={
-            "ebitda_growth_rates": generate_growth_rates(
-                consolidated, market=company.market, industry=_industry,
-            )
-        })
+        dcf_params = dcf_params.model_copy(
+            update={
+                "ebitda_growth_rates": generate_growth_rates(
+                    consolidated,
+                    market=company.market,
+                    industry=_industry,
+                )
+            }
+        )
 
     # DDM (Optional)
     ddm_params = None
@@ -180,7 +207,11 @@ def load_profile(path: str) -> ValuationInput:
                 logger.warning(
                     "[%s] scenario '%s' %s has unrecognized keys %s "
                     "(valid: %s) — overrides will be ignored",
-                    company.name, sc_code, attr_name, bad_keys, _valid_seg_codes,
+                    company.name,
+                    sc_code,
+                    attr_name,
+                    bad_keys,
+                    _valid_seg_codes,
                 )
 
     return ValuationInput(
@@ -232,16 +263,20 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
     """Execute full valuation pipeline -- dispatch by methodology."""
     # Auto-detect financial sector -> skip Hamada (copy to avoid mutating input)
     if is_financial(vi.industry):
-        vi = vi.model_copy(update={
-            "wacc_params": vi.wacc_params.model_copy(update={"is_financial": True})
-        })
+        vi = vi.model_copy(
+            update={
+                "wacc_params": vi.wacc_params.model_copy(update={"is_financial": True})
+            }
+        )
 
     # Common: WACC (needed before method selection -- Ke used for DDM/RIM decision)
     # NOTE: WACC uses 2-component capital structure (equity + debt). When CPS/RCPS exist,
     # their cost differs from kd_pre but is not separately weighted — WACC may be understated.
     if vi.cps_principal or vi.rcps_principal:
-        logger.warning("CPS/RCPS present but WACC uses 2-component structure (Ke/Kd only) "
-                        "— preferred equity cost is not separately weighted")
+        logger.warning(
+            "CPS/RCPS present but WACC uses 2-component structure (Ke/Kd only) "
+            "— preferred equity cost is not separately weighted"
+        )
     wacc_result = calc_wacc(vi.wacc_params)
     um = vi.company.unit_multiplier
 
@@ -293,7 +328,9 @@ def _calc_effective_net_debt(vi: ValuationInput) -> int:
     Net debt of financial segments (method=pbv/pe) is already embedded in P/BV,
     so it is deducted from total net_debt. Returns net_debt as-is if segment_net_debt is empty.
     """
-    has_pbv_pe = any(info.get("method") in ("pbv", "pe") for info in vi.segments.values())
+    has_pbv_pe = any(
+        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
+    )
     if not vi.segment_net_debt:
         if has_pbv_pe:
             logger.warning(
@@ -319,8 +356,7 @@ def _has_mixed_sotp(vi: ValuationInput) -> bool:
 def _needs_method_dispatch(vi: ValuationInput) -> bool:
     """True if any segment uses a non-default method (ev_revenue, pbv, pe)."""
     return any(
-        info.get("method") not in (None, "ev_ebitda")
-        for info in vi.segments.values()
+        info.get("method") not in (None, "ev_ebitda") for info in vi.segments.values()
     )
 
 
@@ -335,41 +371,56 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     effective_net_debt = _calc_effective_net_debt(vi) if is_mixed else vi.net_debt
 
     # Extract segment method info
-    seg_methods = {c: info.get("method", "ev_ebitda") for c, info in vi.segments.items()}
+    seg_methods = {
+        c: info.get("method", "ev_ebitda") for c, info in vi.segments.items()
+    }
 
     # D&A allocation (all years) -- excluding financial segments
     da_allocations = {}
     for yr, segs in vi.segment_data.items():
         c = vi.consolidated[yr]
         total_da = c["dep"] + c["amort"]
-        da_allocations[yr] = allocate_da(segs, total_da, seg_methods if needs_dispatch else None)
+        da_allocations[yr] = allocate_da(
+            segs, total_da, seg_methods if needs_dispatch else None
+        )
 
     # Financial distress discount on multiples
     distress = calc_distress_discount(
-        vi.consolidated, by,
+        vi.consolidated,
+        by,
         market=vi.company.market,
         kd_pre=vi.wacc_params.kd_pre,
         industry=vi.industry,
         max_discount=vi.distress_max_discount,
     )
     # ev_revenue and distress_exempt segments keep original multiples
-    exempt = {c for c, info in vi.segments.items()
-              if info.get("method") == "ev_revenue" or info.get("distress_exempt")}
+    exempt = {
+        c
+        for c, info in vi.segments.items()
+        if info.get("method") == "ev_revenue" or info.get("distress_exempt")
+    }
     # Healthy segments: profitable (op > 0) in diversified companies get half discount
     healthy: set[str] = set()
     if len(vi.segments) >= 3 and distress.applied:
         base_seg_data = vi.segment_data.get(by, {})
-        healthy = {c for c in vi.segments
-                   if c not in exempt and base_seg_data.get(c, {}).get("op", 0) > 0}
+        healthy = {
+            c
+            for c in vi.segments
+            if c not in exempt and base_seg_data.get(c, {}).get("op", 0) > 0
+        }
     effective_multiples = apply_distress_discount(
-        vi.multiples, distress.discount, exempt, healthy,
+        vi.multiples,
+        distress.discount,
+        exempt,
+        healthy,
     )
     if distress.applied:
         logger.info("[Distress] %s: %s", vi.company.name, distress.detail)
 
     # Build segment revenue map for ev_revenue segments
-    seg_revenue = {c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0)
-                   for c in vi.segments}
+    seg_revenue = {
+        c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0) for c in vi.segments
+    }
 
     # SOTP (base year) -- Mixed Method support
     if by not in da_allocations:
@@ -379,7 +430,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         )
     base_alloc = da_allocations[by]
     sotp, total_ev = calc_sotp(
-        base_alloc, effective_multiples,
+        base_alloc,
+        effective_multiples,
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
     )
@@ -389,8 +441,11 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     # Warn if all scenarios lack SOTP-specific drivers (will produce identical EV)
     _all_undifferentiated = all(
-        not sc.segment_ebitda and not sc.segment_multiples and not sc.segment_revenue
-        and sc.growth_adj_pct == 0 and sc.market_sentiment_pct == 0
+        not sc.segment_ebitda
+        and not sc.segment_multiples
+        and not sc.segment_revenue
+        and sc.growth_adj_pct == 0
+        and sc.market_sentiment_pct == 0
         for sc in vi.scenarios.values()
     )
     if _all_undifferentiated and len(vi.scenarios) > 1:
@@ -406,9 +461,13 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         sc = resolve_drivers(sc, vi.news_drivers)
 
         # Per-scenario SOTP: recalculate if drivers are set
-        needs_recalc = (sc.segment_ebitda or sc.segment_multiples or sc.segment_revenue
-                        or sc.segment_method_override
-                        or sc.growth_adj_pct != 0)
+        needs_recalc = (
+            sc.segment_ebitda
+            or sc.segment_multiples
+            or sc.segment_revenue
+            or sc.segment_method_override
+            or sc.growth_adj_pct != 0
+        )
         if needs_recalc:
             # Apply growth_adj_pct to base EBITDA allocation
             adj_alloc = base_alloc
@@ -423,11 +482,18 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             sc_segments = vi.segments if needs_dispatch else None
             if sc.segment_method_override:
                 sc_segments = {
-                    c: {**info, "method": sc.segment_method_override.get(c, info.get("method", "ev_ebitda"))}
+                    c: {
+                        **info,
+                        "method": sc.segment_method_override.get(
+                            c, info.get("method", "ev_ebitda")
+                        ),
+                    }
                     for c, info in vi.segments.items()
                 }
                 # Re-allocate D&A for method transitions (ev_revenue→ev_ebitda gets D&A)
-                sc_seg_methods = {c: sc_segments[c].get("method", "ev_ebitda") for c in sc_segments}
+                sc_seg_methods = {
+                    c: sc_segments[c].get("method", "ev_ebitda") for c in sc_segments
+                }
                 total_da = cons["dep"] + cons["amort"]
                 adj_alloc = allocate_da(vi.segment_data[by], total_da, sc_seg_methods)
                 if sc.growth_adj_pct != 0:
@@ -452,10 +518,19 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         # Market sentiment is cumulative
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
-        r = calc_scenario(sc, sc_ev, effective_net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+        r = calc_scenario(
+            sc,
+            sc_ev,
+            effective_net_debt,
+            vi.eco_frontier,
+            vi.cps_principal,
+            vi.cps_years,
+            vi.rcps_principal,
+            vi.rcps_years,
+            um,
+            vi.cps_dividend_rate,
+            vi.rcps_dividend_rate,
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -463,15 +538,18 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     total_da_base = cons["dep"] + cons["amort"]
     if is_mixed:
         mfg_ebitda = sum(
-            alloc.ebitda for c, alloc in base_alloc.items()
+            alloc.ebitda
+            for c, alloc in base_alloc.items()
             if seg_methods.get(c, "ev_ebitda") == "ev_ebitda"
         )
         mfg_da = sum(
-            alloc.da_allocated for c, alloc in base_alloc.items()
+            alloc.da_allocated
+            for c, alloc in base_alloc.items()
             if seg_methods.get(c, "ev_ebitda") == "ev_ebitda"
         )
         mfg_revenue = sum(
-            vi.segment_data[by][c].get("revenue", 0) for c in vi.segment_data[by]
+            vi.segment_data[by][c].get("revenue", 0)
+            for c in vi.segment_data[by]
             if seg_methods.get(c, "ev_ebitda") == "ev_ebitda"
         )
         ebitda_base = mfg_ebitda
@@ -485,8 +563,12 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     dcf_result = None
     try:
         dcf_result = calc_dcf(
-            ebitda_base, dcf_da_base, dcf_revenue,
-            wacc_result.wacc, vi.dcf_params, vi.base_year,
+            ebitda_base,
+            dcf_da_base,
+            dcf_revenue,
+            wacc_result.wacc,
+            vi.dcf_params,
+            vi.base_year,
         )
     except ValueError:
         logger.warning("SOTP DCF cross-validation skipped (ebitda<=0 or wacc<=tg)")
@@ -494,19 +576,32 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # Sensitivity
     ref_sc = _get_reference_scenario(vi.scenarios)
     sens_mult, _, _ = sensitivity_multiples(
-        base_alloc, effective_multiples, effective_net_debt, vi.eco_frontier,
-        vi.company.shares_outstanding, unit_multiplier=um,
+        base_alloc,
+        effective_multiples,
+        effective_net_debt,
+        vi.eco_frontier,
+        vi.company.shares_outstanding,
+        unit_multiplier=um,
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
-        cps_repay=round(vi.cps_principal * (1 + max((ref_sc.irr if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100) ** vi.cps_years) if vi.cps_principal else 0,
+        cps_repay=round(
+            vi.cps_principal
+            * (1 + max((ref_sc.irr if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100)
+            ** vi.cps_years
+        )
+        if vi.cps_principal
+        else 0,
         rcps_repay=_derive_rcps_repay(ref_sc, vi),
         buyback=ref_sc.buyback if ref_sc else 0,
         pbv_pe_ev=_pbv_pe_ev,
     )
     if vi.cps_principal > 0:
         sens_irr, _, _ = sensitivity_irr_dlom(
-            total_ev, effective_net_debt, vi.eco_frontier,
-            vi.cps_principal, vi.cps_years,
+            total_ev,
+            effective_net_debt,
+            vi.eco_frontier,
+            vi.cps_principal,
+            vi.cps_years,
             _derive_rcps_repay(ref_sc, vi),
             ref_sc.buyback if ref_sc else 0,
             vi.company.shares_outstanding,
@@ -519,8 +614,11 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     if dcf_result is not None:
         try:
             sens_dcf_rows, _, _ = sensitivity_dcf(
-                ebitda_base, dcf_da_base, dcf_revenue,
-                vi.dcf_params, vi.base_year,
+                ebitda_base,
+                dcf_da_base,
+                dcf_revenue,
+                vi.dcf_params,
+                vi.base_year,
                 wacc_base=wacc_result.wacc,
                 shares=vi.company.shares_outstanding,
                 net_debt=vi.net_debt,
@@ -533,8 +631,12 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # Exclude pbv/pe equity-based segments from implied EV/EBITDA (they inflate the multiple).
     sotp_ev_ev_only = sum(r.ev for r in sotp.values() if not r.is_equity_based)
     cv_items = _cross_validate_common(
-        vi, cons, ebitda_base, total_ev,
-        dcf_result.ev_dcf if dcf_result else 0, um,
+        vi,
+        cons,
+        ebitda_base,
+        total_ev,
+        dcf_result.ev_dcf if dcf_result else 0,
+        um,
         net_debt_override=effective_net_debt if is_mixed else None,
         sotp_ev_ebitda_only=sotp_ev_ev_only,
     )
@@ -542,9 +644,14 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # Monte Carlo
     sotp_seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
     mc_result = _run_monte_carlo(
-        vi, wacc_result, sotp_seg_ebitdas, um,
-        dcf_result=dcf_result if dcf_result else None, effective_multiples=effective_multiples,
-        seg_revenues=seg_revenue, segment_methods=seg_methods,
+        vi,
+        wacc_result,
+        sotp_seg_ebitdas,
+        um,
+        dcf_result=dcf_result if dcf_result else None,
+        effective_multiples=effective_multiples,
+        seg_revenues=seg_revenue,
+        segment_methods=seg_methods,
         net_debt_override=effective_net_debt if is_mixed else None,
     )
 
@@ -555,8 +662,10 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     return ValuationResult(
         primary_method="sotp",
         wacc=wacc_result,
-        da_allocations={yr: {c: a for c, a in allocs.items()}
-                        for yr, allocs in da_allocations.items()},
+        da_allocations={
+            yr: {c: a for c, a in allocs.items()}
+            for yr, allocs in da_allocations.items()
+        },
         sotp=sotp,
         total_ev=total_ev,
         scenarios=scenario_results,
@@ -572,19 +681,25 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
 
 def _make_scenario_dcf_params(
-    base: DCFParams, sc: ScenarioParams, wacc: float,
+    base: DCFParams,
+    sc: ScenarioParams,
+    wacc: float,
 ) -> DCFParams | None:
     """Generate per-scenario DCF parameters. Returns None if no adjustments."""
     if sc.growth_adj_pct == 0 and sc.terminal_growth_adj == 0:
         return None
-    adjusted_rates = [g * (1 + sc.growth_adj_pct / 100) for g in base.ebitda_growth_rates]
+    adjusted_rates = [
+        g * (1 + sc.growth_adj_pct / 100) for g in base.ebitda_growth_rates
+    ]
     adjusted_tg = base.terminal_growth + sc.terminal_growth_adj
     # Safety: floor at 0% (negative TGR implies perpetual shrinkage), cap below WACC
     adjusted_tg = max(0.0, min(adjusted_tg, wacc - 0.5))
-    return base.model_copy(update={
-        "ebitda_growth_rates": adjusted_rates,
-        "terminal_growth": adjusted_tg,
-    })
+    return base.model_copy(
+        update={
+            "ebitda_growth_rates": adjusted_rates,
+            "terminal_growth": adjusted_tg,
+        }
+    )
 
 
 def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
@@ -597,8 +712,12 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # DCF (primary)
     dcf_result = calc_dcf(
-        ebitda_base, total_da_base, cons["revenue"],
-        wacc_result.wacc, vi.dcf_params, vi.base_year,
+        ebitda_base,
+        total_da_base,
+        cons["revenue"],
+        wacc_result.wacc,
+        vi.dcf_params,
+        vi.base_year,
     )
     total_ev = dcf_result.ev_dcf
 
@@ -618,31 +737,52 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         if sc_dcf_params is not None:
             try:
                 sc_dcf = calc_dcf(
-                    ebitda_base, total_da_base, cons["revenue"],
-                    effective_wacc, sc_dcf_params, vi.base_year,
+                    ebitda_base,
+                    total_da_base,
+                    cons["revenue"],
+                    effective_wacc,
+                    sc_dcf_params,
+                    vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
             except ValueError:
-                logger.warning("DCF scenario '%s' recalc failed (wacc<=tg), using base EV", code)
+                logger.warning(
+                    "DCF scenario '%s' recalc failed (wacc<=tg), using base EV", code
+                )
         elif sc.wacc_adj != 0:
             # Recalculate DCF even without growth adjustment (WACC change alone)
             try:
                 sc_dcf = calc_dcf(
-                    ebitda_base, total_da_base, cons["revenue"],
-                    effective_wacc, vi.dcf_params, vi.base_year,
+                    ebitda_base,
+                    total_da_base,
+                    cons["revenue"],
+                    effective_wacc,
+                    vi.dcf_params,
+                    vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
             except ValueError:
-                logger.warning("DCF scenario '%s' WACC recalc failed, using base EV", code)
+                logger.warning(
+                    "DCF scenario '%s' WACC recalc failed, using base EV", code
+                )
 
         # Market sentiment post-processing
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
 
-        r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+        r = calc_scenario(
+            sc,
+            sc_ev,
+            vi.net_debt,
+            vi.eco_frontier,
+            vi.cps_principal,
+            vi.cps_years,
+            vi.rcps_principal,
+            vi.rcps_years,
+            um,
+            vi.cps_dividend_rate,
+            vi.rcps_dividend_rate,
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -650,8 +790,11 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     sens_dcf_rows = []
     try:
         sens_dcf_rows, _, _ = sensitivity_dcf(
-            ebitda_base, total_da_base, cons["revenue"],
-            vi.dcf_params, vi.base_year,
+            ebitda_base,
+            total_da_base,
+            cons["revenue"],
+            vi.dcf_params,
+            vi.base_year,
             wacc_base=wacc_result.wacc,
             shares=vi.company.shares_outstanding,
             net_debt=vi.net_debt,
@@ -666,31 +809,48 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     da_allocations = {}
     if len(vi.segments) > 1 and by in vi.segment_data:
         da_allocations[by] = allocate_da(vi.segment_data[by], total_da_base)
-        _cv_seg_revenue = {c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0)
-                          for c in vi.segments}
+        _cv_seg_revenue = {
+            c: vi.segment_data.get(by, {}).get(c, {}).get("revenue", 0)
+            for c in vi.segments
+        }
         sotp_result, sotp_ev = calc_sotp(
-            da_allocations[by], vi.multiples,
+            da_allocations[by],
+            vi.multiples,
             segments_info=vi.segments if len(vi.segments) > 1 else None,
             revenue_by_seg=_cv_seg_revenue,
         )
 
     sotp_ev_ev_only = sum(r.ev for r in sotp_result.values() if not r.is_equity_based)
-    cv_items = _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_result.ev_dcf, um,
-                                      sotp_ev_ebitda_only=sotp_ev_ev_only)
+    cv_items = _cross_validate_common(
+        vi,
+        cons,
+        ebitda_base,
+        sotp_ev,
+        dcf_result.ev_dcf,
+        um,
+        sotp_ev_ebitda_only=sotp_ev_ev_only,
+    )
 
     # Peer statistics
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
 
     # Monte Carlo
-    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um,
-                                 dcf_result=dcf_result)
+    mc_result = _run_monte_carlo(
+        vi,
+        wacc_result,
+        _build_seg_ebitdas_from_consolidated(vi, cons),
+        um,
+        dcf_result=dcf_result,
+    )
 
     return ValuationResult(
         primary_method="dcf_primary",
         wacc=wacc_result,
-        da_allocations={yr: {c: a for c, a in allocs.items()}
-                        for yr, allocs in da_allocations.items()},
+        da_allocations={
+            yr: {c: a for c, a in allocs.items()}
+            for yr, allocs in da_allocations.items()
+        },
         sotp=sotp_result,
         total_ev=total_ev,
         scenarios=scenario_results,
@@ -723,7 +883,9 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # Base DDM (default growth rate)
     ddm_raw = calc_ddm_engine(
-        vi.ddm_params.dps, base_growth, ke,
+        vi.ddm_params.dps,
+        base_growth,
+        ke,
         buyback_per_share=buyback_ps,
     )
     ddm_result = DDMValuationResult(
@@ -746,14 +908,24 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc_ke = sc_wacc.ke
         try:
             sc_ddm = calc_ddm_engine(
-                vi.ddm_params.dps, sc_growth, sc_ke,
+                vi.ddm_params.dps,
+                sc_growth,
+                sc_ke,
                 buyback_per_share=buyback_ps,
             )
             # DDM yields equity directly; add net_debt to get EV for calc_scenario bridge
-            sc_ev = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
+            sc_ev = (
+                sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
+                + vi.net_debt
+            )
         except ValueError:
-            logger.warning("DDM scenario '%s' failed (growth>=Ke), using base DDM", code)
-            sc_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
+            logger.warning(
+                "DDM scenario '%s' failed (growth>=Ke), using base DDM", code
+            )
+            sc_ev = (
+                ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+                + vi.net_debt
+            )
 
         # Market sentiment is cumulative
         if sc.market_sentiment_pct != 0:
@@ -762,13 +934,17 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         # DDM yields common equity directly (DPS/Ke-g); CPS/RCPS are already excluded
         # from common dividends — passing them to calc_scenario would double-deduct.
         # net_debt cancel-out (added to sc_ev above, subtracted here) is intentional.
-        r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          0, 0, 0, 0, um, 0.0, 0.0)
+        r = calc_scenario(
+            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
     # DDM base EV (for cross-validation): DDM equity + net_debt = EV
-    total_ev = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1) + vi.net_debt
+    total_ev = (
+        ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+        + vi.net_debt
+    )
 
     # Use DDM value directly when no scenarios are set
     if not scenario_results:
@@ -785,12 +961,16 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # DDM sensitivity: Ke x dividend growth rate
     sens_ddm = sensitivity_ddm(
-        vi.ddm_params.dps, ke, base_growth,
+        vi.ddm_params.dps,
+        ke,
+        base_growth,
         buyback_per_share=buyback_ps,
     )
 
     # Monte Carlo (segment EBITDA-based -- auxiliary distribution)
-    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um)
+    mc_result = _run_monte_carlo(
+        vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um
+    )
 
     return ValuationResult(
         primary_method="ddm",
@@ -826,8 +1006,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         current_roe = (net_income / equity_bv * 100) if equity_bv > 0 else ke
         # ROE gradually converges toward Ke (5 years, fully reaching Ke at year 5)
         roe_forecasts = [
-            round(current_roe + (ke - current_roe) * i / 5, 1)
-            for i in range(1, 6)
+            round(current_roe + (ke - current_roe) * i / 5, 1) for i in range(1, 6)
         ]
         tg = 0.0
         payout = 30.0
@@ -847,9 +1026,14 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         terminal_growth=rim_raw.terminal_growth,
         projections=[
             RIMProjectionResult(
-                year=p.year, bv=p.bv, net_income=p.net_income,
-                roe=p.roe, ri=p.ri, pv_ri=p.pv_ri,
-            ) for p in rim_raw.projections
+                year=p.year,
+                bv=p.bv,
+                net_income=p.net_income,
+                roe=p.roe,
+                ri=p.ri,
+                pv_ri=p.pv_ri,
+            )
+            for p in rim_raw.projections
         ],
         pv_ri_sum=rim_raw.pv_ri_sum,
         terminal_ri=rim_raw.terminal_ri,
@@ -874,9 +1058,13 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             adj_roes = [r + sc.rim_roe_adj for r in roe_forecasts]
             try:
                 sc_rim = calc_rim_engine(
-                    book_value=equity_bv, roe_forecasts=adj_roes, ke=sc_ke,
-                    terminal_growth=tg, shares=shares,
-                    unit_multiplier=um, payout_ratio=payout,
+                    book_value=equity_bv,
+                    roe_forecasts=adj_roes,
+                    ke=sc_ke,
+                    terminal_growth=tg,
+                    shares=shares,
+                    unit_multiplier=um,
+                    payout_ratio=payout,
                 )
                 sc_ev = sc_rim.equity_value + vi.net_debt
             except ValueError as e:
@@ -887,8 +1075,9 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         # RIM yields common equity value directly; CPS/RCPS are already excluded
         # from book-value-based residual income — passing them would double-deduct.
-        r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          0, 0, 0, 0, um, 0.0, 0.0)
+        r = calc_scenario(
+            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -904,13 +1093,19 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # RIM sensitivity: Ke x Terminal Growth
     sens_rim = sensitivity_rim(
-        equity_bv, roe_forecasts, ke, shares,
-        terminal_growth_base=tg, payout_ratio=payout,
+        equity_bv,
+        roe_forecasts,
+        ke,
+        shares,
+        terminal_growth_base=tg,
+        payout_ratio=payout,
         unit_multiplier=um,
     )
 
     # Monte Carlo
-    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um)
+    mc_result = _run_monte_carlo(
+        vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um
+    )
 
     return ValuationResult(
         primary_method="rim",
@@ -927,7 +1122,9 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     )
 
 
-def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
+def _run_multiples_valuation(
+    vi: ValuationInput, wacc_result, um: int
+) -> ValuationResult:
     """Multiples-based valuation (mature/stable companies with sufficient peers)."""
     by = vi.base_year
     cons = vi.consolidated[by]
@@ -951,26 +1148,33 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
         ps = per_share(equity, um, shares)
         primary_mv = MultiplesResult(
             primary_multiple_method="EV/EBITDA",
-            metric_value=ebitda_base, multiple=avg_multiple,
-            enterprise_value=ev, equity_value=equity, per_share=ps,
+            metric_value=ebitda_base,
+            multiple=avg_multiple,
+            enterprise_value=ev,
+            equity_value=equity,
+            per_share=ps,
         )
     # 2. P/E fallback
     elif vi.pe_multiple > 0 and net_income > 0:
         mv = calc_pe(net_income, vi.pe_multiple, shares, um)
         primary_mv = MultiplesResult(
             primary_multiple_method="P/E",
-            metric_value=mv.metric_value, multiple=mv.multiple,
+            metric_value=mv.metric_value,
+            multiple=mv.multiple,
             enterprise_value=mv.enterprise_value,
-            equity_value=mv.equity_value, per_share=mv.per_share,
+            equity_value=mv.equity_value,
+            per_share=mv.per_share,
         )
     # 3. P/BV fallback
     elif vi.pbv_multiple > 0 and book_value > 0:
         mv = calc_pbv(book_value, vi.pbv_multiple, shares, um)
         primary_mv = MultiplesResult(
             primary_multiple_method="P/BV",
-            metric_value=mv.metric_value, multiple=mv.multiple,
+            metric_value=mv.metric_value,
+            multiple=mv.multiple,
             enterprise_value=mv.enterprise_value,
-            equity_value=mv.equity_value, per_share=mv.per_share,
+            equity_value=mv.equity_value,
+            per_share=mv.per_share,
         )
     else:
         # Insufficient multiple data -> DCF fallback
@@ -998,10 +1202,19 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
             sc_ev = sc_val + vi.net_debt if is_equity_direct else sc_val
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
-        r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+        r = calc_scenario(
+            sc,
+            sc_ev,
+            vi.net_debt,
+            vi.eco_frontier,
+            vi.cps_principal,
+            vi.cps_years,
+            vi.rcps_principal,
+            vi.rcps_years,
+            um,
+            vi.cps_dividend_rate,
+            vi.rcps_dividend_rate,
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -1013,8 +1226,12 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
     dcf_ev = 0
     try:
         dcf_result = calc_dcf(
-            ebitda_base, total_da_base, cons["revenue"],
-            wacc_result.wacc, vi.dcf_params, vi.base_year,
+            ebitda_base,
+            total_da_base,
+            cons["revenue"],
+            wacc_result.wacc,
+            vi.dcf_params,
+            vi.base_year,
         )
         dcf_ev = dcf_result.ev_dcf
     except ValueError:
@@ -1028,13 +1245,21 @@ def _run_multiples_valuation(vi: ValuationInput, wacc_result, um: int) -> Valuat
 
     # Multiples sensitivity: applied multiple x discount rate
     sens_mult_primary = sensitivity_multiple_range(
-        primary_mv.metric_value, vi.net_debt, shares,
-        primary_mv.multiple, unit_multiplier=um,
+        primary_mv.metric_value,
+        vi.net_debt,
+        shares,
+        primary_mv.multiple,
+        unit_multiplier=um,
     )
 
     # Monte Carlo
-    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um,
-                                 dcf_result=dcf_result if dcf_result else None)
+    mc_result = _run_monte_carlo(
+        vi,
+        wacc_result,
+        _build_seg_ebitdas_from_consolidated(vi, cons),
+        um,
+        dcf_result=dcf_result if dcf_result else None,
+    )
 
     return ValuationResult(
         primary_method="multiples",
@@ -1094,8 +1319,9 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         # NAV liabilities already include CPS/RCPS principal (K-IFRS) → skip to avoid double deduction
-        r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          0, 0, 0, 0, um, 0.0, 0.0)
+        r = calc_scenario(
+            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+        )
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -1109,8 +1335,12 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     dcf_ev = 0
     try:
         dcf_result = calc_dcf(
-            ebitda_base, total_da_base, cons["revenue"],
-            wacc_result.wacc, vi.dcf_params, vi.base_year,
+            ebitda_base,
+            total_da_base,
+            cons["revenue"],
+            wacc_result.wacc,
+            vi.dcf_params,
+            vi.base_year,
         )
         dcf_ev = dcf_result.ev_dcf
     except ValueError:
@@ -1124,13 +1354,21 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # NAV sensitivity: revaluation x holding company discount
     sens_nav = sensitivity_nav(
-        total_assets, total_liabilities, shares,
-        base_revaluation=revaluation, unit_multiplier=um,
+        total_assets,
+        total_liabilities,
+        shares,
+        base_revaluation=revaluation,
+        unit_multiplier=um,
     )
 
     # Monte Carlo
-    mc_result = _run_monte_carlo(vi, wacc_result, _build_seg_ebitdas_from_consolidated(vi, cons), um,
-                                 dcf_result=dcf_result if dcf_result else None)
+    mc_result = _run_monte_carlo(
+        vi,
+        wacc_result,
+        _build_seg_ebitdas_from_consolidated(vi, cons),
+        um,
+        dcf_result=dcf_result if dcf_result else None,
+    )
 
     return ValuationResult(
         primary_method="nav",
@@ -1180,21 +1418,41 @@ def _cross_validate_financial(vi, cons, um):
 
     if vi.pe_multiple > 0 and net_income > 0:
         mv = calc_pe(net_income, vi.pe_multiple, shares, um)
-        items.append(CrossValidationItem(
-            method="P/E", metric_value=net_income, multiple=vi.pe_multiple,
-            enterprise_value=0, equity_value=mv.equity_value, per_share=mv.per_share,
-        ))
+        items.append(
+            CrossValidationItem(
+                method="P/E",
+                metric_value=net_income,
+                multiple=vi.pe_multiple,
+                enterprise_value=0,
+                equity_value=mv.equity_value,
+                per_share=mv.per_share,
+            )
+        )
     if vi.pbv_multiple > 0 and book_value > 0:
         mv = calc_pbv(book_value, vi.pbv_multiple, shares, um)
-        items.append(CrossValidationItem(
-            method="P/BV", metric_value=book_value, multiple=vi.pbv_multiple,
-            enterprise_value=0, equity_value=mv.equity_value, per_share=mv.per_share,
-        ))
+        items.append(
+            CrossValidationItem(
+                method="P/BV",
+                metric_value=book_value,
+                multiple=vi.pbv_multiple,
+                enterprise_value=0,
+                equity_value=mv.equity_value,
+                per_share=mv.per_share,
+            )
+        )
     return items
 
 
-def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
-                           net_debt_override=None, sotp_ev_ebitda_only=None):
+def _cross_validate_common(
+    vi,
+    cons,
+    ebitda_base,
+    sotp_ev,
+    dcf_ev,
+    um,
+    net_debt_override=None,
+    sotp_ev_ebitda_only=None,
+):
     """Common multiples cross-validation."""
     net_debt = net_debt_override if net_debt_override is not None else vi.net_debt
     cv_results = cross_validate(
@@ -1217,10 +1475,14 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
     )
     return [
         CrossValidationItem(
-            method=mv.method, metric_value=mv.metric_value, multiple=mv.multiple,
-            enterprise_value=mv.enterprise_value, equity_value=mv.equity_value,
+            method=mv.method,
+            metric_value=mv.metric_value,
+            multiple=mv.multiple,
+            enterprise_value=mv.enterprise_value,
+            equity_value=mv.equity_value,
             per_share=mv.per_share,
-        ) for mv in cv_results
+        )
+        for mv in cv_results
     ]
 
 
@@ -1230,23 +1492,40 @@ def _mc_raw_to_result(mc_raw, mc_input=None):
     if mc_input is not None:
         for seg, (m, s) in mc_input.multiple_params.items():
             assumptions[f"Multiple({seg})"] = f"Normal(mean={m:.1f}x, std={s:.2f}x)"
-        assumptions["WACC"] = f"Normal(mean={mc_input.wacc_mean:.1f}%, std={mc_input.wacc_std:.1f}%p)"
-        assumptions["DLOM"] = f"Normal(mean={mc_input.dlom_mean:.0f}%, std={mc_input.dlom_std:.0f}%), clipped 0-50%"
-        assumptions["Terminal Growth"] = f"Normal(mean={mc_input.tg_mean:.1f}%, std={mc_input.tg_std:.1f}%p), clipped 0~WACC-0.5%"
+        assumptions["WACC"] = (
+            f"Normal(mean={mc_input.wacc_mean:.1f}%, std={mc_input.wacc_std:.1f}%p)"
+        )
+        assumptions["DLOM"] = (
+            f"Normal(mean={mc_input.dlom_mean:.0f}%, std={mc_input.dlom_std:.0f}%), clipped 0-50%"
+        )
+        assumptions["Terminal Growth"] = (
+            f"Normal(mean={mc_input.tg_mean:.1f}%, std={mc_input.tg_std:.1f}%p), clipped 0~WACC-0.5%"
+        )
         for seg, (r, rs) in mc_input.revenue_params.items():
             assumptions[f"Revenue({seg})"] = f"Normal(mean={r:,.0f}, std={rs:,.0f})"
     return MonteCarloResult(
-        n_sims=mc_raw.n_sims, mean=mc_raw.mean, median=mc_raw.median,
-        std=mc_raw.std, p5=mc_raw.p5, p25=mc_raw.p25, p75=mc_raw.p75,
-        p95=mc_raw.p95, min_val=mc_raw.min_val, max_val=mc_raw.max_val,
-        histogram_bins=mc_raw.histogram_bins, histogram_counts=mc_raw.histogram_counts,
+        n_sims=mc_raw.n_sims,
+        mean=mc_raw.mean,
+        median=mc_raw.median,
+        std=mc_raw.std,
+        p5=mc_raw.p5,
+        p25=mc_raw.p25,
+        p75=mc_raw.p75,
+        p95=mc_raw.p95,
+        min_val=mc_raw.min_val,
+        max_val=mc_raw.max_val,
+        histogram_bins=mc_raw.histogram_bins,
+        histogram_counts=mc_raw.histogram_counts,
         pct_negative=mc_raw.pct_negative,
         input_assumptions=assumptions,
     )
 
 
 def _run_monte_carlo(
-    vi, wacc_result, seg_ebitdas: dict[str, int], um: int,
+    vi,
+    wacc_result,
+    seg_ebitdas: dict[str, int],
+    um: int,
     dcf_result=None,
     effective_multiples: dict[str, float] | None = None,
     seg_revenues: dict[str, int] | None = None,
@@ -1282,7 +1561,8 @@ def _run_monte_carlo(
     mc_params = MCInput(
         multiple_params={
             c: (mults[c], mults[c] * vi.mc_multiple_std_pct / 100)
-            for c in mc_mult_codes if mults.get(c, 0) > 0
+            for c in mc_mult_codes
+            if mults.get(c, 0) > 0
         },
         segment_methods=segment_methods or {},
         revenue_params=rev_params,
@@ -1307,8 +1587,12 @@ def _run_monte_carlo(
 
     mc_net_debt = net_debt_override if net_debt_override is not None else vi.net_debt
     mc_raw = run_monte_carlo(
-        mc_params, seg_ebitdas, mc_net_debt, vi.eco_frontier,
-        vi.cps_principal, vi.cps_years,
+        mc_params,
+        seg_ebitdas,
+        mc_net_debt,
+        vi.eco_frontier,
+        vi.cps_principal,
+        vi.cps_years,
         _derive_rcps_repay(ref_sc, vi),
         ref_sc.buyback if ref_sc else 0,
         ref_sc.shares if ref_sc else vi.company.shares_outstanding,
@@ -1322,9 +1606,12 @@ def _run_monte_carlo(
 
     # Per-scenario MC (lightweight: fewer sims, no histogram stored)
     from schemas.models import MCScenarioSummary
+
     sc_mc: dict[str, MCScenarioSummary] = {}
     for sc_code, sc in vi.scenarios.items():
-        has_overrides = sc.segment_multiples or sc.segment_revenue or sc.growth_adj_pct != 0
+        has_overrides = (
+            sc.segment_multiples or sc.segment_revenue or sc.growth_adj_pct != 0
+        )
         if not has_overrides:
             continue
         # Build scenario-specific multiples
@@ -1349,12 +1636,16 @@ def _run_monte_carlo(
                 if m == "ev_revenue":
                     rev = sc_revs.get(c, 0)
                     if rev > 0:
-                        sc_rev_params[c] = (float(rev), rev * vi.mc_revenue_std_pct / 100)
+                        sc_rev_params[c] = (
+                            float(rev),
+                            rev * vi.mc_revenue_std_pct / 100,
+                        )
 
         sc_params = MCInput(
             multiple_params={
                 c: (sc_mults[c], sc_mults[c] * vi.mc_multiple_std_pct / 100)
-                for c in mc_mult_codes if sc_mults.get(c, 0) > 0
+                for c in mc_mult_codes
+                if sc_mults.get(c, 0) > 0
             },
             segment_methods=segment_methods or {},
             revenue_params=sc_rev_params,
@@ -1368,19 +1659,25 @@ def _run_monte_carlo(
             seed=int(hashlib.md5(sc_code.encode()).hexdigest()[:8], 16) % (2**31),
         )
         sc_raw = run_monte_carlo(
-            sc_params, sc_ebitdas,
+            sc_params,
+            sc_ebitdas,
             net_debt_override if net_debt_override is not None else vi.net_debt,
             vi.eco_frontier,
-            vi.cps_principal, vi.cps_years,
-            _derive_rcps_repay(sc, vi), sc.buyback, sc.shares,
+            vi.cps_principal,
+            vi.cps_years,
+            _derive_rcps_repay(sc, vi),
+            sc.buyback,
+            sc.shares,
             irr=sc.irr if sc.irr else 5.0,
             unit_multiplier=um,
             seg_revenues=sc_revs,
             **dcf_kwargs,
         )
         sc_mc[sc_code] = MCScenarioSummary(
-            mean=sc_raw.mean, median=sc_raw.median,
-            p5=sc_raw.p5, p95=sc_raw.p95,
+            mean=sc_raw.mean,
+            median=sc_raw.median,
+            p5=sc_raw.p5,
+            p95=sc_raw.p95,
         )
 
     if sc_mc:
@@ -1475,9 +1772,13 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         for d in pipeline_dicts:
             adj_d = dict(d)
             if sc.growth_adj_pct != 0:
-                adj_d["peak_sales"] = round(d["peak_sales"] * (1 + sc.growth_adj_pct / 100))
+                adj_d["peak_sales"] = round(
+                    d["peak_sales"] * (1 + sc.growth_adj_pct / 100)
+                )
                 if d.get("existing_revenue", 0) > 0:
-                    adj_d["existing_revenue"] = round(d["existing_revenue"] * (1 + sc.growth_adj_pct / 100))
+                    adj_d["existing_revenue"] = round(
+                        d["existing_revenue"] * (1 + sc.growth_adj_pct / 100)
+                    )
             if sc.pos_override and d["name"] in sc.pos_override:
                 adj_d["success_prob"] = sc.pos_override[d["name"]]
             adj_pipeline.append(adj_d)
@@ -1493,9 +1794,12 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         sc_ev = sc_rnpv.enterprise_value
 
         sc_result = calc_scenario(
-            sc, sc_ev, vi.net_debt,
+            sc,
+            sc_ev,
+            vi.net_debt,
             vi.eco_frontier,
-            vi.cps_principal, vi.cps_years,
+            vi.cps_principal,
+            vi.cps_years,
             rcps_principal=vi.rcps_principal,
             rcps_years=vi.rcps_years,
             unit_multiplier=um,
@@ -1516,8 +1820,12 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     dcf_ev = 0
     try:
         dcf_result = calc_dcf(
-            ebitda_base, total_da_base, cons.get("revenue", 0),
-            wacc_result.wacc, vi.dcf_params, vi.base_year,
+            ebitda_base,
+            total_da_base,
+            cons.get("revenue", 0),
+            wacc_result.wacc,
+            vi.dcf_params,
+            vi.base_year,
         )
         dcf_ev = dcf_result.ev_dcf
     except ValueError:
@@ -1545,6 +1853,7 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     # Tornado: per-drug ±20% peak sales impact
     from schemas.models import RNPVTornadoItem
+
     tornado_raw = sensitivity_rnpv_tornado(**sens_kwargs)
     tornado_items = [
         RNPVTornadoItem(

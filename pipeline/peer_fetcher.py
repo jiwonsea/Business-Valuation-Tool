@@ -27,15 +27,17 @@ def _fetch_single_peer(p: PeerCompany) -> PeerCompany:
 
         data = get_quote_summary(p.ticker)
         if data:
-            p = p.model_copy(update={
-                "ev_ebitda": data.get("ev_ebitda") or p.ev_ebitda,
-                "market_cap": data.get("market_cap"),
-                "enterprise_value": data.get("enterprise_value"),
-                "trailing_pe": data.get("trailing_pe"),
-                "forward_pe": data.get("forward_pe"),
-                "beta": data.get("beta"),
-                "source": "yahoo",
-            })
+            p = p.model_copy(
+                update={
+                    "ev_ebitda": data.get("ev_ebitda") or p.ev_ebitda,
+                    "market_cap": data.get("market_cap"),
+                    "enterprise_value": data.get("enterprise_value"),
+                    "trailing_pe": data.get("trailing_pe"),
+                    "forward_pe": data.get("forward_pe"),
+                    "beta": data.get("beta"),
+                    "source": "yahoo",
+                }
+            )
     except Exception as e:
         logger.debug("Peer multiple lookup failed (%s): %s", p.ticker, e)
     return p

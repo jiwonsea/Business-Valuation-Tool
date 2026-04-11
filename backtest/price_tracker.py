@@ -22,6 +22,7 @@ def _resolve_ticker(ticker: str, market: str) -> str:
     if market == "KR":
         try:
             from pipeline.yfinance_fetcher import resolve_kr_ticker
+
             return resolve_kr_ticker(ticker)
         except (ImportError, Exception) as e:
             logger.debug("KR ticker resolution failed for %s: %s", ticker, e)
@@ -51,7 +52,9 @@ def _fetch_price_at_date(
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            hist = yf_ticker.history(start=start.isoformat(), end=end.isoformat(), auto_adjust=True)
+            hist = yf_ticker.history(
+                start=start.isoformat(), end=end.isoformat(), auto_adjust=True
+            )
             if hist is not None and not hist.empty:
                 # Get the last available trading day on or before target
                 price = float(hist["Close"].iloc[-1])
@@ -61,8 +64,14 @@ def _fetch_price_at_date(
             # Empty DataFrame — could be rate limit or delisted
             if attempt < _MAX_RETRIES:
                 wait = _RETRY_BASE_SECONDS * (2 ** (attempt - 1))
-                logger.debug("Empty result for %s at %s, retry %d/%d in %.1fs",
-                             yf_ticker.ticker, target, attempt, _MAX_RETRIES, wait)
+                logger.debug(
+                    "Empty result for %s at %s, retry %d/%d in %.1fs",
+                    yf_ticker.ticker,
+                    target,
+                    attempt,
+                    _MAX_RETRIES,
+                    wait,
+                )
                 time.sleep(wait)
             else:
                 return None, None, "no_data_after_retries"
@@ -70,8 +79,14 @@ def _fetch_price_at_date(
         except Exception as e:
             if attempt < _MAX_RETRIES:
                 wait = _RETRY_BASE_SECONDS * (2 ** (attempt - 1))
-                logger.debug("Error fetching %s at %s: %s, retry %d/%d",
-                             yf_ticker.ticker, target, e, attempt, _MAX_RETRIES)
+                logger.debug(
+                    "Error fetching %s at %s: %s, retry %d/%d",
+                    yf_ticker.ticker,
+                    target,
+                    e,
+                    attempt,
+                    _MAX_RETRIES,
+                )
                 time.sleep(wait)
             else:
                 return None, None, f"exception: {e}"

@@ -5,10 +5,17 @@ from openpyxl.utils import get_column_letter
 
 from ._ctx import Ctx
 from ..excel_styles import (
-    NAVY, BLUE_FILL, GREEN_FILL, RED_FILL, DRIVER_FILL,
-    SECTION_FONT, TITLE_FONT, NOTE_FONT,
+    NAVY,
+    BLUE_FILL,
+    GREEN_FILL,
+    RED_FILL,
+    DRIVER_FILL,
+    SECTION_FONT,
+    TITLE_FONT,
+    NOTE_FONT,
     NUM_FMT,
-    style_header_row, write_cell,
+    style_header_row,
+    write_cell,
 )
 
 
@@ -29,7 +36,7 @@ def sheet_scenarios(ctx: Ctx):
     style_header_row(ws, r, len(sc_headers))
 
     is_listed = ctx.vi.company.legal_status == "상장"
-    has_dlom = any(ctx.vi.scenarios[c].dlom > 0 for c in sc_codes)
+    any(ctx.vi.scenarios[c].dlom > 0 for c in sc_codes)
 
     # ── Scenario base assumptions ──
     r += 1
@@ -102,16 +109,30 @@ def sheet_scenarios(ctx: Ctx):
         write_cell(ws, r, 1, "주당 가치 (DLOM 후)", bold=True)
         for i, sc_code in enumerate(sc_codes, 2):
             sr = ctx.result.scenarios[sc_code]
-            write_cell(ws, r, i, sr.post_dlom, fmt=NUM_FMT, bold=True,
-                       fill=GREEN_FILL if sr.post_dlom > 0 else None)
+            write_cell(
+                ws,
+                r,
+                i,
+                sr.post_dlom,
+                fmt=NUM_FMT,
+                bold=True,
+                fill=GREEN_FILL if sr.post_dlom > 0 else None,
+            )
     else:
         # Listed company: show single per-share value row
         r += 1
         write_cell(ws, r, 1, "주당 가치", bold=True)
         for i, sc_code in enumerate(sc_codes, 2):
             sr = ctx.result.scenarios[sc_code]
-            write_cell(ws, r, i, sr.post_dlom, fmt=NUM_FMT, bold=True,
-                       fill=GREEN_FILL if sr.post_dlom > 0 else None)
+            write_cell(
+                ws,
+                r,
+                i,
+                sr.post_dlom,
+                fmt=NUM_FMT,
+                bold=True,
+                fill=GREEN_FILL if sr.post_dlom > 0 else None,
+            )
 
     r += 1
     write_cell(ws, r, 1, "확률가중 기여")
@@ -120,14 +141,24 @@ def sheet_scenarios(ctx: Ctx):
 
     # Probability-weighted conclusion
     r += 2
-    write_cell(ws, r, 1, "확률가중 주당 가치", font=Font(bold=True, size=13, color=NAVY))
-    write_cell(ws, r, 2, ctx.result.weighted_value, fmt=NUM_FMT,
-               font=Font(bold=True, size=13, color="27AE60"), fill=GREEN_FILL)
+    write_cell(
+        ws, r, 1, "확률가중 주당 가치", font=Font(bold=True, size=13, color=NAVY)
+    )
+    write_cell(
+        ws,
+        r,
+        2,
+        ctx.result.weighted_value,
+        fmt=NUM_FMT,
+        font=Font(bold=True, size=13, color="27AE60"),
+        fill=GREEN_FILL,
+    )
     write_cell(ws, r, 3, ctx.currency_sym, font=Font(bold=True, size=13, color=NAVY))
 
     # ── Scenario descriptions and probability rationale ──
     r += 3
-    write_cell(ws, r, 1, "시나리오 설명 및 확률 배분 근거", font=SECTION_FONT); r += 1
+    write_cell(ws, r, 1, "시나리오 설명 및 확률 배분 근거", font=SECTION_FONT)
+    r += 1
 
     for sc_code in sc_codes:
         sc = ctx.vi.scenarios[sc_code]
@@ -138,15 +169,16 @@ def sheet_scenarios(ctx: Ctx):
             r += 1
             write_cell(ws, r, 1, f"  설명: {sc.desc}", font=NOTE_FONT)
             ws.column_dimensions[get_column_letter(1)].width = max(
-                ws.column_dimensions[get_column_letter(1)].width or 0, 50)
+                ws.column_dimensions[get_column_letter(1)].width or 0, 50
+            )
         if sc.probability_rationale:
             r += 1
-            write_cell(ws, r, 1, f"  확률 근거: {sc.probability_rationale}", font=NOTE_FONT)
+            write_cell(
+                ws, r, 1, f"  확률 근거: {sc.probability_rationale}", font=NOTE_FONT
+            )
 
     # ── News-to-driver mapping (AI analysis rationale) ──
-    has_rationale = any(
-        ctx.vi.scenarios[c].driver_rationale for c in sc_codes
-    )
+    has_rationale = any(ctx.vi.scenarios[c].driver_rationale for c in sc_codes)
     if has_rationale:
         r += 3
         write_cell(ws, r, 1, "뉴스 → 드라이버 매핑 (AI 분석 근거)", font=SECTION_FONT)
@@ -166,8 +198,9 @@ def sheet_scenarios(ctx: Ctx):
             if not sc.driver_rationale:
                 continue
             r += 1
-            write_cell(ws, r, 1, f"{sc_code}: {sc.name}",
-                       font=Font(bold=True, color=NAVY))
+            write_cell(
+                ws, r, 1, f"{sc_code}: {sc.name}", font=Font(bold=True, color=NAVY)
+            )
             for driver_name, rationale in sc.driver_rationale.items():
                 r += 1
                 label = driver_labels.get(driver_name, driver_name)
@@ -192,14 +225,19 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
         sc_multiples = []
         for i, sc_code in enumerate(sc_codes, 2):
             sc = ctx.vi.scenarios[sc_code]
-            m = sc.ev_multiple if sc.ev_multiple is not None else (mp.multiple if mp else 0)
+            m = (
+                sc.ev_multiple
+                if sc.ev_multiple is not None
+                else (mp.multiple if mp else 0)
+            )
             sc_multiples.append(m)
             write_cell(ws, r, i, f"{m:.1f}x", fill=DRIVER_FILL, bold=True)
 
         # Calculation: base metric
         r += 1
         metric_label = {"EV/EBITDA": "EBITDA", "P/E": "순이익", "P/BV": "자기자본"}.get(
-            base_method, "Metric")
+            base_method, "Metric"
+        )
         write_cell(ws, r, 1, metric_label, font=calc_font)
         for i in range(len(sc_codes)):
             write_cell(ws, r, i + 2, base_metric, fmt=NUM_FMT, font=calc_font)
@@ -208,7 +246,9 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
         r += 1
         write_cell(ws, r, 1, f"  {metric_label} × {base_method}", font=calc_font)
         for i, m in enumerate(sc_multiples):
-            write_cell(ws, r, i + 2, round(base_metric * m), fmt=NUM_FMT, font=calc_font)
+            write_cell(
+                ws, r, i + 2, round(base_metric * m), fmt=NUM_FMT, font=calc_font
+            )
 
     elif method == "ddm":
         ddm = ctx.result.ddm
@@ -221,8 +261,11 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
         sc_growths = []
         for i, sc_code in enumerate(sc_codes, 2):
             sc = ctx.vi.scenarios[sc_code]
-            g = sc.ddm_growth if sc.ddm_growth is not None else (
-                ctx.vi.ddm_params.dividend_growth if ctx.vi.ddm_params else 0)
+            g = (
+                sc.ddm_growth
+                if sc.ddm_growth is not None
+                else (ctx.vi.ddm_params.dividend_growth if ctx.vi.ddm_params else 0)
+            )
             sc_growths.append(g)
             write_cell(ws, r, i, f"{g:.1f}%", fill=DRIVER_FILL, bold=True)
 
@@ -291,8 +334,13 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
                 sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
                 spread = base_roes[0] + adj - sc_ke
                 color = "27AE60" if spread > 0 else "E74C3C"
-                write_cell(ws, r, i + 2, f"{spread:+.1f}%p",
-                           font=Font(italic=True, size=9, color=color))
+                write_cell(
+                    ws,
+                    r,
+                    i + 2,
+                    f"{spread:+.1f}%p",
+                    font=Font(italic=True, size=9, color=color),
+                )
 
         # Calculation: book value
         r += 1

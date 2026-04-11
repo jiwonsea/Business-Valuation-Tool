@@ -1,7 +1,5 @@
 """AI output validator tests."""
 
-import pytest
-
 from ai.validators import (
     validate_peers,
     validate_wacc,
@@ -12,6 +10,7 @@ from ai.validators import (
 
 
 # ── Peer Validation Tests ──
+
 
 class TestValidatePeers:
     def test_valid_peers_pass_through(self):
@@ -89,20 +88,24 @@ class TestValidatePeers:
 
     def test_string_ev_ebitda_excluded(self):
         """W-10: String EV/EBITDA (e.g., 'N/A') treated as parse error."""
-        data = {"peers": [
-            {"name": "StringCo", "ev_ebitda": "N/A"},
-            {"name": "Good", "ev_ebitda": 10.0},
-        ]}
+        data = {
+            "peers": [
+                {"name": "StringCo", "ev_ebitda": "N/A"},
+                {"name": "Good", "ev_ebitda": 10.0},
+            ]
+        }
         result, warns = validate_peers(data)
         assert len(result["peers"]) == 1
         assert any("파싱 에러" in w for w in warns)
 
     def test_nan_ev_ebitda_excluded(self):
         """W-10: NaN EV/EBITDA treated as parse error."""
-        data = {"peers": [
-            {"name": "NanCo", "ev_ebitda": float("nan")},
-            {"name": "Good", "ev_ebitda": 10.0},
-        ]}
+        data = {
+            "peers": [
+                {"name": "NanCo", "ev_ebitda": float("nan")},
+                {"name": "Good", "ev_ebitda": 10.0},
+            ]
+        }
         result, warns = validate_peers(data)
         assert len(result["peers"]) == 1
         assert any("파싱 에러" in w for w in warns)
@@ -122,6 +125,7 @@ class TestValidatePeers:
 
 
 # ── WACC Validation Tests ──
+
 
 class TestValidateWACC:
     def test_all_in_range(self):
@@ -168,6 +172,7 @@ class TestValidateWACC:
 
 
 # ── Scenario Validation Tests ──
+
 
 class TestValidateScenarios:
     def test_valid_scenarios_dict(self):
@@ -295,8 +300,12 @@ class TestValidateScenarios:
     def test_combined_extreme_warned(self):
         """Extreme combined wacc+growth effect → sanity warning."""
         data = [
-            {"code": "Bear", "prob": 50, "dlom": 0,
-             "drivers": {"wacc_adj": 2.5, "growth_adj_pct": -40}},
+            {
+                "code": "Bear",
+                "prob": 50,
+                "dlom": 0,
+                "drivers": {"wacc_adj": 2.5, "growth_adj_pct": -40},
+            },
             {"code": "Base", "prob": 50, "dlom": 0, "drivers": {}},
         ]
         result, warns = validate_scenarios(data)
@@ -305,17 +314,30 @@ class TestValidateScenarios:
 
 # ── Scenario Draft Validation Tests (Two-Pass Pass 1) ──
 
+
 class TestValidateScenarioDraft:
     def test_valid_draft(self):
         """Well-formed draft passes with no warnings."""
         draft = {
             "scenario_draft": [
-                {"code": "Bull", "name": "Bull Case", "prob_range": [25, 35],
-                 "driver_directions": {"growth_adj_pct": "up"}},
-                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
-                 "driver_directions": {"growth_adj_pct": "flat"}},
-                {"code": "Bear", "name": "Bear Case", "prob_range": [20, 30],
-                 "driver_directions": {"growth_adj_pct": "down"}},
+                {
+                    "code": "Bull",
+                    "name": "Bull Case",
+                    "prob_range": [25, 35],
+                    "driver_directions": {"growth_adj_pct": "up"},
+                },
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [35, 45],
+                    "driver_directions": {"growth_adj_pct": "flat"},
+                },
+                {
+                    "code": "Bear",
+                    "name": "Bear Case",
+                    "prob_range": [20, 30],
+                    "driver_directions": {"growth_adj_pct": "down"},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -326,8 +348,12 @@ class TestValidateScenarioDraft:
         """< 2 scenarios → warning."""
         draft = {
             "scenario_draft": [
-                {"code": "Base", "name": "Base Case", "prob_range": [40, 50],
-                 "driver_directions": {}},
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [40, 50],
+                    "driver_directions": {},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -337,10 +363,17 @@ class TestValidateScenarioDraft:
         """Reversed prob_range → swapped with warning."""
         draft = {
             "scenario_draft": [
-                {"code": "Bull", "prob_range": [35, 25],
-                 "driver_directions": {"growth_adj_pct": "up"}},
-                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
-                 "driver_directions": {}},
+                {
+                    "code": "Bull",
+                    "prob_range": [35, 25],
+                    "driver_directions": {"growth_adj_pct": "up"},
+                },
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [35, 45],
+                    "driver_directions": {},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -351,10 +384,17 @@ class TestValidateScenarioDraft:
         """prob_range upper bound > 60% → warning."""
         draft = {
             "scenario_draft": [
-                {"code": "Base", "name": "Base Case", "prob_range": [50, 70],
-                 "driver_directions": {}},
-                {"code": "Bear", "prob_range": [20, 30],
-                 "driver_directions": {"wacc_adj": "up"}},
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [50, 70],
+                    "driver_directions": {},
+                },
+                {
+                    "code": "Bear",
+                    "prob_range": [20, 30],
+                    "driver_directions": {"wacc_adj": "up"},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -365,8 +405,12 @@ class TestValidateScenarioDraft:
         draft = {
             "scenario_draft": [
                 {"code": "Bull", "prob_range": [25, 35]},
-                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
-                 "driver_directions": {}},
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [35, 45],
+                    "driver_directions": {},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -376,10 +420,18 @@ class TestValidateScenarioDraft:
         """No Base Case scenario → warning."""
         draft = {
             "scenario_draft": [
-                {"code": "Upside", "name": "Upside", "prob_range": [40, 50],
-                 "driver_directions": {"growth_adj_pct": "up"}},
-                {"code": "Downside", "name": "Downside", "prob_range": [40, 50],
-                 "driver_directions": {"growth_adj_pct": "down"}},
+                {
+                    "code": "Upside",
+                    "name": "Upside",
+                    "prob_range": [40, 50],
+                    "driver_directions": {"growth_adj_pct": "up"},
+                },
+                {
+                    "code": "Downside",
+                    "name": "Downside",
+                    "prob_range": [40, 50],
+                    "driver_directions": {"growth_adj_pct": "down"},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -395,10 +447,17 @@ class TestValidateScenarioDraft:
         """Original data is not mutated."""
         draft = {
             "scenario_draft": [
-                {"code": "Bull", "prob_range": [35, 25],
-                 "driver_directions": {"growth_adj_pct": "up"}},
-                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
-                 "driver_directions": {}},
+                {
+                    "code": "Bull",
+                    "prob_range": [35, 25],
+                    "driver_directions": {"growth_adj_pct": "up"},
+                },
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [35, 45],
+                    "driver_directions": {},
+                },
             ]
         }
         result, warns = validate_scenario_draft(draft)
@@ -407,6 +466,7 @@ class TestValidateScenarioDraft:
 
 
 # ── News Driver Validation Tests ──
+
 
 class TestValidateNewsDrivers:
     def test_valid_driver(self):

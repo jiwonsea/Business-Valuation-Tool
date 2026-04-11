@@ -75,9 +75,11 @@ def list_valuations(
 
     query = (
         client.table("valuations")
-        .select("id, company_name, ticker, market, valuation_method, "
-                "analysis_date, total_ev, weighted_value, wacc_pct, "
-                "market_price, gap_ratio, created_at")
+        .select(
+            "id, company_name, ticker, market, valuation_method, "
+            "analysis_date, total_ev, weighted_value, wacc_pct, "
+            "market_price, gap_ratio, created_at"
+        )
         .order("created_at", desc=True)
         .limit(limit)
     )
@@ -262,11 +264,7 @@ def get_profile(profile_id: str) -> Optional[dict]:
 
     try:
         resp = (
-            client.table("profiles")
-            .select("*")
-            .eq("id", profile_id)
-            .single()
-            .execute()
+            client.table("profiles").select("*").eq("id", profile_id).single().execute()
         )
         return resp.data
     except Exception:
@@ -316,9 +314,11 @@ def list_discovery_runs(limit: int = 10) -> list[dict]:
     try:
         resp = (
             client.table("discovery_runs")
-            .select("id, run_date, markets, news_count, status, "
-                    "companies_discovered, companies_analyzed, "
-                    "errors, duration_seconds, created_at")
+            .select(
+                "id, run_date, markets, news_count, status, "
+                "companies_discovered, companies_analyzed, "
+                "errors, duration_seconds, created_at"
+            )
             .order("created_at", desc=True)
             .limit(limit)
             .execute()

@@ -41,7 +41,9 @@ def calc_wacc(p: WACCParams) -> WACCResult:
         # Distress premium for D/E beyond cap
         if p.de > _HAMADA_DE_CAP:
             excess = min(p.de - _HAMADA_DE_CAP, _DISTRESS_DE_MAX - _HAMADA_DE_CAP)
-            distress_premium = excess / (_DISTRESS_DE_MAX - _HAMADA_DE_CAP) * _DISTRESS_PREMIUM_MAX
+            distress_premium = (
+                excess / (_DISTRESS_DE_MAX - _HAMADA_DE_CAP) * _DISTRESS_PREMIUM_MAX
+            )
     ke = p.rf + bl * p.erp + p.size_premium
     kd_at = p.kd_pre * (1 - p.tax / 100)
     dw = 100 - p.eq_w

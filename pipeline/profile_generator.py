@@ -54,7 +54,7 @@ def auto_fetch(company_query: str) -> dict:
         print(f"    DART corp_code: {identity.corp_code}")
 
     # Step 2: Financial statement collection
-    print(f"\n[2/3] 재무제표 수집 중...")
+    print("\n[2/3] 재무제표 수집 중...")
     financials = fetcher.fetch_financials(identity)
     if not financials:
         print("  [ERROR] 재무제표를 수집할 수 없습니다.")
@@ -67,7 +67,7 @@ def auto_fetch(company_query: str) -> dict:
         print(f"  {year}: 매출 {rev:,}{unit}, 영업이익 {op:,}{unit}")
 
     # Step 3: Share count / market data
-    print(f"\n[3/3] 시장 데이터 수집 중...")
+    print("\n[3/3] 시장 데이터 수집 중...")
     shares_info = fetcher.fetch_shares(identity)
     if shares_info.get("shares_total"):
         print(f"  총 주식수: {shares_info['shares_total']:,}")
@@ -78,13 +78,13 @@ def auto_fetch(company_query: str) -> dict:
     # Step 4: Auto-generate YAML profile
     yaml_path = _generate_draft_profile(identity, financials, shares_info)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"데이터 수집 완료: {identity.name}")
     print(f"시장: {identity.market} | 연도: {sorted(financials.keys())}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     if yaml_path:
         print(f"\n[Draft YAML 생성됨] {yaml_path}")
-        print(f"  → 부문 데이터, 멀티플, 시나리오를 편집한 후:")
+        print("  → 부문 데이터, 멀티플, 시나리오를 편집한 후:")
         print(f"    python cli.py --profile {yaml_path} --excel")
 
     return {
@@ -95,9 +95,7 @@ def auto_fetch(company_query: str) -> dict:
     }
 
 
-def _estimate_wacc_params(
-    cons: dict, shares_info: dict, market: str, identity
-) -> dict:
+def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) -> dict:
     """Data-driven automatic WACC parameter estimation.
 
     Key principles:
@@ -126,6 +124,7 @@ def _estimate_wacc_params(
         # Try directly from yfinance_fetcher
         try:
             from pipeline.yfinance_fetcher import fetch_market_data
+
             if identity.ticker:
                 md = fetch_market_data(identity.ticker, market)
                 if md:
@@ -141,6 +140,7 @@ def _estimate_wacc_params(
 
     # --- Tax rate: clamp effective tax rate ---
     from pipeline.macro_data import calc_effective_tax_rate
+
     effective_tax = calc_effective_tax_rate({0: cons})  # dummy year key
     if effective_tax is not None:
         tax = min(max(effective_tax, 0.0), statutory_tax)
@@ -156,7 +156,11 @@ def _estimate_wacc_params(
         # Unlisted: use interest-bearing debt (gross_borr) / book equity
         # NOT total liabilities / book equity — that inflates D/E by including trade payables etc.
         equity_bv = cons.get("equity", 0)
-        de_ratio = round(gross_borr / equity_bv * 100, 1) if equity_bv > 0 and gross_borr > 0 else 50.0
+        de_ratio = (
+            round(gross_borr / equity_bv * 100, 1)
+            if equity_bv > 0 and gross_borr > 0
+            else 50.0
+        )
 
     # --- Equity weight in capital structure ---
     if market_cap > 0:
@@ -181,13 +185,19 @@ def _estimate_wacc_params(
         kd_pre = default_kd
 
     return {
-        "rf": rf, "erp": erp, "bu": bu,
-        "de": de_ratio, "tax": round(tax, 1),
-        "kd_pre": kd_pre, "eq_w": eq_w,
+        "rf": rf,
+        "erp": erp,
+        "bu": bu,
+        "de": de_ratio,
+        "tax": round(tax, 1),
+        "kd_pre": kd_pre,
+        "eq_w": eq_w,
     }
 
 
-def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> str | None:
+def _generate_draft_profile(
+    identity, financials: dict, shares_info: dict
+) -> str | None:
     """Auto-generate a draft YAML profile from collected data."""
     years = sorted(financials.keys())
     if not years:
@@ -206,7 +216,7 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     treasury_shares = shares_info.get("treasury_shares", 0)
 
     equity_bv = cons.get("equity", 0)
-    liabilities = cons.get("liabilities", 0)
+    cons.get("liabilities", 0)
     net_debt = cons.get("net_borr", 0)
     market_price = shares_info.get("price", 0)
 
@@ -229,14 +239,25 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
 
     # Consolidated financials YAML block (via yaml.dump for safe serialization)
     _cons_fields = [
-        "revenue", "op", "net_income", "assets", "liabilities",
-        "equity", "dep", "amort", "gross_borr", "net_borr", "de_ratio",
+        "revenue",
+        "op",
+        "net_income",
+        "assets",
+        "liabilities",
+        "equity",
+        "dep",
+        "amort",
+        "gross_borr",
+        "net_borr",
+        "de_ratio",
     ]
     cons_dict = {}
     for yr in years:
         d = financials[yr]
         cons_dict[yr] = {k: d.get(k, 0) for k in _cons_fields}
-    cons_yaml = yaml.dump(cons_dict, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    cons_yaml = yaml.dump(
+        cons_dict, default_flow_style=False, sort_keys=False, allow_unicode=True
+    )
     # Indent to match top-level "consolidated:" key
     cons_block = "\n".join("  " + line for line in cons_yaml.strip().splitlines())
 
@@ -245,12 +266,15 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
     # Auto-fetch macro data
     from pipeline.macro_data import get_terminal_growth, get_diluted_shares
     from engine.growth import generate_growth_rates
+
     terminal_growth = get_terminal_growth(identity.market)
 
     # Dynamically generate EBITDA growth rates (industry base-rate -> market convergence via linear decay)
     _industry = getattr(identity, "industry", "") or ""
     growth_rates = generate_growth_rates(
-        financials, market=identity.market, industry=_industry,
+        financials,
+        market=identity.market,
+        industry=_industry,
     )
     growth_rates_str = "[" + ", ".join(f"{r:.2f}" for r in growth_rates) + "]"
     # Note: tax rate is already clamped in _estimate_wacc_params()
@@ -338,18 +362,18 @@ def _generate_draft_profile(identity, financials: dict, shares_info: dict) -> st
             )
 
     content = f"""# {identity.name} — Auto-generated draft profile
-# Source: {'SEC EDGAR' if is_us else 'DART'} | Generated by valuation-tool
+# Source: {"SEC EDGAR" if is_us else "DART"} | Generated by valuation-tool
 # TODO: Add segment data, multiples, and scenario parameters{fin_subsidiary_warn}
 
 company:
   name: "{identity.name}"
-  legal_status: "{'상장' if is_us or identity.legal_status == '상장' else '비상장'}"
+  legal_status: "{"상장" if is_us or identity.legal_status == "상장" else "비상장"}"
   market: "{identity.market}"
   currency: "{currency}"
   currency_unit: "{unit}"
-  ticker: {f'"{identity.ticker}"' if identity.ticker else 'null'}
-  cik: {f'"{identity.cik}"' if identity.cik else 'null'}
-  corp_code: {f'"{identity.corp_code}"' if identity.corp_code else 'null'}
+  ticker: {f'"{identity.ticker}"' if identity.ticker else "null"}
+  cik: {f'"{identity.cik}"' if identity.cik else "null"}
+  corp_code: {f'"{identity.corp_code}"' if identity.corp_code else "null"}
   shares_total: {shares_total}
   shares_ordinary: {shares_ordinary}
   shares_preferred: {shares_preferred}
@@ -365,7 +389,7 @@ segments:
 # TODO: Add segment-level financials (revenue, op, assets per segment)
 segment_data:
   {latest}:
-    MAIN: {{revenue: {cons.get('revenue', 0)}, gross_profit: 0, op: {cons.get('op', 0)}, assets: {cons.get('assets', 0)}}}
+    MAIN: {{revenue: {cons.get("revenue", 0)}, gross_profit: 0, op: {cons.get("op", 0)}, assets: {cons.get("assets", 0)}}}
 
 consolidated:
 {cons_block}
@@ -412,7 +436,7 @@ scenarios:
     prob: 25
     ipo: "N/A"
     irr: null
-    dlom: {'20' if identity.legal_status != '상장' else '0'}
+    dlom: {"20" if identity.legal_status != "상장" else "0"}
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
@@ -483,12 +507,13 @@ def auto_analyze(
     financials = fetch_result["financials"]
 
     # Step 2: AI analysis
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"[AI 분석 시작] {identity.name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
         from ai.analyst import AIAnalyst
+
         analyst = AIAnalyst()
     except Exception as e:
         print(f"[WARN] AI 모듈 로드 실패 ({e}). Draft YAML로 진행합니다.")
@@ -496,11 +521,14 @@ def auto_analyze(
         result = run_valuation(vi)
         print_report(vi, result)
         from output.excel_builder import export
+
         path = export(vi, result, output_dir)
         print(f"\n[Excel] 저장 완료: {path}")
         from orchestrator import format_summary
+
         return AnalyzeResult(
-            vi=vi, result=result,
+            vi=vi,
+            result=result,
             excel_path=str(path),
             summary_md=format_summary(vi, result),
         )
@@ -509,7 +537,9 @@ def auto_analyze(
     cons = financials[latest]
 
     # Revenue composition text
-    revenue_text = f"총 매출: {cons.get('revenue', 0):,}, 영업이익: {cons.get('op', 0):,}"
+    revenue_text = (
+        f"총 매출: {cons.get('revenue', 0):,}, 영업이익: {cons.get('op', 0):,}"
+    )
 
     # AI Step 2: Segment classification
     print("[AI 2/6] 부문 분류 중...")
@@ -528,25 +558,33 @@ def auto_analyze(
         print("[AI 3/6] Peer 기업 추천 중...")
         batch_ok = False
         try:
-            batch_result = analyst.recommend_peers_batch(identity.name, segments, market=identity.market)
+            batch_result = analyst.recommend_peers_batch(
+                identity.name, segments, market=identity.market
+            )
             for seg in segments:
                 code = seg.get("code", "MAIN")
                 seg_data = batch_result.get(code, {})
                 if not seg_data or "peers" not in seg_data:
                     continue
                 for p in seg_data.get("peers", []):
-                    peers_all.append({
-                        "name": p["name"],
-                        "segment_code": code,
-                        "ev_ebitda": p.get("ev_ebitda", 10.0),
-                        "notes": p.get("notes", ""),
-                    })
+                    peers_all.append(
+                        {
+                            "name": p["name"],
+                            "segment_code": code,
+                            "ev_ebitda": p.get("ev_ebitda", 10.0),
+                            "notes": p.get("notes", ""),
+                        }
+                    )
                 multiples_ai[code] = seg_data.get("recommended_multiple", 10.0)
-                print(f"  → {code}: {seg_data.get('recommended_multiple', '?')}x "
-                      f"({len(seg_data.get('peers', []))} peers)")
+                print(
+                    f"  → {code}: {seg_data.get('recommended_multiple', '?')}x "
+                    f"({len(seg_data.get('peers', []))} peers)"
+                )
             batch_ok = len(multiples_ai) == len(segments)
         except Exception as e:
-            logger.warning("Batch peer recommendation failed: %s — falling back to per-segment", e)
+            logger.warning(
+                "Batch peer recommendation failed: %s — falling back to per-segment", e
+            )
 
         # Fallback: per-segment calls for any missing segments
         if not batch_ok:
@@ -557,19 +595,25 @@ def auto_analyze(
                 name = seg.get("name", "Main")
                 try:
                     peer_result = analyst.recommend_peers(
-                        identity.name, code, name,
+                        identity.name,
+                        code,
+                        name,
                         seg.get("peer_group", ""),
                     )
                     for p in peer_result.get("peers", []):
-                        peers_all.append({
-                            "name": p["name"],
-                            "segment_code": code,
-                            "ev_ebitda": p.get("ev_ebitda", 10.0),
-                            "notes": p.get("notes", ""),
-                        })
+                        peers_all.append(
+                            {
+                                "name": p["name"],
+                                "segment_code": code,
+                                "ev_ebitda": p.get("ev_ebitda", 10.0),
+                                "notes": p.get("notes", ""),
+                            }
+                        )
                     multiples_ai[code] = peer_result.get("recommended_multiple", 10.0)
-                    print(f"  → {code}: {peer_result.get('recommended_multiple', '?')}x "
-                          f"({len(peer_result.get('peers', []))} peers)")
+                    print(
+                        f"  → {code}: {peer_result.get('recommended_multiple', '?')}x "
+                        f"({len(peer_result.get('peers', []))} peers)"
+                    )
                 except Exception as e:
                     print(f"  [WARN] {code} Peer 추천 실패: {e}")
                     multiples_ai[code] = 10.0
@@ -579,9 +623,15 @@ def auto_analyze(
     equity = cons.get("equity", 0)
     gross_borr_for_wacc = cons.get("gross_borr", 0)
     # Use interest-bearing debt / book equity (not total liabilities / equity)
-    de_ratio = round(gross_borr_for_wacc / equity * 100, 1) if equity > 0 and gross_borr_for_wacc > 0 else 50.0
+    de_ratio = (
+        round(gross_borr_for_wacc / equity * 100, 1)
+        if equity > 0 and gross_borr_for_wacc > 0
+        else 50.0
+    )
     try:
-        wacc_result = analyst.suggest_wacc(identity.name, de_ratio, "", market=identity.market)
+        wacc_result = analyst.suggest_wacc(
+            identity.name, de_ratio, "", market=identity.market
+        )
         print(f"  → WACC ≈ {wacc_result.get('wacc_estimate', '?')}%")
     except Exception as e:
         print(f"  [WARN] WACC 추정 실패: {e}")
@@ -594,15 +644,16 @@ def auto_analyze(
     try:
         from discovery.news_collector import NewsCollector
         from discovery.discovery_engine import summarize_key_issues
+
         collector = NewsCollector()
         news = collector.collect_for_company(identity.name, identity.market)
         if news:
             print(f"  → {len(news)}건 수집")
             key_issues = summarize_key_issues(news, identity.name, identity.market)
             if key_issues:
-                print(f"  → 핵심 이슈 요약 완료")
+                print("  → 핵심 이슈 요약 완료")
         else:
-            print(f"  → 관련 뉴스 없음 (범용 시나리오로 진행)")
+            print("  → 관련 뉴스 없음 (범용 시나리오로 진행)")
     except Exception as e:
         print(f"  [WARN] 뉴스 수집 실패: {e}. 범용 시나리오로 진행합니다.")
 
@@ -610,6 +661,7 @@ def auto_analyze(
     market_signals = None
     try:
         from pipeline.market_signals import fetch_market_signals
+
         print("[Signals] 시장 데이터 수집 중...")
         market_signals = fetch_market_signals(
             ticker=getattr(identity, "ticker", None),
@@ -618,9 +670,9 @@ def auto_analyze(
             news=news if news else None,
         )
         if market_signals and market_signals.has_any():
-            print(f"  → 시장 신호 수집 완료")
+            print("  → 시장 신호 수집 완료")
         else:
-            print(f"  → 시장 신호 없음 (프롬프트 보강 없이 진행)")
+            print("  → 시장 신호 없음 (프롬프트 보강 없이 진행)")
             market_signals = None
     except Exception as e:
         print(f"  [WARN] 시장 신호 수집 실패: {e}. 기존 방식으로 진행합니다.")
@@ -632,6 +684,7 @@ def auto_analyze(
     # Determine valuation method -> pass to AI for method-aware driver generation
     try:
         from engine.method_selector import suggest_method
+
         val_method = suggest_method(
             n_segments=len(segments) if segments else 1,
             legal_status=legal,
@@ -646,21 +699,38 @@ def auto_analyze(
         # Infer EV/Revenue from scored_data market cap (if available) vs financial revenue
         _market_cap_usd = (scored_data or {}).get("market_cap_usd", 0)
         _revenue_usd = cons.get("revenue", 0)
-        _ev_rev = round(_market_cap_usd / (_revenue_usd * 1e6), 1) if _market_cap_usd and _revenue_usd else 0.0
+        _ev_rev = (
+            round(_market_cap_usd / (_revenue_usd * 1e6), 1)
+            if _market_cap_usd and _revenue_usd
+            else 0.0
+        )
         _currency = "$M" if getattr(identity, "market", "KR") == "US" else "억원"
-        _seg_codes = [seg.get("code", f"S{i}") for i, seg in enumerate(segments)] if segments else None
+        _seg_codes = (
+            [seg.get("code", f"S{i}") for i, seg in enumerate(segments)]
+            if segments
+            else None
+        )
         sc_result = analyst.design_scenarios(
-            identity.name, legal, key_issues, valuation_method=val_method,
-            industry=_industry, ev_rev_multiple=_ev_rev, currency_unit=_currency,
-            signals=market_signals, segment_codes=_seg_codes,
+            identity.name,
+            legal,
+            key_issues,
+            valuation_method=val_method,
+            industry=_industry,
+            ev_rev_multiple=_ev_rev,
+            currency_unit=_currency,
+            signals=market_signals,
+            segment_codes=_seg_codes,
         )
         ai_scenarios = sc_result.get("scenarios", [])
         opt_segs = sc_result.get("optionality_segments", [])
         if opt_segs:
-            print(f"  → 옵셔널리티 세그먼트 {len(opt_segs)}개 감지됨: {[s['name'] for s in opt_segs]}")
+            print(
+                f"  → 옵셔널리티 세그먼트 {len(opt_segs)}개 감지됨: {[s['name'] for s in opt_segs]}"
+            )
         print(f"  → {len(ai_scenarios)}개 시나리오 (멀티 드라이버, {val_method})")
     except Exception as e:
         import traceback
+
         print(f"  [WARN] 시나리오 설계 실패: {e}")
         traceback.print_exc()
         ai_scenarios = []
@@ -713,7 +783,11 @@ def auto_analyze(
         ai_news_drivers = sc_result.get("news_drivers", []) if sc_result else []
         for nd in ai_news_drivers:
             if "effects" in nd:
-                nd["effects"] = {k: v for k, v in nd["effects"].items() if k not in _STRUCTURED_EFFECT_KEYS}
+                nd["effects"] = {
+                    k: v
+                    for k, v in nd["effects"].items()
+                    if k not in _STRUCTURED_EFFECT_KEYS
+                }
         if ai_news_drivers:
             raw["news_drivers"] = ai_news_drivers
 
@@ -739,8 +813,14 @@ def auto_analyze(
             # Legacy direct assignment approach (fallback -- when no news_drivers)
             drivers = sc.get("drivers", {})
             for field in (
-                "growth_adj_pct", "terminal_growth_adj", "market_sentiment_pct",
-                "wacc_adj", "ddm_growth", "ev_multiple", "rim_roe_adj", "nav_discount",
+                "growth_adj_pct",
+                "terminal_growth_adj",
+                "market_sentiment_pct",
+                "wacc_adj",
+                "ddm_growth",
+                "ev_multiple",
+                "rim_roe_adj",
+                "nav_discount",
             ):
                 if field in drivers:
                     val = drivers[field]
@@ -761,11 +841,15 @@ def auto_analyze(
 
     # Warn if news existed but AI scenarios were not generated
     if key_issues and not ai_scenarios:
-        print(f"  [WARN] 뉴스 기반 이슈가 존재하나 AI 시나리오 생성 실패. 범용 시나리오가 유지됩니다.")
+        print(
+            "  [WARN] 뉴스 기반 이슈가 존재하나 AI 시나리오 생성 실패. 범용 시나리오가 유지됩니다."
+        )
 
     # Apply optionality segments (AI-detected binary-outcome segments)
     if opt_segs:
-        latest = max(raw.get("segment_data", {}).keys(), default=raw.get("base_year", 2025))
+        latest = max(
+            raw.get("segment_data", {}).keys(), default=raw.get("base_year", 2025)
+        )
         for opt_seg in opt_segs:
             code = opt_seg.get("code", "")
             if not code:
@@ -780,7 +864,9 @@ def auto_analyze(
             # Add to segment_data with op=0, revenue from AI estimate
             base_rev = int(opt_seg.get("base_revenue", 0))
             for yr_data in raw.get("segment_data", {}).values():
-                yr_data.setdefault(code, {"revenue": base_rev, "gross_profit": 0, "op": 0, "assets": 0})
+                yr_data.setdefault(
+                    code, {"revenue": base_rev, "gross_profit": 0, "op": 0, "assets": 0}
+                )
             raw.setdefault("multiples", {})[code] = opt_seg.get("multiple", 15.0)
             # Write per-scenario revenue overrides — warn explicitly on code mismatch
             sc_revenue = opt_seg.get("scenario_revenue", {})
@@ -788,15 +874,23 @@ def auto_analyze(
             matched = 0
             for sc_code, rev_val in sc_revenue.items():
                 if sc_code in valid_sc_codes:
-                    raw["scenarios"][sc_code].setdefault("segment_revenue", {})[code] = int(rev_val)
+                    raw["scenarios"][sc_code].setdefault("segment_revenue", {})[
+                        code
+                    ] = int(rev_val)
                     matched += 1
                 else:
-                    print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': scenario_revenue 키 '{sc_code}'가 "
-                          f"시나리오 코드 {sorted(valid_sc_codes)}와 불일치 — 해당 값 무시됨")
+                    print(
+                        f"  [WARN] 옵셔널리티 세그먼트 '{code}': scenario_revenue 키 '{sc_code}'가 "
+                        f"시나리오 코드 {sorted(valid_sc_codes)}와 불일치 — 해당 값 무시됨"
+                    )
             if sc_revenue and matched == 0:
-                print(f"  [WARN] 옵셔널리티 세그먼트 '{code}': 모든 scenario_revenue 키 불일치. "
-                      f"AI 응답의 scenario_revenue 키가 scenarios[].code와 동일해야 함.")
-        print(f"  → 옵셔널리티 세그먼트 YAML 반영 완료: {[s['code'] for s in opt_segs]}")
+                print(
+                    f"  [WARN] 옵셔널리티 세그먼트 '{code}': 모든 scenario_revenue 키 불일치. "
+                    f"AI 응답의 scenario_revenue 키가 scenarios[].code와 동일해야 함."
+                )
+        print(
+            f"  → 옵셔널리티 세그먼트 YAML 반영 완료: {[s['code'] for s in opt_segs]}"
+        )
 
     # Update peers
     if peers_all:
@@ -807,6 +901,7 @@ def auto_analyze(
     if segments:
         from engine.growth import generate_growth_rates
         from engine.method_selector import classify_industry
+
         seg_name_text = " ".join(s.get("name", "") for s in segments)
         # Only override if segment names provide a stronger classification signal
         seg_category = classify_industry(seg_name_text)
@@ -814,7 +909,9 @@ def auto_analyze(
         if seg_category != "default" or id_category == "default":
             # Segment names give better signal, or identity industry is also generic
             updated_rates = generate_growth_rates(
-                financials, market=identity.market, industry=seg_name_text,
+                financials,
+                market=identity.market,
+                industry=seg_name_text,
             )
             rates_str = "[" + ", ".join(f"{r:.2f}" for r in updated_rates) + "]"
             raw.setdefault("dcf_params", {})["ebitda_growth_rates"] = updated_rates
@@ -826,29 +923,33 @@ def auto_analyze(
     with open(yaml_path, "w", encoding="utf-8") as f:
         yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
-    print(f"  → YAML 저장 완료")
+    print("  → YAML 저장 완료")
 
     # Step 4: Run valuation
-    print(f"\n{'='*60}")
-    print(f"[밸류에이션 실행]")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("[밸류에이션 실행]")
+    print(f"{'=' * 60}")
 
     vi = load_profile(yaml_path)
     result = run_valuation(vi)
 
     # Auto-compare valuation gap for listed companies
     from cli import _fetch_and_compare_market_price
+
     result = _fetch_and_compare_market_price(vi, result)
 
     print_report(vi, result)
 
     from output.excel_builder import export
+
     path = export(vi, result, output_dir)
     print(f"\n[Excel] 저장 완료: {path}")
 
     from orchestrator import format_summary
+
     return AnalyzeResult(
-        vi=vi, result=result,
+        vi=vi,
+        result=result,
         excel_path=str(path),
         summary_md=format_summary(vi, result),
     )

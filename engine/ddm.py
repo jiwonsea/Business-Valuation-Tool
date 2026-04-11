@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 @dataclass
 class DDMResult:
     """DDM valuation result."""
+
     dps: float  # Dividend per share
     buyback_per_share: float  # Buyback return per share
     total_payout: float  # Total payout per share (DPS + buyback)

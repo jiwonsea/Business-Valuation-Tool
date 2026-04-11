@@ -34,8 +34,12 @@ def calc_ev_revenue(
     equity = ev - net_debt
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
-        method="EV/Revenue", metric_value=revenue, multiple=multiple,
-        enterprise_value=ev, equity_value=equity, per_share=ps,
+        method="EV/Revenue",
+        metric_value=revenue,
+        multiple=multiple,
+        enterprise_value=ev,
+        equity_value=equity,
+        per_share=ps,
     )
 
 
@@ -51,11 +55,19 @@ def calc_pe(
     if ps > 10_000_000 and net_income > 0:
         logger.warning(
             "P/E per-share unusually high: %s (net_income=%s, multiple=%s, shares=%s, um=%s)",
-            ps, net_income, multiple, shares, unit_multiplier,
+            ps,
+            net_income,
+            multiple,
+            shares,
+            unit_multiplier,
         )
     return MultipleValuation(
-        method="P/E", metric_value=net_income, multiple=multiple,
-        enterprise_value=0, equity_value=equity, per_share=ps,
+        method="P/E",
+        metric_value=net_income,
+        multiple=multiple,
+        enterprise_value=0,
+        equity_value=equity,
+        per_share=ps,
     )
 
 
@@ -69,8 +81,12 @@ def calc_pbv(
     equity = round(book_value * multiple)
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
-        method="P/BV", metric_value=book_value, multiple=multiple,
-        enterprise_value=0, equity_value=equity, per_share=ps,
+        method="P/BV",
+        metric_value=book_value,
+        multiple=multiple,
+        enterprise_value=0,
+        equity_value=equity,
+        per_share=ps,
     )
 
 
@@ -88,8 +104,12 @@ def calc_ps(
     equity = round(revenue * multiple) if revenue > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
-        method="P/S", metric_value=revenue, multiple=multiple,
-        enterprise_value=0, equity_value=equity, per_share=ps,
+        method="P/S",
+        metric_value=revenue,
+        multiple=multiple,
+        enterprise_value=0,
+        equity_value=equity,
+        per_share=ps,
     )
 
 
@@ -107,8 +127,12 @@ def calc_pffo(
     equity = round(ffo * multiple) if ffo > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
     return MultipleValuation(
-        method="P/FFO", metric_value=ffo, multiple=multiple,
-        enterprise_value=0, equity_value=equity, per_share=ps,
+        method="P/FFO",
+        metric_value=ffo,
+        multiple=multiple,
+        enterprise_value=0,
+        equity_value=equity,
+        per_share=ps,
     )
 
 
@@ -155,25 +179,43 @@ def cross_validate(
         sotp_ps = _per_share(sotp_equity, unit_multiplier, shares)
         # Use ev-only total for implied multiple when provided (excludes equity-based pbv/pe segments
         # that inflate the implied EV/EBITDA by mixing equity values into an enterprise multiple).
-        ev_for_multiple = sotp_ev_ebitda_only if sotp_ev_ebitda_only is not None else sotp_ev
+        ev_for_multiple = (
+            sotp_ev_ebitda_only if sotp_ev_ebitda_only is not None else sotp_ev
+        )
         implied_ev_ebitda = round(ev_for_multiple / ebitda, 1) if ebitda > 0 else 0
-        results.append(MultipleValuation(
-            method="SOTP (EV/EBITDA)", metric_value=ebitda, multiple=implied_ev_ebitda,
-            enterprise_value=sotp_ev, equity_value=sotp_equity, per_share=sotp_ps,
-        ))
+        results.append(
+            MultipleValuation(
+                method="SOTP (EV/EBITDA)",
+                metric_value=ebitda,
+                multiple=implied_ev_ebitda,
+                enterprise_value=sotp_ev,
+                equity_value=sotp_equity,
+                per_share=sotp_ps,
+            )
+        )
 
     # 2. DCF (existing) -- skip if DCF failed (EV=0)
     if dcf_ev > 0:
         dcf_equity = dcf_ev - net_debt
         dcf_ps = _per_share(dcf_equity, unit_multiplier, shares)
-        results.append(MultipleValuation(
-            method="DCF (FCFF)", metric_value=ebitda, multiple=0,
-            enterprise_value=dcf_ev, equity_value=dcf_equity, per_share=dcf_ps,
-        ))
+        results.append(
+            MultipleValuation(
+                method="DCF (FCFF)",
+                metric_value=ebitda,
+                multiple=0,
+                enterprise_value=dcf_ev,
+                equity_value=dcf_equity,
+                per_share=dcf_ps,
+            )
+        )
 
     # 3. EV/Revenue
     if ev_revenue_multiple > 0 and revenue > 0:
-        results.append(calc_ev_revenue(revenue, ev_revenue_multiple, net_debt, shares, unit_multiplier))
+        results.append(
+            calc_ev_revenue(
+                revenue, ev_revenue_multiple, net_debt, shares, unit_multiplier
+            )
+        )
 
     # 4. P/E
     if pe_multiple > 0 and net_income > 0:

@@ -31,13 +31,19 @@ class CompanyIdentity:
         self.ticker = kwargs.get("ticker")
         self.cik = kwargs.get("cik")
         self.corp_code = kwargs.get("corp_code")
-        self.legal_status = kwargs.get("legal_status", "상장" if market == "US" else "비상장")
-        self.exchange_segment = kwargs.get("exchange_segment", "")  # "KOSPI" | "KOSDAQ" | ""
+        self.legal_status = kwargs.get(
+            "legal_status", "상장" if market == "US" else "비상장"
+        )
+        self.exchange_segment = kwargs.get(
+            "exchange_segment", ""
+        )  # "KOSPI" | "KOSDAQ" | ""
 
     def __repr__(self):
         if self.market == "KR":
-            return f"<{self.name} | KR | {self.legal_status} | corp_code={self.corp_code}>"
-        status = f" | OTC" if self.legal_status == "OTC" else ""
+            return (
+                f"<{self.name} | KR | {self.legal_status} | corp_code={self.corp_code}>"
+            )
+        status = " | OTC" if self.legal_status == "OTC" else ""
         return f"<{self.name} | US{status} | ticker={self.ticker} | CIK={self.cik}>"
 
 
@@ -195,7 +201,9 @@ class DataFetcher:
         )
 
     def fetch_financials(
-        self, identity: CompanyIdentity, years: list[int] | None = None,
+        self,
+        identity: CompanyIdentity,
+        years: list[int] | None = None,
     ) -> dict[int, dict]:
         """Collect consolidated financial statements for the identified company.
 
@@ -218,14 +226,20 @@ class DataFetcher:
         return result
 
     def _fetch_us(
-        self, identity: CompanyIdentity, years: list[int] | None,
+        self,
+        identity: CompanyIdentity,
+        years: list[int] | None,
     ) -> dict[int, dict]:
         """US company financials: yfinance preferred, SEC EDGAR fallback."""
         if identity.ticker and yfinance_fetcher:
             try:
                 yf_data = yfinance_fetcher.fetch_financials(identity.ticker, "US")
                 if yf_data:
-                    logger.info("yfinance 재무제표 수집 성공: %s (%d년)", identity.name, len(yf_data))
+                    logger.info(
+                        "yfinance 재무제표 수집 성공: %s (%d년)",
+                        identity.name,
+                        len(yf_data),
+                    )
                     return yf_data
             except Exception as e:
                 logger.debug("yfinance 재무제표 실패, EDGAR fallback: %s", e)
@@ -235,7 +249,9 @@ class DataFetcher:
         return edgar_parser.parse_financials(identity.cik, years)
 
     def _fetch_kr(
-        self, identity: CompanyIdentity, years: list[int] | None,
+        self,
+        identity: CompanyIdentity,
+        years: list[int] | None,
     ) -> dict[int, dict]:
         """Korean company financials: yfinance preferred, DART fallback."""
         # Listed + yfinance available -> prefer yfinance
@@ -243,7 +259,11 @@ class DataFetcher:
             try:
                 yf_data = yfinance_fetcher.fetch_financials(identity.ticker, "KR")
                 if yf_data:
-                    logger.info("yfinance 재무제표 수집 성공: %s (%d년)", identity.name, len(yf_data))
+                    logger.info(
+                        "yfinance 재무제표 수집 성공: %s (%d년)",
+                        identity.name,
+                        len(yf_data),
+                    )
                     return yf_data
             except Exception as e:
                 logger.debug("yfinance 재무제표 실패, DART fallback: %s", e)
@@ -334,8 +354,12 @@ class DataFetcher:
 
     def _fetch_kr_shares(self, identity: CompanyIdentity) -> dict:
         """Listed: yfinance (price) + DART (share totals) -> Unlisted: 38.co.kr."""
-        result = {"shares_total": 0, "shares_ordinary": 0,
-                  "shares_preferred": 0, "treasury_shares": 0}
+        result = {
+            "shares_total": 0,
+            "shares_ordinary": 0,
+            "shares_preferred": 0,
+            "treasury_shares": 0,
+        }
 
         # Listed: yfinance (price/beta) + DART (precise share classification)
         if identity.legal_status in ("상장", "listed") and identity.ticker:
@@ -361,7 +385,8 @@ class DataFetcher:
                 try:
                     current_year = datetime.datetime.now().year
                     stock_info = dart_client.get_stock_total_info(
-                        identity.corp_code, current_year - 1,
+                        identity.corp_code,
+                        current_year - 1,
                     )
                     if stock_info and stock_info["shares_ordinary"] > 0:
                         ord_shares = stock_info["shares_ordinary"]
@@ -373,10 +398,14 @@ class DataFetcher:
                         result["treasury_shares"] = treasury
                         logger.info(
                             "DART 주식총수: 보통주=%s, 우선주=%s, 자사주=%s",
-                            f"{ord_shares:,}", f"{pref_shares:,}", f"{treasury:,}",
+                            f"{ord_shares:,}",
+                            f"{pref_shares:,}",
+                            f"{treasury:,}",
                         )
                 except Exception as e:
-                    logger.debug("DART 주식총수 조회 실패 (%s): %s", identity.corp_code, e)
+                    logger.debug(
+                        "DART 주식총수 조회 실패 (%s): %s", identity.corp_code, e
+                    )
 
             # If both yfinance and DART fail, Yahoo Finance REST fallback (single call)
             if result["shares_total"] == 0:
@@ -394,13 +423,16 @@ class DataFetcher:
                             result["price"] = summary["price"]
                             result["currency"] = "KRW"
                 except Exception as e:
-                    logger.debug("Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e)
+                    logger.debug(
+                        "Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e
+                    )
 
             if result["shares_total"] > 0:
                 return result
 
         # Unlisted or listed Yahoo failure: 38.co.kr
         from . import market_data  # lazy: only used in unlisted path
+
         info = market_data.get_38_company_info(identity.name)
         if info:
             result.update(info)

@@ -71,10 +71,16 @@ def save_prediction_snapshot(
         try:
             resp = client.table("prediction_snapshots").insert(row).execute()
             uid = resp.data[0]["id"]
-            logger.info("Inserted prediction snapshot %s for %s (fallback)", uid, vi.company.name)
+            logger.info(
+                "Inserted prediction snapshot %s for %s (fallback)",
+                uid,
+                vi.company.name,
+            )
             return uid
         except Exception:
-            logger.exception("Failed to save prediction snapshot for %s", vi.company.name)
+            logger.exception(
+                "Failed to save prediction snapshot for %s", vi.company.name
+            )
             return None
 
 
@@ -156,7 +162,9 @@ def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
     price_data["price_fetched_at"] = datetime.utcnow().isoformat()
 
     try:
-        client.table("backtest_outcomes").update(price_data).eq("id", outcome_id).execute()
+        client.table("backtest_outcomes").update(price_data).eq(
+            "id", outcome_id
+        ).execute()
         return True
     except Exception:
         logger.exception("Failed to update backtest prices for %s", outcome_id)

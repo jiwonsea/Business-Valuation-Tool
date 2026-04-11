@@ -12,7 +12,11 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from valuation_runner import load_profile as _load_profile, run_valuation as _run_valuation, _seg_names
+from valuation_runner import (
+    load_profile as _load_profile,
+    run_valuation as _run_valuation,
+    _seg_names,
+)
 from cli import _fetch_and_compare_market_price
 from orchestrator import format_summary, _save_to_db
 from output.excel_builder import export
@@ -29,6 +33,7 @@ def _cached_run_valuation(_vi_hash: str, path: str):
     vi = _load_profile(path)
     return vi, _run_valuation(vi)
 
+
 st.set_page_config(
     page_title="기업가치 분석 플랫폼",
     page_icon="📊",
@@ -37,6 +42,7 @@ st.set_page_config(
 
 
 # ── Helper: 통화 단위 ──
+
 
 def _unit_label(vi) -> str:
     """표시 단위 (백만원, 억원, $M 등)."""
@@ -57,7 +63,7 @@ def _format_ev(value: int, vi) -> str:
         return f"{value:,}억원"
     elif unit == "$M":
         if abs(value) >= 1000:
-            return f"${value/1000:,.1f}B"
+            return f"${value / 1000:,.1f}B"
         return f"${value:,}M"
     return f"{value:,}{unit}"
 
@@ -92,13 +98,14 @@ if st.sidebar.button("분석 실행", type="primary"):
         result = _fetch_and_compare_market_price(vi, result)
         if result.market_comparison and result.market_comparison.market_price > 0:
             from engine.quality import calc_quality_score
+
             result.quality = calc_quality_score(vi, result)
         st.session_state["vi"] = vi
         st.session_state["result"] = result
         # DB 저장
         val_id = _save_to_db(vi, result, profile_path)
         if val_id:
-            st.toast(f"DB 저장 완료", icon="✅")
+            st.toast("DB 저장 완료", icon="✅")
 
 if "vi" not in st.session_state:
     st.title("기업가치 분석 플랫폼")
@@ -149,9 +156,12 @@ with col3:
 with col4:
     if result.market_comparison and result.market_comparison.market_price > 0:
         gap = result.market_comparison.gap_ratio
-        st.metric("괴리율", f"{gap:+.1%}",
-                  delta=f"시장가 {result.market_comparison.market_price:,.0f}{sym}",
-                  delta_color="inverse")
+        st.metric(
+            "괴리율",
+            f"{gap:+.1%}",
+            delta=f"시장가 {result.market_comparison.market_price:,.0f}{sym}",
+            delta_color="inverse",
+        )
     elif is_sotp and result.dcf:
         diff_pct = (result.dcf.ev_dcf - result.total_ev) / result.total_ev * 100
         st.metric("DCF vs SOTP", f"{diff_pct:+.1f}%")
@@ -209,17 +219,21 @@ with tabs[tab_idx]:
             for i, (code, name, val, prob) in enumerate(
                 zip(sc_codes, sc_names_list, sc_values, sc_probs)
             ):
-                fig_sc.add_trace(go.Bar(
-                    name=f"{code}: {name} ({prob}%)",
-                    x=[val], y=[f"{code}: {name}"],
-                    orientation='h',
-                    marker_color=colors[i % len(colors)],
-                    text=f"{val:,}{sym}",
-                    textposition='outside',
-                ))
+                fig_sc.add_trace(
+                    go.Bar(
+                        name=f"{code}: {name} ({prob}%)",
+                        x=[val],
+                        y=[f"{code}: {name}"],
+                        orientation="h",
+                        marker_color=colors[i % len(colors)],
+                        text=f"{val:,}{sym}",
+                        textposition="outside",
+                    )
+                )
             fig_sc.add_vline(
                 x=result.weighted_value,
-                line_dash="dash", line_color="red",
+                line_dash="dash",
+                line_color="red",
                 annotation_text=f"가중평균 {result.weighted_value:,}{sym}",
             )
             fig_sc.update_layout(
@@ -227,7 +241,7 @@ with tabs[tab_idx]:
                 xaxis_title=sym,
                 showlegend=True,
                 height=300,
-                barmode='group',
+                barmode="group",
             )
             st.plotly_chart(fig_sc, use_container_width=True)
 
@@ -265,13 +279,14 @@ if is_sotp:
                 values = [s.ev for _, s in active_segs]
 
                 fig_pie = px.pie(
-                    names=labels, values=values,
+                    names=labels,
+                    values=values,
                     title="사업부별 EV 구성",
                     color_discrete_sequence=px.colors.qualitative.Set2,
                 )
                 fig_pie.update_traces(
-                    textinfo='label+percent+value',
-                    texttemplate=f'%{{label}}<br>%{{value:,.0f}}{unit}<br>(%{{percent}})',
+                    textinfo="label+percent+value",
+                    texttemplate=f"%{{label}}<br>%{{value:,.0f}}{unit}<br>(%{{percent}})",
                 )
                 st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -281,7 +296,10 @@ if is_sotp:
                 if code in result.sotp:
                     s = result.sotp[code]
                     if s.method == "ev_revenue":
-                        metric_lbl, metric_val = "Revenue", getattr(s, "revenue", 0) or 0
+                        metric_lbl, metric_val = (
+                            "Revenue",
+                            getattr(s, "revenue", 0) or 0,
+                        )
                     elif s.method == "pbv":
                         metric_lbl, metric_val = "Book Equity", s.ebitda
                     elif s.method == "pe":
@@ -293,7 +311,9 @@ if is_sotp:
                         f"{s.multiple:.1f}x = **{s.ev:,}**{unit}"
                     )
             st.divider()
-            st.write(f"**Total EV: {result.total_ev:,}{unit} ({_format_ev(result.total_ev, vi)})**")
+            st.write(
+                f"**Total EV: {result.total_ev:,}{unit} ({_format_ev(result.total_ev, vi)})**"
+            )
 
 # ── Tab: 상대가치 (Multiples primary) ──
 
@@ -314,7 +334,9 @@ if is_multiples and result.multiples_primary:
             st.metric("주당 가치", f"{mp.per_share:,}{sym}")
 
         if mp.enterprise_value > 0:
-            st.write(f"**Enterprise Value:** {mp.enterprise_value:,}{unit} ({_format_ev(mp.enterprise_value, vi)})")
+            st.write(
+                f"**Enterprise Value:** {mp.enterprise_value:,}{unit} ({_format_ev(mp.enterprise_value, vi)})"
+            )
         st.write(f"**Equity Value:** {mp.equity_value:,}{unit}")
 
         if result.peer_stats:
@@ -356,16 +378,22 @@ if is_nav and result.nav:
             st.metric("주당 NAV", f"{nv.per_share:,}{sym}")
 
         # 워터폴 차트
-        fig_nav = go.Figure(go.Waterfall(
-            name="NAV",
-            orientation="v",
-            measure=["absolute", "relative", "relative", "total"],
-            x=["총자산(장부)", "재평가 조정", "부채 차감", "NAV"],
-            y=[nv.total_assets, nv.revaluation, -nv.total_liabilities, nv.nav],
-            text=[f"{nv.total_assets:,}", f"{nv.revaluation:+,}",
-                  f"-{nv.total_liabilities:,}", f"{nv.nav:,}"],
-            connector={"line": {"color": "rgb(63, 63, 63)"}},
-        ))
+        fig_nav = go.Figure(
+            go.Waterfall(
+                name="NAV",
+                orientation="v",
+                measure=["absolute", "relative", "relative", "total"],
+                x=["총자산(장부)", "재평가 조정", "부채 차감", "NAV"],
+                y=[nv.total_assets, nv.revaluation, -nv.total_liabilities, nv.nav],
+                text=[
+                    f"{nv.total_assets:,}",
+                    f"{nv.revaluation:+,}",
+                    f"-{nv.total_liabilities:,}",
+                    f"{nv.nav:,}",
+                ],
+                connector={"line": {"color": "rgb(63, 63, 63)"}},
+            )
+        )
         fig_nav.update_layout(
             title=f"NAV 산출 과정 ({unit})",
             yaxis_title=unit,
@@ -385,12 +413,14 @@ with tabs[tab_idx]:
         fcffs = [p.fcff for p in dcf.projections]
 
         fig_dcf = go.Figure()
-        fig_dcf.add_trace(go.Bar(name='EBITDA', x=years, y=ebitdas, marker_color='#2E86C1'))
-        fig_dcf.add_trace(go.Bar(name='FCFF', x=years, y=fcffs, marker_color='#27AE60'))
+        fig_dcf.add_trace(
+            go.Bar(name="EBITDA", x=years, y=ebitdas, marker_color="#2E86C1")
+        )
+        fig_dcf.add_trace(go.Bar(name="FCFF", x=years, y=fcffs, marker_color="#27AE60"))
         fig_dcf.update_layout(
             title="DCF 예측기간 EBITDA vs FCFF",
             yaxis_title=unit,
-            barmode='group',
+            barmode="group",
         )
         st.plotly_chart(fig_dcf, use_container_width=True)
 
@@ -404,19 +434,21 @@ with tabs[tab_idx]:
 
         # 프로젝션 테이블
         with st.expander("DCF 프로젝션 상세"):
-            df_proj = pd.DataFrame([
-                {
-                    "연도": p.year,
-                    f"EBITDA ({unit})": f"{p.ebitda:,}",
-                    f"NOPAT ({unit})": f"{p.nopat:,}",
-                    f"Capex ({unit})": f"{p.capex:,}",
-                    f"ΔNWC ({unit})": f"{p.delta_nwc:,}",
-                    f"FCFF ({unit})": f"{p.fcff:,}",
-                    "성장률": f"{p.growth:.1%}",
-                    f"PV ({unit})": f"{p.pv_fcff:,}",
-                }
-                for p in dcf.projections
-            ])
+            df_proj = pd.DataFrame(
+                [
+                    {
+                        "연도": p.year,
+                        f"EBITDA ({unit})": f"{p.ebitda:,}",
+                        f"NOPAT ({unit})": f"{p.nopat:,}",
+                        f"Capex ({unit})": f"{p.capex:,}",
+                        f"ΔNWC ({unit})": f"{p.delta_nwc:,}",
+                        f"FCFF ({unit})": f"{p.fcff:,}",
+                        "성장률": f"{p.growth:.1%}",
+                        f"PV ({unit})": f"{p.pv_fcff:,}",
+                    }
+                    for p in dcf.projections
+                ]
+            )
             st.dataframe(df_proj, use_container_width=True, hide_index=True)
     else:
         st.info("DCF 결과 없음")
@@ -426,21 +458,31 @@ with tabs[tab_idx]:
 with tabs[tab_idx]:
     tab_idx += 1
 
-    def _render_heatmap(data, title, x_label, y_label, row_fmt=".1f", col_fmt=".1f",
-                        row_suffix="%", col_suffix="%"):
+    def _render_heatmap(
+        data,
+        title,
+        x_label,
+        y_label,
+        row_fmt=".1f",
+        col_fmt=".1f",
+        row_suffix="%",
+        col_suffix="%",
+    ):
         """민감도 히트맵 공통 렌더링."""
         row_vals = sorted(set(r.row_val for r in data))
         col_vals = sorted(set(r.col_val for r in data))
         lookup = {(r.row_val, r.col_val): r.value for r in data}
         z_data = [[lookup.get((rv, cv), 0) for cv in col_vals] for rv in row_vals]
-        fig = go.Figure(data=go.Heatmap(
-            z=z_data,
-            x=[f"{cv:{col_fmt}}{col_suffix}" for cv in col_vals],
-            y=[f"{rv:{row_fmt}}{row_suffix}" for rv in row_vals],
-            colorscale='RdYlGn',
-            text=[[f"{v:,.0f}" for v in row] for row in z_data],
-            texttemplate="%{text}",
-        ))
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=z_data,
+                x=[f"{cv:{col_fmt}}{col_suffix}" for cv in col_vals],
+                y=[f"{rv:{row_fmt}}{row_suffix}" for rv in row_vals],
+                colorscale="RdYlGn",
+                text=[[f"{v:,.0f}" for v in row] for row in z_data],
+                texttemplate="%{text}",
+            )
+        )
         fig.update_layout(title=title, xaxis_title=x_label, yaxis_title=y_label)
         st.plotly_chart(fig, use_container_width=True)
 
@@ -463,7 +505,8 @@ with tabs[tab_idx]:
                 _render_heatmap(
                     result.sensitivity_dcf,
                     f"WACC × 영구성장률 → 주당가치 ({unit})",
-                    "영구성장률", "WACC",
+                    "영구성장률",
+                    "WACC",
                 )
 
         if result.sensitivity_multiples:
@@ -472,8 +515,10 @@ with tabs[tab_idx]:
                 _render_heatmap(
                     result.sensitivity_multiples,
                     f"멀티플 민감도 → 주당가치 ({sym})",
-                    "부문2 멀티플", "부문1 멀티플",
-                    row_suffix="x", col_suffix="x",
+                    "부문2 멀티플",
+                    "부문1 멀티플",
+                    row_suffix="x",
+                    col_suffix="x",
                 )
 
         if result.sensitivity_irr_dlom:
@@ -482,7 +527,8 @@ with tabs[tab_idx]:
                 _render_heatmap(
                     result.sensitivity_irr_dlom,
                     f"FI IRR × DLOM → 주당가치 ({sym})",
-                    "DLOM (%)", "FI IRR (%)",
+                    "DLOM (%)",
+                    "FI IRR (%)",
                     col_fmt=".0f",
                 )
     else:
@@ -499,18 +545,23 @@ with tabs[tab_idx]:
         per_shares = [cv.per_share for cv in result.cross_validations]
 
         fig_cv = go.Figure()
-        colors_cv = ['#2E86C1', '#27AE60', '#E74C3C', '#F39C12', '#8E44AD']
+        colors_cv = ["#2E86C1", "#27AE60", "#E74C3C", "#F39C12", "#8E44AD"]
         for i, (m, ps) in enumerate(zip(methods, per_shares)):
-            fig_cv.add_trace(go.Bar(
-                name=m, x=[ps], y=[m],
-                orientation='h',
-                marker_color=colors_cv[i % len(colors_cv)],
-                text=f"{ps:,}{sym}",
-                textposition='outside',
-            ))
+            fig_cv.add_trace(
+                go.Bar(
+                    name=m,
+                    x=[ps],
+                    y=[m],
+                    orientation="h",
+                    marker_color=colors_cv[i % len(colors_cv)],
+                    text=f"{ps:,}{sym}",
+                    textposition="outside",
+                )
+            )
         fig_cv.add_vline(
             x=result.weighted_value,
-            line_dash="dash", line_color="red",
+            line_dash="dash",
+            line_color="red",
             annotation_text=f"가중평균 {result.weighted_value:,}{sym}",
         )
         fig_cv.update_layout(
@@ -522,17 +573,19 @@ with tabs[tab_idx]:
         st.plotly_chart(fig_cv, use_container_width=True)
 
         # 교차검증 테이블
-        df_cv = pd.DataFrame([
-            {
-                "방법론": cv.method,
-                "지표값": f"{cv.metric_value:,.0f}",
-                "배수": f"{cv.multiple:.1f}x",
-                f"EV ({unit})": f"{cv.enterprise_value:,}",
-                f"Equity ({unit})": f"{cv.equity_value:,}",
-                f"주당가치 ({sym})": f"{cv.per_share:,}",
-            }
-            for cv in result.cross_validations
-        ])
+        df_cv = pd.DataFrame(
+            [
+                {
+                    "방법론": cv.method,
+                    "지표값": f"{cv.metric_value:,.0f}",
+                    "배수": f"{cv.multiple:.1f}x",
+                    f"EV ({unit})": f"{cv.enterprise_value:,}",
+                    f"Equity ({unit})": f"{cv.equity_value:,}",
+                    f"주당가치 ({sym})": f"{cv.per_share:,}",
+                }
+                for cv in result.cross_validations
+            ]
+        )
         st.dataframe(df_cv, use_container_width=True, hide_index=True)
     else:
         st.info("교차검증 결과 없음")
@@ -543,39 +596,50 @@ if result.peer_stats:
     with tabs[tab_idx]:
         tab_idx += 1
 
-        df_peer = pd.DataFrame([
-            {
-                "부문": ps.segment_name or ps.segment_code,
-                "N": ps.count,
-                "Median": f"{ps.ev_ebitda_median:.1f}x",
-                "Mean": f"{ps.ev_ebitda_mean:.1f}x",
-                "Q1": f"{ps.ev_ebitda_q1:.1f}x",
-                "Q3": f"{ps.ev_ebitda_q3:.1f}x",
-                "Min": f"{ps.ev_ebitda_min:.1f}x",
-                "Max": f"{ps.ev_ebitda_max:.1f}x",
-                "적용 멀티플": f"{ps.applied_multiple:.1f}x",
-            }
-            for ps in result.peer_stats
-        ])
+        df_peer = pd.DataFrame(
+            [
+                {
+                    "부문": ps.segment_name or ps.segment_code,
+                    "N": ps.count,
+                    "Median": f"{ps.ev_ebitda_median:.1f}x",
+                    "Mean": f"{ps.ev_ebitda_mean:.1f}x",
+                    "Q1": f"{ps.ev_ebitda_q1:.1f}x",
+                    "Q3": f"{ps.ev_ebitda_q3:.1f}x",
+                    "Min": f"{ps.ev_ebitda_min:.1f}x",
+                    "Max": f"{ps.ev_ebitda_max:.1f}x",
+                    "적용 멀티플": f"{ps.applied_multiple:.1f}x",
+                }
+                for ps in result.peer_stats
+            ]
+        )
         st.dataframe(df_peer, use_container_width=True, hide_index=True)
 
         # Peer 멀티플 비교 차트
         fig_peer = go.Figure()
         for ps in result.peer_stats:
             name = ps.segment_name or ps.segment_code
-            fig_peer.add_trace(go.Box(
-                name=name,
-                q1=[ps.ev_ebitda_q1], median=[ps.ev_ebitda_median],
-                q3=[ps.ev_ebitda_q3], lowerfence=[ps.ev_ebitda_min],
-                upperfence=[ps.ev_ebitda_max], mean=[ps.ev_ebitda_mean],
-                boxpoints=False,
-            ))
-            fig_peer.add_trace(go.Scatter(
-                x=[name], y=[ps.applied_multiple],
-                mode='markers', marker=dict(symbol='diamond', size=12, color='red'),
-                name=f"{name} 적용값",
-                showlegend=False,
-            ))
+            fig_peer.add_trace(
+                go.Box(
+                    name=name,
+                    q1=[ps.ev_ebitda_q1],
+                    median=[ps.ev_ebitda_median],
+                    q3=[ps.ev_ebitda_q3],
+                    lowerfence=[ps.ev_ebitda_min],
+                    upperfence=[ps.ev_ebitda_max],
+                    mean=[ps.ev_ebitda_mean],
+                    boxpoints=False,
+                )
+            )
+            fig_peer.add_trace(
+                go.Scatter(
+                    x=[name],
+                    y=[ps.applied_multiple],
+                    mode="markers",
+                    marker=dict(symbol="diamond", size=12, color="red"),
+                    name=f"{name} 적용값",
+                    showlegend=False,
+                )
+            )
         fig_peer.update_layout(
             title="부문별 Peer EV/EBITDA 분포",
             yaxis_title="EV/EBITDA (x)",
@@ -603,16 +667,26 @@ if result.monte_carlo:
         # 히스토그램
         if mc.histogram_bins and mc.histogram_counts:
             fig_mc = go.Figure()
-            fig_mc.add_trace(go.Bar(
-                x=mc.histogram_bins,
-                y=mc.histogram_counts,
-                marker_color='#2E86C1',
-                opacity=0.7,
-            ))
-            fig_mc.add_vline(x=result.weighted_value, line_dash="dash", line_color="red",
-                             annotation_text=f"가중평균 {result.weighted_value:,}")
-            fig_mc.add_vline(x=mc.median, line_dash="dot", line_color="orange",
-                             annotation_text=f"Median {mc.median:,}")
+            fig_mc.add_trace(
+                go.Bar(
+                    x=mc.histogram_bins,
+                    y=mc.histogram_counts,
+                    marker_color="#2E86C1",
+                    opacity=0.7,
+                )
+            )
+            fig_mc.add_vline(
+                x=result.weighted_value,
+                line_dash="dash",
+                line_color="red",
+                annotation_text=f"가중평균 {result.weighted_value:,}",
+            )
+            fig_mc.add_vline(
+                x=mc.median,
+                line_dash="dot",
+                line_color="orange",
+                annotation_text=f"Median {mc.median:,}",
+            )
             fig_mc.update_layout(
                 title=f"Monte Carlo 시뮬레이션 ({mc.n_sims:,}회)",
                 xaxis_title=f"주당 가치 ({sym})",
@@ -624,7 +698,9 @@ if result.monte_carlo:
         with st.expander("분포 통계"):
             st.write(f"- **시뮬레이션 횟수**: {mc.n_sims:,}")
             st.write(f"- **Mean**: {mc.mean:,}{sym}  |  **Std**: {mc.std:,}{sym}")
-            st.write(f"- **5th**: {mc.p5:,}  |  **25th**: {mc.p25:,}  |  **Median**: {mc.median:,}")
+            st.write(
+                f"- **5th**: {mc.p5:,}  |  **25th**: {mc.p25:,}  |  **Median**: {mc.median:,}"
+            )
             st.write(f"- **75th**: {mc.p75:,}  |  **95th**: {mc.p95:,}")
             st.write(f"- **Min**: {mc.min_val:,}  |  **Max**: {mc.max_val:,}")
 

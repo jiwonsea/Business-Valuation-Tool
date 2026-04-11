@@ -36,7 +36,7 @@ def build_company_gamma_text(entry: dict) -> str:
 # {company} 기업가치평가 분석 보고서
 
 시장: {market} | {cap_text}
-분석일: {datetime.now().strftime('%Y-%m-%d')}
+분석일: {datetime.now().strftime("%Y-%m-%d")}
 
 ---
 
@@ -73,12 +73,16 @@ def build_weekly_summary_gamma_text(summary: dict) -> str:
         name = v.get("company", "")
         market = v.get("market", "")
         cap = v.get("market_cap_usd")
-        cap_str = f"${cap / 1_000_000_000:.1f}B" if cap and cap >= 1_000_000_000 else (
-            f"${cap / 1_000_000:,.0f}M" if cap else "N/A"
+        cap_str = (
+            f"${cap / 1_000_000_000:.1f}B"
+            if cap and cap >= 1_000_000_000
+            else (f"${cap / 1_000_000:,.0f}M" if cap else "N/A")
         )
         company_lines.append(f"| {name} | {market} | {cap_str} |")
 
-    company_table = "\n".join(company_lines) if company_lines else "| (분석 대상 없음) | - | - |"
+    company_table = (
+        "\n".join(company_lines) if company_lines else "| (분석 대상 없음) | - | - |"
+    )
 
     # Discovery highlights
     discoveries = summary.get("discoveries", [])
@@ -94,9 +98,9 @@ def build_weekly_summary_gamma_text(summary: dict) -> str:
 # 주간 밸류에이션 리포트 — {label}
 
 ## 개요
-- 대상 시장: {', '.join(markets)}
-- 분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상
-- 실패: {status.get('failed', 0)}개
+- 대상 시장: {", ".join(markets)}
+- 분석 기업: {status.get("success", 0)}개 성공 / {status.get("total", 0)}개 대상
+- 실패: {status.get("failed", 0)}개
 
 ## 발굴 요약
 {discovery_text}
@@ -109,7 +113,7 @@ def build_weekly_summary_gamma_text(summary: dict) -> str:
 
 ## 기업별 밸류에이션 요약
 
-{''.join(_company_brief(v) for v in valuations if v.get("status") == "success")}
+{"".join(_company_brief(v) for v in valuations if v.get("status") == "success")}
 
 ## 주간 투자 시사점
 - 위 분석 결과를 종합하여 이번 주 시장 테마를 정리하세요
@@ -162,9 +166,13 @@ def _extract_cross_validation_html(summary_md: str) -> str:
     for ln in wacc_lines:
         ln = ln.strip()
         if ln.startswith("## WACC"):
-            html_parts.append(f'<span style="color:#555;font-size:12px;">{_esc(ln)}</span>')
+            html_parts.append(
+                f'<span style="color:#555;font-size:12px;">{_esc(ln)}</span>'
+            )
         elif ln.startswith("-"):
-            html_parts.append(f'<span style="color:#888;font-size:11px;">{_esc(ln)}</span>')
+            html_parts.append(
+                f'<span style="color:#888;font-size:11px;">{_esc(ln)}</span>'
+            )
 
     # WACC 섹션 헤더가 별도 섹션 키로 파싱되는 경우 처리
     for key, body in sections.items():
@@ -177,10 +185,16 @@ def _extract_cross_validation_html(summary_md: str) -> str:
                     )
 
     # 시장가격 비교
-    market_lines = [ln.strip() for ln in sections.get("시장가격 비교", []) if ln.strip()]
+    market_lines = [
+        ln.strip() for ln in sections.get("시장가격 비교", []) if ln.strip()
+    ]
     if market_lines:
-        html_parts.append('<hr style="border:none;border-top:1px solid #eee;margin:4px 0">')
-        html_parts.append('<span style="font-size:11px;color:#666;font-weight:bold;">시장가격 비교</span><br>')
+        html_parts.append(
+            '<hr style="border:none;border-top:1px solid #eee;margin:4px 0">'
+        )
+        html_parts.append(
+            '<span style="font-size:11px;color:#666;font-weight:bold;">시장가격 비교</span><br>'
+        )
         for ln in market_lines:
             if ln.startswith("-") or ln.startswith("⚠"):
                 color = "#c62828" if "⚠" in ln else "#555"
@@ -191,8 +205,12 @@ def _extract_cross_validation_html(summary_md: str) -> str:
     # 교차검증
     cv_lines = [ln.strip() for ln in sections.get("교차검증", []) if ln.strip()]
     if cv_lines:
-        html_parts.append('<hr style="border:none;border-top:1px solid #eee;margin:4px 0">')
-        html_parts.append('<span style="font-size:11px;color:#1a237e;font-weight:bold;">교차검증</span><br>')
+        html_parts.append(
+            '<hr style="border:none;border-top:1px solid #eee;margin:4px 0">'
+        )
+        html_parts.append(
+            '<span style="font-size:11px;color:#1a237e;font-weight:bold;">교차검증</span><br>'
+        )
         for ln in cv_lines:
             if ln.startswith("-"):
                 html_parts.append(
@@ -227,8 +245,10 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
         name = _esc(v.get("company", ""))
         market = _esc(v.get("market", ""))
         cap = v.get("market_cap_usd")
-        cap_str = f"${cap / 1_000_000_000:.1f}B" if cap and cap >= 1_000_000_000 else (
-            f"${cap / 1_000_000:,.0f}M" if cap else "-"
+        cap_str = (
+            f"${cap / 1_000_000_000:.1f}B"
+            if cap and cap >= 1_000_000_000
+            else (f"${cap / 1_000_000:,.0f}M" if cap else "-")
         )
         gamma_url = _esc(gamma_urls.get(v.get("company", ""), ""))
         download_url = _esc(v.get("download_url", ""))
@@ -254,7 +274,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     <strong>{name}</strong>
     <span style="color:#666;font-size:12px;margin-left:8px;">{market} · {cap_str}</span>
     <br>
-    {f'<div style="margin:6px 0 4px;line-height:1.7;">{cv_html}</div>' if cv_html else ''}
+    {f'<div style="margin:6px 0 4px;line-height:1.7;">{cv_html}</div>' if cv_html else ""}
     <span style="font-size:13px;margin-top:4px;display:inline-block;">{links}</span>
   </td>
 </tr>
@@ -278,10 +298,10 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
 
   <div style="background:#f5f5f5;padding:16px 24px;">
     <p style="margin:0;font-size:14px;color:#333;">
-      분석 완료: <strong>{status.get('success', 0)}</strong>개 기업
-      {f" · 실패: {status.get('failed', 0)}개" if status.get('failed', 0) else ""}
+      분석 완료: <strong>{status.get("success", 0)}</strong>개 기업
+      {f" · 실패: {status.get('failed', 0)}개" if status.get("failed", 0) else ""}
     </p>
-    {f'<p style="margin:12px 0 0;text-align:center;">{summary_link}</p>' if summary_gamma else ''}
+    {f'<p style="margin:12px 0 0;text-align:center;">{summary_link}</p>' if summary_gamma else ""}
   </div>
 
   <table style="width:100%;border-collapse:collapse;background:white;">

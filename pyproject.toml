@@ -33,3 +33,11 @@ py-modules = ["cli", "orchestrator", "valuation_runner"]
 
 [project.scripts]
 valuation = "cli:main"
+
+[tool.ruff]
+exclude = [".claude"]
+
+[tool.ruff.lint]
+# E402: conditional imports after sys.stderr/logging setup are intentional (cli.py, valuation_runner.py)
+# E702: semicolon-separated statements in Excel output sheets are intentional compact style
+ignore = ["E402", "E702"]

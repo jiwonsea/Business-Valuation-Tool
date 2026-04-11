@@ -17,7 +17,6 @@ import logging
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import httpx
 
@@ -86,7 +85,9 @@ def _fetch_fred_series(series_id: str) -> float | None:
                 try:
                     cache_path.parent.mkdir(parents=True, exist_ok=True)
                     cache_path.write_text(
-                        json.dumps({"value": rate, "fetched_at": datetime.now().isoformat()}),
+                        json.dumps(
+                            {"value": rate, "fetched_at": datetime.now().isoformat()}
+                        ),
                         encoding="utf-8",
                     )
                 except OSError:
@@ -120,6 +121,7 @@ def _fetch_fred_macro() -> dict[str, float | None]:
 # Analyst Consensus (yfinance Ticker.info)
 # ---------------------------------------------------------------------------
 
+
 def _fetch_analyst_consensus(ticker: str, market: str) -> dict[str, object]:
     """Fetch analyst target prices and recommendation from yfinance."""
     result: dict[str, object] = {}
@@ -128,6 +130,7 @@ def _fetch_analyst_consensus(ticker: str, market: str) -> dict[str, object]:
 
         if market == "KR":
             from . import yfinance_fetcher
+
             ticker = yfinance_fetcher.resolve_kr_ticker(ticker)
 
         info = yf.Ticker(ticker).info
@@ -146,6 +149,7 @@ def _fetch_analyst_consensus(ticker: str, market: str) -> dict[str, object]:
 # FinBERT Sentiment (optional dependency)
 # ---------------------------------------------------------------------------
 
+
 def _compute_news_sentiment(news: list[dict]) -> dict[str, object]:
     """Run FinBERT on news headlines. Graceful fallback if not installed."""
     result: dict[str, object] = {}
@@ -154,6 +158,7 @@ def _compute_news_sentiment(news: list[dict]) -> dict[str, object]:
 
     try:
         from .sentiment import compute_sentiment
+
         score, label, count = compute_sentiment(news)
         result["news_sentiment_score"] = score
         result["sentiment_label"] = label
@@ -169,6 +174,7 @@ def _compute_news_sentiment(news: list[dict]) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 # Options IV (US listed only, yfinance options chain)
 # ---------------------------------------------------------------------------
+
 
 def _fetch_options_iv(ticker: str) -> dict[str, float | None]:
     """Extract 30-day ATM IV and put/call ratio from yfinance."""
@@ -239,7 +245,7 @@ def _fetch_options_iv(ticker: str) -> dict[str, float | None]:
             hist = tk.history(period="1y")
             if len(hist) > 20:
                 returns = hist["Close"].pct_change().dropna()
-                hv_annual = float(returns.std() * (252 ** 0.5) * 100)
+                hv_annual = float(returns.std() * (252**0.5) * 100)
                 if hv_annual > 0:
                     # Rough percentile: where current IV sits relative to HV
                     result["iv_percentile"] = round(
@@ -257,6 +263,7 @@ def _fetch_options_iv(ticker: str) -> dict[str, float | None]:
 # ---------------------------------------------------------------------------
 # Main aggregator
 # ---------------------------------------------------------------------------
+
 
 def fetch_market_signals(
     ticker: str | None = None,

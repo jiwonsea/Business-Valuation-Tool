@@ -52,12 +52,16 @@ class NewsCollector:
 
             ApiGuard.get().check("naver")
             with httpx.Client(timeout=self._timeout) as client:
-                resp = client.get(url, headers=headers, params={
-                    "query": query,
-                    "display": display,
-                    "start": 1,
-                    "sort": "date",
-                })
+                resp = client.get(
+                    url,
+                    headers=headers,
+                    params={
+                        "query": query,
+                        "display": display,
+                        "start": 1,
+                        "sort": "date",
+                    },
+                )
                 resp.raise_for_status()
                 data = resp.json()
                 ApiGuard.get().record_success("naver")
@@ -75,17 +79,20 @@ class NewsCollector:
                     if pub < cutoff:
                         continue
 
-                    results.append({
-                        "title": _strip_html(item.get("title", "")),
-                        "description": _strip_html(item.get("description", "")),
-                        "link": item.get("originallink") or item.get("link", ""),
-                        "pub_date": pub.isoformat(),
-                        "source": "naver",
-                    })
+                    results.append(
+                        {
+                            "title": _strip_html(item.get("title", "")),
+                            "description": _strip_html(item.get("description", "")),
+                            "link": item.get("originallink") or item.get("link", ""),
+                            "pub_date": pub.isoformat(),
+                            "source": "naver",
+                        }
+                    )
         except Exception as e:
             print(f"[ERROR] 네이버 뉴스 수집 실패: {e}")
             try:
                 from pipeline.api_guard import ApiGuard
+
                 ApiGuard.get().record_failure("naver", e)
             except Exception as guard_err:
                 print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")
@@ -137,13 +144,15 @@ class NewsCollector:
                     if pub < cutoff:
                         continue
 
-                    results.append({
-                        "title": _strip_html(title),
-                        "description": _strip_html(description),
-                        "link": link,
-                        "pub_date": pub.isoformat(),
-                        "source": "google_rss",
-                    })
+                    results.append(
+                        {
+                            "title": _strip_html(title),
+                            "description": _strip_html(description),
+                            "link": link,
+                            "pub_date": pub.isoformat(),
+                            "source": "google_rss",
+                        }
+                    )
 
                     if len(results) >= max_items:
                         break
@@ -151,6 +160,7 @@ class NewsCollector:
             print(f"[ERROR] Google News RSS 수집 실패: {e}")
             try:
                 from pipeline.api_guard import ApiGuard
+
                 ApiGuard.get().record_failure("google_rss", e)
             except Exception as guard_err:
                 print(f"[WARN] ApiGuard record_failure 실패: {guard_err}")
@@ -194,5 +204,6 @@ class NewsCollector:
 def _strip_html(text: str) -> str:
     """Remove HTML tags and entities."""
     import re
+
     clean = re.sub(r"<[^>]+>", "", text)
     return unescape(clean).strip()

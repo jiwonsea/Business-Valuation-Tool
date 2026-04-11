@@ -25,6 +25,7 @@ def _get_pipeline():
 
     try:
         from transformers import pipeline as hf_pipeline
+
         logger.info("[sentiment] FinBERT 모델 로딩 중...")
         _pipeline = hf_pipeline(
             "sentiment-analysis",

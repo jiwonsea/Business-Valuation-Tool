@@ -69,7 +69,11 @@ def _cap_str(cap: float | None) -> str:
 
 
 def _draw_rounded_rect(
-    draw: ImageDraw.ImageDraw, xy: tuple, radius: int, fill: str, outline: str | None = None,
+    draw: ImageDraw.ImageDraw,
+    xy: tuple,
+    radius: int,
+    fill: str,
+    outline: str | None = None,
 ) -> None:
     """Draw a rounded rectangle (card)."""
     x0, y0, x1, y1 = xy
@@ -81,7 +85,13 @@ def _draw_header_bar(draw: ImageDraw.ImageDraw, text: str) -> None:
     draw.rectangle([(0, 0), (W, 72)], fill=BG_HEADER)
     font = _font_bold(24)
     draw.text((60, 36), text, fill=TEXT_ON_DARK, font=font, anchor="lm")
-    draw.text((W - 60, 36), "AI 자동 생성 · 투자 추천 아님", fill="#94a3b8", font=_font_regular(16), anchor="rm")
+    draw.text(
+        (W - 60, 36),
+        "AI 자동 생성 · 투자 추천 아님",
+        fill="#94a3b8",
+        font=_font_regular(16),
+        anchor="rm",
+    )
 
 
 def _wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> list[str]:
@@ -117,6 +127,7 @@ def _extract_charts_from_excel(excel_path: str | Path) -> list[Image.Image]:
     """
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.font_manager as fm
@@ -196,16 +207,28 @@ def _extract_charts_from_excel(excel_path: str | Path) -> list[Image.Image]:
 
             for s in cdata["series"]:
                 vals = [v if isinstance(v, (int, float)) else 0 for v in s["vals"]]
-                cats = s["cats"][:len(vals)] if s["cats"] else [str(i) for i in range(len(vals))]
+                cats = (
+                    s["cats"][: len(vals)]
+                    if s["cats"]
+                    else [str(i) for i in range(len(vals))]
+                )
                 # Truncate labels
                 cats = [str(c)[:12] if c else "" for c in cats]
 
                 colors = [ACCENT_GREEN if v >= 0 else ACCENT_RED for v in vals]
-                ax.bar(range(len(vals)), vals, color=colors, width=0.6, edgecolor="none")
+                ax.bar(
+                    range(len(vals)), vals, color=colors, width=0.6, edgecolor="none"
+                )
                 ax.set_xticks(range(len(cats)))
                 ax.set_xticklabels(cats, rotation=30, ha="right", fontsize=9)
 
-            ax.set_title(cdata["title"], fontsize=13, fontweight="bold", color=TEXT_PRIMARY, pad=12)
+            ax.set_title(
+                cdata["title"],
+                fontsize=13,
+                fontweight="bold",
+                color=TEXT_PRIMARY,
+                pad=12,
+            )
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
             ax.spines["left"].set_color(BORDER)
@@ -324,13 +347,21 @@ def _slide_overview(summary: dict) -> tuple[Image.Image, str]:
     metrics = [
         ("분석 완료", f"{status.get('success', 0)}개", ACCENT_GREEN),
         ("분석 대상", f"{status.get('total', 0)}개", ACCENT_BLUE),
-        ("실패", f"{status.get('failed', 0)}개", ACCENT_RED if status.get("failed", 0) else TEXT_SECONDARY),
+        (
+            "실패",
+            f"{status.get('failed', 0)}개",
+            ACCENT_RED if status.get("failed", 0) else TEXT_SECONDARY,
+        ),
     ]
 
     for i, (label, value, color) in enumerate(metrics):
         x0 = 60 + i * (card_w + gap)
-        _draw_rounded_rect(draw, (x0, card_y, x0 + card_w, card_y + card_h), 12, BG_CARD, BORDER)
-        draw.text((x0 + 30, card_y + 30), label, fill=TEXT_SECONDARY, font=_font_regular(20))
+        _draw_rounded_rect(
+            draw, (x0, card_y, x0 + card_w, card_y + card_h), 12, BG_CARD, BORDER
+        )
+        draw.text(
+            (x0 + 30, card_y + 30), label, fill=TEXT_SECONDARY, font=_font_regular(20)
+        )
         draw.text((x0 + 30, card_y + 70), value, fill=color, font=_font_bold(42))
 
     # Market discovery cards
@@ -344,8 +375,18 @@ def _slide_overview(summary: dict) -> tuple[Image.Image, str]:
 
         _draw_rounded_rect(draw, (60, y, W - 60, y + 150), 12, BG_CARD, BORDER)
         draw.text((90, y + 20), market_label, fill=TEXT_PRIMARY, font=_font_bold(30))
-        draw.text((90, y + 65), f"뉴스 {news_count}건 수집", fill=TEXT_SECONDARY, font=_font_regular(22))
-        draw.text((90, y + 100), f"발굴: {co_names}", fill=TEXT_PRIMARY, font=_font_regular(22))
+        draw.text(
+            (90, y + 65),
+            f"뉴스 {news_count}건 수집",
+            fill=TEXT_SECONDARY,
+            font=_font_regular(22),
+        )
+        draw.text(
+            (90, y + 100),
+            f"발굴: {co_names}",
+            fill=TEXT_PRIMARY,
+            font=_font_regular(22),
+        )
 
         y += 175
 
@@ -361,7 +402,9 @@ def _slide_overview(summary: dict) -> tuple[Image.Image, str]:
     return img, " ".join(script_parts)
 
 
-def _slide_company(entry: dict, chart_images: list[Image.Image] | None = None) -> tuple[Image.Image, str]:
+def _slide_company(
+    entry: dict, chart_images: list[Image.Image] | None = None
+) -> tuple[Image.Image, str]:
     """Per-company slide with analysis text + optional charts."""
     img = Image.new("RGB", (W, H), BG_WHITE)
     draw = ImageDraw.Draw(img)
@@ -443,7 +486,9 @@ def _slide_closing() -> tuple[Image.Image, str]:
 
     draw.rectangle([(0, 0), (W, 6)], fill=ACCENT_BLUE)
 
-    draw.text((W // 2, 380), "감사합니다", fill=TEXT_PRIMARY, font=_font_bold(64), anchor="mm")
+    draw.text(
+        (W // 2, 380), "감사합니다", fill=TEXT_PRIMARY, font=_font_bold(64), anchor="mm"
+    )
     draw.text(
         (W // 2, 460),
         "매주 토요일 자동 업데이트됩니다",
@@ -480,7 +525,9 @@ async def _synthesize(text: str, output_path: str) -> None:
 # ── Video Assembly ──
 
 
-def create_weekly_video(summary: dict, output_dir: str | Path | None = None) -> Path | None:
+def create_weekly_video(
+    summary: dict, output_dir: str | Path | None = None
+) -> Path | None:
     """Create weekly valuation report video.
 
     Args:
@@ -576,12 +623,18 @@ def create_weekly_video(summary: dict, output_dir: str | Path | None = None) -> 
 def main() -> None:
     """CLI entry point for standalone testing."""
     parser = argparse.ArgumentParser(description="Create weekly valuation video")
-    parser.add_argument("--test", action="store_true", help="Test with latest/dummy summary JSON")
+    parser.add_argument(
+        "--test", action="store_true", help="Test with latest/dummy summary JSON"
+    )
     parser.add_argument("--summary-json", type=str, help="Path to _weekly_summary.json")
-    parser.add_argument("--output-dir", type=str, default="test_output", help="Output directory")
+    parser.add_argument(
+        "--output-dir", type=str, default="test_output", help="Output directory"
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
 
     if args.summary_json:
         summary_path = Path(args.summary_json)
@@ -591,7 +644,11 @@ def main() -> None:
         if summaries:
             summary_path = summaries[0]
         else:
-            summary_path = Path(__file__).resolve().parent.parent / "test_output" / "_weekly_summary_dummy.json"
+            summary_path = (
+                Path(__file__).resolve().parent.parent
+                / "test_output"
+                / "_weekly_summary_dummy.json"
+            )
 
     if not summary_path.exists():
         logger.error("Summary file not found: %s", summary_path)

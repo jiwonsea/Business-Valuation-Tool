@@ -149,7 +149,7 @@ Since peer multiples are a critical input for SOTP valuation, verify that each E
 
 <output_format>
 {{
-    "{seg_codes.split(', ')[0]}": {{
+    "{seg_codes.split(", ")[0]}": {{
         "peers": [
             {{"name": "Company name", "ev_ebitda": 10.0, "notes": "Selection rationale and multiple source"}}
         ],
@@ -312,6 +312,7 @@ Add to output (omit if no optionality segments found):
 def _sanitize_news(text: str) -> str:
     """Strip control chars and truncate to prevent prompt injection from news content."""
     import re
+
     # Remove XML/HTML-like tags and control characters
     cleaned = re.sub(r"<[^>]*>", "", text)
     cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", cleaned)
@@ -362,7 +363,9 @@ def prompt_scenario_design(
     Available driver list varies by valuation_method.
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
-    scalar_drivers = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
+    scalar_drivers = {
+        k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS
+    }
     driver_json = ", ".join(f'"{k}": 0' for k in scalar_drivers)
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_drivers)
     # Add segment-level driver examples when segment_codes are available
@@ -377,13 +380,17 @@ def prompt_scenario_design(
         sanitized_issues = _sanitize_news(key_issues)
         # News-driven scenario design (multi-variable news drivers)
         # Exclude structured fields from news_driver effects (they go directly on scenarios)
-        scalar_effect_drivers = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
+        scalar_effect_drivers = {
+            k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS
+        }
         effect_json = ", ".join(f'"{k}": 0' for k in scalar_effect_drivers)
         # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
         sotp_segment_block = ""
         if segment_codes and valuation_method == "sotp":
             seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
-            sotp_segment_block = f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            sotp_segment_block = (
+                f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            )
         return f"""\
 <company>{company_name}</company>
 <context>
@@ -463,7 +470,11 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
     "rationale": "Overall scenario design rationale",
     "news_factors_considered": ["Summary of key news issues reflected"]
 }}
-</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
+</output_format>""" + (
+            f"\n{_optionality_instructions(currency_unit)}"
+            if include_optionality
+            else ""
+        )
 
     # Generic scenario design (multi-driver)
     return f"""\
@@ -515,10 +526,13 @@ Each scenario MUST include a "description" field (2-3 sentences) explaining the 
     ],
     "rationale": "Scenario design rationale"
 }}
-</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
+</output_format>""" + (
+        f"\n{_optionality_instructions(currency_unit)}" if include_optionality else ""
+    )
 
 
 # ── Market Signals Formatter (Phase 4) ──
+
 
 def _format_market_signals(signals: MarketSignals | None) -> str:
     """Render MarketSignals into an XML block for prompt injection.
@@ -551,7 +565,9 @@ def _format_market_signals(signals: MarketSignals | None) -> str:
     if signals.target_mean is not None:
         analyst_parts = [f"Target: {signals.target_mean:.1f}"]
         if signals.target_low is not None and signals.target_high is not None:
-            analyst_parts.append(f"(range: {signals.target_low:.1f}-{signals.target_high:.1f})")
+            analyst_parts.append(
+                f"(range: {signals.target_low:.1f}-{signals.target_high:.1f})"
+            )
         if signals.recommendation:
             analyst_parts.append(signals.recommendation.capitalize())
         n_str = f"N={signals.analyst_count}" if signals.analyst_count else "N=?"
@@ -562,7 +578,9 @@ def _format_market_signals(signals: MarketSignals | None) -> str:
     if signals.news_sentiment_score is not None:
         n = signals.sentiment_article_count or 0
         lines.append(f"NEWS SENTIMENT (FinBERT, {n}건):")
-        lines.append(f"  Score: {signals.news_sentiment_score:+.2f} ({signals.sentiment_label or 'N/A'})")
+        lines.append(
+            f"  Score: {signals.news_sentiment_score:+.2f} ({signals.sentiment_label or 'N/A'})"
+        )
 
     # Options IV
     if signals.iv_30d_atm is not None:
@@ -577,16 +595,26 @@ def _format_market_signals(signals: MarketSignals | None) -> str:
     # Calibration guidance
     guidance = []
     if signals.fed_funds_rate is not None or signals.us_10y_yield is not None:
-        guidance.append("- wacc_adj should reflect current rate environment relative to long-term average")
+        guidance.append(
+            "- wacc_adj should reflect current rate environment relative to long-term average"
+        )
     if signals.vix is not None and signals.vix > 25:
-        guidance.append("- VIX is elevated — widen scenario spread (Bull-Bear gap should be larger)")
+        guidance.append(
+            "- VIX is elevated — widen scenario spread (Bull-Bear gap should be larger)"
+        )
     if signals.target_mean is not None:
-        guidance.append("- Weighted value should be within reasonable distance of analyst consensus target")
+        guidance.append(
+            "- Weighted value should be within reasonable distance of analyst consensus target"
+        )
     if signals.news_sentiment_score is not None:
         if signals.news_sentiment_score > 0.3:
-            guidance.append("- News sentiment is positive — Bull scenario probability may be warranted higher")
+            guidance.append(
+                "- News sentiment is positive — Bull scenario probability may be warranted higher"
+            )
         elif signals.news_sentiment_score < -0.3:
-            guidance.append("- News sentiment is negative — Bear scenario probability may be warranted higher")
+            guidance.append(
+                "- News sentiment is negative — Bear scenario probability may be warranted higher"
+            )
     if guidance:
         lines.append("CALIBRATION GUIDANCE:")
         lines.extend(guidance)
@@ -724,14 +752,18 @@ def prompt_scenario_refine(
         # SOTP: add segment_multiples directly on each scenario
         if segment_codes and valuation_method == "sotp":
             seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
-            scenario_driver_key += f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            scenario_driver_key += (
+                f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            )
     else:
         news_driver_format = ""
         scenario_driver_key = f'"drivers": {{{driver_json}}},\n            "driver_rationale": {{{rationale_json}}}'
         # SOTP generic path
         if segment_codes and valuation_method == "sotp":
             seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
-            scenario_driver_key += f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            scenario_driver_key += (
+                f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            )
 
     signals_block = _format_market_signals(signals)
 
@@ -789,7 +821,9 @@ Correlated drivers applied together will be dampened by a correlation factor dow
     ],
     "rationale": "Overall scenario design rationale"
 }}
-</output_format>""" + (f"\n{_optionality_instructions(currency_unit)}" if include_optionality else "")
+</output_format>""" + (
+        f"\n{_optionality_instructions(currency_unit)}" if include_optionality else ""
+    )
 
 
 def prompt_research_note(

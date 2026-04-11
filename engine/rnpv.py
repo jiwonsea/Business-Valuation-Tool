@@ -32,13 +32,18 @@ PHASE_POS: dict[str, float] = {
 @dataclass
 class DrugCashFlow:
     """Per-drug intermediate result."""
+
     name: str
     phase: str
     indication: str
     peak_sales: int
     success_prob: float
-    cash_flows: list[int] = field(default_factory=list)  # Annual after-tax profit stream
-    revenue_curve: list[int] = field(default_factory=list)  # Annual revenue (pre-margin)
+    cash_flows: list[int] = field(
+        default_factory=list
+    )  # Annual after-tax profit stream
+    revenue_curve: list[int] = field(
+        default_factory=list
+    )  # Annual revenue (pre-margin)
     npv: int = 0  # Unadjusted NPV
     rnpv: int = 0  # Risk-adjusted NPV
 
@@ -46,12 +51,17 @@ class DrugCashFlow:
 @dataclass
 class RNPVResult:
     """Aggregate rNPV result."""
+
     drug_results: list[DrugCashFlow]
     total_rnpv: int
     r_and_d_cost_pv: int
     pipeline_value: int  # total_rnpv - r_and_d_cost_pv
-    existing_revenue_value: int  # Subset of total_rnpv from approved drugs (for reporting only)
-    enterprise_value: int  # = pipeline_value (existing_revenue already included in total_rnpv)
+    existing_revenue_value: (
+        int  # Subset of total_rnpv from approved drugs (for reporting only)
+    )
+    enterprise_value: (
+        int  # = pipeline_value (existing_revenue already included in total_rnpv)
+    )
     discount_rate: float
 
 
@@ -207,17 +217,19 @@ def calc_rnpv(
 
         total_rnpv += rnpv_val
 
-        drug_results.append(DrugCashFlow(
-            name=name,
-            phase=phase,
-            indication=indication,
-            peak_sales=peak_sales,
-            success_prob=pos,
-            cash_flows=curve,
-            revenue_curve=revenue_curve,
-            npv=npv_val,
-            rnpv=rnpv_val,
-        ))
+        drug_results.append(
+            DrugCashFlow(
+                name=name,
+                phase=phase,
+                indication=indication,
+                peak_sales=peak_sales,
+                success_prob=pos,
+                cash_flows=curve,
+                revenue_curve=revenue_curve,
+                npv=npv_val,
+                rnpv=rnpv_val,
+            )
+        )
 
     # PV of R&D costs (annual cost spread over r_and_d_years)
     r_and_d_pv = 0

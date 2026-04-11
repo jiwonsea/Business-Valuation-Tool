@@ -7,7 +7,6 @@ Priority:
 """
 
 import atexit
-import functools
 import logging
 import os
 import threading
@@ -30,17 +29,19 @@ def _get_anthropic_client(api_key: str):
         with _anthropic_lock:
             if _anthropic_client is None:
                 import anthropic
+
                 _anthropic_client = anthropic.Anthropic(api_key=api_key)
                 atexit.register(_anthropic_client.close)
     return _anthropic_client
+
 
 # OpenRouter default model (start with free/low-cost, change as needed)
 _OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
 _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 # Model tiers for mixed strategy (Haiku for routine, Sonnet for reasoning)
-MODEL_LIGHT = "claude-haiku-4-5-20251001"       # classify, peers, wacc
-MODEL_HEAVY = "claude-sonnet-4-20250514"         # scenarios, research notes
+MODEL_LIGHT = "claude-haiku-4-5-20251001"  # classify, peers, wacc
+MODEL_HEAVY = "claude-sonnet-4-20250514"  # scenarios, research notes
 
 
 def _get_provider() -> str:
@@ -67,7 +68,6 @@ def _ask_anthropic(
     temperature: float = 0.3,
 ) -> str:
     """Direct Anthropic API call (automatic prompt caching)."""
-    import anthropic
 
     key = os.getenv("ANTHROPIC_API_KEY")
     if not key:
@@ -100,7 +100,11 @@ def _ask_anthropic(
     cache_create = getattr(usage, "cache_creation_input_tokens", 0) or 0
     logger.info(
         "Anthropic [%s] 입력=%d (캐시읽기=%d, 캐시생성=%d), 출력=%d",
-        model, usage.input_tokens, cache_read, cache_create, usage.output_tokens,
+        model,
+        usage.input_tokens,
+        cache_read,
+        cache_create,
+        usage.output_tokens,
     )
 
     return response.content[0].text
@@ -115,7 +119,6 @@ def _ask_openrouter(
     temperature: float = 0.3,
 ) -> str:
     """OpenRouter API call (OpenAI-compatible format)."""
-    import httpx
 
     key = os.getenv("OPENROUTER_API_KEY")
     if not key:
@@ -133,6 +136,7 @@ def _ask_openrouter(
         model = _ANTHROPIC_TO_OPENROUTER.get(model, f"anthropic/{model}")
         # Strip date suffixes (e.g. anthropic/claude-sonnet-4-20250514 -> anthropic/claude-sonnet-4)
         import re
+
         model = re.sub(r"-\d{8}$", "", model)
 
     messages = []
@@ -201,7 +205,9 @@ def ask(
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
                 try:
-                    return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+                    return _ask_anthropic(
+                        prompt, system, anthropic_model, max_tokens, temperature
+                    )
                 except Exception as fallback_err:
                     raise fallback_err from e
             raise
@@ -220,5 +226,4 @@ def ask_structured(
 
     Fixed temperature=0 for deterministic output.
     """
-    return ask(prompt, system=system, model=model,
-               max_tokens=max_tokens, temperature=0)
+    return ask(prompt, system=system, model=model, max_tokens=max_tokens, temperature=0)

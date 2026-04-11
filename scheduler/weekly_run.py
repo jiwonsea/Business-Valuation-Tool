@@ -23,6 +23,7 @@ from pathlib import Path
 # Load .env so Task Scheduler (which doesn't inherit shell env) gets all API keys
 try:
     from dotenv import load_dotenv
+
     _env_file = Path(__file__).resolve().parent.parent / ".env"
     if _env_file.exists():
         load_dotenv(_env_file, override=False)
@@ -59,6 +60,7 @@ def _alert(phase: str, error: str) -> None:
     """Send error alert via Gmail (best-effort)."""
     try:
         from .email_sender import send_error_alert
+
         send_error_alert(phase, error)
     except Exception:
         pass
@@ -90,12 +92,7 @@ def _storage_folder(week_folder_name: str) -> str:
     Supabase Storage rejects keys containing parentheses or spaces.
     '2026-03-31(Mar 5th week)' -> '2026-03-31_Mar-5th-week'
     """
-    return (
-        week_folder_name
-        .replace("(", "_")
-        .replace(")", "")
-        .replace(" ", "-")
-    )
+    return week_folder_name.replace("(", "_").replace(")", "").replace(" ", "-")
 
 
 def _week_label(dt: datetime) -> str:
@@ -159,9 +156,13 @@ def run_weekly(
             market, result, error = fut.result()
             if error:
                 logger.error("Discovery 실패 [%s]: %s", market, error)
-                summary["errors"].append({
-                    "phase": "discovery", "market": market, "error": error,
-                })
+                summary["errors"].append(
+                    {
+                        "phase": "discovery",
+                        "market": market,
+                        "error": error,
+                    }
+                )
                 continue
             news_count = result.get("news_count", 0)
             total_news += news_count
@@ -174,11 +175,13 @@ def run_weekly(
             for co in result.get("companies", []):
                 co["market"] = market
                 all_companies.append(co)
-            summary["discoveries"].append({
-                "market": market,
-                "news_count": news_count,
-                "companies": result.get("companies", []),
-            })
+            summary["discoveries"].append(
+                {
+                    "market": market,
+                    "news_count": news_count,
+                    "companies": result.get("companies", []),
+                }
+            )
 
     # ── Phase 2: Deduplication + importance scoring ──
     seen_names: set[str] = set()
@@ -194,7 +197,14 @@ def run_weekly(
 
     # ── Per-market selection: top N per market ──
     # Filter out sector/theme names (e.g. '반도체 관련주', '방위산업 관련 기업군')
-    _SECTOR_KEYWORDS = ("관련주", "관련 기업", "관련기업", "기업군", "관련 종목", "관련종목")
+    _SECTOR_KEYWORDS = (
+        "관련주",
+        "관련 기업",
+        "관련기업",
+        "기업군",
+        "관련 종목",
+        "관련종목",
+    )
 
     def _is_real_company(co: dict) -> bool:
         name = co.get("name", "")
@@ -203,15 +213,16 @@ def run_weekly(
     targets: list[dict] = []
     for market in markets:
         market_companies = [
-            c for c in scored
-            if c.get("market") == market and _is_real_company(c)
+            c for c in scored if c.get("market") == market and _is_real_company(c)
         ]
         actual = market_companies[:max_per_market]
         targets.extend(actual)
         if len(actual) < max_per_market:
             logger.info(
                 "%s: %d/%d companies available (below target)",
-                market, len(actual), max_per_market,
+                market,
+                len(actual),
+                max_per_market,
             )
 
     # ── Print results ──
@@ -229,10 +240,13 @@ def run_weekly(
     total_est = sum(estimate["estimated_api_calls"].values())
     logger.info(
         "Estimated API calls: %d, LLM calls: %d, LLM cost: $%.2f",
-        total_est, estimate["estimated_llm_calls"], estimate["estimated_llm_cost_usd"],
+        total_est,
+        estimate["estimated_llm_calls"],
+        estimate["estimated_llm_cost_usd"],
     )
     low_quota = {
-        k: v for k, v in estimate["remaining_quota"].items()
+        k: v
+        for k, v in estimate["remaining_quota"].items()
         if 0 <= v < estimate["estimated_api_calls"].get(k, 0)
     }
     if low_quota:
@@ -245,7 +259,8 @@ def run_weekly(
         # Only count Anthropic budget if the fallback key is actually configured
         anthropic_bonus = (
             estimate["remaining_quota"].get("anthropic", 0)
-            if os.getenv("ANTHROPIC_API_KEY") else 0
+            if os.getenv("ANTHROPIC_API_KEY")
+            else 0
         )
         llm_budget = estimate["remaining_quota"].get("openrouter", 0) + anthropic_bonus
     else:
@@ -255,7 +270,9 @@ def run_weekly(
     if len(targets) > max_affordable:
         logger.warning(
             "Trimming targets from %d to %d to fit LLM quota (%d remaining)",
-            len(targets), max_affordable, llm_budget,
+            len(targets),
+            max_affordable,
+            llm_budget,
         )
         targets = targets[:max_affordable]
 
@@ -273,7 +290,9 @@ def run_weekly(
         name = co.get("name", "")
         try:
             logger.info("Valuation start: %s %s", co.get("stars", ""), name)
-            analyze_result = auto_analyze(name, output_dir=str(week_dir), scored_data=co)
+            analyze_result = auto_analyze(
+                name, output_dir=str(week_dir), scored_data=co
+            )
             if analyze_result:
                 return {
                     "company": name,
@@ -283,10 +302,19 @@ def run_weekly(
                     "summary_md": analyze_result.summary_md,
                     "market_cap_usd": co.get("market_cap_usd"),
                 }
-            return {"company": name, "market": co.get("market", ""), "status": "no_result"}
+            return {
+                "company": name,
+                "market": co.get("market", ""),
+                "status": "no_result",
+            }
         except Exception as e:
             logger.error("Valuation failed [%s]: %s", name, e)
-            return {"company": name, "market": co.get("market", ""), "status": "failed", "error": str(e)}
+            return {
+                "company": name,
+                "market": co.get("market", ""),
+                "status": "failed",
+                "error": str(e),
+            }
 
     if not targets:
         msg = "Discovery returned 0 companies — valuation skipped. Check NAVER/OpenRouter API keys and network."
@@ -300,11 +328,13 @@ def run_weekly(
             with _summary_lock:
                 summary["valuations"].append(entry)
                 if entry.get("status") == "failed":
-                    summary["errors"].append({
-                        "phase": "valuation",
-                        "company": entry["company"],
-                        "error": entry.get("error", ""),
-                    })
+                    summary["errors"].append(
+                        {
+                            "phase": "valuation",
+                            "company": entry["company"],
+                            "error": entry.get("error", ""),
+                        }
+                    )
 
     # ── Phase 3.5: Upload Excel to Supabase Storage ──
     _upload_excels_to_storage(summary, _storage_folder(week_folder_name))
@@ -315,6 +345,7 @@ def run_weekly(
     # ── Phase 5: Send email notification (best-effort) ──
     try:
         from .email_sender import send_weekly_email
+
         send_weekly_email(summary)
     except Exception as e:
         logger.warning("Email notification failed: %s", e)
@@ -322,6 +353,7 @@ def run_weekly(
     # ── Phase 6a: WordPress posting (US only, best-effort) ──
     try:
         from .wp_poster import post_to_wordpress
+
         wp_url = post_to_wordpress(summary)
         if wp_url:
             summary["wp_url"] = wp_url
@@ -332,6 +364,7 @@ def run_weekly(
     # ── Phase 6b: Naver Blog posting (KR+US, best-effort) ──
     try:
         from .naver_poster import post_to_naver
+
         naver_url = post_to_naver(summary)
         if naver_url:
             summary["naver_url"] = naver_url
@@ -361,7 +394,9 @@ def run_weekly(
     # Log API usage summary
     try:
         usage = ApiGuard.get().get_usage_summary()
-        active = {k: v for k, v in usage.items() if v["calls"] > 0 or v["cache_hits"] > 0}
+        active = {
+            k: v for k, v in usage.items() if v["calls"] > 0 or v["cache_hits"] > 0
+        }
         if active:
             logger.info("API usage summary: %s", active)
     except Exception:
@@ -436,7 +471,9 @@ def _print_summary_header(
     print()
 
 
-def _print_completion(summary: dict, duration: float, output_dir: Path | None = None) -> None:
+def _print_completion(
+    summary: dict, duration: float, output_dir: Path | None = None
+) -> None:
     """Print completion message."""
     success = sum(1 for v in summary["valuations"] if v["status"] == "success")
     total = len(summary["valuations"])
@@ -457,10 +494,13 @@ def _save_run_start(markets: list[str]) -> str | None:
     """Record run start in DB."""
     try:
         from db.repository import save_discovery_run
-        return save_discovery_run({
-            "markets": markets,
-            "status": "running",
-        })
+
+        return save_discovery_run(
+            {
+                "markets": markets,
+                "status": "running",
+            }
+        )
     except Exception as e:
         logger.debug("DB 기록 실패 (시작): %s", e)
         return None
@@ -480,16 +520,17 @@ def _finalize_run(
         from db.repository import update_discovery_run
 
         status = "completed" if not summary["errors"] else "completed_with_errors"
-        update_discovery_run(run_id, {
-            "status": status,
-            "news_count": total_news,
-            "companies_discovered": scored,
-            "companies_analyzed": [
-                v["company"] for v in summary["valuations"]
-            ],
-            "errors": summary["errors"],
-            "duration_seconds": round(duration, 1),
-        })
+        update_discovery_run(
+            run_id,
+            {
+                "status": status,
+                "news_count": total_news,
+                "companies_discovered": scored,
+                "companies_analyzed": [v["company"] for v in summary["valuations"]],
+                "errors": summary["errors"],
+                "duration_seconds": round(duration, 1),
+            },
+        )
     except Exception as e:
         logger.debug("DB 기록 실패 (완료): %s", e)
 
@@ -499,19 +540,25 @@ def main() -> None:
         description="Weekly automated news collection + valuation",
     )
     parser.add_argument(
-        "--markets", default="KR,US",
+        "--markets",
+        default="KR,US",
         help="Target markets (comma-separated, default: KR,US)",
     )
     parser.add_argument(
-        "--max-per-market", type=int, default=5,
+        "--max-per-market",
+        type=int,
+        default=5,
         help="Max companies per market (default: 5)",
     )
     parser.add_argument(
-        "--max-companies", type=int, default=None,
+        "--max-companies",
+        type=int,
+        default=None,
         help="(deprecated: use --max-per-market)",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Discovery only, skip valuation",
     )
     args = parser.parse_args()

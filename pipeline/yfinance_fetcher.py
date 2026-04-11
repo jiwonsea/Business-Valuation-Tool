@@ -17,12 +17,14 @@ from pathlib import Path
 # (always C:\ProgramData on all Windows versions).
 _CA_BUNDLE_PATH = os.path.join(
     os.environ.get("ALLUSERSPROFILE", "C:\\ProgramData"),
-    "python-ssl", "cacert.pem",
+    "python-ssl",
+    "cacert.pem",
 )
 
 if os.name == "nt":
     try:
         import certifi
+
         ca_src = certifi.where()
         if not ca_src.isascii() or not os.environ.get("CURL_CA_BUNDLE", "").isascii():
             os.makedirs(os.path.dirname(_CA_BUNDLE_PATH), exist_ok=True)
@@ -31,7 +33,10 @@ if os.name == "nt":
             # Use both Python env and Win32 Unicode API to cover all read paths
             os.environ["CURL_CA_BUNDLE"] = _CA_BUNDLE_PATH
             import ctypes
-            ctypes.windll.kernel32.SetEnvironmentVariableW("CURL_CA_BUNDLE", _CA_BUNDLE_PATH)
+
+            ctypes.windll.kernel32.SetEnvironmentVariableW(
+                "CURL_CA_BUNDLE", _CA_BUNDLE_PATH
+            )
     except Exception:
         pass
 
@@ -40,7 +45,9 @@ import yfinance as yf
 logger = logging.getLogger(__name__)
 
 # ── Cache ──
-_TICKER_CACHE_FILE = Path(__file__).resolve().parent.parent / ".cache" / "kr_tickers.json"
+_TICKER_CACHE_FILE = (
+    Path(__file__).resolve().parent.parent / ".cache" / "kr_tickers.json"
+)
 
 _kr_ticker_cache: dict[str, str] = {}
 _kr_exchange_cache: dict[str, str] = {}  # ticker → "KOSPI" | "KOSDAQ"
@@ -65,7 +72,8 @@ def _save_ticker_cache() -> None:
     _TICKER_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(
         {"tickers": _kr_ticker_cache, "exchanges": _kr_exchange_cache},
-        ensure_ascii=False, indent=2,
+        ensure_ascii=False,
+        indent=2,
     )
     tmp = _TICKER_CACHE_FILE.with_suffix(".tmp")
     tmp.write_text(data, encoding="utf-8")
@@ -231,7 +239,9 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
     for col_idx in range(min(3, inc.shape[1] if inc is not None else 0)):
         try:
             col_date = inc.columns[col_idx]
-            year = col_date.year if hasattr(col_date, "year") else int(str(col_date)[:4])
+            year = (
+                col_date.year if hasattr(col_date, "year") else int(str(col_date)[:4])
+            )
         except (IndexError, ValueError):
             continue
 
@@ -247,30 +257,68 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         # Income Statement
         revenue = _get_inc(["Total Revenue", "Revenue", "Operating Revenue"])
         op = _get_inc(["Operating Income", "EBIT", "Operating Profit"])
-        net_income = _get_inc(["Net Income", "Net Income Common Stockholders",
-                               "Net Income From Continuing Operations"])
-        interest_expense = _get_inc(["Interest Expense", "Interest Expense Non Operating"])
+        net_income = _get_inc(
+            [
+                "Net Income",
+                "Net Income Common Stockholders",
+                "Net Income From Continuing Operations",
+            ]
+        )
+        interest_expense = _get_inc(
+            ["Interest Expense", "Interest Expense Non Operating"]
+        )
 
         # Balance Sheet
         assets = _get_bs(["Total Assets"])
-        liabilities = _get_bs(["Total Liabilities Net Minority Interest",
-                               "Total Liab", "Total Liabilities"])
-        equity = _get_bs(["Stockholders Equity", "Total Equity Gross Minority Interest",
-                          "Common Stock Equity", "Total Stockholder Equity"])
+        liabilities = _get_bs(
+            [
+                "Total Liabilities Net Minority Interest",
+                "Total Liab",
+                "Total Liabilities",
+            ]
+        )
+        equity = _get_bs(
+            [
+                "Stockholders Equity",
+                "Total Equity Gross Minority Interest",
+                "Common Stock Equity",
+                "Total Stockholder Equity",
+            ]
+        )
         total_debt = _get_bs(["Total Debt", "Net Debt"])  # Interest-bearing debt
-        long_term_debt = _get_bs(["Long Term Debt", "Long Term Debt And Capital Lease Obligation"])
-        short_term_debt = _get_bs(["Current Debt", "Current Debt And Capital Lease Obligation",
-                                   "Short Long Term Debt"])
-        cash = _get_bs(["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments",
-                        "Cash Financial", "Cash And Short Term Investments"])
+        long_term_debt = _get_bs(
+            ["Long Term Debt", "Long Term Debt And Capital Lease Obligation"]
+        )
+        short_term_debt = _get_bs(
+            [
+                "Current Debt",
+                "Current Debt And Capital Lease Obligation",
+                "Short Long Term Debt",
+            ]
+        )
+        cash = _get_bs(
+            [
+                "Cash And Cash Equivalents",
+                "Cash Cash Equivalents And Short Term Investments",
+                "Cash Financial",
+                "Cash And Short Term Investments",
+            ]
+        )
 
         # Cashflow — D&A + CapEx
-        dep_amort = _get_cf(["Depreciation And Amortization",
-                             "Depreciation Amortization Depletion"])
+        dep_amort = _get_cf(
+            ["Depreciation And Amortization", "Depreciation Amortization Depletion"]
+        )
         dep_only = _get_cf(["Depreciation"])
         amort_only = _get_cf(["Amortization Of Intangibles", "Amortization"])
-        capex_raw = _get_cf(["Capital Expenditure", "Purchase Of PPE",
-                             "Capital Expenditures", "Purchases Of Property Plant And Equipment"])
+        capex_raw = _get_cf(
+            [
+                "Capital Expenditure",
+                "Purchase Of PPE",
+                "Capital Expenditures",
+                "Purchases Of Property Plant And Equipment",
+            ]
+        )
 
         # Scaling
         s = lambda v: _scale_value(v, currency)  # noqa: E731

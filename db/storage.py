@@ -75,7 +75,9 @@ def upload_excel(local_path: str, remote_path: str) -> str | None:
         return None
 
 
-def get_download_url(remote_path: str, expires_in: int = SIGNED_URL_EXPIRY) -> str | None:
+def get_download_url(
+    remote_path: str, expires_in: int = SIGNED_URL_EXPIRY
+) -> str | None:
     """Generate a signed download URL for a stored file.
 
     Args:
@@ -101,8 +103,7 @@ def get_download_url(remote_path: str, expires_in: int = SIGNED_URL_EXPIRY) -> s
 def _sanitize_key(name: str) -> str:
     """Remove characters that Supabase Storage rejects or that break presigned URLs."""
     return (
-        name
-        .replace("(", "")
+        name.replace("(", "")
         .replace(")", "")
         .replace(" ", "_")
         .replace(",", "")

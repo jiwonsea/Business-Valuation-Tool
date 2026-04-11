@@ -61,7 +61,9 @@ def calc_forecast_price_error(
     apes_sorted = sorted(apes)
     n = len(apes)
     mid = n // 2
-    median_ape = apes_sorted[mid] if n % 2 else (apes_sorted[mid - 1] + apes_sorted[mid]) / 2
+    median_ape = (
+        apes_sorted[mid] if n % 2 else (apes_sorted[mid - 1] + apes_sorted[mid]) / 2
+    )
 
     return {
         "mape": sum(apes) / n,
@@ -90,7 +92,12 @@ def calc_gap_closure(
     """
     valid = _get_valid_records(records, horizon)
     if not valid:
-        return {"mean_closure": None, "median_closure": None, "positive_closure_rate": None, "n": 0}
+        return {
+            "mean_closure": None,
+            "median_closure": None,
+            "positive_closure_rate": None,
+            "n": 0,
+        }
 
     closures = []
 
@@ -108,12 +115,21 @@ def calc_gap_closure(
         closures.append(closure)
 
     if not closures:
-        return {"mean_closure": None, "median_closure": None, "positive_closure_rate": None, "n": 0}
+        return {
+            "mean_closure": None,
+            "median_closure": None,
+            "positive_closure_rate": None,
+            "n": 0,
+        }
 
     closures_sorted = sorted(closures)
     n = len(closures)
     mid = n // 2
-    median = closures_sorted[mid] if n % 2 else (closures_sorted[mid - 1] + closures_sorted[mid]) / 2
+    median = (
+        closures_sorted[mid]
+        if n % 2
+        else (closures_sorted[mid - 1] + closures_sorted[mid]) / 2
+    )
 
     positive_count = sum(1 for c in closures if c > 0)
 
@@ -145,7 +161,12 @@ def calc_interval_score(
     """
     valid = _get_valid_records(records, horizon)
     if not valid:
-        return {"coverage_rate": None, "mean_interval_width": None, "pinball_loss": None, "n": 0}
+        return {
+            "coverage_rate": None,
+            "mean_interval_width": None,
+            "pinball_loss": None,
+            "n": 0,
+        }
 
     covered_count = 0
     widths = []
@@ -182,12 +203,19 @@ def calc_interval_score(
                 pinball_losses.append((1 - tau) * abs(error))
 
     if n_with_scenarios == 0:
-        return {"coverage_rate": None, "mean_interval_width": None, "pinball_loss": None, "n": 0}
+        return {
+            "coverage_rate": None,
+            "mean_interval_width": None,
+            "pinball_loss": None,
+            "n": 0,
+        }
 
     return {
         "coverage_rate": covered_count / n_with_scenarios,
         "mean_interval_width": sum(widths) / len(widths) if widths else None,
-        "pinball_loss": sum(pinball_losses) / len(pinball_losses) if pinball_losses else None,
+        "pinball_loss": sum(pinball_losses) / len(pinball_losses)
+        if pinball_losses
+        else None,
         "n": n_with_scenarios,
     }
 
@@ -238,7 +266,11 @@ def calc_calibration_curve(
         lo = i * bin_width
         hi = (i + 1) * bin_width
 
-        bin_obs = [(p, r) for p, r in observations if lo <= p < hi or (i == n_bins - 1 and p == hi)]
+        bin_obs = [
+            (p, r)
+            for p, r in observations
+            if lo <= p < hi or (i == n_bins - 1 and p == hi)
+        ]
         if len(bin_obs) < min_bin_samples:
             continue
 
@@ -246,13 +278,15 @@ def calc_calibration_curve(
         realized_count = sum(1 for _, r in bin_obs if r)
         realized_freq = realized_count / len(bin_obs)
 
-        bins.append({
-            "bin_label": f"{lo:.0f}-{hi:.0f}%",
-            "bin_lo": lo,
-            "bin_hi": hi,
-            "assigned_prob_mean": assigned_mean,
-            "realized_freq": realized_freq * 100,  # Convert to %
-            "count": len(bin_obs),
-        })
+        bins.append(
+            {
+                "bin_label": f"{lo:.0f}-{hi:.0f}%",
+                "bin_lo": lo,
+                "bin_hi": hi,
+                "assigned_prob_mean": assigned_mean,
+                "realized_freq": realized_freq * 100,  # Convert to %
+                "count": len(bin_obs),
+            }
+        )
 
     return bins if bins else None

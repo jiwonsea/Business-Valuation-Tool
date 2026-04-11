@@ -43,11 +43,13 @@ def search_company(query: str) -> list[dict]:
         name = entry.get("title", "")
         ticker = entry.get("ticker", "")
         if query_lower in name.lower() or query_lower == ticker.lower():
-            results.append({
-                "cik": str(entry["cik_str"]),
-                "ticker": ticker,
-                "name": name,
-            })
+            results.append(
+                {
+                    "cik": str(entry["cik_str"]),
+                    "ticker": ticker,
+                    "name": name,
+                }
+            )
     return results[:10]
 
 

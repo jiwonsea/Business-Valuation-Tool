@@ -35,17 +35,19 @@ def _parse_scenarios(scenario_values: dict) -> list[ScenarioSnapshot]:
     for code, vals in scenario_values.items():
         if not isinstance(vals, dict):
             continue
-        scenarios.append(ScenarioSnapshot(
-            code=code,
-            name=vals.get("name", code),
-            prob=vals.get("prob", 0),
-            pre_dlom=vals.get("pre_dlom", 0),
-            post_dlom=vals.get("post_dlom", 0),
-            growth_adj_pct=vals.get("growth_adj_pct", 0),
-            wacc_adj=vals.get("wacc_adj", 0),
-            terminal_growth_adj=vals.get("terminal_growth_adj", 0),
-            market_sentiment_pct=vals.get("market_sentiment_pct", 0),
-        ))
+        scenarios.append(
+            ScenarioSnapshot(
+                code=code,
+                name=vals.get("name", code),
+                prob=vals.get("prob", 0),
+                pre_dlom=vals.get("pre_dlom", 0),
+                post_dlom=vals.get("post_dlom", 0),
+                growth_adj_pct=vals.get("growth_adj_pct", 0),
+                wacc_adj=vals.get("wacc_adj", 0),
+                terminal_growth_adj=vals.get("terminal_growth_adj", 0),
+                market_sentiment_pct=vals.get("market_sentiment_pct", 0),
+            )
+        )
     return scenarios
 
 
@@ -129,7 +131,10 @@ def build_backtest_dataset(min_age_days: int = 90) -> list[BacktestRecord]:
                 prices = fetch_outcome_prices(ticker, market, ad)
                 update_data = {}
                 for horizon_key in ("price_t3m", "price_t6m", "price_t12m"):
-                    if outcome.get(horizon_key) is None and prices.get(horizon_key) is not None:
+                    if (
+                        outcome.get(horizon_key) is None
+                        and prices.get(horizon_key) is not None
+                    ):
                         update_data[horizon_key] = prices[horizon_key]
                         date_key = horizon_key.replace("price_", "date_")
                         d = prices.get(date_key)

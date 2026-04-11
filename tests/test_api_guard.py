@@ -13,9 +13,7 @@ import pytest
 from pipeline.api_guard import (
     ApiGuard,
     CircuitOpenError,
-    ProviderConfig,
     QuotaExceededError,
-    _is_retryable,
     api_guard,
     estimate_weekly_cost,
 )
@@ -94,7 +92,6 @@ class TestHardQuota:
         assert summary["dart"]["cache_hits"] == 10
 
     def test_persists_to_json_file(self, tmp_path: Path):
-        import pipeline.api_guard as mod
 
         guard = ApiGuard.get()
         guard.check("dart")
@@ -119,7 +116,9 @@ class TestHardQuota:
                 except Exception as e:
                     errors.append(e)
 
-        threads = [threading.Thread(target=_call_n_times, args=(20,)) for _ in range(10)]
+        threads = [
+            threading.Thread(target=_call_n_times, args=(20,)) for _ in range(10)
+        ]
         for t in threads:
             t.start()
         for t in threads:
@@ -236,7 +235,9 @@ class TestExponentialBackoff:
             call_count += 1
             if call_count < 3:
                 resp = httpx.Response(429, headers={"retry-after": "0"})
-                raise httpx.HTTPStatusError("rate limited", request=MagicMock(), response=resp)
+                raise httpx.HTTPStatusError(
+                    "rate limited", request=MagicMock(), response=resp
+                )
             return "ok"
 
         guard = ApiGuard.get()
@@ -255,7 +256,9 @@ class TestExponentialBackoff:
         @api_guard("dart")
         def always_429():
             resp = httpx.Response(429, headers={"retry-after": "42"})
-            raise httpx.HTTPStatusError("rate limited", request=MagicMock(), response=resp)
+            raise httpx.HTTPStatusError(
+                "rate limited", request=MagicMock(), response=resp
+            )
 
         guard = ApiGuard.get()
         guard.configure("dart", max_retries=1, base_delay=1.0)
@@ -277,7 +280,9 @@ class TestExponentialBackoff:
             nonlocal call_count
             call_count += 1
             resp = httpx.Response(400)
-            raise httpx.HTTPStatusError("bad request", request=MagicMock(), response=resp)
+            raise httpx.HTTPStatusError(
+                "bad request", request=MagicMock(), response=resp
+            )
 
         guard = ApiGuard.get()
         guard.configure("dart", max_retries=3)
@@ -300,7 +305,9 @@ class TestExponentialBackoff:
         guard = ApiGuard.get()
         guard.configure("dart", max_retries=3, base_delay=1.0, max_delay=100.0)
 
-        with patch("pipeline.api_guard.time.sleep", side_effect=lambda d: delays.append(d)):
+        with patch(
+            "pipeline.api_guard.time.sleep", side_effect=lambda d: delays.append(d)
+        ):
             with pytest.raises(httpx.HTTPStatusError):
                 always_fail()
 
@@ -324,7 +331,9 @@ class TestExponentialBackoff:
         guard = ApiGuard.get()
         guard.configure("dart", max_retries=5, base_delay=10.0, max_delay=15.0)
 
-        with patch("pipeline.api_guard.time.sleep", side_effect=lambda d: delays.append(d)):
+        with patch(
+            "pipeline.api_guard.time.sleep", side_effect=lambda d: delays.append(d)
+        ):
             with pytest.raises(httpx.HTTPStatusError):
                 always_fail()
 

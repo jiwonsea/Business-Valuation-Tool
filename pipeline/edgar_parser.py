@@ -85,8 +85,10 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
 
         # Collect 10-K entries for the target FY -> select latest end date
         candidates = [
-            e for e in usd_entries
-            if e.get("fp") == "FY" and e.get("fy") == year
+            e
+            for e in usd_entries
+            if e.get("fp") == "FY"
+            and e.get("fy") == year
             and e.get("form", "") in ("10-K", "10-K/A")
         ]
         if candidates:
@@ -95,8 +97,7 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
 
         # If no 10-K, use any FY entry (latest end date)
         fallbacks = [
-            e for e in usd_entries
-            if e.get("fp") == "FY" and e.get("fy") == year
+            e for e in usd_entries if e.get("fp") == "FY" and e.get("fy") == year
         ]
         if fallbacks:
             best = max(fallbacks, key=lambda e: e.get("end", ""))

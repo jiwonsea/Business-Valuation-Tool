@@ -12,13 +12,14 @@ from .units import per_share as _per_share
 @dataclass
 class NAVRawResult:
     """Return value of calc_nav."""
-    total_assets: int       # Total assets (book value)
-    revaluation: int        # Investment asset revaluation adjustment
-    adjusted_assets: int    # Adjusted total assets
+
+    total_assets: int  # Total assets (book value)
+    revaluation: int  # Investment asset revaluation adjustment
+    adjusted_assets: int  # Adjusted total assets
     total_liabilities: int  # Total liabilities
-    nav: int                # Net asset value (adjusted assets - liabilities)
+    nav: int  # Net asset value (adjusted assets - liabilities)
     shares: int
-    per_share: int          # NAV per share
+    per_share: int  # NAV per share
 
 
 def calc_nav(

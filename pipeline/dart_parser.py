@@ -8,9 +8,9 @@ import re
 # DART account names -> internal key mapping
 ACCOUNT_MAP = {
     # IS (Income Statement) -- Revenue (top-line)
-    "매출액": "revenue",           # Traditional format: Sales -> COGS -> Gross Profit
-    "수익(매출액)": "revenue",     # Variant notation
-    "영업수익": "revenue",         # IFRS by-function format: Operating Revenue - Operating Expense = Operating Income
+    "매출액": "revenue",  # Traditional format: Sales -> COGS -> Gross Profit
+    "수익(매출액)": "revenue",  # Variant notation
+    "영업수익": "revenue",  # IFRS by-function format: Operating Revenue - Operating Expense = Operating Income
     # IS -- Operating Income (Revenue - Costs)
     "영업이익": "op",
     "영업이익(손실)": "op",
@@ -102,7 +102,9 @@ def parse_noncash_from_xml(xml_text: str) -> dict[str, int]:
             if val_str.startswith("(") and val_str.endswith(")"):
                 val_str = val_str[1:-1]
             try:
-                result[key] = round(int(val_str) / 1_000_000)  # thousand KRW -> million KRW
+                result[key] = round(
+                    int(val_str) / 1_000_000
+                )  # thousand KRW -> million KRW
             except ValueError:
                 pass
 
@@ -116,8 +118,11 @@ def estimate_borrowings(items: list[dict]) -> dict[str, int]:
         {"gross_borr": int, "net_borr": int} (million KRW)
     """
     borrowing_keys = [
-        "단기차입금", "유동성장기부채", "장기차입금",
-        "사채", "유동성사채",
+        "단기차입금",
+        "유동성장기부채",
+        "장기차입금",
+        "사채",
+        "유동성사채",
     ]
     cash_keys = ["현금및현금성자산", "단기금융상품"]
 

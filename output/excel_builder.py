@@ -13,7 +13,7 @@ from pathlib import Path
 from openpyxl import Workbook
 
 from schemas.models import ValuationInput, ValuationResult
-from .sheets._ctx import Ctx, make_ctx
+from .sheets._ctx import make_ctx
 from .sheets.assumptions import sheet_assumptions
 from .sheets.financials import sheet_financials
 from .sheets.valuation import VALUATION_MAP, valuation_dcf
@@ -24,7 +24,9 @@ from .sheets.sensitivity import sheet_sensitivity
 from .sheets.dashboard import sheet_dashboard
 
 
-def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None = None) -> str:
+def export(
+    vi: ValuationInput, result: ValuationResult, output_dir: str | None = None
+) -> str:
     """Create and save Excel workbook."""
     wb = Workbook()
     # Remove default empty sheet (Assumptions becomes the first sheet)

@@ -10,6 +10,7 @@ from schemas.models import ValuationInput, ValuationResult
 @dataclass
 class Ctx:
     """Shared context across sheet functions."""
+
     vi: ValuationInput
     result: ValuationResult
     wb: Workbook
@@ -26,7 +27,9 @@ class Ctx:
 
 def make_ctx(vi: ValuationInput, result: ValuationResult, wb: Workbook) -> Ctx:
     return Ctx(
-        vi=vi, result=result, wb=wb,
+        vi=vi,
+        result=result,
+        wb=wb,
         method=result.primary_method,
         by=vi.base_year,
         seg_names={code: info["name"] for code, info in vi.segments.items()},

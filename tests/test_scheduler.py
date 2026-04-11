@@ -1,7 +1,7 @@
 """scheduler package tests — scoring + weekly_run orchestration."""
 
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from scheduler.scoring import (
     _stars,
@@ -60,9 +60,21 @@ class TestNewsMentions:
     def test_counts_title_and_description(self):
         now_str = datetime.now().isoformat()
         news = [
-            {"title": "삼성전자 실적 발표", "description": "삼성전자가 분기 실적을 공개", "pub_date": now_str},
-            {"title": "SK하이닉스 수주", "description": "HBM 관련 뉴스", "pub_date": now_str},
-            {"title": "반도체 시장 전망", "description": "삼성전자 포함 주요 기업", "pub_date": now_str},
+            {
+                "title": "삼성전자 실적 발표",
+                "description": "삼성전자가 분기 실적을 공개",
+                "pub_date": now_str,
+            },
+            {
+                "title": "SK하이닉스 수주",
+                "description": "HBM 관련 뉴스",
+                "pub_date": now_str,
+            },
+            {
+                "title": "반도체 시장 전망",
+                "description": "삼성전자 포함 주요 기업",
+                "pub_date": now_str,
+            },
         ]
         # Today's news -> weight ~1.0 each, 2 mentions -> ~2.0
         samsung = _count_news_mentions("삼성전자", news)
@@ -73,7 +85,13 @@ class TestNewsMentions:
 
     def test_case_insensitive(self):
         now_str = datetime.now().isoformat()
-        news = [{"title": "NVIDIA earnings", "description": "Nvidia beats", "pub_date": now_str}]
+        news = [
+            {
+                "title": "NVIDIA earnings",
+                "description": "Nvidia beats",
+                "pub_date": now_str,
+            }
+        ]
         result = _count_news_mentions("NVIDIA", news)
         assert 0.9 <= result <= 1.1
 
@@ -111,7 +129,7 @@ class TestScoreCompanies:
     def test_scores_and_sorts(self, mock_cap):
         mock_cap.side_effect = [
             50_000_000_000,  # Samsung: large cap
-            None,            # NoTicker: unknown
+            None,  # NoTicker: unknown
         ]
 
         companies = [
@@ -139,7 +157,9 @@ class TestScoreCompanies:
 
     @patch("scheduler.scoring._fetch_market_cap_usd", return_value=None)
     def test_no_news(self, _):
-        companies = [{"name": "TestCo", "ticker": "TEST", "reason": "r", "market": "US"}]
+        companies = [
+            {"name": "TestCo", "ticker": "TEST", "reason": "r", "market": "US"}
+        ]
         scored = score_companies(companies, [])
         assert len(scored) == 1
         assert scored[0]["news_count"] == 0.0
@@ -166,6 +186,7 @@ class TestWeeklyRun:
             }
 
             from scheduler.weekly_run import run_weekly
+
             result = run_weekly(markets=["KR"], dry_run=True)
 
         assert result["valuations"] == []
@@ -186,6 +207,7 @@ class TestWeeklyRun:
             ]
 
             from scheduler.weekly_run import run_weekly
+
             result = run_weekly(markets=["KR", "US"], dry_run=True)
 
         assert len(result["errors"]) == 1

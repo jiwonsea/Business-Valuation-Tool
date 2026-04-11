@@ -11,26 +11,28 @@ from dataclasses import dataclass
 @dataclass
 class RIMProjection:
     """Per-year RIM projection."""
+
     year: int
-    bv: int          # Beginning book value (display unit)
-    net_income: int   # Net income (display unit)
-    roe: float        # ROE (%)
-    ri: int           # Residual income (display unit)
-    pv_ri: int        # Present value of residual income
+    bv: int  # Beginning book value (display unit)
+    net_income: int  # Net income (display unit)
+    roe: float  # ROE (%)
+    ri: int  # Residual income (display unit)
+    pv_ri: int  # Present value of residual income
 
 
 @dataclass
 class RIMResult:
     """RIM valuation result."""
-    bv_current: int           # Current book value
-    ke: float                 # Cost of equity (%)
-    terminal_growth: float    # Terminal growth rate (%)
+
+    bv_current: int  # Current book value
+    ke: float  # Cost of equity (%)
+    terminal_growth: float  # Terminal growth rate (%)
     projections: list[RIMProjection]
-    pv_ri_sum: int            # Sum of PV of RI over projection period
-    terminal_ri: int          # RI terminal value
-    pv_terminal: int          # PV of terminal value
-    equity_value: int         # Total equity value (BV + PV(RI) + PV(TV))
-    per_share: int            # Per-share value
+    pv_ri_sum: int  # Sum of PV of RI over projection period
+    terminal_ri: int  # RI terminal value
+    pv_terminal: int  # PV of terminal value
+    equity_value: int  # Total equity value (BV + PV(RI) + PV(TV))
+    per_share: int  # Per-share value
 
 
 def calc_rim(
@@ -83,14 +85,16 @@ def calc_rim(
         pv_ri = round(ri / discount)
         pv_sum += pv_ri
 
-        projections.append(RIMProjection(
-            year=i + 1,
-            bv=bv,
-            net_income=ni,
-            roe=roe_pct,
-            ri=ri,
-            pv_ri=pv_ri,
-        ))
+        projections.append(
+            RIMProjection(
+                year=i + 1,
+                bv=bv,
+                net_income=ni,
+                roe=roe_pct,
+                ri=ri,
+                pv_ri=pv_ri,
+            )
+        )
 
         # Update book value: BV_{t} = BV_{t-1} + NI - Dividends
         dividends = round(ni * payout)

@@ -25,11 +25,22 @@ def _safe_numeric(val) -> float | None:
         return float(val)
     return None
 
+
 # ── Market-specific WACC parameter ranges (shared with engine/quality.py) ──
 
 WACC_RANGES = {
-    "KR": {"rf": (2.5, 5.0), "erp": (4.0, 8.0), "beta": (0.3, 2.0), "kd_pre": (2.0, 10.0)},
-    "US": {"rf": (3.0, 5.5), "erp": (4.0, 7.0), "beta": (0.3, 2.0), "kd_pre": (2.0, 8.0)},
+    "KR": {
+        "rf": (2.5, 5.0),
+        "erp": (4.0, 8.0),
+        "beta": (0.3, 2.0),
+        "kd_pre": (2.0, 10.0),
+    },
+    "US": {
+        "rf": (3.0, 5.5),
+        "erp": (4.0, 7.0),
+        "beta": (0.3, 2.0),
+        "kd_pre": (2.0, 8.0),
+    },
 }
 
 # ── Driver value ranges (shared with prompts._DRIVER_BOUNDS) ──
@@ -77,7 +88,9 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
                 warnings.append(f"Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
                 continue
             if ev < 0:
-                warnings.append(f"Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x, 적자 기업)")
+                warnings.append(
+                    f"Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x, 적자 기업)"
+                )
                 continue
             if ev < 0.5 or ev > 50:
                 warnings.append(f"Peer '{name}' 제외: EV/EBITDA 범위 이탈 ({ev:.1f}x)")
@@ -88,10 +101,14 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
         excluded_count = total_input - len(cleaned_peers)
         if excluded_count > 0:
             logger.warning(
-                "Peer 파싱 집계: %d/%d개 제외됨", excluded_count, total_input,
+                "Peer 파싱 집계: %d/%d개 제외됨",
+                excluded_count,
+                total_input,
             )
         if len(cleaned_peers) < 2:
-            warnings.append(f"유효 Peer 수 부족 ({len(cleaned_peers)}개, 최소 2개 권장)")
+            warnings.append(
+                f"유효 Peer 수 부족 ({len(cleaned_peers)}개, 최소 2개 권장)"
+            )
 
     # Handle segment-keyed format
     if "segments" in data and isinstance(data["segments"], dict):
@@ -104,13 +121,19 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
                 ev = _safe_numeric(peer.get("ev_ebitda"))
                 name = peer.get("name", "unknown")
                 if ev is None:
-                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)")
+                    warnings.append(
+                        f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA 값 누락 (파싱 에러)"
+                    )
                     continue
                 if ev < 0:
-                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x)")
+                    warnings.append(
+                        f"[{seg_code}] Peer '{name}' 제외: 음수 EV/EBITDA ({ev:.1f}x)"
+                    )
                     continue
                 if ev < 0.5 or ev > 50:
-                    warnings.append(f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA {ev:.1f}x 범위 이탈")
+                    warnings.append(
+                        f"[{seg_code}] Peer '{name}' 제외: EV/EBITDA {ev:.1f}x 범위 이탈"
+                    )
                     continue
                 cleaned.append(peer)
             seg_data["peers"] = cleaned
@@ -118,7 +141,10 @@ def validate_peers(peers_data: dict, market: str = "KR") -> tuple[dict, list[str
             seg_excluded = seg_total - len(cleaned)
             if seg_excluded > 0:
                 logger.warning(
-                    "[%s] Peer 파싱 집계: %d/%d개 제외됨", seg_code, seg_excluded, seg_total,
+                    "[%s] Peer 파싱 집계: %d/%d개 제외됨",
+                    seg_code,
+                    seg_excluded,
+                    seg_total,
                 )
             if len(cleaned) < 2:
                 warnings.append(f"[{seg_code}] 유효 Peer 수 부족 ({len(cleaned)}개)")
@@ -265,8 +291,12 @@ def validate_scenarios(scenarios_data: dict | list) -> tuple[dict | list, list[s
         active = s.get("active_drivers", {})
         seg_mult = tuple(sorted((s.get("segment_multiples") or {}).items()))
         seg_ebitda = tuple(sorted((s.get("segment_ebitda") or {}).items()))
-        sig = (tuple(sorted(drivers.items())) + tuple(sorted((active or {}).items()))
-               + seg_mult + seg_ebitda)
+        sig = (
+            tuple(sorted(drivers.items()))
+            + tuple(sorted((active or {}).items()))
+            + seg_mult
+            + seg_ebitda
+        )
         driver_signatures.append(sig)
     if len(set(driver_signatures)) == 1 and len(items) > 1:
         warnings.append("모든 시나리오의 드라이버가 동일합니다 — 시나리오 분화 부족")
@@ -384,7 +414,9 @@ def validate_news_drivers(news_drivers: list[dict]) -> tuple[list[dict], list[st
     return drivers, warnings
 
 
-def _clamp(data: dict, key: str, bounds: tuple[float, float], label: str, warnings: list[str]):
+def _clamp(
+    data: dict, key: str, bounds: tuple[float, float], label: str, warnings: list[str]
+):
     """Clamp a numeric value to bounds, appending a warning if clamped."""
     if key not in data or data[key] is None:
         return
@@ -399,6 +431,7 @@ def _clamp(data: dict, key: str, bounds: tuple[float, float], label: str, warnin
 
 
 # ── Market Signal-Aware Validation (Phase 4) ──
+
 
 def validate_scenarios_with_signals(
     scenarios: list[dict],

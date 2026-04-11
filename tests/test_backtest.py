@@ -54,7 +54,9 @@ def _make_record(
     )
 
 
-def _make_scenarios(values: list[tuple[str, float, int, int]]) -> list[ScenarioSnapshot]:
+def _make_scenarios(
+    values: list[tuple[str, float, int, int]],
+) -> list[ScenarioSnapshot]:
     """Create scenario snapshots from (code, prob, pre_dlom, post_dlom) tuples."""
     return [
         ScenarioSnapshot(code=code, name=code, prob=prob, pre_dlom=pre, post_dlom=post)
@@ -143,8 +145,10 @@ class TestGapClosure:
     def test_full_convergence(self):
         """Price moves from t0 to exactly predicted → closure = 1.0."""
         r = _make_record(
-            predicted_value=100, unit_multiplier=1,
-            price_at_prediction=80.0, price_t6m=100.0,
+            predicted_value=100,
+            unit_multiplier=1,
+            price_at_prediction=80.0,
+            price_t6m=100.0,
         )
         result = calc_gap_closure([r], "t6m")
         assert result["mean_closure"] == pytest.approx(1.0)
@@ -153,8 +157,10 @@ class TestGapClosure:
     def test_no_movement(self):
         """Price unchanged → closure = 0.0."""
         r = _make_record(
-            predicted_value=100, unit_multiplier=1,
-            price_at_prediction=80.0, price_t6m=80.0,
+            predicted_value=100,
+            unit_multiplier=1,
+            price_at_prediction=80.0,
+            price_t6m=80.0,
         )
         result = calc_gap_closure([r], "t6m")
         assert result["mean_closure"] == pytest.approx(0.0)
@@ -163,8 +169,10 @@ class TestGapClosure:
     def test_opposite_direction(self):
         """Price moves away from predicted → closure < 0."""
         r = _make_record(
-            predicted_value=100, unit_multiplier=1,
-            price_at_prediction=80.0, price_t6m=70.0,
+            predicted_value=100,
+            unit_multiplier=1,
+            price_at_prediction=80.0,
+            price_t6m=70.0,
         )
         result = calc_gap_closure([r], "t6m")
         # closure = (70-80)/(100-80) = -10/20 = -0.5
@@ -175,8 +183,10 @@ class TestGapClosure:
         # Predicted=100, T0=80 (gap_ratio>0, undervalued)
         # Market falls to 85 — gap still closed partially
         r = _make_record(
-            predicted_value=100, unit_multiplier=1,
-            price_at_prediction=80.0, price_t6m=85.0,
+            predicted_value=100,
+            unit_multiplier=1,
+            price_at_prediction=80.0,
+            price_t6m=85.0,
         )
         result = calc_gap_closure([r], "t6m")
         # closure = (85-80)/(100-80) = 5/20 = 0.25 > 0 → correct signal
@@ -186,8 +196,10 @@ class TestGapClosure:
     def test_overvaluation_gap_closure(self):
         """Overvalued prediction: predicted < t0. Price drops → gap closes."""
         r = _make_record(
-            predicted_value=60, unit_multiplier=1,
-            price_at_prediction=80.0, price_t6m=70.0,
+            predicted_value=60,
+            unit_multiplier=1,
+            price_at_prediction=80.0,
+            price_t6m=70.0,
         )
         result = calc_gap_closure([r], "t6m")
         # gap = 60 - 80 = -20, movement = 70 - 80 = -10
@@ -201,8 +213,10 @@ class TestGapClosure:
     def test_no_gap_skipped(self):
         """When predicted == t0, there's no gap → record skipped."""
         r = _make_record(
-            predicted_value=100, unit_multiplier=1,
-            price_at_prediction=100.0, price_t6m=110.0,
+            predicted_value=100,
+            unit_multiplier=1,
+            price_at_prediction=100.0,
+            price_t6m=110.0,
         )
         result = calc_gap_closure([r], "t6m")
         assert result["n"] == 0  # Skipped due to zero gap
@@ -214,37 +228,46 @@ class TestGapClosure:
 class TestIntervalScore:
     def test_actual_inside_range(self):
         """Actual price within scenario range → covered."""
-        scenarios = _make_scenarios([
-            ("Bear", 25, 70, 70),
-            ("Base", 50, 100, 100),
-            ("Bull", 25, 130, 130),
-        ])
-        r = _make_record(predicted_value=100, unit_multiplier=1,
-                         price_t6m=95.0, scenarios=scenarios)
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 25, 70, 70),
+                ("Base", 50, 100, 100),
+                ("Bull", 25, 130, 130),
+            ]
+        )
+        r = _make_record(
+            predicted_value=100, unit_multiplier=1, price_t6m=95.0, scenarios=scenarios
+        )
         result = calc_interval_score([r], "t6m")
         assert result["coverage_rate"] == pytest.approx(1.0)
         assert result["n"] == 1
 
     def test_actual_outside_range(self):
         """Actual price outside scenario range → not covered."""
-        scenarios = _make_scenarios([
-            ("Bear", 25, 70, 70),
-            ("Base", 50, 100, 100),
-            ("Bull", 25, 130, 130),
-        ])
-        r = _make_record(predicted_value=100, unit_multiplier=1,
-                         price_t6m=150.0, scenarios=scenarios)
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 25, 70, 70),
+                ("Base", 50, 100, 100),
+                ("Bull", 25, 130, 130),
+            ]
+        )
+        r = _make_record(
+            predicted_value=100, unit_multiplier=1, price_t6m=150.0, scenarios=scenarios
+        )
         result = calc_interval_score([r], "t6m")
         assert result["coverage_rate"] == pytest.approx(0.0)
 
     def test_interval_width(self):
         """Width = (max - min) / predicted."""
-        scenarios = _make_scenarios([
-            ("Bear", 25, 80, 80),
-            ("Bull", 75, 120, 120),
-        ])
-        r = _make_record(predicted_value=100, unit_multiplier=1,
-                         price_t6m=100.0, scenarios=scenarios)
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 25, 80, 80),
+                ("Bull", 75, 120, 120),
+            ]
+        )
+        r = _make_record(
+            predicted_value=100, unit_multiplier=1, price_t6m=100.0, scenarios=scenarios
+        )
         result = calc_interval_score([r], "t6m")
         # width = (120-80)/100 = 0.4
         assert result["mean_interval_width"] == pytest.approx(0.4)
@@ -257,15 +280,20 @@ class TestIntervalScore:
 
     def test_kr_unit_multiplier_applied(self):
         """Scenario values multiplied by unit_multiplier for range comparison."""
-        scenarios = _make_scenarios([
-            ("Bear", 25, 40, 40),
-            ("Base", 50, 50, 50),
-            ("Bull", 25, 60, 60),
-        ])
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 25, 40, 40),
+                ("Base", 50, 50, 50),
+                ("Bull", 25, 60, 60),
+            ]
+        )
         # unit_multiplier=1M → range = [40M, 60M], actual = 45M → covered
         r = _make_record(
-            predicted_value=50, unit_multiplier=1_000_000,
-            price_t6m=45_000_000.0, scenarios=scenarios, currency="KRW",
+            predicted_value=50,
+            unit_multiplier=1_000_000,
+            price_t6m=45_000_000.0,
+            scenarios=scenarios,
+            currency="KRW",
         )
         result = calc_interval_score([r], "t6m")
         assert result["coverage_rate"] == pytest.approx(1.0)
@@ -277,14 +305,20 @@ class TestIntervalScore:
 class TestCalibrationCurve:
     def test_insufficient_data(self):
         """Fewer than 30 observations → returns None."""
-        scenarios = _make_scenarios([
-            ("Bear", 20, 80, 80),
-            ("Base", 50, 100, 100),
-            ("Bull", 30, 120, 120),
-        ])
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 20, 80, 80),
+                ("Base", 50, 100, 100),
+                ("Bull", 30, 120, 120),
+            ]
+        )
         records = [
-            _make_record(predicted_value=100, unit_multiplier=1,
-                         price_t6m=float(95 + i), scenarios=scenarios)
+            _make_record(
+                predicted_value=100,
+                unit_multiplier=1,
+                price_t6m=float(95 + i),
+                scenarios=scenarios,
+            )
             for i in range(5)
         ]
         result = calc_calibration_curve(records, "t6m", min_total_observations=30)
@@ -292,15 +326,21 @@ class TestCalibrationCurve:
 
     def test_sufficient_data_returns_bins(self):
         """With enough data, returns calibration bins."""
-        scenarios = _make_scenarios([
-            ("Bear", 15, 80, 80),
-            ("Base", 50, 100, 100),
-            ("Bull", 35, 120, 120),
-        ])
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 15, 80, 80),
+                ("Base", 50, 100, 100),
+                ("Bull", 35, 120, 120),
+            ]
+        )
         # 15 records × 3 scenarios = 45 observations
         records = [
-            _make_record(predicted_value=100, unit_multiplier=1,
-                         price_t6m=float(95 + i % 10), scenarios=scenarios)
+            _make_record(
+                predicted_value=100,
+                unit_multiplier=1,
+                price_t6m=float(95 + i % 10),
+                scenarios=scenarios,
+            )
             for i in range(15)
         ]
         result = calc_calibration_curve(
@@ -332,10 +372,12 @@ class TestBacktestRecord:
         assert r3.is_listed is False
 
     def test_scenario_range_native(self):
-        scenarios = _make_scenarios([
-            ("Bear", 25, 70, 70),
-            ("Bull", 75, 130, 130),
-        ])
+        scenarios = _make_scenarios(
+            [
+                ("Bear", 25, 70, 70),
+                ("Bull", 75, 130, 130),
+            ]
+        )
         r = _make_record(unit_multiplier=100, scenarios=scenarios)
         lo, hi = r.scenario_range_native()
         assert lo == 7000
@@ -358,11 +400,13 @@ class TestBacktestRecord:
 class TestPriceTrackerHelpers:
     def test_resolve_ticker_us(self):
         from backtest.price_tracker import _resolve_ticker
+
         assert _resolve_ticker("AAPL", "US") == "AAPL"
 
     def test_resolve_ticker_kr_fallback(self):
         """KR ticker without pipeline module falls back to .KS suffix."""
         from backtest.price_tracker import _resolve_ticker
+
         # If resolve_kr_ticker fails, should fallback to .KS
         result = _resolve_ticker("005930", "KR")
         assert result.endswith((".KS", ".KQ"))

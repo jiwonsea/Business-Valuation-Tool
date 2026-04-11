@@ -72,23 +72,33 @@ def get_market_cap(ticker: str) -> int | None:
 # OTC Markets exchange codes (based on Yahoo Finance exchangeName / exchange)
 _OTC_EXCHANGES = {
     # By exchangeName
-    "PNK",        # OTC Pink Sheets
-    "PK",         # OTC Pink
-    "OBB",        # OTC Bulletin Board
-    "OTC",        # OTC general
-    "NCM",        # NASDAQ Capital Market (some small-caps, but regulated exchange)
+    "PNK",  # OTC Pink Sheets
+    "PK",  # OTC Pink
+    "OBB",  # OTC Bulletin Board
+    "OTC",  # OTC general
+    "NCM",  # NASDAQ Capital Market (some small-caps, but regulated exchange)
     # By exchange code
     "PNK",
     "OBB",
-    "OQX",        # OTCQX
-    "OQB",        # OTCQB
+    "OQX",  # OTCQX
+    "OQB",  # OTCQB
 }
 
 # Major regulated exchanges
 _MAJOR_EXCHANGES = {
-    "NYQ", "NYSE", "NMS", "NAS", "NASDAQ", "NGM",  # NYSE, NASDAQ
-    "ASE", "AMEX", "BTS", "BATS",                    # AMEX, BATS
-    "PCX", "ARCA", "NYSEArca",                        # NYSE Arca
+    "NYQ",
+    "NYSE",
+    "NMS",
+    "NAS",
+    "NASDAQ",
+    "NGM",  # NYSE, NASDAQ
+    "ASE",
+    "AMEX",
+    "BTS",
+    "BATS",  # AMEX, BATS
+    "PCX",
+    "ARCA",
+    "NYSEArca",  # NYSE Arca
 }
 
 
@@ -144,7 +154,7 @@ def get_quote_summary(ticker: str) -> dict | None:
 
     item = qr[0]
     stats = item.get("defaultKeyStatistics", {})
-    fin = item.get("financialData", {})
+    item.get("financialData", {})
     price_data = item.get("price", {})
 
     def _raw(d: dict, key: str):

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from schemas.models import DAAllocation, DCFParams, SensitivityRow
-from .sotp import calc_sotp
 from .dcf import calc_dcf
 from .ddm import calc_ddm
 from .rim import calc_rim
@@ -12,9 +11,12 @@ from .rnpv import calc_rnpv
 from .units import per_share
 
 
-def _seg_metric(code: str, alloc: DAAllocation | None,
-                 segments_info: dict[str, dict] | None,
-                 revenue_by_seg: dict[str, int] | None) -> int:
+def _seg_metric(
+    code: str,
+    alloc: DAAllocation | None,
+    segments_info: dict[str, dict] | None,
+    revenue_by_seg: dict[str, int] | None,
+) -> int:
     """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise.
 
     P/BV and P/E segments return 0 (equity-based metrics not supported in SOTP sensitivity).
@@ -73,8 +75,20 @@ def sensitivity_multiples(
     deductions = net_debt + eco_frontier + cps_repay + rcps_repay + buyback
 
     rows = []
-    row_metric = _seg_metric(row_seg, base_ebitda_by_seg.get(row_seg), segments_info, revenue_by_seg) if row_seg in base_ebitda_by_seg else 0
-    col_metric = _seg_metric(col_seg, base_ebitda_by_seg.get(col_seg), segments_info, revenue_by_seg) if col_seg in base_ebitda_by_seg else 0
+    row_metric = (
+        _seg_metric(
+            row_seg, base_ebitda_by_seg.get(row_seg), segments_info, revenue_by_seg
+        )
+        if row_seg in base_ebitda_by_seg
+        else 0
+    )
+    col_metric = (
+        _seg_metric(
+            col_seg, base_ebitda_by_seg.get(col_seg), segments_info, revenue_by_seg
+        )
+        if col_seg in base_ebitda_by_seg
+        else 0
+    )
     same_seg = row_seg == col_seg
     for row_m in row_range:
         row_ev = round(row_metric * row_m)
@@ -162,8 +176,9 @@ def sensitivity_dcf(
 
     # Compute FCFF projections once (using actual WACC; projections are WACC-independent)
     seed_wacc = wacc_base if wacc_base is not None else wacc_range[len(wacc_range) // 2]
-    base_result = calc_dcf(ebitda_base, da_base, revenue_base,
-                           seed_wacc, params, base_year)
+    base_result = calc_dcf(
+        ebitda_base, da_base, revenue_base, seed_wacc, params, base_year
+    )
     fcffs = [p.fcff for p in base_result.projections]
     n = len(fcffs)
     last_fcff = fcffs[-1]
@@ -192,7 +207,9 @@ def sensitivity_dcf(
             tv = round(terminal_fcff / (wacc - tg_dec))
             pv_tv = round(tv / (1 + wacc) ** n)
             ev = pv_fcff + pv_tv
-            value = per_share(ev - net_debt, unit_multiplier, shares) if shares > 0 else ev
+            value = (
+                per_share(ev - net_debt, unit_multiplier, shares) if shares > 0 else ev
+            )
             rows.append(SensitivityRow(row_val=w, col_val=tg, value=value))
     return rows, wacc_range, tg_range
 
@@ -238,16 +255,23 @@ def sensitivity_rim(
     if ke_range is None:
         ke_range = [ke_base + d for d in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]]
     if tg_range is None:
-        tg_range = [terminal_growth_base + d for d in [-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]]
+        tg_range = [
+            terminal_growth_base + d for d in [-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]
+        ]
 
     rows = []
     for ke in ke_range:
         for tg in tg_range:
             try:
-                r = calc_rim(book_value, roe_forecasts, ke,
-                             terminal_growth=tg, shares=shares,
-                             unit_multiplier=unit_multiplier,
-                             payout_ratio=payout_ratio)
+                r = calc_rim(
+                    book_value,
+                    roe_forecasts,
+                    ke,
+                    terminal_growth=tg,
+                    shares=shares,
+                    unit_multiplier=unit_multiplier,
+                    payout_ratio=payout_ratio,
+                )
                 v = r.per_share
             except ValueError:
                 v = 0
@@ -273,7 +297,9 @@ def sensitivity_nav(
 
     rows = []
     for reval in reval_range:
-        r = calc_nav(total_assets, total_liabilities, shares, int(reval), unit_multiplier)
+        r = calc_nav(
+            total_assets, total_liabilities, shares, int(reval), unit_multiplier
+        )
         for disc in discount_range:
             ps = round(r.per_share * (1 - disc / 100))
             rows.append(SensitivityRow(row_val=reval, col_val=disc, value=ps))
@@ -343,7 +369,9 @@ def sensitivity_rnpv(
             adj = []
             for d in pipeline:
                 ad = dict(d)
-                base_pos = d.get("success_prob") or PHASE_POS.get(d.get("phase", "preclinical"), 0.10)
+                base_pos = d.get("success_prob") or PHASE_POS.get(
+                    d.get("phase", "preclinical"), 0.10
+                )
                 ad["success_prob"] = min(base_pos * ps, 1.0)
                 adj.append(ad)
             result = calc_rnpv(
@@ -392,7 +420,10 @@ def sensitivity_rnpv_tornado(
     tornado = []
     for i, drug in enumerate(pipeline):
         results = {}
-        for label, mult in [("low", 1 - variation_pct / 100), ("high", 1 + variation_pct / 100)]:
+        for label, mult in [
+            ("low", 1 - variation_pct / 100),
+            ("high", 1 + variation_pct / 100),
+        ]:
             adj = [dict(d) for d in pipeline]
             adj[i]["peak_sales"] = round(drug.get("peak_sales", 0) * mult)
             if drug.get("existing_revenue", 0) > 0:
@@ -406,16 +437,24 @@ def sensitivity_rnpv_tornado(
                 tax_rate=tax_rate,
             )
             eq = r.enterprise_value - net_debt
-            results[label] = per_share(eq, unit_multiplier, shares) if shares > 0 else eq
+            results[label] = (
+                per_share(eq, unit_multiplier, shares) if shares > 0 else eq
+            )
 
-        tornado.append({
-            "name": drug["name"],
-            "base_value": base_ps,
-            "low_value": results["low"],
-            "high_value": results["high"],
-            "low_peak": round(drug.get("peak_sales", 0) * (1 - variation_pct / 100)),
-            "high_peak": round(drug.get("peak_sales", 0) * (1 + variation_pct / 100)),
-        })
+        tornado.append(
+            {
+                "name": drug["name"],
+                "base_value": base_ps,
+                "low_value": results["low"],
+                "high_value": results["high"],
+                "low_peak": round(
+                    drug.get("peak_sales", 0) * (1 - variation_pct / 100)
+                ),
+                "high_peak": round(
+                    drug.get("peak_sales", 0) * (1 + variation_pct / 100)
+                ),
+            }
+        )
 
     # Sort by impact magnitude (largest swing first)
     tornado.sort(key=lambda x: abs(x["high_value"] - x["low_value"]), reverse=True)

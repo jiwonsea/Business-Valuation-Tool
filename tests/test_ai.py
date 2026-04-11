@@ -78,7 +78,10 @@ class TestTwoPassPrompts:
     def test_classify_prompt_has_required_sections(self):
         """Pass 1 prompt includes scenario_draft output format."""
         prompt = prompt_scenario_classify(
-            "삼성전자", "상장", "금리 인상 우려", "dcf_primary",
+            "삼성전자",
+            "상장",
+            "금리 인상 우려",
+            "dcf_primary",
         )
         assert "scenario_draft" in prompt
         assert "prob_range" in prompt
@@ -88,7 +91,10 @@ class TestTwoPassPrompts:
     def test_classify_prompt_no_news(self):
         """Pass 1 prompt works without news."""
         prompt = prompt_scenario_classify(
-            "삼성전자", "상장", "", "dcf_primary",
+            "삼성전자",
+            "상장",
+            "",
+            "dcf_primary",
         )
         assert "scenario_draft" in prompt
         assert "news_issues" not in prompt
@@ -96,7 +102,10 @@ class TestTwoPassPrompts:
     def test_classify_prompt_includes_driver_names(self):
         """Pass 1 prompt lists available drivers for the method."""
         prompt = prompt_scenario_classify(
-            "삼성전자", "상장", "", "dcf_primary",
+            "삼성전자",
+            "상장",
+            "",
+            "dcf_primary",
         )
         assert "growth_adj_pct" in prompt
         assert "wacc_adj" in prompt
@@ -104,7 +113,10 @@ class TestTwoPassPrompts:
     def test_classify_prompt_ddm_method(self):
         """Pass 1 prompt adapts drivers to DDM method."""
         prompt = prompt_scenario_classify(
-            "삼성전자", "상장", "", "ddm",
+            "삼성전자",
+            "상장",
+            "",
+            "ddm",
         )
         assert "ddm_growth" in prompt
         # DDM driver list should not include DCF-specific drivers
@@ -114,14 +126,26 @@ class TestTwoPassPrompts:
         """Pass 2 prompt embeds the classification draft."""
         draft = {
             "scenario_draft": [
-                {"code": "Bull", "name": "Bull Case", "prob_range": [25, 35],
-                 "driver_directions": {"growth_adj_pct": "up"}},
-                {"code": "Base", "name": "Base Case", "prob_range": [35, 45],
-                 "driver_directions": {}},
+                {
+                    "code": "Bull",
+                    "name": "Bull Case",
+                    "prob_range": [25, 35],
+                    "driver_directions": {"growth_adj_pct": "up"},
+                },
+                {
+                    "code": "Base",
+                    "name": "Base Case",
+                    "prob_range": [35, 45],
+                    "driver_directions": {},
+                },
             ]
         }
         prompt = prompt_scenario_refine(
-            "삼성전자", "상장", "", draft, "dcf_primary",
+            "삼성전자",
+            "상장",
+            "",
+            draft,
+            "dcf_primary",
         )
         assert "classification_draft" in prompt
         assert "Bull Case" in prompt
@@ -131,7 +155,11 @@ class TestTwoPassPrompts:
         """Pass 2 prompt includes news and news_driver format when key_issues given."""
         draft = {"scenario_draft": []}
         prompt = prompt_scenario_refine(
-            "삼성전자", "상장", "금리 인상 관련 뉴스", draft, "dcf_primary",
+            "삼성전자",
+            "상장",
+            "금리 인상 관련 뉴스",
+            draft,
+            "dcf_primary",
         )
         assert "news_issues" in prompt
         assert "active_drivers" in prompt
@@ -140,7 +168,11 @@ class TestTwoPassPrompts:
         """Pass 2 prompt includes driver range table."""
         draft = {"scenario_draft": []}
         prompt = prompt_scenario_refine(
-            "삼성전자", "상장", "", draft, "dcf_primary",
+            "삼성전자",
+            "상장",
+            "",
+            draft,
+            "dcf_primary",
         )
         assert "driver_ranges" in prompt
         assert "[-50, 100]" in prompt  # growth_adj_pct range

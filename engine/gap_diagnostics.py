@@ -19,37 +19,40 @@ logger = logging.getLogger(__name__)
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from schemas.models import DCFParams, WACCParams
+    from schemas.models import DCFParams
 
 
-GAP_THRESHOLD = 0.20   # 20%: trigger diagnostics above this |gap_ratio|
+GAP_THRESHOLD = 0.20  # 20%: trigger diagnostics above this |gap_ratio|
 
 # Bounds for binary-search solvers
-_WACC_LO, _WACC_HI     = 2.0, 25.0   # %
-_TGR_LO,  _TGR_HI      = 0.0, 5.0    # % (TGR < WACC enforced inside solver)
-_GMULT_LO, _GMULT_HI   = 0.3, 8.0    # multiplier applied to every growth rate
-_TOLERANCE              = 1e-4         # convergence (relative EV error)
-_MAX_ITER               = 60
+_WACC_LO, _WACC_HI = 2.0, 25.0  # %
+_TGR_LO, _TGR_HI = 0.0, 5.0  # % (TGR < WACC enforced inside solver)
+_GMULT_LO, _GMULT_HI = 0.3, 8.0  # multiplier applied to every growth rate
+_TOLERANCE = 1e-4  # convergence (relative EV error)
+_MAX_ITER = 60
 
 
 @dataclass
 class GapDiagnostic:
     """Structured gap analysis result."""
-    gap_pct: float          # (intrinsic - market) / market * 100  (negative = market premium)
-    direction: str          # "market_premium" | "market_discount"
+
+    gap_pct: float  # (intrinsic - market) / market * 100  (negative = market premium)
+    direction: str  # "market_premium" | "market_discount"
 
     # Reverse-DCF implied parameters
-    implied_wacc: float | None = None          # % that reconciles with market price
-    implied_tgr: float | None = None           # % that reconciles with market price
-    implied_growth_mult: float | None = None   # multiplier on all growth rates
+    implied_wacc: float | None = None  # % that reconciles with market price
+    implied_tgr: float | None = None  # % that reconciles with market price
+    implied_growth_mult: float | None = None  # multiplier on all growth rates
 
     # Diagnosis
-    category: str = ""          # see _CATEGORIES below
-    explanation: str = ""       # Korean explanation for console/email
+    category: str = ""  # see _CATEGORIES below
+    explanation: str = ""  # Korean explanation for console/email
     suggestions: list[str] = field(default_factory=list)  # actionable YAML edits
 
     # Feasibility flag
-    reconcilable: bool = True   # False = even max assumptions can't bridge gap (optionality)
+    reconcilable: bool = (
+        True  # False = even max assumptions can't bridge gap (optionality)
+    )
 
 
 # ── Gap Category Definitions ──────────────────────────────────────────────────
@@ -95,6 +98,7 @@ _CATEGORIES = {
 
 # ── Reverse-DCF Solvers ───────────────────────────────────────────────────────
 
+
 def _eval_dcf_ev(
     ebitda_base: int,
     da_base: int,
@@ -115,7 +119,9 @@ def _eval_dcf_ev(
     return float(result.ev_dcf)
 
 
-def _binary_search(f, lo: float, hi: float, target: float, tol: float = _TOLERANCE) -> float | None:
+def _binary_search(
+    f, lo: float, hi: float, target: float, tol: float = _TOLERANCE
+) -> float | None:
     """Binary search for x in [lo, hi] where f(x) == target (monotone f).
 
     Returns None if the target is outside [f(hi), f(lo)].
@@ -173,7 +179,9 @@ def solve_implied_wacc(
         try:
             return _eval_dcf_ev(ebitda_base, da_base, revenue_base, wacc, params)
         except (ValueError, ZeroDivisionError) as e:
-            logger.warning("solve_implied_wacc: DCF eval failed at wacc=%.2f: %s", wacc, e)
+            logger.warning(
+                "solve_implied_wacc: DCF eval failed at wacc=%.2f: %s", wacc, e
+            )
             return 0.0
 
     return _binary_search(f, lo=lo, hi=_WACC_HI, target=target_ev)
@@ -230,13 +238,16 @@ def solve_implied_growth_multiplier(
         try:
             return _eval_dcf_ev(ebitda_base, da_base, revenue_base, wacc_pct, p)
         except (ValueError, ZeroDivisionError) as e:
-            logger.warning("solve_implied_growth: DCF eval failed at mult=%.2f: %s", mult, e)
+            logger.warning(
+                "solve_implied_growth: DCF eval failed at mult=%.2f: %s", mult, e
+            )
             return 0.0
 
     return _binary_search(f, lo=_GMULT_LO, hi=_GMULT_HI, target=target_ev)
 
 
 # ── Main Diagnostic Function ──────────────────────────────────────────────────
+
 
 def diagnose_gap(
     gap_ratio: float,
@@ -277,23 +288,33 @@ def diagnose_gap(
         # Market > intrinsic: solve for parameters that bridge gap upward
         impl_wacc = solve_implied_wacc(
             target_ev=market_ev,
-            ebitda_base=ebitda_base, da_base=da_base, revenue_base=revenue_base,
+            ebitda_base=ebitda_base,
+            da_base=da_base,
+            revenue_base=revenue_base,
             params=params,
         )
         impl_tgr = solve_implied_tgr(
             target_ev=market_ev,
-            ebitda_base=ebitda_base, da_base=da_base, revenue_base=revenue_base,
-            wacc_pct=wacc_pct, params=params,
+            ebitda_base=ebitda_base,
+            da_base=da_base,
+            revenue_base=revenue_base,
+            wacc_pct=wacc_pct,
+            params=params,
         )
         impl_gmult = solve_implied_growth_multiplier(
             target_ev=market_ev,
-            ebitda_base=ebitda_base, da_base=da_base, revenue_base=revenue_base,
-            wacc_pct=wacc_pct, params=params,
+            ebitda_base=ebitda_base,
+            da_base=da_base,
+            revenue_base=revenue_base,
+            wacc_pct=wacc_pct,
+            params=params,
         )
 
         diag.implied_wacc = round(impl_wacc, 2) if impl_wacc is not None else None
         diag.implied_tgr = round(impl_tgr, 2) if impl_tgr is not None else None
-        diag.implied_growth_mult = round(impl_gmult, 2) if impl_gmult is not None else None
+        diag.implied_growth_mult = (
+            round(impl_gmult, 2) if impl_gmult is not None else None
+        )
 
         # Categorize
         wacc_delta = wacc_pct - (impl_wacc or wacc_pct)
@@ -320,7 +341,9 @@ def diagnose_gap(
             diag.suggestions = [
                 f"wacc_params 검토: 현재 WACC={wacc_pct:.1f}%, 시장 내재 WACC≈{impl_wacc:.1f}%",
                 "베타(bu) 또는 ERP를 업계 컨센서스와 비교해 재보정",
-                f"또는 TGR을 현재보다 높게 설정 (시장 내재 TGR≈{impl_tgr:.1f}%" if impl_tgr else "",
+                f"또는 TGR을 현재보다 높게 설정 (시장 내재 TGR≈{impl_tgr:.1f}%"
+                if impl_tgr
+                else "",
             ]
             diag.suggestions = [s for s in diag.suggestions if s]
 
@@ -340,26 +363,24 @@ def diagnose_gap(
         elif impl_gmult is not None and impl_gmult >= 1.5:
             # Growth needs to be boosted substantially
             diag.category = "growth_underestimated"
-            diag.explanation = _CATEGORIES["growth_underestimated"]["explanation"].format(
-                mult=impl_gmult,
-                tgr=impl_tgr if impl_tgr is not None else 0
-            )
+            diag.explanation = _CATEGORIES["growth_underestimated"][
+                "explanation"
+            ].format(mult=impl_gmult, tgr=impl_tgr if impl_tgr is not None else 0)
             diag.suggestions = [
                 f"성장률 재검토 필요: 시장 내재 성장배수={impl_gmult:.1f}x",
                 "컨센서스 매출 성장률(Bloomberg/FactSet) 반영 고려",
-                f"dcf_params.ebitda_growth_rates를 현재 대비 ~{(impl_gmult-1)*100:.0f}% 상향 검토",
-                f"또는 신시장 진입·M&A 효과를 시나리오 growth_adj_pct에 반영",
+                f"dcf_params.ebitda_growth_rates를 현재 대비 ~{(impl_gmult - 1) * 100:.0f}% 상향 검토",
+                "또는 신시장 진입·M&A 효과를 시나리오 growth_adj_pct에 반영",
             ]
 
         else:
             # Moderate gap, some combination works
             diag.category = "growth_underestimated"
-            diag.explanation = _CATEGORIES["growth_underestimated"]["explanation"].format(
-                mult=impl_gmult or 1.0,
-                tgr=impl_tgr or 0
-            )
+            diag.explanation = _CATEGORIES["growth_underestimated"][
+                "explanation"
+            ].format(mult=impl_gmult or 1.0, tgr=impl_tgr or 0)
             diag.suggestions = [
-                f"성장률 소폭 상향 또는 WACC 재검토로 괴리 해소 가능",
+                "성장률 소폭 상향 또는 WACC 재검토로 괴리 해소 가능",
                 f"시장 내재 WACC≈{impl_wacc:.1f}%" if impl_wacc else "",
                 f"시장 내재 TGR≈{impl_tgr:.1f}%" if impl_tgr else "",
             ]
@@ -374,12 +395,16 @@ def diagnose_gap(
         # For market discount: find what WACC would explain market (higher WACC → lower EV)
         impl_wacc = solve_implied_wacc(
             target_ev=market_ev,
-            ebitda_base=ebitda_base, da_base=da_base, revenue_base=revenue_base,
+            ebitda_base=ebitda_base,
+            da_base=da_base,
+            revenue_base=revenue_base,
             params=params,
         )
         diag.implied_wacc = round(impl_wacc, 2) if impl_wacc is not None else None
         diag.suggestions = [
-            f"시장 내재 WACC≈{impl_wacc:.1f}% (모델 WACC={wacc_pct:.1f}%보다 높음)" if impl_wacc else "시장이 추가 리스크 프리미엄 반영 중",
+            f"시장 내재 WACC≈{impl_wacc:.1f}% (모델 WACC={wacc_pct:.1f}%보다 높음)"
+            if impl_wacc
+            else "시장이 추가 리스크 프리미엄 반영 중",
             "시장 컨센서스 대비 성장가정이 지나치게 낙관적인지 점검",
             "유동성 리스크, 지배구조 이슈, 업황 악화 시나리오 반영 여부 확인",
         ]
@@ -394,9 +419,13 @@ def format_gap_diagnostic(diag: GapDiagnostic, is_listed: bool = True) -> str:
         return ""
 
     lines = []
-    dir_label = "시장가 프리미엄" if diag.direction == "market_premium" else "내재가치 프리미엄"
+    dir_label = (
+        "시장가 프리미엄" if diag.direction == "market_premium" else "내재가치 프리미엄"
+    )
     lines.append(f"\n[역방향 DCF 진단] 괴리율 {abs(diag.gap_pct):.1f}% ({dir_label})")
-    lines.append(f"  진단: {_CATEGORIES.get(diag.category, {}).get('label', diag.category)}")
+    lines.append(
+        f"  진단: {_CATEGORIES.get(diag.category, {}).get('label', diag.category)}"
+    )
 
     if diag.implied_wacc is not None:
         lines.append(f"  시장 내재 WACC : {diag.implied_wacc:.2f}%")

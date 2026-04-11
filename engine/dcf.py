@@ -32,9 +32,13 @@ def calc_dcf(
     # Revenue growth rates: use separate schedule if provided, else fall back to EBITDA rates.
     # Allows modeling margin expansion/compression without distorting EBITDA projection.
     # Pad with last value if shorter than growth_rates (robust to mismatched list lengths).
-    rev_growth_rates = params.revenue_growth_rates if params.revenue_growth_rates else growth_rates
+    rev_growth_rates = (
+        params.revenue_growth_rates if params.revenue_growth_rates else growth_rates
+    )
     if len(rev_growth_rates) < len(growth_rates):
-        rev_growth_rates = list(rev_growth_rates) + [rev_growth_rates[-1]] * (len(growth_rates) - len(rev_growth_rates))
+        rev_growth_rates = list(rev_growth_rates) + [rev_growth_rates[-1]] * (
+            len(growth_rates) - len(rev_growth_rates)
+        )
 
     if ebitda_base <= 0:
         raise ValueError(
@@ -61,7 +65,9 @@ def calc_dcf(
             logger.warning(
                 "Capex/D&A = %.1fx (투자 사이클 주의: actual_capex=%s, D&A=%s). "
                 "capex_fade_to 설정으로 정규화 권장.",
-                capex_ratio, f"{params.actual_capex:,}", f"{da_base:,}",
+                capex_ratio,
+                f"{params.actual_capex:,}",
+                f"{da_base:,}",
             )
     else:
         capex_ratio = params.capex_to_da
@@ -71,7 +77,11 @@ def calc_dcf(
     use_capex_fade = capex_fade_to is not None and capex_fade_to != capex_ratio
 
     # If actual NWC available, derive delta_NWC/delta_Revenue ratio
-    if params.actual_nwc is not None and params.prior_nwc is not None and revenue_base > 0:
+    if (
+        params.actual_nwc is not None
+        and params.prior_nwc is not None
+        and revenue_base > 0
+    ):
         # Derive NWC/revenue ratio from actuals (projects NWC proportionally to revenue)
         nwc_ratio = params.actual_nwc / revenue_base
     else:
@@ -114,11 +124,19 @@ def calc_dcf(
 
         fcff = nopat + da - capex - delta_nwc
 
-        projections.append(DCFProjection(
-            year=yr, ebitda=ebitda, op=op, da=da,
-            nopat=nopat, capex=capex, delta_nwc=delta_nwc,
-            fcff=fcff, growth=g,
-        ))
+        projections.append(
+            DCFProjection(
+                year=yr,
+                ebitda=ebitda,
+                op=op,
+                da=da,
+                nopat=nopat,
+                capex=capex,
+                delta_nwc=delta_nwc,
+                fcff=fcff,
+                growth=g,
+            )
+        )
         prev_ebitda = ebitda
         prev_revenue = revenue
 
@@ -134,7 +152,6 @@ def calc_dcf(
     # This avoids perpetuating capex-fade artifacts into terminal value.
     last_p = projections[-1]
     last_nopat = last_p.nopat
-    last_da = last_p.da
     # Steady-state FCFF: NOPAT + DA - DA(maintenance) - delta_NWC ≈ NOPAT - delta_NWC
     # For terminal, assume NWC grows at terminal growth rate
     normalized_fcff = last_nopat - last_p.delta_nwc if last_nopat > 0 else last_p.fcff

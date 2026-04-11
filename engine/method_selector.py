@@ -3,45 +3,117 @@
 import re
 
 # Regex patterns for keywords that need word boundary matching
-_GROWTH_REGEX = re.compile(r'\bev\b', re.IGNORECASE)
+_GROWTH_REGEX = re.compile(r"\bev\b", re.IGNORECASE)
 
 # Financial sector keywords
-_FINANCIAL_KEYWORDS = frozenset({
-    "은행", "bank", "보험", "insurance", "증권", "securities",
-    "캐피탈", "capital", "금융", "financial", "카드", "card",
-    "저축", "savings", "투자", "investment",
-})
+_FINANCIAL_KEYWORDS = frozenset(
+    {
+        "은행",
+        "bank",
+        "보험",
+        "insurance",
+        "증권",
+        "securities",
+        "캐피탈",
+        "capital",
+        "금융",
+        "financial",
+        "카드",
+        "card",
+        "저축",
+        "savings",
+        "투자",
+        "investment",
+    }
+)
 
 # Growth/tech keywords
-_GROWTH_KEYWORDS = frozenset({
-    "소프트웨어", "software", "플랫폼", "platform", "클라우드", "cloud",
-    "ai", "saas", "바이오", "bio", "제약", "pharma", "게임", "game",
-    "인터넷", "internet", "핀테크", "fintech", "반도체", "semiconductor",
-    # EV / clean energy / space (high-growth disruptors regardless of legacy sector)
-    "electric vehicle", "전기차", "battery storage",
-    "autonomous vehicle", "자율주행", "로보택시", "robotaxi",
-    "space exploration", "로켓",
-})
+_GROWTH_KEYWORDS = frozenset(
+    {
+        "소프트웨어",
+        "software",
+        "플랫폼",
+        "platform",
+        "클라우드",
+        "cloud",
+        "ai",
+        "saas",
+        "바이오",
+        "bio",
+        "제약",
+        "pharma",
+        "게임",
+        "game",
+        "인터넷",
+        "internet",
+        "핀테크",
+        "fintech",
+        "반도체",
+        "semiconductor",
+        # EV / clean energy / space (high-growth disruptors regardless of legacy sector)
+        "electric vehicle",
+        "전기차",
+        "battery storage",
+        "autonomous vehicle",
+        "자율주행",
+        "로보택시",
+        "robotaxi",
+        "space exploration",
+        "로켓",
+    }
+)
 
 # Asset-centric / holding company keywords (REITs excluded — handled separately)
-_HOLDING_KEYWORDS = frozenset({
-    "지주", "holding", "holdings",
-    "자산운용", "asset management",
-})
+_HOLDING_KEYWORDS = frozenset(
+    {
+        "지주",
+        "holding",
+        "holdings",
+        "자산운용",
+        "asset management",
+    }
+)
 
 # REIT/real estate keywords (NAV + P/FFO cross-validation)
-_REIT_KEYWORDS = frozenset({
-    "리츠", "reit", "reits",
-    "부동산", "real estate", "인프라", "infrastructure",
-})
+_REIT_KEYWORDS = frozenset(
+    {
+        "리츠",
+        "reit",
+        "reits",
+        "부동산",
+        "real estate",
+        "인프라",
+        "infrastructure",
+    }
+)
 
 # Mature/stable sector keywords (Multiples primary candidates)
-_MATURE_KEYWORDS = frozenset({
-    "유통", "retail", "식품", "food", "음료", "beverage",
-    "통신", "telecom", "전력", "utility", "utilities",
-    "건설", "construction", "화학", "chemical", "철강", "steel",
-    "섬유", "textile", "운송", "transport", "logistics",
-})
+_MATURE_KEYWORDS = frozenset(
+    {
+        "유통",
+        "retail",
+        "식품",
+        "food",
+        "음료",
+        "beverage",
+        "통신",
+        "telecom",
+        "전력",
+        "utility",
+        "utilities",
+        "건설",
+        "construction",
+        "화학",
+        "chemical",
+        "철강",
+        "steel",
+        "섬유",
+        "textile",
+        "운송",
+        "transport",
+        "logistics",
+    }
+)
 
 
 def classify_industry(industry: str) -> str:
@@ -54,7 +126,9 @@ def classify_industry(industry: str) -> str:
     industry_lower = industry.lower()
     if not industry_lower:
         return "default"
-    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(industry_lower):
+    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(
+        industry_lower
+    ):
         return "growth"
     if any(kw in industry_lower for kw in _MATURE_KEYWORDS):
         return "mature"
@@ -117,7 +191,8 @@ def suggest_method(
     # Financial companies -> auto-select DDM vs RIM
     if is_financial(industry):
         return _suggest_financial_method(
-            roe=roe, ke=ke,
+            roe=roe,
+            ke=ke,
             has_ddm_params=has_ddm_params,
             has_rim_params=has_rim_params,
         )
@@ -136,7 +211,9 @@ def suggest_method(
         return "sotp"
 
     # Growth/tech -> DCF (P/S cross-validation auto-included)
-    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(industry_lower):
+    if any(kw in industry_lower for kw in _GROWTH_KEYWORDS) or _GROWTH_REGEX.search(
+        industry_lower
+    ):
         return "dcf_primary"
 
     # Mature/stable + sufficient peers -> relative valuation (Multiples primary)

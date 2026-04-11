@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 # ── Company Basic Info ──
 
+
 class CompanyProfile(BaseModel):
     name: str
     former_name: Optional[str] = None
@@ -17,7 +18,9 @@ class CompanyProfile(BaseModel):
     market: str = "KR"  # "KR" | "US"
     currency: str = "KRW"  # "KRW" | "USD"
     currency_unit: str = "백만원"  # "백만원" | "억원" | "$K" | "$M" | "$B"
-    unit_multiplier: int = 1_000_000  # 1 display unit = how many KRW/$? (백만원=1e6, 억원=1e8)
+    unit_multiplier: int = (
+        1_000_000  # 1 display unit = how many KRW/$? (백만원=1e6, 억원=1e8)
+    )
     ticker: Optional[str] = None  # Listed company ticker (e.g., "AAPL", "005930")
     cik: Optional[str] = None  # SEC CIK (US only)
     corp_code: Optional[str] = None  # DART corp_code (KR only)
@@ -66,6 +69,7 @@ class CompanyProfile(BaseModel):
 
 # ── Segment Data ──
 
+
 class SegmentFinancials(BaseModel):
     revenue: int  # In display units
     gross_profit: int = 0
@@ -80,6 +84,7 @@ class SegmentInfo(BaseModel):
 
 
 # ── Consolidated Financial Statements ──
+
 
 class ConsolidatedFinancials(BaseModel):
     year: int
@@ -106,6 +111,7 @@ class ConsolidatedFinancials(BaseModel):
 
 # ── WACC ──
 
+
 class WACCParams(BaseModel):
     rf: float  # Risk-free rate (%)
     erp: float  # Equity risk premium (%)
@@ -114,8 +120,12 @@ class WACCParams(BaseModel):
     tax: float  # Corporate tax rate (%)
     kd_pre: float  # Pre-tax cost of debt (%)
     eq_w: float  # Equity weight (%)
-    size_premium: float = 0.0  # Size/illiquidity premium (%, added to Ke for unlisted/small-cap)
-    is_financial: bool = False  # Financial sector (True: skip Hamada, use bu as βL directly)
+    size_premium: float = (
+        0.0  # Size/illiquidity premium (%, added to Ke for unlisted/small-cap)
+    )
+    is_financial: bool = (
+        False  # Financial sector (True: skip Hamada, use bu as βL directly)
+    )
 
     @field_validator("size_premium")
     @classmethod
@@ -149,62 +159,71 @@ class WACCResult(BaseModel):
 
 # ── Equity Bridge Adjustment Items ──
 
+
 class AdjustmentItem(BaseModel):
     """Equity Bridge adjustment item.
 
     value > 0: deducted from EV (debt, repayment, etc.)
     value < 0: added to EV (excess cash, non-operating assets, etc.)
     """
+
     name: str
     value: int  # In display units (positive=deduct, negative=add)
 
 
 # ── Market Signals (external data for scenario calibration) ──
 
+
 class MarketSignals(BaseModel):
     """External market data signals injected into scenario design prompts."""
+
     # FRED Macro
-    fed_funds_rate: Optional[float] = None        # Current Fed Funds Rate (%)
-    us_10y_yield: Optional[float] = None           # 10-Year Treasury yield (%)
-    breakeven_inflation: Optional[float] = None    # 10-Year Breakeven Inflation (%)
-    credit_spread_baa: Optional[float] = None      # BAA-AAA corporate OAS (%)
-    vix: Optional[float] = None                    # CBOE VIX index
+    fed_funds_rate: Optional[float] = None  # Current Fed Funds Rate (%)
+    us_10y_yield: Optional[float] = None  # 10-Year Treasury yield (%)
+    breakeven_inflation: Optional[float] = None  # 10-Year Breakeven Inflation (%)
+    credit_spread_baa: Optional[float] = None  # BAA-AAA corporate OAS (%)
+    vix: Optional[float] = None  # CBOE VIX index
 
     # Analyst Consensus (yfinance)
-    target_mean: Optional[float] = None            # Mean analyst target price
+    target_mean: Optional[float] = None  # Mean analyst target price
     target_high: Optional[float] = None
     target_low: Optional[float] = None
     analyst_count: Optional[int] = None
-    recommendation: Optional[str] = None           # "buy" | "hold" | "sell" | ...
+    recommendation: Optional[str] = None  # "buy" | "hold" | "sell" | ...
 
     # Sentiment (FinBERT)
-    news_sentiment_score: Optional[float] = None   # -1.0 to +1.0
-    sentiment_label: Optional[str] = None          # "positive" | "neutral" | "negative"
+    news_sentiment_score: Optional[float] = None  # -1.0 to +1.0
+    sentiment_label: Optional[str] = None  # "positive" | "neutral" | "negative"
     sentiment_article_count: Optional[int] = None
 
     # Options IV (US listed only)
-    iv_30d_atm: Optional[float] = None             # 30-day ATM implied vol (%)
-    iv_percentile: Optional[float] = None          # IV rank vs 1Y range (0-100)
+    iv_30d_atm: Optional[float] = None  # 30-day ATM implied vol (%)
+    iv_percentile: Optional[float] = None  # IV rank vs 1Y range (0-100)
     put_call_ratio: Optional[float] = None
 
-    fetched_at: Optional[str] = None               # ISO timestamp
+    fetched_at: Optional[str] = None  # ISO timestamp
 
     def has_any(self) -> bool:
         """True if at least one signal was successfully fetched."""
         return any(
-            v is not None
-            for k, v in self.model_dump().items()
-            if k != "fetched_at"
+            v is not None for k, v in self.model_dump().items() if k != "fetched_at"
         )
 
 
 # ── News Drivers (multiple regression independent variables) ──
 
-_DRIVER_FIELDS = frozenset({
-    "growth_adj_pct", "terminal_growth_adj", "wacc_adj",
-    "market_sentiment_pct", "ddm_growth", "rim_roe_adj",
-    "ev_multiple", "nav_discount",
-})
+_DRIVER_FIELDS = frozenset(
+    {
+        "growth_adj_pct",
+        "terminal_growth_adj",
+        "wacc_adj",
+        "market_sentiment_pct",
+        "ddm_growth",
+        "rim_roe_adj",
+        "ev_multiple",
+        "nav_discount",
+    }
+)
 
 
 class NewsDriver(BaseModel):
@@ -213,12 +232,13 @@ class NewsDriver(BaseModel):
     Each key in effects corresponds to a driver field name in ScenarioParams;
     the value is the partial effect (beta). Multiplied by per-scenario weight(X) and summed.
     """
-    id: str                          # "rate_hike", "tariff_shock"
-    name: str                        # "금리인상 50bp"
-    category: str = ""               # "macro" | "industry" | "company"
-    effects: dict[str, float] = {}   # {"wacc_adj": 0.5, "growth_adj_pct": -10}
-    rationale: str = ""              # Rationale / justification
-    source: str = ""                 # News URL / source
+
+    id: str  # "rate_hike", "tariff_shock"
+    name: str  # "금리인상 50bp"
+    category: str = ""  # "macro" | "industry" | "company"
+    effects: dict[str, float] = {}  # {"wacc_adj": 0.5, "growth_adj_pct": -10}
+    rationale: str = ""  # Rationale / justification
+    source: str = ""  # News URL / source
 
     @field_validator("effects")
     @classmethod
@@ -230,6 +250,7 @@ class NewsDriver(BaseModel):
 
 
 # ── Scenarios ──
+
 
 class ScenarioParams(BaseModel):
     code: str
@@ -244,30 +265,54 @@ class ScenarioParams(BaseModel):
     shares: int  # Applicable share count
     desc: str = ""
     probability_rationale: str = ""  # Probability allocation rationale (AI-generated)
-    ddm_growth: Optional[float] = None  # Per-scenario DDM dividend growth rate (%, None=use default)
-    ev_multiple: Optional[float] = None  # Per-scenario applied multiple (Multiples methodology)
+    ddm_growth: Optional[float] = (
+        None  # Per-scenario DDM dividend growth rate (%, None=use default)
+    )
+    ev_multiple: Optional[float] = (
+        None  # Per-scenario applied multiple (Multiples methodology)
+    )
     rim_roe_adj: float = 0.0  # ROE %p adjustment (RIM, e.g., -1.0 -> all ROE -1%p)
     nav_discount: float = 0.0  # Holding company discount (NAV, e.g., 30 -> NAV * 0.7)
 
     # DCF driver overrides (per-scenario)
-    growth_adj_pct: float = 0.0  # EBITDA growth rate % adjustment (e.g., +20 -> each rate * 1.2)
-    terminal_growth_adj: float = 0.0  # TGR absolute adjustment (e.g., +0.3 -> TGR + 0.3%)
-    market_sentiment_pct: float = 0.0  # Market sentiment premium/discount (EV % adjustment)
+    growth_adj_pct: float = (
+        0.0  # EBITDA growth rate % adjustment (e.g., +20 -> each rate * 1.2)
+    )
+    terminal_growth_adj: float = (
+        0.0  # TGR absolute adjustment (e.g., +0.3 -> TGR + 0.3%)
+    )
+    market_sentiment_pct: float = (
+        0.0  # Market sentiment premium/discount (EV % adjustment)
+    )
 
     # Cross-cutting driver (all discount-rate methods)
-    wacc_adj: float = 0.0  # WACC %p adjustment (e.g., +0.5 -> WACC + 0.5%p; DDM/RIM applied to Ke)
+    wacc_adj: float = (
+        0.0  # WACC %p adjustment (e.g., +0.5 -> WACC + 0.5%p; DDM/RIM applied to Ke)
+    )
 
     # AI analysis rationale (news -> driver mapping)
-    driver_rationale: dict[str, str] = {}  # {"wacc_adj": "Reflects 50bp rate hike", ...}
+    driver_rationale: dict[
+        str, str
+    ] = {}  # {"wacc_adj": "Reflects 50bp rate hike", ...}
 
     # Multi-variable news drivers (when active_drivers is set, effects are summed via resolve_drivers())
-    active_drivers: Optional[dict[str, float]] = None  # {driver_id: weight(0~1)}, None=direct assignment mode
+    active_drivers: Optional[dict[str, float]] = (
+        None  # {driver_id: weight(0~1)}, None=direct assignment mode
+    )
 
     # Optionality segment overrides (per-scenario) — for binary-outcome segments (FSD, Robotaxi, etc.)
-    segment_ebitda: Optional[dict[str, int]] = None   # {seg_code: ebitda} overrides allocate_da result
-    segment_multiples: Optional[dict[str, float]] = None  # {seg_code: multiple} overrides vi.multiples
-    segment_revenue: Optional[dict[str, int]] = None  # {seg_code: revenue} for ev_revenue segments
-    segment_method_override: Optional[dict[str, str]] = None  # {seg_code: "ev_ebitda"|"ev_revenue"} per-scenario method transition
+    segment_ebitda: Optional[dict[str, int]] = (
+        None  # {seg_code: ebitda} overrides allocate_da result
+    )
+    segment_multiples: Optional[dict[str, float]] = (
+        None  # {seg_code: multiple} overrides vi.multiples
+    )
+    segment_revenue: Optional[dict[str, int]] = (
+        None  # {seg_code: revenue} for ev_revenue segments
+    )
+    segment_method_override: Optional[dict[str, str]] = (
+        None  # {seg_code: "ev_ebitda"|"ev_revenue"} per-scenario method transition
+    )
 
     # rNPV PoS overrides (per-scenario) — {drug_name: pos} for Bull/Bear PoS differentiation
     pos_override: Optional[dict[str, float]] = None  # {drug_name: 0.0-1.0}
@@ -341,13 +386,17 @@ class ScenarioResult(BaseModel):
     pre_dlom: int
     post_dlom: int
     weighted: int
-    adjustments: list[AdjustmentItem] = []  # Dynamic Equity Bridge (for Excel Waterfall)
+    adjustments: list[
+        AdjustmentItem
+    ] = []  # Dynamic Equity Bridge (for Excel Waterfall)
 
 
 # ── DDM ──
 
+
 class PipelineDrug(BaseModel):
     """Single drug/candidate in a pharma pipeline for rNPV valuation."""
+
     name: str  # Drug name (e.g., "Semaglutide", "CagriSema")
     phase: str  # "preclinical" | "phase1" | "phase2" | "phase3" | "filed" | "approved"
     indication: str = ""  # Therapeutic area (e.g., "Obesity", "T2D", "NASH")
@@ -355,36 +404,52 @@ class PipelineDrug(BaseModel):
     years_to_peak: int = 5  # Years from now to peak sales
     years_at_peak: int = 5  # Duration of peak sales plateau
     patent_expiry_years: int = 15  # Years until patent/exclusivity expiry
-    success_prob: Optional[float] = None  # Override cumulative PoS (0-1). None = use phase default
-    launch_year_offset: int = 0  # Years from base_year to expected launch (0 = already launched)
-    existing_revenue: int = 0  # Current annual revenue if already on market (display units)
-    operating_margin: Optional[float] = None  # Drug-level operating margin (0-1). None = use company default
+    success_prob: Optional[float] = (
+        None  # Override cumulative PoS (0-1). None = use phase default
+    )
+    launch_year_offset: int = (
+        0  # Years from base_year to expected launch (0 = already launched)
+    )
+    existing_revenue: int = (
+        0  # Current annual revenue if already on market (display units)
+    )
+    operating_margin: Optional[float] = (
+        None  # Drug-level operating margin (0-1). None = use company default
+    )
 
 
 # Phase-level cumulative Probability of Success (PoS) — industry averages
 # Source: BIO/QLS Advisors (2024), Damodaran pharma valuation
 PHASE_POS: dict[str, float] = {
     "preclinical": 0.05,  # ~5% cumulative PoS
-    "phase1": 0.10,       # ~10%
-    "phase2": 0.25,       # ~25%
-    "phase3": 0.55,       # ~55%
-    "filed": 0.85,        # ~85%
-    "approved": 1.00,     # Already approved = 100%
+    "phase1": 0.10,  # ~10%
+    "phase2": 0.25,  # ~25%
+    "phase3": 0.55,  # ~55%
+    "filed": 0.85,  # ~85%
+    "approved": 1.00,  # Already approved = 100%
 }
 
 
 class RNPVParams(BaseModel):
     """Risk-adjusted NPV (rNPV) parameters for pharma pipeline valuation."""
+
     pipeline: list[PipelineDrug]  # Drug candidates
-    r_and_d_cost: int = 0  # Total annual R&D cost (display units) — deducted from pipeline value
-    discount_rate: Optional[float] = None  # Override WACC for pipeline NPV (%, None = use WACC)
+    r_and_d_cost: int = (
+        0  # Total annual R&D cost (display units) — deducted from pipeline value
+    )
+    discount_rate: Optional[float] = (
+        None  # Override WACC for pipeline NPV (%, None = use WACC)
+    )
     decline_rate: float = 20.0  # Annual revenue decline after patent expiry (%)
-    default_margin: float = 0.35  # Default operating margin after tax (0-1) applied to revenue → profit
+    default_margin: float = (
+        0.35  # Default operating margin after tax (0-1) applied to revenue → profit
+    )
     tax_rate: float = 0.22  # Corporate tax rate for profit conversion
 
 
 class RNPVDrugResult(BaseModel):
     """Per-drug rNPV result."""
+
     name: str
     phase: str
     indication: str = ""
@@ -397,11 +462,14 @@ class RNPVDrugResult(BaseModel):
 
 class RNPVValuationResult(BaseModel):
     """Aggregate rNPV valuation result."""
+
     drug_results: list[RNPVDrugResult] = []
     total_rnpv: int = 0  # Sum of all drug rNPVs
     r_and_d_cost_pv: int = 0  # PV of R&D costs deducted
     pipeline_value: int = 0  # total_rnpv - r_and_d_cost_pv
-    existing_revenue_value: int = 0  # Value of currently marketed drugs (DCF of existing revenue)
+    existing_revenue_value: int = (
+        0  # Value of currently marketed drugs (DCF of existing revenue)
+    )
     enterprise_value: int = 0  # pipeline_value + existing_revenue_value
     per_share: int = 0
     discount_rate: float = 0.0  # Applied discount rate (%)
@@ -409,6 +477,7 @@ class RNPVValuationResult(BaseModel):
 
 class ReverseRNPVDrugImplied(BaseModel):
     """Per-drug implied parameter from reverse rNPV."""
+
     name: str
     base_value: float = 0.0
     implied_value: float = 0.0
@@ -416,6 +485,7 @@ class ReverseRNPVDrugImplied(BaseModel):
 
 class RNPVTornadoItem(BaseModel):
     """Single drug's tornado sensitivity result."""
+
     name: str
     base_value: int = 0
     low_value: int = 0
@@ -428,39 +498,47 @@ class ReverseRNPVDrugSolo(BaseModel):
     """Per-drug independent PoS analysis — what PoS would this drug need
     alone to close the model-market gap (all others held at base).
     Results are NOT additive across drugs."""
+
     name: str
     phase: str = ""
     base_pos: float = 0.0
-    implied_pos: Optional[float] = None   # None = unsolvable or skipped
+    implied_pos: Optional[float] = None  # None = unsolvable or skipped
     solvable: bool = False
-    max_ev_contribution: int = 0          # Drug's max marginal EV at PoS=1.0 ($M)
-    skipped: bool = False                 # True for drugs with PoS >= 1.0
+    max_ev_contribution: int = 0  # Drug's max marginal EV at PoS=1.0 ($M)
+    skipped: bool = False  # True for drugs with PoS >= 1.0
 
 
 class ReverseRNPVResult(BaseModel):
     """Reverse rNPV analysis — what the market implies about pipeline assumptions."""
-    target_ev: int = 0                  # Market EV ($M)
-    model_ev: int = 0                   # Model rNPV EV ($M)
-    gap_pct: float = 0.0               # (model - target) / target * 100
 
-    implied_pos_scale: Optional[float] = None        # Uniform PoS multiplier
-    implied_peak_scale: Optional[float] = None       # Uniform peak-sales multiplier
-    implied_discount_rate: Optional[float] = None    # Discount rate (%) to match market
+    target_ev: int = 0  # Market EV ($M)
+    model_ev: int = 0  # Model rNPV EV ($M)
+    gap_pct: float = 0.0  # (model - target) / target * 100
+
+    implied_pos_scale: Optional[float] = None  # Uniform PoS multiplier
+    implied_peak_scale: Optional[float] = None  # Uniform peak-sales multiplier
+    implied_discount_rate: Optional[float] = None  # Discount rate (%) to match market
 
     implied_pos_per_drug: list[ReverseRNPVDrugImplied] = []
     implied_peak_per_drug: list[ReverseRNPVDrugImplied] = []
-    implied_pos_solo: list[ReverseRNPVDrugSolo] = []  # Per-drug independent PoS (linear solve)
+    implied_pos_solo: list[
+        ReverseRNPVDrugSolo
+    ] = []  # Per-drug independent PoS (linear solve)
 
 
 class DDMParams(BaseModel):
     """Dividend Discount Model (DDM) input parameters."""
+
     dps: float  # Dividend per share (KRW or $)
     dividend_growth: float = 3.0  # Dividend growth rate (%)
-    buyback_per_share: float = 0.0  # Buyback return per share (for US financial Total Payout)
+    buyback_per_share: float = (
+        0.0  # Buyback return per share (for US financial Total Payout)
+    )
 
 
 class DDMValuationResult(BaseModel):
     """DDM valuation result (for Pydantic serialization)."""
+
     dps: float
     buyback_per_share: float = 0.0
     total_payout: float = 0.0
@@ -472,8 +550,10 @@ class DDMValuationResult(BaseModel):
 
 # ── RIM (Residual Income Model) ──
 
+
 class RIMParams(BaseModel):
     """Residual Income Model (RIM) input parameters -- specialized for financials."""
+
     roe_forecasts: list[float]  # Forecast-period ROE (%, e.g. [12.0, 11.5, 11.0])
     terminal_growth: float = 0.0  # RI terminal growth rate (%, conservative 0%)
     payout_ratio: float = 30.0  # Dividend payout ratio (%)
@@ -481,6 +561,7 @@ class RIMParams(BaseModel):
 
 class RIMProjectionResult(BaseModel):
     """RIM annual projection (for serialization)."""
+
     year: int
     bv: int
     net_income: int
@@ -491,6 +572,7 @@ class RIMProjectionResult(BaseModel):
 
 class RIMValuationResult(BaseModel):
     """RIM valuation result (for Pydantic serialization)."""
+
     bv_current: int
     ke: float
     terminal_growth: float
@@ -504,13 +586,16 @@ class RIMValuationResult(BaseModel):
 
 # ── NAV (Net Asset Value) ──
 
+
 class NAVParams(BaseModel):
     """Net Asset Value (NAV) input parameters."""
+
     revaluation: int = 0  # Investment asset revaluation adjustment (fair value - book value, in display units)
 
 
 class NAVResult(BaseModel):
     """NAV valuation result."""
+
     total_assets: int = 0
     revaluation: int = 0
     adjusted_assets: int = 0
@@ -521,8 +606,10 @@ class NAVResult(BaseModel):
 
 # ── Multiples Primary (Relative Valuation as primary method) ──
 
+
 class MultiplesResult(BaseModel):
     """Result when relative valuation (Multiples) is the primary method."""
+
     primary_multiple_method: str = ""  # "EV/EBITDA" | "P/E" | "P/BV"
     metric_value: float = 0.0
     multiple: float = 0.0
@@ -533,9 +620,14 @@ class MultiplesResult(BaseModel):
 
 # ── DCF ──
 
+
 class DCFParams(BaseModel):
-    ebitda_growth_rates: Optional[list[float]] = None  # Forecast-period EBITDA growth rates (None=auto-generate)
-    revenue_growth_rates: Optional[list[float]] = None  # Separate revenue growth rates (None=same as EBITDA, backward-compatible)
+    ebitda_growth_rates: Optional[list[float]] = (
+        None  # Forecast-period EBITDA growth rates (None=auto-generate)
+    )
+    revenue_growth_rates: Optional[list[float]] = (
+        None  # Separate revenue growth rates (None=same as EBITDA, backward-compatible)
+    )
     tax_rate: float = 22.0
     capex_to_da: float = 1.10
     nwc_to_rev_delta: float = 0.05
@@ -550,7 +642,9 @@ class DCFParams(BaseModel):
     # 3-year average D&A/EBITDA ratio override (if provided, replaces single-year derived ratio)
     da_to_ebitda_override: Optional[float] = None
     # Exit Multiple terminal value (used alongside Gordon Growth for cross-check)
-    terminal_ev_ebitda: Optional[float] = None  # Terminal EV/EBITDA multiple (None=skip)
+    terminal_ev_ebitda: Optional[float] = (
+        None  # Terminal EV/EBITDA multiple (None=skip)
+    )
 
     @field_validator("terminal_growth")
     @classmethod
@@ -591,6 +685,7 @@ class DCFResult(BaseModel):
 
 # ── Peer ──
 
+
 class PeerCompany(BaseModel):
     name: str
     segment_code: str
@@ -609,6 +704,7 @@ class PeerCompany(BaseModel):
 
 class PeerSegmentStats(BaseModel):
     """Per-segment peer multiple statistics."""
+
     segment_code: str
     segment_name: str = ""
     count: int = 0
@@ -623,12 +719,17 @@ class PeerSegmentStats(BaseModel):
 
 # ── Comprehensive Valuation I/O ──
 
+
 class ValuationInput(BaseModel):
     company: CompanyProfile
     valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "rnpv" | "auto"
-    industry: str = ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
+    industry: str = (
+        ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
+    )
     segments: dict[str, dict]  # code -> {"name": str, "multiple": float}
-    segment_data: dict[int, dict[str, dict]]  # year -> code -> {"revenue", "op", "assets", ...}
+    segment_data: dict[
+        int, dict[str, dict]
+    ]  # year -> code -> {"revenue", "op", "assets", ...}
     consolidated: dict[int, dict]  # year -> {"revenue", "op", "dep", "amort", ...}
     wacc_params: WACCParams
     multiples: dict[str, float]  # segment code -> EV/EBITDA
@@ -646,7 +747,9 @@ class ValuationInput(BaseModel):
     rcps_years: int = 0  # RCPS maturity (years from issuance)
     rcps_dividend_rate: float = 0.0  # RCPS annual dividend rate (%, e.g. 7.5)
     net_debt: int = 0  # In display units
-    segment_net_debt: dict[str, int] = {}  # {segment_code: net_debt} -- for financial subsidiary split SOTP
+    segment_net_debt: dict[
+        str, int
+    ] = {}  # {segment_code: net_debt} -- for financial subsidiary split SOTP
     eco_frontier: int = 0  # In display units
     peers: list[PeerCompany] = []
     base_year: int = 2025
@@ -656,17 +759,23 @@ class ValuationInput(BaseModel):
     pbv_multiple: float = 0.0
     ps_multiple: float = 0.0  # P/S (cross-validation for loss-making growth stocks)
     pffo_multiple: float = 0.0  # P/FFO (cross-validation for REITs)
-    ffo: int = 0  # Funds From Operations (for REITs: net income + depreciation - gain on sale)
+    ffo: int = (
+        0  # Funds From Operations (for REITs: net income + depreciation - gain on sale)
+    )
     # Monte Carlo settings
     mc_enabled: bool = False
     mc_sims: int = 10_000
     mc_multiple_std_pct: float = 15.0  # Multiple std dev (% of applied value)
-    mc_revenue_std_pct: float = 30.0  # Revenue std dev for ev_revenue segments (% of base)
+    mc_revenue_std_pct: float = (
+        30.0  # Revenue std dev for ev_revenue segments (% of base)
+    )
     mc_dlom_mean: float = 0.0  # DLOM mean (%)
     mc_dlom_std: float = 5.0  # DLOM std dev (%)
     distress_max_discount: float = 0.25  # Maximum distress discount cap (0.0~1.0); default 25% (Damodaran empirical median for going-concern SOTP)
     news_key_issues: Optional[str] = None  # News-based key issues summary
-    market_signals: Optional[MarketSignals] = None  # External market data signals (Phase 4)
+    market_signals: Optional[MarketSignals] = (
+        None  # External market data signals (Phase 4)
+    )
 
     @field_validator("distress_max_discount")
     @classmethod
@@ -706,9 +815,13 @@ class SOTPSegmentResult(BaseModel):
     multiple: float
     ev: int
     method: str = "ev_ebitda"  # "ev_ebitda" | "pbv" | "pe" | "ev_revenue"
-    is_equity_based: bool = False  # P/BV, P/E → True (equity bridge에서 net_debt 차감 불필요)
+    is_equity_based: bool = (
+        False  # P/BV, P/E → True (equity bridge에서 net_debt 차감 불필요)
+    )
     revenue: int | None = None  # ev_revenue method only
-    revenue_type: str = "ltm"  # "ltm" | "ntm" — display label only, no calculation impact
+    revenue_type: str = (
+        "ltm"  # "ltm" | "ntm" — display label only, no calculation impact
+    )
 
 
 class DAAllocation(BaseModel):
@@ -725,6 +838,7 @@ class SensitivityRow(BaseModel):
 
 class MCScenarioSummary(BaseModel):
     """Per-scenario MC summary (lightweight — no histogram)."""
+
     mean: int = 0
     median: int = 0
     p5: int = 0
@@ -733,6 +847,7 @@ class MCScenarioSummary(BaseModel):
 
 class MonteCarloResult(BaseModel):
     """Monte Carlo simulation result (for serialization)."""
+
     n_sims: int = 0
     mean: int = 0
     median: int = 0
@@ -752,6 +867,7 @@ class MonteCarloResult(BaseModel):
 
 class MarketComparisonResult(BaseModel):
     """Market price comparison result."""
+
     intrinsic_value: int = 0  # Intrinsic value (per share)
     market_price: float = 0.0  # Current market price
     gap_ratio: float = 0.0  # (intrinsic - market) / market
@@ -769,40 +885,48 @@ class CrossValidationItem(BaseModel):
 
 class QualityScore(BaseModel):
     """Valuation quality score (autoresearch-inspired scalar metric)."""
-    total: int = 0                    # 0-100 (rescaled for unlisted)
-    cv_convergence: int = 0           # 0-25 (cross-validation method agreement)
-    wacc_plausibility: int = 0        # 0-25 (WACC components in reasonable ranges)
-    scenario_consistency: int = 0     # 0-25 (scenario design quality)
-    market_alignment: int = 0         # 0-25 (listed only; disabled for unlisted)
-    max_score: int = 100              # 100 for listed, 75 for unlisted (before rescale)
-    warnings: list[str] = []          # Korean deduction reasons
-    grade: str = ""                   # A/B/C/D/F
+
+    total: int = 0  # 0-100 (rescaled for unlisted)
+    cv_convergence: int = 0  # 0-25 (cross-validation method agreement)
+    wacc_plausibility: int = 0  # 0-25 (WACC components in reasonable ranges)
+    scenario_consistency: int = 0  # 0-25 (scenario design quality)
+    market_alignment: int = 0  # 0-25 (listed only; disabled for unlisted)
+    max_score: int = 100  # 100 for listed, 75 for unlisted (before rescale)
+    warnings: list[str] = []  # Korean deduction reasons
+    grade: str = ""  # A/B/C/D/F
     # rNPV-specific sub-scores (non-zero only when primary_method == "rnpv")
-    is_rnpv: bool = False             # True when primary_method == "rnpv"
-    rnpv_weighted_cv: int = 0         # 0-10: CV among rNPV-appropriate methods (DCF excluded)
+    is_rnpv: bool = False  # True when primary_method == "rnpv"
+    rnpv_weighted_cv: int = 0  # 0-10: CV among rNPV-appropriate methods (DCF excluded)
     rnpv_pipeline_diversity: int = 0  # 0-8: drug count + phase variety
-    rnpv_pos_grounding: int = 0       # 0-6: custom PoS coverage vs phase defaults
-    rnpv_scenario_coverage: int = 0   # 0-1: pos_override present in at least one scenario
-    rnpv_reverse_consistency: int = 0 # 0-10: reverse rNPV implied param sanity (listed only)
+    rnpv_pos_grounding: int = 0  # 0-6: custom PoS coverage vs phase defaults
+    rnpv_scenario_coverage: int = (
+        0  # 0-1: pos_override present in at least one scenario
+    )
+    rnpv_reverse_consistency: int = (
+        0  # 0-10: reverse rNPV implied param sanity (listed only)
+    )
 
 
 class GapDiagnostic(BaseModel):
     """Reverse-DCF gap analysis: explains why market price diverges from intrinsic value."""
-    gap_pct: float = 0.0                       # (intrinsic - market) / market * 100
-    direction: str = ""                         # "market_premium" | "market_discount"
-    implied_wacc: Optional[float] = None        # WACC % that reconciles with market
-    implied_tgr: Optional[float] = None         # TGR % that reconciles with market
-    implied_growth_mult: Optional[float] = None # Growth multiplier that reconciles
-    category: str = ""                          # "wacc_overestimated" | "growth_underestimated" | "optionality_premium" | "market_pessimism"
+
+    gap_pct: float = 0.0  # (intrinsic - market) / market * 100
+    direction: str = ""  # "market_premium" | "market_discount"
+    implied_wacc: Optional[float] = None  # WACC % that reconciles with market
+    implied_tgr: Optional[float] = None  # TGR % that reconciles with market
+    implied_growth_mult: Optional[float] = None  # Growth multiplier that reconciles
+    category: str = ""  # "wacc_overestimated" | "growth_underestimated" | "optionality_premium" | "market_pessimism"
     explanation: str = ""
     suggestions: list[str] = []
-    reconcilable: bool = True                   # False = even extreme assumptions cannot bridge gap
+    reconcilable: bool = True  # False = even extreme assumptions cannot bridge gap
 
 
 class ValuationResult(BaseModel):
     primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav"|"rnpv")
     wacc: WACCResult
-    da_allocations: dict[int, dict[str, DAAllocation]] = {}  # For SOTP (empty dict = not used)
+    da_allocations: dict[
+        int, dict[str, DAAllocation]
+    ] = {}  # For SOTP (empty dict = not used)
     sotp: dict[str, SOTPSegmentResult] = {}  # For SOTP (empty dict = not used)
     total_ev: int = 0
     scenarios: dict[str, ScenarioResult] = {}  # Empty dict when scenarios not used
@@ -820,9 +944,15 @@ class ValuationResult(BaseModel):
     sensitivity_multiples: list[SensitivityRow] = []
     sensitivity_irr_dlom: list[SensitivityRow] = []
     sensitivity_dcf: list[SensitivityRow] = []
-    sensitivity_primary: list[SensitivityRow] = []  # Primary method-specific sensitivity
+    sensitivity_primary: list[
+        SensitivityRow
+    ] = []  # Primary method-specific sensitivity
     sensitivity_primary_label: str = ""  # Sensitivity table title
     quality: Optional[QualityScore] = None  # Post-valuation quality score
-    gap_diagnostic: Optional[GapDiagnostic] = None  # Reverse-DCF gap analysis (when |gap| >= 20%)
-    reverse_rnpv: Optional[ReverseRNPVResult] = None  # Reverse rNPV (when primary_method == "rnpv")
+    gap_diagnostic: Optional[GapDiagnostic] = (
+        None  # Reverse-DCF gap analysis (when |gap| >= 20%)
+    )
+    reverse_rnpv: Optional[ReverseRNPVResult] = (
+        None  # Reverse rNPV (when primary_method == "rnpv")
+    )
     rnpv_tornado: list[RNPVTornadoItem] = []  # Per-drug peak sales tornado (rNPV only)

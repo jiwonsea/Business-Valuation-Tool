@@ -42,7 +42,7 @@ jobs:
       - name: Run weekly discovery
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_MODEL: meta-llama/llama-3.3-70b-instruct:free
+          OPENROUTER_MODEL: meta-llama/llama-3.3-70b-instruct
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           DART_API_KEY: ${{ secrets.DART_API_KEY }}

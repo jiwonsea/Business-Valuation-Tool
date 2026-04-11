@@ -29,8 +29,8 @@ def calc_scenario(
     # Calculate CPS redemption amount
     if sc.cps_repay is not None:
         cps_repay = sc.cps_repay
-    elif sc.irr is not None and cps_principal > 0:
-        effective_rate = max(sc.irr - cps_dividend_rate, 0.0)
+    elif cps_principal > 0:
+        effective_rate = max((sc.irr or 0) - cps_dividend_rate, 0.0)
         cps_repay = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
     else:
         cps_repay = 0
@@ -38,8 +38,8 @@ def calc_scenario(
     # Calculate RCPS redemption amount (dividend_rate reduces effective compound rate)
     if sc.rcps_repay is not None:
         rcps_repay = sc.rcps_repay
-    elif sc.irr is not None and rcps_principal > 0:
-        effective_rate = max(sc.irr - rcps_dividend_rate, 0.0)
+    elif rcps_principal > 0:
+        effective_rate = max((sc.irr or 0) - rcps_dividend_rate, 0.0)
         rcps_repay = round(rcps_principal * (1 + effective_rate / 100) ** rcps_years)
     else:
         rcps_repay = 0

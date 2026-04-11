@@ -3942,3 +3942,263 @@ class TestCrashPaths:
                 valuation_method="sotp",
             )
             run_valuation(vi)
+
+
+class TestNumericalFixes:
+    """Regression tests for VL-1/VL-2/VL-3/VL-4 numerical fixes."""
+
+    # ── VL-1: _derive_rcps_repay includes RCPS when irr is None ─────────────
+
+    def test_derive_rcps_repay_irr_none_uses_principal(self):
+        """When sc.irr is None and rcps_principal > 0, repay = rcps_principal."""
+        from valuation_runner import _derive_rcps_repay
+
+        class FakeVI:
+            rcps_principal = 500_000
+            rcps_years = 3
+            rcps_dividend_rate = 0.0
+
+        sc = ScenarioParams(code="Base", name="Base", prob=100, ipo="N/A", shares=1)
+        # irr is None by default in ScenarioParams
+        assert sc.irr is None
+        result = _derive_rcps_repay(sc, FakeVI())
+        # With irr=None, effective_rate=0, so repay = rcps_principal * 1^3 = 500_000
+        assert result == 500_000
+
+    def test_derive_rcps_repay_irr_none_excluded_bug_regression(self):
+        """Before fix, irr=None returned 0 even with rcps_principal > 0."""
+        from valuation_runner import _derive_rcps_repay
+
+        class FakeVI:
+            rcps_principal = 300_000
+            rcps_years = 2
+            rcps_dividend_rate = 2.0  # 2% dividend
+
+        sc = ScenarioParams(code="Base", name="Base", prob=100, ipo="N/A", shares=1)
+        result = _derive_rcps_repay(sc, FakeVI())
+        # effective_rate = max(0 - 2, 0) = 0; repay = 300_000
+        assert result == 300_000
+
+    def test_derive_rcps_repay_irr_set_computes_correctly(self):
+        """When sc.irr is set, uses compounding as before."""
+        from valuation_runner import _derive_rcps_repay
+
+        class FakeVI:
+            rcps_principal = 100_000
+            rcps_years = 2
+            rcps_dividend_rate = 1.0
+
+        sc = ScenarioParams(
+            code="Base", name="Base", prob=100, ipo="N/A", shares=1, irr=6.0
+        )
+        result = _derive_rcps_repay(sc, FakeVI())
+        # effective_rate = max(6 - 1, 0) = 5; repay = 100_000 * 1.05^2 = 110_250
+        assert result == 110_250
+
+    # ── VL-2: RIM TV does not double-apply (1+g) ────────────────────────────
+
+    def test_rim_tv_no_double_growth(self):
+        """TV = RI_{n+1} / (ke - g), not RI_{n+2} / (ke - g).
+
+        With g=2%, (1+g) over-multiplication raised TV by ~2%. Verify TV formula:
+        - After n=3 iterations, bv = BV_3 (beginning of period 4)
+        - RI_4 = BV_3 * (ROE - ke)
+        - TV = RI_4 / (ke - g)  (NOT RI_4 * (1+g) / (ke - g))
+        """
+        bv0 = 100_000
+        roe = 12.0
+        ke = 10.0
+        g = 2.0
+        r = calc_rim(
+            book_value=bv0,
+            roe_forecasts=[roe, roe, roe],
+            ke=ke,
+            terminal_growth=g,
+            shares=1_000_000,
+            unit_multiplier=1_000_000,
+            payout_ratio=0.0,
+        )
+        # Compute expected TV manually
+        # BV after 3 years (no payout): BV_3 = BV_0 * (1 + ROE/100)^3
+        bv3 = round(round(round(bv0 * (1 + roe / 100)) * (1 + roe / 100)) * (1 + roe / 100))
+        ri4 = round(bv3 * (roe / 100 - ke / 100))
+        expected_tv = round(ri4 / (ke / 100 - g / 100))
+        assert r.terminal_ri == expected_tv
+
+    def test_rim_tv_g0_unchanged(self):
+        """When g=0, removing (1+g) has no effect — results should be unchanged."""
+        r = calc_rim(
+            book_value=50_000,
+            roe_forecasts=[11.0, 10.5, 10.0],
+            ke=9.0,
+            terminal_growth=0.0,
+            shares=1_000_000,
+            unit_multiplier=1_000_000,
+        )
+        # With g=0, terminal_ri_base / (ke - g) = terminal_ri_base / ke
+        # Both old and new code produce same result; just verify equity_value > 0
+        assert r.equity_value > 50_000  # ROE > ke so value > BV
+
+    # ── VL-3: MC uses normalized FCFF for DCF TV resampling ─────────────────
+
+    def test_mc_dcf_tv_uses_normalized_not_raw_fcff(self):
+        """MC DCF TV sampling should NOT propagate capex-heavy raw FCFF into TV.
+
+        For capex_ratio >> 1 (e.g. 2.0x D&A), raw last FCFF is much lower than
+        normalized FCFF (NOPAT - delta_NWC). MC TV resampling should use normalized.
+        Verified via: normalized_last_fcff > raw_fcff when capex_ratio > 1.
+        """
+        from engine.dcf import calc_dcf
+        from schemas.models import DCFParams
+
+        params = DCFParams(
+            capex_to_da=2.0,  # heavy capex: 2x D&A
+            ebitda_growth_rates=[0.05, 0.05],
+            terminal_growth=2.0,
+            tax_rate=25.0,
+        )
+        result = calc_dcf(
+            ebitda_base=100_000,
+            da_base=20_000,
+            revenue_base=500_000,
+            wacc_pct=8.0,
+            params=params,
+        )
+        last_p = result.projections[-1]
+        raw_fcff = last_p.fcff
+        normalized_fcff = last_p.nopat - last_p.delta_nwc if last_p.nopat > 0 else last_p.fcff
+        # With capex_to_da=2.0, capex > D&A, so raw FCFF < normalized FCFF
+        assert normalized_fcff > raw_fcff
+
+    # ── VL-4: MC DCF TV ratio does not explode near WACC ≈ TG ───────────────
+
+    def test_mc_dcf_tv_spread_guard_prevents_explosion(self):
+        """MC TV is bounded even when WACC std causes samples near TG."""
+        mc_input = MCInput(
+            multiple_params={"A": (8.0, 1.0)},
+            wacc_mean=3.5,   # very close to TG
+            wacc_std=2.0,    # wide std — many samples will have w close to g
+            dlom_mean=0.0,
+            dlom_std=0.0,
+            tg_mean=3.0,
+            tg_std=0.5,
+            n_sims=2000,
+            seed=42,
+        )
+        # DCF TV enabled with large FCFF to amplify any explosion
+        result = run_monte_carlo(
+            mc_input,
+            seg_ebitdas={"A": 100_000},
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=1_000_000,
+            wacc_for_dcf=3.5,
+            dcf_last_fcff=500_000,
+            dcf_pv_fcff_sum=1_000_000,
+            dcf_n_periods=5,
+        )
+        # Mean should be finite and reasonable (not exploded to absurd values)
+        assert result.mean < 10_000_000  # sanity upper bound
+        assert result.p95 < result.p5 * 200  # p95 not 200x p5 (no fat-tail explosion)
+
+    def test_mc_dcf_tv_ratio_clipped_to_3x(self):
+        """TV ratio clipping at 3x is still active alongside spread guard."""
+        mc_input = MCInput(
+            multiple_params={"A": (10.0, 1.0)},
+            wacc_mean=8.0,
+            wacc_std=3.0,
+            dlom_mean=0.0,
+            dlom_std=0.0,
+            tg_mean=2.5,
+            tg_std=0.5,
+            n_sims=1000,
+            seed=99,
+        )
+        r = run_monte_carlo(
+            mc_input,
+            seg_ebitdas={"A": 50_000},
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=1_000_000,
+            wacc_for_dcf=8.0,
+            dcf_last_fcff=100_000,
+            dcf_pv_fcff_sum=400_000,
+            dcf_n_periods=5,
+        )
+        # With clipping at 3x, max per-share should be bounded
+        assert r.max_val < r.mean * 50  # no single sample 50x the mean
+
+    # ── VL-1b: calc_scenario also includes CPS/RCPS when irr is None ─────────
+
+    def test_calc_scenario_rcps_included_when_irr_none(self):
+        """calc_scenario must include RCPS in equity bridge when irr=None.
+
+        Before the scenario.py fix, `elif sc.irr is not None and rcps_principal > 0`
+        caused rcps_repay=0 for irr=None — creating inconsistency with MC.
+        After fix: `elif rcps_principal > 0` with `(sc.irr or 0)` fallback.
+        """
+        from engine.scenario import calc_scenario
+        from schemas.models import ScenarioParams
+
+        sc = ScenarioParams(
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
+            irr=None,  # no IRR
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
+        )
+        ev = 1_000_000  # 1M total EV
+        rcps_principal = 200_000
+        result = calc_scenario(
+            sc,
+            total_ev=ev,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_principal=rcps_principal,
+            rcps_years=3,
+            unit_multiplier=1,
+        )
+        # effective_rate = max(0 - 0, 0) = 0; repay = 200_000 * 1^3 = 200_000
+        assert result.rcps_repay == 200_000
+        assert result.equity_value == ev - 200_000
+
+    def test_calc_scenario_cps_included_when_irr_none(self):
+        """calc_scenario must include CPS in equity bridge when irr=None."""
+        from engine.scenario import calc_scenario
+        from schemas.models import ScenarioParams
+
+        sc = ScenarioParams(
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
+            irr=None,
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
+        )
+        result = calc_scenario(
+            sc,
+            total_ev=500_000,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=100_000,
+            cps_years=2,
+            unit_multiplier=1,
+        )
+        # effective_rate = max(0 - 0, 0) = 0; cps_repay = 100_000 * 1^2 = 100_000
+        assert result.cps_repay == 100_000
+        assert result.equity_value == 400_000

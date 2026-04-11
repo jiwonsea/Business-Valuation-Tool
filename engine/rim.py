@@ -101,14 +101,13 @@ def calc_rim(
         bv = bv + ni - dividends
 
     # Terminal Value: RI_{n+1} / (ke - g), using end-of-period BV
-    # After loop, `bv` is BV_n (end of projection). Terminal RI uses this BV.
+    # After loop, `bv` is BV_n (beginning of period n+1).
+    # terminal_ri_base = BV_n * (ROE_n - ke) = RI_{n+1} already — no extra (1+g).
     last_roe = roe_forecasts[-1] / 100 if roe_forecasts else 0
     terminal_ri_base = round(bv * (last_roe - k)) if projections else 0
     if k > g and terminal_ri_base != 0:
-        terminal_ri_next = round(terminal_ri_base * (1 + g))
-        terminal_value = round(terminal_ri_next / (k - g))
+        terminal_value = round(terminal_ri_base / (k - g))
     else:
-        terminal_ri_next = 0
         terminal_value = 0
 
     n = len(projections)

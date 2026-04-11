@@ -644,7 +644,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                 net_debt=vi.net_debt,
                 unit_multiplier=um,
             )
-        except ValueError:
+        except (ValueError, ZeroDivisionError):
             logger.warning("SOTP DCF sensitivity skipped (invalid base DCF)")
 
     # Multiple cross-validation -- apply effective_net_debt
@@ -765,7 +765,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                     vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
-            except ValueError:
+            except (ValueError, ZeroDivisionError):
                 logger.warning(
                     "DCF scenario '%s' recalc failed (wacc<=tg), using base EV", code
                 )
@@ -781,7 +781,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                     vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
-            except ValueError:
+            except (ValueError, ZeroDivisionError):
                 logger.warning(
                     "DCF scenario '%s' WACC recalc failed, using base EV", code
                 )
@@ -927,6 +927,8 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         sc_ke = sc_wacc.ke
         try:
+            if sc_ke <= 0:
+                raise ValueError(f"sc_ke={sc_ke:.2f}% <= 0")
             sc_ddm = calc_ddm_engine(
                 vi.ddm_params.dps,
                 sc_growth,
@@ -940,7 +942,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             )
         except ValueError:
             logger.warning(
-                "DDM scenario '%s' failed (growth>=Ke), using base DDM", code
+                "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
             sc_ev = (
                 ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
@@ -1418,13 +1420,14 @@ def _derive_rcps_repay(ref_sc: ScenarioParams | None, vi) -> int:
 
     If rcps_repay is explicitly set in scenario, use it.
     Otherwise compute from IRR and rcps_principal/years/dividend_rate.
+    When irr is None, uses 0 as the rate (mirrors calc_scenario's `sc.irr or 0`).
     """
     if ref_sc is None:
         return 0
     if ref_sc.rcps_repay is not None:
         return ref_sc.rcps_repay
-    if ref_sc.irr is not None and vi.rcps_principal > 0:
-        effective_rate = max(ref_sc.irr - vi.rcps_dividend_rate, 0.0)
+    if vi.rcps_principal > 0:
+        effective_rate = max((ref_sc.irr or 0) - vi.rcps_dividend_rate, 0.0)
         return round(vi.rcps_principal * (1 + effective_rate / 100) ** vi.rcps_years)
     return 0
 
@@ -1598,9 +1601,15 @@ def _run_monte_carlo(
 
     dcf_kwargs = {}
     if dcf_result and dcf_result.projections:
+        last_p = dcf_result.projections[-1]
+        # Use normalized FCFF (consistent with actual DCF TV: NOPAT - delta_NWC).
+        # Raw last_p.fcff perpetuates capex-fade artifacts and capex/DA deviations.
+        normalized_last_fcff = (
+            last_p.nopat - last_p.delta_nwc if last_p.nopat > 0 else last_p.fcff
+        )
         dcf_kwargs = dict(
             wacc_for_dcf=wacc_result.wacc,
-            dcf_last_fcff=dcf_result.projections[-1].fcff,
+            dcf_last_fcff=normalized_last_fcff,
             dcf_pv_fcff_sum=dcf_result.pv_fcff_sum,
             dcf_n_periods=len(dcf_result.projections),
         )

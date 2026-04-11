@@ -172,14 +172,20 @@ def run_monte_carlo(
         w = wacc_samples / 100
         g = tg_samples / 100
         valid = w > g
-        tv_sample = np.where(valid, dcf_last_fcff * (1 + g) / (w - g), 0)
+        # Enforce minimum WACC-TG spread to prevent TV explosion when WACC ≈ TG.
+        # Without this guard, samples where w - g < 0.1% produce TV values 50x+ base,
+        # creating extreme fat tails that distort MC mean/percentiles.
+        _MIN_SPREAD = 0.005  # 0.5% minimum spread
+        spread = np.maximum(w - g, _MIN_SPREAD)
+        tv_sample = np.where(valid, dcf_last_fcff * (1 + g) / spread, 0)
         pv_tv_sample = np.where(valid, tv_sample / (1 + w) ** dcf_n_periods, 0)
         dcf_ev_sample = dcf_pv_fcff_sum + pv_tv_sample
 
         # Base DCF EV (scalar, computed once outside loop)
         w0 = wacc_for_dcf / 100
         g0 = mc_input.tg_mean / 100
-        tv_base = dcf_last_fcff * (1 + g0) / (w0 - g0)
+        spread0 = max(w0 - g0, _MIN_SPREAD)
+        tv_base = dcf_last_fcff * (1 + g0) / spread0
         pv_tv_base = tv_base / (1 + w0) ** dcf_n_periods
         dcf_ev_base = dcf_pv_fcff_sum + pv_tv_base
 

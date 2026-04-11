@@ -1,0 +1,136 @@
+company:
+  name: Stellantis N.V.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: STLA
+  cik: '1605484'
+  corp_code: null
+  shares_total: 2897483196
+  shares_ordinary: 2897483196
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-11'
+valuation_method: sotp
+segments:
+  MAIN:
+    name: Main Business
+    method: ev_revenue
+    multiple: 0.3
+segment_data:
+  2025:
+    MAIN:
+      revenue: 153508
+      gross_profit: 0
+      op: -22231
+      assets: 195153
+consolidated:
+  2023:
+    revenue: 189544
+    op: 22984
+    net_income: 18596
+    assets: 202128
+    liabilities: 120008
+    equity: 81693
+    dep: 7549
+    amort: 0
+    gross_borr: 29463
+    net_borr: -14206
+    de_ratio: 36.1
+  2024:
+    revenue: 156878
+    op: 5435
+    net_income: 5473
+    assets: 207607
+    liabilities: 125492
+    equity: 81692
+    dep: 7226
+    amort: 0
+    gross_borr: 37227
+    net_borr: 3127
+    de_ratio: 45.6
+  2025:
+    revenue: 153508
+    op: -22231
+    net_income: -22368
+    assets: 195153
+    liabilities: 141152
+    equity: 53551
+    dep: 6981
+    amort: 0
+    gross_borr: 45947
+    net_borr: 15801
+    de_ratio: 85.8
+wacc_params:
+  rf: 4.25
+  erp: 5.5
+  bu: 0.377
+  de: 197.2
+  tax: 17.8
+  kd_pre: 4.25
+  eq_w: 33.6
+scenarios:
+  Base:
+    name: Base Case
+    prob: 50
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2897483196
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2897483196
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2897483196
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.05
+  - 0.04
+  tax_rate: 17.8
+  capex_to_da: 1.4
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.8
+  actual_capex: 9142
+  capex_fade_to: null
+  da_to_ebitda_override: 0.409
+pe_multiple: 0.0
+ev_revenue_multiple: 0.3
+pbv_multiple: 0.4
+cps_principal: 0
+cps_years: 0
+net_debt: 15801
+eco_frontier: 0
+base_year: 2025
+peers: []
+mc_enabled: true

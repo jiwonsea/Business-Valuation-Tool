@@ -4323,3 +4323,76 @@ class TestNumericalFixes:
         result = _derive_rcps_repay(sc, _VI())
         expected = round(300_000 * (1.04 ** 2))
         assert result == expected
+
+    # ── F-P2-10: distress ICR uses actual interest_expense when available ─────
+
+    def test_distress_uses_actual_interest_expense_over_estimate(self):
+        """When interest_expense is in consolidated data, distress ICR uses it.
+
+        Test: actual interest=250 → ICR=0.8 → penalty=10%
+              estimated (gross_borr=1000 × kd=5%) = 50 → ICR=4.0 → penalty=0%
+        Confirms the two diverge depending on actual vs. estimated.
+        """
+        from engine.distress import calc_distress_discount
+
+        consolidated = {
+            2023: {
+                "op": 150, "dep": 50, "amort": 0,  # EBITDA=200
+                "gross_borr": 1000,
+                "interest_expense": 250,  # actual: high-coupon debt
+                "de_ratio": 50,
+                "net_income": 100,
+                "equity": 1000,
+            }
+        }
+        # With actual interest_expense=250: ICR = 200/250 = 0.8 < 2.0 → penalty = 0.10
+        result = calc_distress_discount(consolidated, 2023, kd_pre=5.0, market="KR")
+        assert result.icr_penalty == 0.10
+
+        # Without actual data: estimate = 1000 * 5% = 50 → ICR = 200/50 = 4.0 → penalty=0
+        consolidated_no_actual = {
+            2023: {k: v for k, v in consolidated[2023].items() if k != "interest_expense"}
+        }
+        result_estimated = calc_distress_discount(
+            consolidated_no_actual, 2023, kd_pre=5.0, market="KR"
+        )
+        assert result_estimated.icr_penalty == 0.0
+
+    # ── sensitivity_irr_dlom: triggers for RCPS-only companies ───────────────
+
+    def test_sensitivity_irr_dlom_triggers_for_rcps_only(self):
+        """sensitivity_irr_dlom must produce rows when only RCPS is present (cps=0)."""
+        from engine.sensitivity import sensitivity_irr_dlom
+
+        rows, irr_range, dlom_range = sensitivity_irr_dlom(
+            total_ev=1_000_000,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,       # no CPS
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=1,              # shares=1 so per_share == equity value
+            unit_multiplier=1,
+            rcps_principal=200_000,  # RCPS only
+            rcps_years=3,
+            rcps_dividend_rate=2.0,
+        )
+        assert len(rows) > 0, "RCPS-only company should produce IRR sensitivity rows"
+
+        # At irr=5%: effective_rate = max(5-2, 0) = 3%; rcps_repay = 200k * 1.03^3
+        irr5_rows = [r for r in rows if r.row_val == 5.0 and r.col_val == 0]
+        expected_rcps = round(200_000 * (1.03 ** 3))
+        expected_equity = 1_000_000 - expected_rcps
+        assert irr5_rows[0].value == expected_equity
+
+    def test_sensitivity_irr_dlom_empty_when_no_fi(self):
+        """sensitivity_irr_dlom returns empty when both CPS and RCPS are absent."""
+        from engine.sensitivity import sensitivity_irr_dlom
+
+        rows, _, _ = sensitivity_irr_dlom(
+            total_ev=1_000_000, net_debt=0, eco_frontier=0,
+            cps_principal=0, cps_years=0, rcps_repay=0, buyback=0,
+            shares=1_000_000, unit_multiplier=1,
+        )
+        assert rows == []

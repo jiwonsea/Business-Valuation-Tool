@@ -615,7 +615,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         buyback=ref_sc.buyback if ref_sc else 0,
         pbv_pe_ev=_pbv_pe_ev,
     )
-    if vi.cps_principal > 0:
+    if vi.cps_principal > 0 or vi.rcps_principal > 0:
         sens_irr, _, _ = sensitivity_irr_dlom(
             total_ev,
             effective_net_debt,
@@ -627,6 +627,9 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             vi.company.shares_outstanding,
             unit_multiplier=um,
             cps_dividend_rate=vi.cps_dividend_rate,
+            rcps_principal=vi.rcps_principal,
+            rcps_years=vi.rcps_years,
+            rcps_dividend_rate=vi.rcps_dividend_rate,
         )
     else:
         sens_irr = []

@@ -140,7 +140,15 @@ def calc_distress_discount(
     amort = base.get("amort", 0)
     ebitda = op + dep + amort
     gross_borr = base.get("gross_borr", 0)
-    interest_expense = gross_borr * kd_pre / 100 if gross_borr > 0 else 0
+    # Prefer actual interest expense from financial statements; fall back to estimate.
+    # yfinance (US) provides it directly; DART (KR) extracts it when available.
+    actual_ie = base.get("interest_expense", 0)
+    if actual_ie > 0:
+        interest_expense = actual_ie
+    elif gross_borr > 0:
+        interest_expense = gross_borr * kd_pre / 100
+    else:
+        interest_expense = 0
 
     if interest_expense > 0 and ebitda > 0:
         icr = ebitda / interest_expense

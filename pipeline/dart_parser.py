@@ -17,6 +17,10 @@ ACCOUNT_MAP = {
     # IS -- Operating Income (Revenue - Costs)
     "영업이익": "op",
     "영업이익(손실)": "op",
+    # IS -- Interest expense (for distress ICR calculation)
+    "이자비용": "interest_expense",
+    "금융비용": "interest_expense",
+    "금융원가": "interest_expense",
     # IS -- Net Income
     "당기순이익": "net_income",
     "당기순이익(손실)": "net_income",

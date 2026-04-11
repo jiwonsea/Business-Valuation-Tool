@@ -113,9 +113,19 @@ def sensitivity_irr_dlom(
     dlom_range: list[float] | None = None,
     unit_multiplier: int = 1_000_000,
     cps_dividend_rate: float = 0.0,
+    rcps_principal: int = 0,
+    rcps_years: int = 0,
+    rcps_dividend_rate: float = 0.0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """Sensitivity: FI IRR x DLOM -> Scenario B per-share value (pre-probability)."""
-    if cps_principal <= 0:
+    """Sensitivity: FI IRR x DLOM -> per-share value (pre-probability).
+
+    Triggers when CPS or RCPS is present. When rcps_principal > 0, RCPS repayment
+    is recomputed per-IRR (same as CPS). When rcps_principal == 0, the precomputed
+    rcps_repay scalar is used (backward-compatible).
+    """
+    has_cps = cps_principal > 0
+    has_rcps = rcps_principal > 0
+    if not has_cps and not has_rcps:
         return [], [], []
 
     if irr_range is None:
@@ -125,9 +135,17 @@ def sensitivity_irr_dlom(
 
     rows = []
     for irr in irr_range:
-        effective_rate = max(irr - cps_dividend_rate, 0.0)
-        cps_r = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
-        claims = net_debt + cps_r + rcps_repay + buyback + eco_frontier
+        if has_cps:
+            effective_rate = max(irr - cps_dividend_rate, 0.0)
+            cps_r = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
+        else:
+            cps_r = 0
+        if has_rcps:
+            effective_rate = max(irr - rcps_dividend_rate, 0.0)
+            rcps_r = round(rcps_principal * (1 + effective_rate / 100) ** rcps_years)
+        else:
+            rcps_r = rcps_repay  # precomputed scalar (CPS-only or no-RCPS path)
+        claims = net_debt + cps_r + rcps_r + buyback + eco_frontier
         eq = total_ev - claims
         base_ps = per_share(eq, unit_multiplier, shares)
         for dlom in dlom_range:

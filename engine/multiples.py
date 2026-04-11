@@ -4,9 +4,12 @@ Cross-validates with EV/Revenue, P/E, P/BV in addition to SOTP (EV/EBITDA)
 to expand the football field range.
 """
 
+import logging
 from dataclasses import dataclass
 
 from .units import per_share as _per_share
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -45,6 +48,11 @@ def calc_pe(
     """P/E method (direct equity value)."""
     equity = round(net_income * multiple) if net_income > 0 else 0
     ps = _per_share(equity, unit_multiplier, shares)
+    if ps > 10_000_000 and net_income > 0:
+        logger.warning(
+            "P/E per-share unusually high: %s (net_income=%s, multiple=%s, shares=%s, um=%s)",
+            ps, net_income, multiple, shares, unit_multiplier,
+        )
     return MultipleValuation(
         method="P/E", metric_value=net_income, multiple=multiple,
         enterprise_value=0, equity_value=equity, per_share=ps,

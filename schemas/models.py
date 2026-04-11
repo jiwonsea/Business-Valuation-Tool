@@ -269,6 +269,9 @@ class ScenarioParams(BaseModel):
     segment_revenue: Optional[dict[str, int]] = None  # {seg_code: revenue} for ev_revenue segments
     segment_method_override: Optional[dict[str, str]] = None  # {seg_code: "ev_ebitda"|"ev_revenue"} per-scenario method transition
 
+    # rNPV PoS overrides (per-scenario) — {drug_name: pos} for Bull/Bear PoS differentiation
+    pos_override: Optional[dict[str, float]] = None  # {drug_name: 0.0-1.0}
+
     @field_validator("wacc_adj")
     @classmethod
     def wacc_adj_range(cls, v: float) -> float:
@@ -342,6 +345,67 @@ class ScenarioResult(BaseModel):
 
 
 # ── DDM ──
+
+class PipelineDrug(BaseModel):
+    """Single drug/candidate in a pharma pipeline for rNPV valuation."""
+    name: str  # Drug name (e.g., "Semaglutide", "CagriSema")
+    phase: str  # "preclinical" | "phase1" | "phase2" | "phase3" | "filed" | "approved"
+    indication: str = ""  # Therapeutic area (e.g., "Obesity", "T2D", "NASH")
+    peak_sales: int = 0  # Estimated peak annual sales (display units, e.g., $M)
+    years_to_peak: int = 5  # Years from now to peak sales
+    years_at_peak: int = 5  # Duration of peak sales plateau
+    patent_expiry_years: int = 15  # Years until patent/exclusivity expiry
+    success_prob: Optional[float] = None  # Override cumulative PoS (0-1). None = use phase default
+    launch_year_offset: int = 0  # Years from base_year to expected launch (0 = already launched)
+    existing_revenue: int = 0  # Current annual revenue if already on market (display units)
+    operating_margin: Optional[float] = None  # Drug-level operating margin (0-1). None = use company default
+
+
+# Phase-level cumulative Probability of Success (PoS) — industry averages
+# Source: BIO/QLS Advisors (2024), Damodaran pharma valuation
+PHASE_POS: dict[str, float] = {
+    "preclinical": 0.05,  # ~5% cumulative PoS
+    "phase1": 0.10,       # ~10%
+    "phase2": 0.25,       # ~25%
+    "phase3": 0.55,       # ~55%
+    "filed": 0.85,        # ~85%
+    "approved": 1.00,     # Already approved = 100%
+}
+
+
+class RNPVParams(BaseModel):
+    """Risk-adjusted NPV (rNPV) parameters for pharma pipeline valuation."""
+    pipeline: list[PipelineDrug]  # Drug candidates
+    r_and_d_cost: int = 0  # Total annual R&D cost (display units) — deducted from pipeline value
+    discount_rate: Optional[float] = None  # Override WACC for pipeline NPV (%, None = use WACC)
+    decline_rate: float = 20.0  # Annual revenue decline after patent expiry (%)
+    default_margin: float = 0.35  # Default operating margin after tax (0-1) applied to revenue → profit
+    tax_rate: float = 0.22  # Corporate tax rate for profit conversion
+
+
+class RNPVDrugResult(BaseModel):
+    """Per-drug rNPV result."""
+    name: str
+    phase: str
+    indication: str = ""
+    peak_sales: int = 0
+    success_prob: float = 0.0
+    npv_unadjusted: int = 0  # NPV before probability adjustment
+    rnpv: int = 0  # Risk-adjusted NPV (= NPV × PoS)
+    revenue_curve: list[int] = []  # Annual revenue projection (for Excel charting)
+
+
+class RNPVValuationResult(BaseModel):
+    """Aggregate rNPV valuation result."""
+    drug_results: list[RNPVDrugResult] = []
+    total_rnpv: int = 0  # Sum of all drug rNPVs
+    r_and_d_cost_pv: int = 0  # PV of R&D costs deducted
+    pipeline_value: int = 0  # total_rnpv - r_and_d_cost_pv
+    existing_revenue_value: int = 0  # Value of currently marketed drugs (DCF of existing revenue)
+    enterprise_value: int = 0  # pipeline_value + existing_revenue_value
+    per_share: int = 0
+    discount_rate: float = 0.0  # Applied discount rate (%)
+
 
 class DDMParams(BaseModel):
     """Dividend Discount Model (DDM) input parameters."""
@@ -515,7 +579,7 @@ class PeerSegmentStats(BaseModel):
 
 class ValuationInput(BaseModel):
     company: CompanyProfile
-    valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "auto"
+    valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "rnpv" | "auto"
     industry: str = ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
     segments: dict[str, dict]  # code -> {"name": str, "multiple": float}
     segment_data: dict[int, dict[str, dict]]  # year -> code -> {"revenue", "op", "assets", ...}
@@ -528,6 +592,7 @@ class ValuationInput(BaseModel):
     ddm_params: Optional[DDMParams] = None  # For DDM (financial sector)
     rim_params: Optional[RIMParams] = None  # For RIM (financial sector -- BV-based)
     nav_params: Optional[NAVParams] = None  # For NAV (holding co./REITs/asset-heavy)
+    rnpv_params: Optional[RNPVParams] = None  # For rNPV (pharma pipeline)
     cps_principal: int = 0  # In display units
     cps_years: int = 0
     cps_dividend_rate: float = 0.0  # CPS annual dividend rate (%, 0=zero-coupon)
@@ -634,7 +699,9 @@ class MonteCarloResult(BaseModel):
     max_val: int = 0
     histogram_bins: list[int] = []
     histogram_counts: list[int] = []
+    pct_negative: float = 0.0  # Percentage of simulations with negative/zero equity
     scenario_mc: dict[str, MCScenarioSummary] = {}  # {scenario_code: summary}
+    input_assumptions: dict[str, str] = {}  # {param_name: description}
 
 
 class MarketComparisonResult(BaseModel):
@@ -680,7 +747,7 @@ class GapDiagnostic(BaseModel):
 
 
 class ValuationResult(BaseModel):
-    primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav")
+    primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav"|"rnpv")
     wacc: WACCResult
     da_allocations: dict[int, dict[str, DAAllocation]] = {}  # For SOTP (empty dict = not used)
     sotp: dict[str, SOTPSegmentResult] = {}  # For SOTP (empty dict = not used)
@@ -691,6 +758,7 @@ class ValuationResult(BaseModel):
     ddm: Optional[DDMValuationResult] = None
     rim: Optional[RIMValuationResult] = None
     nav: Optional[NAVResult] = None
+    rnpv: Optional[RNPVValuationResult] = None
     multiples_primary: Optional[MultiplesResult] = None
     cross_validations: list[CrossValidationItem] = []
     peer_stats: list[PeerSegmentStats] = []

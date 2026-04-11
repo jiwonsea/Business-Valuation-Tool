@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 from schemas.models import (
     CompanyProfile, WACCParams, WACCResult, ScenarioParams,
-    DCFParams, DDMParams, NAVParams,
+    DCFParams, DDMParams, NAVParams, RNPVParams,
     RIMParams, RIMProjectionResult, RIMValuationResult,
     PeerCompany, ValuationInput, ValuationResult, CrossValidationItem,
     MonteCarloResult, DDMValuationResult, NAVResult, MultiplesResult,
-    NewsDriver,
+    RNPVValuationResult, RNPVDrugResult,
+    NewsDriver, PipelineDrug,
 )
 from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
@@ -32,6 +33,7 @@ from engine.multiples import cross_validate, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
 from engine.quality import calc_quality_score
 from engine.nav import calc_nav
+from engine.rnpv import calc_rnpv
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial
 
@@ -126,6 +128,20 @@ def load_profile(path: str) -> ValuationInput:
     if "nav_params" in raw:
         nav_params = NAVParams(**raw["nav_params"])
 
+    # rNPV (Optional — pharma pipeline)
+    rnpv_params = None
+    if "rnpv_params" in raw:
+        pipeline_raw = raw["rnpv_params"].get("pipeline", [])
+        pipeline_drugs = [PipelineDrug(**d) for d in pipeline_raw]
+        rnpv_params = RNPVParams(
+            pipeline=pipeline_drugs,
+            r_and_d_cost=raw["rnpv_params"].get("r_and_d_cost", 0),
+            discount_rate=raw["rnpv_params"].get("discount_rate"),
+            decline_rate=raw["rnpv_params"].get("decline_rate", 20.0),
+            default_margin=raw["rnpv_params"].get("default_margin", 0.35),
+            tax_rate=raw["rnpv_params"].get("tax_rate", 0.22),
+        )
+
     # Peers (skip entries with non-numeric ev_ebitda from AI output)
     peers = []
     for p in raw.get("peers", []):
@@ -180,6 +196,7 @@ def load_profile(path: str) -> ValuationInput:
         ddm_params=ddm_params,
         rim_params=rim_params,
         nav_params=nav_params,
+        rnpv_params=rnpv_params,
         cps_principal=raw.get("cps_principal", 0),
         cps_years=raw.get("cps_years", 0),
         cps_dividend_rate=raw.get("cps_dividend_rate", 0.0),
@@ -247,6 +264,7 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
             ke=wacc_result.ke,
             has_ddm_params=vi.ddm_params is not None,
             has_rim_params=vi.rim_params is not None,
+            has_rnpv_params=vi.rnpv_params is not None,
             segment_names=seg_names,
         )
 
@@ -257,6 +275,7 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
         "nav": _run_nav_valuation,
         "multiples": _run_multiples_valuation,
         "dcf_primary": _run_dcf_valuation,
+        "rnpv": _run_rnpv_valuation,
     }
     runner = dispatch.get(method, _run_dcf_valuation)
     result = runner(vi, wacc_result, um)
@@ -478,15 +497,18 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         buyback=ref_sc.buyback if ref_sc else 0,
         pbv_pe_ev=_pbv_pe_ev,
     )
-    sens_irr, _, _ = sensitivity_irr_dlom(
-        total_ev, effective_net_debt, vi.eco_frontier,
-        vi.cps_principal, vi.cps_years,
-        _derive_rcps_repay(ref_sc, vi),
-        ref_sc.buyback if ref_sc else 0,
-        vi.company.shares_outstanding,
-        unit_multiplier=um,
-        cps_dividend_rate=vi.cps_dividend_rate,
-    )
+    if vi.cps_principal > 0:
+        sens_irr, _, _ = sensitivity_irr_dlom(
+            total_ev, effective_net_debt, vi.eco_frontier,
+            vi.cps_principal, vi.cps_years,
+            _derive_rcps_repay(ref_sc, vi),
+            ref_sc.buyback if ref_sc else 0,
+            vi.company.shares_outstanding,
+            unit_multiplier=um,
+            cps_dividend_rate=vi.cps_dividend_rate,
+        )
+    else:
+        sens_irr = []
     sens_dcf_rows = []
     if dcf_result is not None:
         try:
@@ -1179,13 +1201,24 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
     ]
 
 
-def _mc_raw_to_result(mc_raw):
+def _mc_raw_to_result(mc_raw, mc_input=None):
     """Convert MCResult to MonteCarloResult."""
+    assumptions = {}
+    if mc_input is not None:
+        for seg, (m, s) in mc_input.multiple_params.items():
+            assumptions[f"Multiple({seg})"] = f"Normal(mean={m:.1f}x, std={s:.2f}x)"
+        assumptions["WACC"] = f"Normal(mean={mc_input.wacc_mean:.1f}%, std={mc_input.wacc_std:.1f}%p)"
+        assumptions["DLOM"] = f"Normal(mean={mc_input.dlom_mean:.0f}%, std={mc_input.dlom_std:.0f}%), clipped 0-50%"
+        assumptions["Terminal Growth"] = f"Normal(mean={mc_input.tg_mean:.1f}%, std={mc_input.tg_std:.1f}%p), clipped 0~WACC-0.5%"
+        for seg, (r, rs) in mc_input.revenue_params.items():
+            assumptions[f"Revenue({seg})"] = f"Normal(mean={r:,.0f}, std={rs:,.0f})"
     return MonteCarloResult(
         n_sims=mc_raw.n_sims, mean=mc_raw.mean, median=mc_raw.median,
         std=mc_raw.std, p5=mc_raw.p5, p25=mc_raw.p25, p75=mc_raw.p75,
         p95=mc_raw.p95, min_val=mc_raw.min_val, max_val=mc_raw.max_val,
         histogram_bins=mc_raw.histogram_bins, histogram_counts=mc_raw.histogram_counts,
+        pct_negative=mc_raw.pct_negative,
+        input_assumptions=assumptions,
     )
 
 
@@ -1262,7 +1295,7 @@ def _run_monte_carlo(
         cps_dividend_rate=vi.cps_dividend_rate,
         **dcf_kwargs,
     )
-    result = _mc_raw_to_result(mc_raw)
+    result = _mc_raw_to_result(mc_raw, mc_input=mc_params)
 
     # Per-scenario MC (lightweight: fewer sims, no histogram stored)
     from schemas.models import MCScenarioSummary
@@ -1351,3 +1384,136 @@ def _build_seg_ebitdas_from_consolidated(vi, cons) -> dict[str, int]:
     # No revenue data — distribute equally across segments
     n = len(seg_codes)
     return {c: round(ebitda / n) for c in seg_codes}
+
+
+def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationResult:
+    """Risk-adjusted NPV (rNPV) valuation for pharma pipeline companies."""
+    if not vi.rnpv_params:
+        raise ValueError(
+            "rNPV 방법론이 선택되었으나 rnpv_params가 없습니다. "
+            "YAML에 rnpv_params: {pipeline: [...]}를 추가하세요."
+        )
+
+    # Use override discount rate or WACC
+    discount_rate = vi.rnpv_params.discount_rate or wacc_result.wacc
+
+    # Convert pipeline drugs to dicts for engine
+    pipeline_dicts = [d.model_dump() for d in vi.rnpv_params.pipeline]
+
+    rnpv_raw = calc_rnpv(
+        pipeline=pipeline_dicts,
+        discount_rate=discount_rate,
+        r_and_d_cost=vi.rnpv_params.r_and_d_cost,
+        decline_rate=vi.rnpv_params.decline_rate,
+        default_margin=vi.rnpv_params.default_margin,
+        tax_rate=vi.rnpv_params.tax_rate,
+    )
+
+    # Build Pydantic result (include revenue_curve for Excel charting)
+    drug_results = [
+        RNPVDrugResult(
+            name=dr.name,
+            phase=dr.phase,
+            indication=dr.indication,
+            peak_sales=dr.peak_sales,
+            success_prob=dr.success_prob,
+            npv_unadjusted=dr.npv,
+            rnpv=dr.rnpv,
+            revenue_curve=dr.revenue_curve,
+        )
+        for dr in rnpv_raw.drug_results
+    ]
+
+    shares = vi.company.shares_outstanding
+    ev = rnpv_raw.enterprise_value
+    equity_value = ev - vi.net_debt
+    per_share = round(equity_value * um / shares) if shares > 0 else 0
+
+    rnpv_result = RNPVValuationResult(
+        drug_results=drug_results,
+        total_rnpv=rnpv_raw.total_rnpv,
+        r_and_d_cost_pv=rnpv_raw.r_and_d_cost_pv,
+        pipeline_value=rnpv_raw.pipeline_value,
+        existing_revenue_value=rnpv_raw.existing_revenue_value,
+        enterprise_value=ev,
+        per_share=per_share,
+        discount_rate=discount_rate,
+    )
+
+    # Scenarios: adjust success probabilities or peak sales
+    total_ev = ev
+    scenario_results = {}
+    total_weighted = 0
+
+    for sc_code, sc in vi.scenarios.items():
+        # growth_adj_pct adjusts peak sales; wacc_adj adjusts discount rate; pos_override adjusts PoS
+        adj_discount = discount_rate + sc.wacc_adj
+        adj_pipeline = []
+        for d in pipeline_dicts:
+            adj_d = dict(d)
+            if sc.growth_adj_pct != 0:
+                adj_d["peak_sales"] = round(d["peak_sales"] * (1 + sc.growth_adj_pct / 100))
+                if d.get("existing_revenue", 0) > 0:
+                    adj_d["existing_revenue"] = round(d["existing_revenue"] * (1 + sc.growth_adj_pct / 100))
+            if sc.pos_override and d["name"] in sc.pos_override:
+                adj_d["success_prob"] = sc.pos_override[d["name"]]
+            adj_pipeline.append(adj_d)
+
+        sc_rnpv = calc_rnpv(
+            pipeline=adj_pipeline,
+            discount_rate=adj_discount,
+            r_and_d_cost=vi.rnpv_params.r_and_d_cost,
+            decline_rate=vi.rnpv_params.decline_rate,
+            default_margin=vi.rnpv_params.default_margin,
+            tax_rate=vi.rnpv_params.tax_rate,
+        )
+        sc_ev = sc_rnpv.enterprise_value
+
+        sc_result = calc_scenario(
+            sc, sc_ev, vi.net_debt,
+            vi.eco_frontier,
+            vi.cps_principal, vi.cps_years,
+            rcps_principal=vi.rcps_principal,
+            rcps_years=vi.rcps_years,
+            unit_multiplier=um,
+            cps_dividend_rate=vi.cps_dividend_rate,
+            rcps_dividend_rate=vi.rcps_dividend_rate,
+        )
+        scenario_results[sc_code] = sc_result
+        total_weighted += sc_result.weighted
+
+    if not scenario_results:
+        total_weighted = per_share
+
+    # Cross-validation (common multiples)
+    cons = vi.consolidated[vi.base_year]
+    total_da_base = cons.get("dep", 0) + cons.get("amort", 0)
+    ebitda_base = cons.get("op", 0) + total_da_base
+    dcf_result = None
+    dcf_ev = 0
+    try:
+        dcf_result = calc_dcf(
+            ebitda_base, total_da_base, cons.get("revenue", 0),
+            wacc_result.wacc, vi.dcf_params, vi.base_year,
+        )
+        dcf_ev = dcf_result.ev_dcf
+    except ValueError:
+        pass
+
+    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_ev, um)
+
+    # Peer stats
+    seg_names = _seg_names(vi)
+    peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
+
+    return ValuationResult(
+        primary_method="rnpv",
+        wacc=wacc_result,
+        total_ev=total_ev,
+        rnpv=rnpv_result,
+        scenarios=scenario_results,
+        weighted_value=total_weighted,
+        dcf=dcf_result,
+        cross_validations=cv_items,
+        peer_stats=peer_stats,
+    )

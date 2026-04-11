@@ -13,6 +13,11 @@ from schemas.models import (
 from engine.quality import (
     calc_quality_score,
     _cv_convergence_score,
+    _cv_convergence_score_rnpv,
+    _rnpv_pipeline_diversity,
+    _rnpv_pos_grounding,
+    _reverse_rnpv_consistency,
+    _market_alignment_score_rnpv,
     _wacc_plausibility_score,
     _scenario_consistency_score,
     _market_alignment_score,
@@ -283,3 +288,323 @@ class TestFormat:
         report = format_quality_report(q, is_listed=False)
         assert "비상장" in report
         assert "시장가격 정합" not in report
+
+    def test_rnpv_format(self):
+        q = QualityScore(
+            total=87, cv_convergence=15, wacc_plausibility=25,
+            scenario_consistency=25, market_alignment=22,
+            max_score=100, warnings=[], grade="A",
+            is_rnpv=True, rnpv_weighted_cv=3, rnpv_pipeline_diversity=7,
+            rnpv_pos_grounding=5, rnpv_reverse_consistency=7,
+        )
+        report = format_quality_report(q, is_listed=True)
+        assert "rNPV 기준" in report
+        assert "DCF 제외" in report
+        assert "파이프라인 다양성" in report
+        assert "PoS 그라운딩" in report
+        assert "Reverse rNPV 정합" in report
+        assert "3/10" in report
+        assert "7/8" in report
+        assert "5/7" in report
+
+
+# ── rNPV CV Convergence Tests ──
+
+class TestRNPVCVConvergence:
+    def _make_cvs(self, methods_values: list[tuple[str, int]]) -> list[CrossValidationItem]:
+        return [
+            CrossValidationItem(
+                method=method, metric_value=100.0, multiple=10.0,
+                enterprise_value=1_000_000, equity_value=800_000, per_share=ps,
+            )
+            for method, ps in methods_values
+        ]
+
+    def test_dcf_excluded(self):
+        """DCF (FCFF) is excluded from rNPV convergence calculation."""
+        # Without DCF: [35, 39, 40] → CV ≈ 7% → 10 pts
+        # With DCF: [35, 92, 39, 40] → CV ≈ 46% → 1 pt
+        cvs = self._make_cvs([
+            ("SOTP (EV/EBITDA)", 35),
+            ("DCF (FCFF)", 92),
+            ("EV/Revenue", 39),
+            ("P/BV", 40),
+        ])
+        score_with_dcf, _ = _cv_convergence_score(cvs)
+        score_rnpv, _ = _cv_convergence_score_rnpv(cvs)
+        assert score_rnpv > score_with_dcf, "rNPV scoring should be higher when DCF is excluded"
+
+    def test_tight_rnpv_convergence(self):
+        """CV < 10% among rNPV-appropriate methods → 10 pts."""
+        cvs = self._make_cvs([
+            ("SOTP (EV/EBITDA)", 35),
+            ("DCF (FCFF)", 92),  # Should be excluded
+            ("EV/Revenue", 36),
+            ("P/BV", 37),
+        ])
+        score, warns = _cv_convergence_score_rnpv(cvs)
+        assert score == 10
+
+    def test_moderate_rnpv_convergence(self):
+        """CV 20-30% among rNPV methods → 5 pts.
+        [25, 45, 40] → mean≈36.7, stdev≈10.4, CV≈28%"""
+        cvs = self._make_cvs([
+            ("SOTP (EV/EBITDA)", 25),
+            ("EV/Revenue", 45),
+            ("P/BV", 40),
+        ])
+        score, warns = _cv_convergence_score_rnpv(cvs)
+        assert score == 5
+
+    def test_insufficient_methods_after_dcf_exclusion(self):
+        """Only DCF present → < 2 methods → 1 pt with warning."""
+        cvs = self._make_cvs([("DCF (FCFF)", 92)])
+        score, warns = _cv_convergence_score_rnpv(cvs)
+        assert score == 1
+        assert any("2개 미만" in w for w in warns)
+
+    def test_poor_rnpv_convergence(self):
+        """CV >= 45% → 1 pt with warning."""
+        cvs = self._make_cvs([
+            ("SOTP (EV/EBITDA)", 20),
+            ("EV/Revenue", 80),
+            ("P/BV", 50),
+        ])
+        score, warns = _cv_convergence_score_rnpv(cvs)
+        assert score == 1
+        assert any("수렴도 낮음" in w for w in warns)
+
+
+# ── rNPV Pipeline Diversity Tests ──
+
+_MINIMAL_CONSOLIDATED = {
+    2025: {
+        "revenue": 1000, "op": 200, "net_income": 150, "assets": 2000,
+        "liabilities": 800, "equity": 1200, "dep": 50, "amort": 10,
+        "gross_borr": 500, "net_borr": 400, "de_ratio": 50.0,
+    }
+}
+
+
+def _make_minimal_vi(rnpv_params=None):
+    """Create a minimal valid ValuationInput for rNPV quality tests."""
+    from schemas.models import ValuationInput, CompanyProfile, WACCParams, DCFParams
+    return ValuationInput(
+        company=CompanyProfile(
+            name="Test", market="US", shares_total=1000, shares_ordinary=1000,
+        ),
+        segments={},
+        segment_data={},
+        consolidated=_MINIMAL_CONSOLIDATED,
+        wacc_params=WACCParams(rf=4.0, erp=5.0, bu=1.0, de=50.0, tax=22.0, kd_pre=4.0, eq_w=67.0),
+        multiples={},
+        scenarios={},
+        dcf_params=DCFParams(),
+        rnpv_params=rnpv_params,
+    )
+
+
+class TestRNPVPipelineDiversity:
+    def _make_vi(self, drugs: list[dict]):
+        """Create a minimal ValuationInput with rNPV pipeline."""
+        from schemas.models import RNPVParams, PipelineDrug
+        pipeline = [PipelineDrug(name=d["name"], phase=d["phase"]) for d in drugs]
+        return _make_minimal_vi(rnpv_params=RNPVParams(pipeline=pipeline))
+
+    def test_diverse_pipeline(self):
+        """6 drugs, 4 phases → 4 + 4 = 8 pts."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "approved"},
+            {"name": "B", "phase": "filed"},
+            {"name": "C", "phase": "phase3"},
+            {"name": "D", "phase": "phase2"},
+            {"name": "E", "phase": "phase1"},
+            {"name": "F", "phase": "preclinical"},
+        ])
+        score, warns = _rnpv_pipeline_diversity(vi)
+        assert score == 8
+        assert len(warns) == 0
+
+    def test_small_pipeline_single_phase(self):
+        """1 drug, 1 phase → 1 + 1 = 2 pts with warning."""
+        vi = self._make_vi([{"name": "A", "phase": "phase3"}])
+        score, warns = _rnpv_pipeline_diversity(vi)
+        assert score == 2
+        assert any("단일 Phase" in w for w in warns)
+
+    def test_medium_pipeline_two_phases(self):
+        """4 drugs, 2 phases → 3 + 2 = 5 pts."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "approved"},
+            {"name": "B", "phase": "approved"},
+            {"name": "C", "phase": "phase3"},
+            {"name": "D", "phase": "phase3"},
+        ])
+        score, warns = _rnpv_pipeline_diversity(vi)
+        assert score == 5
+
+    def test_no_pipeline(self):
+        """No rnpv_params → 0 pts."""
+        vi = _make_minimal_vi(rnpv_params=None)
+        score, warns = _rnpv_pipeline_diversity(vi)
+        assert score == 0
+
+
+# ── rNPV PoS Grounding Tests ──
+
+class TestRNPVPoSGrounding:
+    def _make_vi(self, drugs: list[dict]):
+        from schemas.models import RNPVParams, PipelineDrug
+        pipeline = [
+            PipelineDrug(
+                name=d["name"], phase=d["phase"],
+                success_prob=d.get("success_prob"),
+            )
+            for d in drugs
+        ]
+        return _make_minimal_vi(rnpv_params=RNPVParams(pipeline=pipeline))
+
+    def test_majority_custom_pos(self):
+        """≥50% non-approved drugs with custom PoS → 7 pts."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "phase3", "success_prob": 0.60},
+            {"name": "B", "phase": "phase3", "success_prob": 0.55},
+            {"name": "C", "phase": "phase2"},
+        ])
+        score, warns = _rnpv_pos_grounding(vi)
+        assert score == 7
+
+    def test_partial_custom_pos(self):
+        """25-50% custom PoS → 5 pts."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "phase3", "success_prob": 0.60},
+            {"name": "B", "phase": "phase2"},
+            {"name": "C", "phase": "phase1"},
+            {"name": "D", "phase": "preclinical"},
+        ])
+        score, warns = _rnpv_pos_grounding(vi)
+        assert score == 5
+
+    def test_no_custom_pos(self):
+        """All defaults → 1 pt with warning."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "phase3"},
+            {"name": "B", "phase": "phase2"},
+        ])
+        score, warns = _rnpv_pos_grounding(vi)
+        assert score == 1
+        assert any("커스텀 설정 부족" in w for w in warns)
+
+    def test_all_approved_full_score(self):
+        """All approved drugs → PoS grounding not applicable → 7 pts."""
+        vi = self._make_vi([
+            {"name": "A", "phase": "approved"},
+            {"name": "B", "phase": "approved"},
+        ])
+        score, warns = _rnpv_pos_grounding(vi)
+        assert score == 7
+
+
+# ── Reverse rNPV Consistency Tests ──
+
+class TestReverseRNPVConsistency:
+    def _make_result(
+        self,
+        gap_pct: float = 20.0,
+        pos_scale: float | None = None,
+        peak_scale: float | None = None,
+        discount_rate: float | None = None,
+    ):
+        from schemas.models import ValuationResult, WACCResult, ReverseRNPVResult
+        rr = ReverseRNPVResult(
+            target_ev=100_000, model_ev=120_000, gap_pct=gap_pct,
+            implied_pos_scale=pos_scale,
+            implied_peak_scale=peak_scale,
+            implied_discount_rate=discount_rate,
+        )
+        wacc = WACCResult(bl=1.0, ke=10.0, kd_at=3.0, wacc=8.0)
+        return ValuationResult(primary_method="rnpv", wacc=wacc, reverse_rnpv=rr)
+
+    def test_small_gap_full_score(self):
+        """Model within 10% of market → 10 pts regardless of implied params."""
+        result = self._make_result(gap_pct=5.0)
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 10
+
+    def test_all_params_in_range(self):
+        """All implied params in plausible range → 10 pts."""
+        result = self._make_result(
+            gap_pct=20.0, pos_scale=1.2, peak_scale=1.1, discount_rate=12.0,
+        )
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 10
+        assert len(warns) == 0
+
+    def test_extreme_pos_scale(self):
+        """Implied PoS scale > 3.0 → -3 pts with warning."""
+        result = self._make_result(
+            gap_pct=50.0, pos_scale=5.0, peak_scale=1.2, discount_rate=12.0,
+        )
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 7  # 0 (pos) + 3 (peak) + 4 (rate)
+        assert any("PoS 배수 극단값" in w for w in warns)
+
+    def test_extreme_discount_rate(self):
+        """Implied discount rate > 30% → -4 pts with warning."""
+        result = self._make_result(
+            gap_pct=30.0, pos_scale=1.0, peak_scale=0.9, discount_rate=45.0,
+        )
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 6  # 3 (pos) + 3 (peak) + 0 (rate)
+        assert any("할인율 극단값" in w for w in warns)
+
+    def test_no_reverse_rnpv(self):
+        """No reverse rNPV data → neutral 5 pts."""
+        from schemas.models import ValuationResult, WACCResult
+        wacc = WACCResult(bl=1.0, ke=10.0, kd_at=3.0, wacc=8.0)
+        result = ValuationResult(primary_method="rnpv", wacc=wacc)
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 5
+        assert len(warns) == 0
+
+    def test_all_params_none(self):
+        """ReverseRNPVResult with all params None → 5 pts with convergence warning."""
+        result = self._make_result(gap_pct=30.0)
+        score, warns = _reverse_rnpv_consistency(result)
+        assert score == 5
+        assert any("수렴 실패" in w for w in warns)
+
+
+# ── rNPV Market Alignment Tests ──
+
+class TestRNPVMarketAlignment:
+    def test_close_gap(self):
+        """Gap < 15% → 15 pts."""
+        mc = MarketComparisonResult(intrinsic_value=38, market_price=40, gap_ratio=-0.05)
+        score, warns = _market_alignment_score_rnpv(mc)
+        assert score == 15
+
+    def test_moderate_gap(self):
+        """Gap 25-40% → 8 pts."""
+        mc = MarketComparisonResult(intrinsic_value=30, market_price=40, gap_ratio=-0.25)
+        score, warns = _market_alignment_score_rnpv(mc)
+        assert score == 8
+
+    def test_large_gap(self):
+        """Gap > 60% → 1 pt with warning."""
+        mc = MarketComparisonResult(intrinsic_value=15, market_price=40, gap_ratio=-0.625)
+        score, warns = _market_alignment_score_rnpv(mc)
+        assert score == 1
+        assert any("괴리율 과대" in w for w in warns)
+
+    def test_no_market_data(self):
+        """No market comparison → 0 pts."""
+        score, warns = _market_alignment_score_rnpv(None)
+        assert score == 0
+
+    def test_max_is_15(self):
+        """Maximum score is 15 (not 25 like standard alignment)."""
+        mc = MarketComparisonResult(intrinsic_value=40, market_price=40, gap_ratio=0.0)
+        score, _ = _market_alignment_score_rnpv(mc)
+        assert score == 15
+        assert score < 25

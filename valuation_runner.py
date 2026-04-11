@@ -606,7 +606,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         revenue_by_seg=seg_revenue if needs_dispatch else None,
         cps_repay=round(
             vi.cps_principal
-            * (1 + max((ref_sc.irr if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100)
+            * (1 + max(((ref_sc.cps_irr if ref_sc.cps_irr is not None else ref_sc.irr) if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100)
             ** vi.cps_years
         )
         if vi.cps_principal
@@ -936,22 +936,18 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                 buyback_per_share=buyback_ps,
             )
             # DDM yields equity directly; add net_debt to get EV for calc_scenario bridge
-            sc_ev = (
-                sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
-                + vi.net_debt
-            )
+            sc_eq = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
         except ValueError:
             logger.warning(
                 "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
-            sc_ev = (
-                ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
-                + vi.net_debt
-            )
+            sc_eq = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
 
-        # Market sentiment is cumulative
+        # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
+        # for high-D/E financial companies where equity << net_debt.
         if sc.market_sentiment_pct != 0:
-            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
+            sc_eq = round(sc_eq * (1 + sc.market_sentiment_pct / 100))
+        sc_ev = sc_eq + vi.net_debt
 
         # DDM yields common equity directly (DPS/Ke-g); CPS/RCPS are already excluded
         # from common dividends — passing them to calc_scenario would double-deduct.
@@ -1072,7 +1068,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
-        sc_ev = total_ev
+        sc_eq = rim_raw.equity_value  # track equity separately to avoid leverage amplification
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         sc_ke = sc_wacc.ke
         needs_recalc = (sc.rim_roe_adj != 0) or (sc.wacc_adj != 0)
@@ -1088,13 +1084,15 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                     unit_multiplier=um,
                     payout_ratio=payout,
                 )
-                sc_ev = sc_rim.equity_value + vi.net_debt
+                sc_eq = sc_rim.equity_value
             except ValueError as e:
                 logger.warning("RIM scenario '%s' failed: %s", code, e)
 
-        # Market sentiment is cumulative
+        # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
+        # for high-D/E financial companies where equity << net_debt.
         if sc.market_sentiment_pct != 0:
-            sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
+            sc_eq = round(sc_eq * (1 + sc.market_sentiment_pct / 100))
+        sc_ev = sc_eq + vi.net_debt
         # RIM yields common equity value directly; CPS/RCPS are already excluded
         # from book-value-based residual income — passing them would double-deduct.
         r = calc_scenario(
@@ -1420,14 +1418,15 @@ def _derive_rcps_repay(ref_sc: ScenarioParams | None, vi) -> int:
 
     If rcps_repay is explicitly set in scenario, use it.
     Otherwise compute from IRR and rcps_principal/years/dividend_rate.
-    When irr is None, uses 0 as the rate (mirrors calc_scenario's `sc.irr or 0`).
+    Uses rcps_irr when set, else irr; defaults to 0 when both are None.
     """
     if ref_sc is None:
         return 0
     if ref_sc.rcps_repay is not None:
         return ref_sc.rcps_repay
     if vi.rcps_principal > 0:
-        effective_rate = max((ref_sc.irr or 0) - vi.rcps_dividend_rate, 0.0)
+        rcps_effective_irr = ref_sc.rcps_irr if ref_sc.rcps_irr is not None else ref_sc.irr
+        effective_rate = max((rcps_effective_irr or 0) - vi.rcps_dividend_rate, 0.0)
         return round(vi.rcps_principal * (1 + effective_rate / 100) ** vi.rcps_years)
     return 0
 
@@ -1625,7 +1624,7 @@ def _run_monte_carlo(
         _derive_rcps_repay(ref_sc, vi),
         ref_sc.buyback if ref_sc else 0,
         ref_sc.shares if ref_sc else vi.company.shares_outstanding,
-        irr=ref_sc.irr if ref_sc and ref_sc.irr else 5.0,
+        irr=(ref_sc.cps_irr if ref_sc and ref_sc.cps_irr is not None else (ref_sc.irr if ref_sc and ref_sc.irr else 5.0)),
         unit_multiplier=um,
         seg_revenues=seg_revenues,
         cps_dividend_rate=vi.cps_dividend_rate,
@@ -1697,7 +1696,7 @@ def _run_monte_carlo(
             _derive_rcps_repay(sc, vi),
             sc.buyback,
             sc.shares,
-            irr=sc.irr if sc.irr else 5.0,
+            irr=(sc.cps_irr if sc.cps_irr is not None else (sc.irr if sc.irr else 5.0)),
             unit_multiplier=um,
             seg_revenues=sc_revs,
             cps_dividend_rate=vi.cps_dividend_rate,

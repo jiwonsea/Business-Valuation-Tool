@@ -4202,3 +4202,124 @@ class TestNumericalFixes:
         # effective_rate = max(0 - 0, 0) = 0; cps_repay = 100_000 * 1^2 = 100_000
         assert result.cps_repay == 100_000
         assert result.equity_value == 400_000
+
+    # ── F-P2-5: DDM/RIM market_sentiment applies to equity, not pseudo-EV ────
+
+    def test_calc_scenario_sentiment_applies_to_equity_not_pseudoev(self):
+        """market_sentiment_pct must scale equity, not (equity + net_debt).
+
+        Before the fix, for DDM/RIM where sc_ev = equity + net_debt, a 10% sentiment
+        applied to sc_ev would amplify equity by leverage (10x D/E → 110% gain on equity
+        instead of 10%). The fix applies sentiment to equity directly.
+
+        This test verifies calc_scenario behavior: sentiment_pct is applied by the caller
+        (valuation_runner) before passing sc_ev, so here we verify the correct pattern.
+        """
+        from engine.scenario import calc_scenario
+        from schemas.models import ScenarioParams
+
+        equity = 1_000_000
+        net_debt = 9_000_000  # 9x leverage (bank-like)
+        sentiment_pct = 10.0  # 10% positive sentiment
+
+        sc = ScenarioParams(
+            code="BASE", name="test", prob=100, ipo="성공",
+            irr=None, dlom=0.0, shares=1_000_000, buyback=0,
+            market_sentiment_pct=sentiment_pct,
+        )
+
+        # Correct: sentiment on equity → equity_after = 1_100_000
+        sc_eq_after = round(equity * (1 + sentiment_pct / 100))
+        sc_ev_correct = sc_eq_after + net_debt
+
+        result = calc_scenario(
+            sc, sc_ev_correct, net_debt, 0, 0, 0, 0, 0, unit_multiplier=1
+        )
+        assert result.equity_value == sc_eq_after  # 1_100_000
+
+        # Wrong: sentiment on pseudo-EV → equity = (1M+9M)*1.1 - 9M = 11M - 9M = 2_000_000
+        # That's a 100% gain on equity instead of the intended 10%.
+        sc_ev_wrong = round((equity + net_debt) * (1 + sentiment_pct / 100))
+        result_wrong = calc_scenario(
+            sc, sc_ev_wrong, net_debt, 0, 0, 0, 0, 0, unit_multiplier=1
+        )
+        # Confirms the wrong path amplifies equity by 100% (2x) instead of 10% (1.1x)
+        assert result_wrong.equity_value == 2_000_000
+        assert result_wrong.equity_value > result.equity_value * 1.5  # wrong path is >1.5x correct
+
+    # ── F-P2-9: CPS/RCPS separate IRR via cps_irr / rcps_irr fields ──────────
+
+    def test_calc_scenario_cps_irr_takes_precedence_over_irr(self):
+        """When cps_irr is set, CPS calculation uses it; RCPS still uses irr."""
+        from engine.scenario import calc_scenario
+        from schemas.models import ScenarioParams
+
+        sc = ScenarioParams(
+            code="BASE", name="test", prob=100, ipo="성공",
+            irr=10.0,       # shared fallback
+            cps_irr=5.0,    # CPS-specific: lower return
+            dlom=0.0, shares=1_000_000, buyback=0,
+        )
+        # CPS: effective_rate = max(5.0 - 0, 0) = 5.0%; repay = 100_000 * 1.05^3
+        expected_cps = round(100_000 * (1.05 ** 3))
+        # RCPS: uses irr=10.0; effective_rate = max(10.0 - 0, 0) = 10.0%; repay = 50_000 * 1.1^2
+        expected_rcps = round(50_000 * (1.10 ** 2))
+
+        result = calc_scenario(
+            sc,
+            total_ev=1_000_000,
+            net_debt=0, eco_frontier=0,
+            cps_principal=100_000, cps_years=3,
+            rcps_principal=50_000, rcps_years=2,
+            unit_multiplier=1,
+        )
+        assert result.cps_repay == expected_cps
+        assert result.rcps_repay == expected_rcps
+
+    def test_calc_scenario_rcps_irr_takes_precedence_over_irr(self):
+        """When rcps_irr is set, RCPS calculation uses it; CPS still uses irr."""
+        from engine.scenario import calc_scenario
+        from schemas.models import ScenarioParams
+
+        sc = ScenarioParams(
+            code="BASE", name="test", prob=100, ipo="성공",
+            irr=10.0,
+            rcps_irr=3.0,   # RCPS-specific: near-dividend pref
+            dlom=0.0, shares=1_000_000, buyback=0,
+        )
+        # CPS: uses irr=10.0; repay = 200_000 * 1.1^2
+        expected_cps = round(200_000 * (1.10 ** 2))
+        # RCPS: effective_rate = max(3.0 - 2.0, 0) = 1.0%; repay = 100_000 * 1.01^3
+        expected_rcps = round(100_000 * (1.01 ** 3))
+
+        result = calc_scenario(
+            sc,
+            total_ev=2_000_000,
+            net_debt=0, eco_frontier=0,
+            cps_principal=200_000, cps_years=2,
+            rcps_principal=100_000, rcps_years=3,
+            unit_multiplier=1,
+            rcps_dividend_rate=2.0,
+        )
+        assert result.cps_repay == expected_cps
+        assert result.rcps_repay == expected_rcps
+
+    def test_derive_rcps_repay_uses_rcps_irr_when_set(self):
+        """_derive_rcps_repay must prefer rcps_irr over irr."""
+        from valuation_runner import _derive_rcps_repay
+        from schemas.models import ScenarioParams, ValuationInput, CompanyProfile, WACCParams
+
+        sc = ScenarioParams(
+            code="BASE", name="test", prob=100, ipo="성공",
+            irr=10.0, rcps_irr=4.0,  # RCPS investor has lower target return
+            dlom=0.0, shares=1_000_000, buyback=0,
+        )
+
+        class _VI:
+            rcps_principal = 300_000
+            rcps_years = 2
+            rcps_dividend_rate = 0.0
+
+        result = _derive_rcps_repay(sc, _VI())
+        expected = round(300_000 * (1.04 ** 2))
+        assert result == expected

@@ -26,20 +26,22 @@ def calc_scenario(
       - CPS (zero-coupon): compound IRR — principal × (1+IRR)^years.
       - RCPS (dividend-paying): effective_rate = max(IRR - dividend_rate, 0).
     """
-    # Calculate CPS redemption amount
+    # Calculate CPS redemption amount (uses cps_irr if set, else irr)
     if sc.cps_repay is not None:
         cps_repay = sc.cps_repay
     elif cps_principal > 0:
-        effective_rate = max((sc.irr or 0) - cps_dividend_rate, 0.0)
+        cps_effective_irr = sc.cps_irr if sc.cps_irr is not None else sc.irr
+        effective_rate = max((cps_effective_irr or 0) - cps_dividend_rate, 0.0)
         cps_repay = round(cps_principal * (1 + effective_rate / 100) ** cps_years)
     else:
         cps_repay = 0
 
-    # Calculate RCPS redemption amount (dividend_rate reduces effective compound rate)
+    # Calculate RCPS redemption amount (uses rcps_irr if set, else irr)
     if sc.rcps_repay is not None:
         rcps_repay = sc.rcps_repay
     elif rcps_principal > 0:
-        effective_rate = max((sc.irr or 0) - rcps_dividend_rate, 0.0)
+        rcps_effective_irr = sc.rcps_irr if sc.rcps_irr is not None else sc.irr
+        effective_rate = max((rcps_effective_irr or 0) - rcps_dividend_rate, 0.0)
         rcps_repay = round(rcps_principal * (1 + effective_rate / 100) ** rcps_years)
     else:
         rcps_repay = 0

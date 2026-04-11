@@ -140,6 +140,10 @@ packaging==26.0
     #   plotly
     #   pytest
     #   streamlit
+portalocker==3.2.0
+    # via business-valuation-tool (pyproject.toml)
+defusedxml==0.7.1
+    # via business-valuation-tool (pyproject.toml)
 pandas==2.3.3
     # via
     #   business-valuation-tool (pyproject.toml)

@@ -61,6 +61,11 @@ from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial
 
 
+# Minimum segment asset share (%) to qualify for healthy-segment half-discount.
+# Prevents tiny profitable segments from masking consolidated distress signals.
+_HEALTHY_MIN_ASSET_SHARE_PCT = 20.0
+
+
 def _seg_names(vi: ValuationInput) -> dict[str, str]:
     """Extract {code: name} mapping from segments dictionary."""
     return {code: info["name"] for code, info in vi.segments.items()}
@@ -399,14 +404,25 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         for c, info in vi.segments.items()
         if info.get("method") == "ev_revenue" or info.get("distress_exempt")
     }
-    # Healthy segments: profitable (op > 0) in diversified companies get half discount
+    # Healthy segments: profitable (op > 0) AND significant asset share (>= 20%)
+    # in diversified companies get half discount.
+    # Asset share criterion prevents tiny profitable segments from masking distress.
     healthy: set[str] = set()
     if len(vi.segments) >= 3 and distress.applied:
         base_seg_data = vi.segment_data.get(by, {})
+        total_seg_assets = sum(
+            base_seg_data.get(c, {}).get("assets", 0) for c in vi.segments
+        )
         healthy = {
             c
             for c in vi.segments
-            if c not in exempt and base_seg_data.get(c, {}).get("op", 0) > 0
+            if c not in exempt
+            and base_seg_data.get(c, {}).get("op", 0) > 0
+            and (
+                total_seg_assets == 0
+                or base_seg_data.get(c, {}).get("assets", 0) / total_seg_assets * 100
+                >= _HEALTHY_MIN_ASSET_SHARE_PCT
+            )
         }
     effective_multiples = apply_distress_discount(
         vi.multiples,

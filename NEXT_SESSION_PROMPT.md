@@ -1,7 +1,7 @@
 # Business Valuation Tool: 다음 세션
 
 ## 현재 상태
-- 489/489 tests pass
+- 491/491 tests pass
 - origin/main 동기화 완료
 
 ## 완료된 작업 (2026-04-11 이후)
@@ -11,19 +11,14 @@
 - CR-1: DDM `ke <= 0` 미보호 → `_run_ddm_valuation` 선제 guard + `calc_rim` k≤-1.0 ZeroDivisionError guard
 - CR-2: `sensitivity_dcf` discount≤0 루프 guard + `_run_dcf_valuation` try/except 추가
 - CR-3: `_run_sotp_valuation` `da_allocations[by]` KeyError → ValueError 명시 (segment_data 미포함 base_year)
+- VL-1~4: 이전 세션에서 이미 수정 완료 확인 (c4a6d02, b1ad72a 등)
+- C: healthy_segments 자산 비율 기준 추가 — `op > 0 AND asset_share >= 20%`, 자산 데이터 없으면 op > 0 fallback
 
 ---
 
 ## 백로그
 
-### B — 수치 영향 큰 로직
-- VL-1: MC 시나리오 RCPS 누락 (20-40% 과대)
-- VL-2: RIM TV BV timing (3-5% 과소)
-- VL-3: DCF TV capex-fade 영속화 (10-30% 오차)
-- VL-4: MC DCF-TV ratio 무한 증폭
-
-### C — Distress 세그먼트 차등 심화
-- `healthy_segments` 기준을 `op > 0` 외에 자산 비율도 반영할지 검토
+현재 미해결 항목 없음.
 
 ---
 

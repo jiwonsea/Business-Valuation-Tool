@@ -22,7 +22,7 @@ jobs:
       - name: Install pinned dependencies
         run: |
           pip install -r requirements-lock.txt
-          pip install -e ".[dev]" --no-deps
+          pip install -e ".[dev,pipeline]" --no-deps
 
       - name: Ruff lint
         run: ruff check .

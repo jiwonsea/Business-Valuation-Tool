@@ -2688,6 +2688,127 @@ class TestDistressDiscount:
         assert result["FSD"] == 15.0  # exempt
         assert result["ENERGY"] == 7.2  # half discount: 8.0 * (1 - 0.10)
 
+    def test_healthy_segment_tiny_assets_gets_full_discount(self):
+        """Segment with op > 0 but asset share < 20% gets full distress discount."""
+        from schemas.models import CompanyProfile, ValuationInput
+        from valuation_runner import run_valuation
+
+        # US company: de_ratio=200% → penalty=0.15, discount=0.15 (no losses, no ICR)
+        # BIG: 600/1000 = 60%, MED: 250/1000 = 25%, TINY: 150/1000 = 15%
+        # BIG and MED qualify (>=20%), TINY does not (<20%)
+        vi = ValuationInput(
+            company=CompanyProfile(
+                name="DistressTest",
+                shares_total=1000,
+                shares_ordinary=1000,
+                market="US",
+            ),
+            segments={
+                "BIG": {"name": "Big Segment", "multiple": 10.0},
+                "MED": {"name": "Mid Segment", "multiple": 8.0},
+                "TINY": {"name": "Tiny Segment", "multiple": 6.0},
+            },
+            segment_data={
+                2025: {
+                    "BIG": {"revenue": 500, "op": 50, "assets": 600},
+                    "MED": {"revenue": 200, "op": 30, "assets": 250},
+                    "TINY": {"revenue": 80, "op": 10, "assets": 150},
+                }
+            },
+            consolidated={
+                2025: {
+                    "revenue": 780,
+                    "op": 90,
+                    "net_income": 70,
+                    "assets": 1200,
+                    "liabilities": 800,
+                    "equity": 400,
+                    "dep": 40,
+                    "amort": 10,
+                    "de_ratio": 200.0,  # triggers D/E penalty = 0.15
+                    "gross_borr": 0,
+                }
+            },
+            wacc_params=WACCParams(
+                rf=3.5, erp=7.0, bu=1.0, de=200, tax=25, kd_pre=5, eq_w=60
+            ),
+            multiples={"BIG": 10.0, "MED": 8.0, "TINY": 6.0},
+            scenarios={
+                "Base": ScenarioParams(
+                    code="Base", name="Base", prob=100, ipo="N/A", shares=1000
+                )
+            },
+            dcf_params=DCFParams(ebitda_growth_rates=[0.05]),
+            base_year=2025,
+            valuation_method="sotp",
+        )
+        result = run_valuation(vi)
+        # discount = 0.15; half = 0.075
+        assert result.sotp["BIG"].multiple == round(
+            10.0 * (1 - 0.075), 2
+        )  # healthy: 9.25
+        assert result.sotp["MED"].multiple == round(
+            8.0 * (1 - 0.075), 2
+        )  # healthy: 7.4
+        assert result.sotp["TINY"].multiple == round(
+            6.0 * (1 - 0.15), 2
+        )  # full:    5.1
+
+    def test_healthy_segment_no_assets_data_falls_back_to_op(self):
+        """When all segment assets = 0 (missing data), fall back to op > 0 criterion."""
+        from schemas.models import CompanyProfile, ValuationInput
+        from valuation_runner import run_valuation
+
+        vi = ValuationInput(
+            company=CompanyProfile(
+                name="NoAssets", shares_total=1000, shares_ordinary=1000, market="US"
+            ),
+            segments={
+                "A": {"name": "Seg A", "multiple": 10.0},
+                "B": {"name": "Seg B", "multiple": 8.0},
+                "C": {"name": "Seg C", "multiple": 6.0},
+            },
+            segment_data={
+                2025: {
+                    "A": {"revenue": 400, "op": 40, "assets": 0},  # no asset data
+                    "B": {"revenue": 300, "op": 30, "assets": 0},
+                    "C": {"revenue": 200, "op": -10, "assets": 0},  # loss
+                }
+            },
+            consolidated={
+                2025: {
+                    "revenue": 900,
+                    "op": 60,
+                    "net_income": 45,
+                    "assets": 1000,
+                    "liabilities": 670,
+                    "equity": 330,
+                    "dep": 30,
+                    "amort": 5,
+                    "de_ratio": 200.0,
+                    "gross_borr": 0,
+                }
+            },
+            wacc_params=WACCParams(
+                rf=3.5, erp=7.0, bu=1.0, de=200, tax=25, kd_pre=5, eq_w=60
+            ),
+            multiples={"A": 10.0, "B": 8.0, "C": 6.0},
+            scenarios={
+                "Base": ScenarioParams(
+                    code="Base", name="Base", prob=100, ipo="N/A", shares=1000
+                )
+            },
+            dcf_params=DCFParams(ebitda_growth_rates=[0.05]),
+            base_year=2025,
+            valuation_method="sotp",
+        )
+        result = run_valuation(vi)
+        # total_seg_assets == 0 → falls back to op > 0 only
+        # A (op=40>0) and B (op=30>0) → healthy (half discount); C (op=-10<0) → full
+        assert result.sotp["A"].multiple == round(10.0 * (1 - 0.075), 2)  # half: 9.25
+        assert result.sotp["B"].multiple == round(8.0 * (1 - 0.075), 2)  # half: 7.4
+        assert result.sotp["C"].multiple == round(6.0 * (1 - 0.15), 2)  # full: 5.1
+
     def test_custom_max_discount_cap(self):
         """Custom max_discount cap limits total discount."""
         cons = {

@@ -29,6 +29,13 @@ def calc_dcf(
     if not growth_rates:
         growth_rates = [0.08, 0.07, 0.06, 0.05, 0.03]
 
+    # Revenue growth rates: use separate schedule if provided, else fall back to EBITDA rates.
+    # Allows modeling margin expansion/compression without distorting EBITDA projection.
+    # Pad with last value if shorter than growth_rates (robust to mismatched list lengths).
+    rev_growth_rates = params.revenue_growth_rates if params.revenue_growth_rates else growth_rates
+    if len(rev_growth_rates) < len(growth_rates):
+        rev_growth_rates = list(rev_growth_rates) + [rev_growth_rates[-1]] * (len(growth_rates) - len(rev_growth_rates))
+
     if ebitda_base <= 0:
         raise ValueError(
             f"EBITDA({ebitda_base:,})가 0 이��입니다. "
@@ -95,7 +102,7 @@ def calc_dcf(
         else:
             year_capex_ratio = capex_ratio
         capex = round(da * year_capex_ratio)
-        revenue = round(prev_revenue * (1 + g))
+        revenue = round(prev_revenue * (1 + rev_growth_rates[i]))
 
         if _use_actual_nwc:
             # Project NWC proportional to revenue

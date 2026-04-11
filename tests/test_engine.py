@@ -456,6 +456,32 @@ class TestDCF:
         assert r_base.ev_dcf != r_actual.ev_dcf
         assert r_actual.ev_dcf > r_base.ev_dcf
 
+    def test_revenue_growth_rates_separate_from_ebitda(self):
+        """Separate revenue_growth_rates produce different NWC delta vs EBITDA rates."""
+        base_params = DCFParams(
+            ebitda_growth_rates=[0.10, 0.10, 0.10, 0.10, 0.10],
+            tax_rate=22.0, capex_to_da=1.0, nwc_to_rev_delta=0.05, terminal_growth=2.5,
+        )
+        # Higher revenue growth → larger delta_NWC → lower FCFF
+        rev_params = DCFParams(
+            ebitda_growth_rates=[0.10, 0.10, 0.10, 0.10, 0.10],
+            revenue_growth_rates=[0.20, 0.20, 0.20, 0.20, 0.20],
+            tax_rate=22.0, capex_to_da=1.0, nwc_to_rev_delta=0.05, terminal_growth=2.5,
+        )
+        r_base = calc_dcf(1000, 300, 5000, 8.5, base_params)
+        r_rev = calc_dcf(1000, 300, 5000, 8.5, rev_params)
+        # Higher revenue growth → higher NWC drain → lower DCF EV
+        assert r_rev.ev_dcf < r_base.ev_dcf
+
+    def test_revenue_growth_rates_fallback_to_ebitda(self):
+        """Omitting revenue_growth_rates produces same result as setting them equal to EBITDA rates."""
+        growth = [0.08, 0.06, 0.05, 0.04, 0.03]
+        params_implicit = DCFParams(ebitda_growth_rates=growth, terminal_growth=2.5)
+        params_explicit = DCFParams(ebitda_growth_rates=growth, revenue_growth_rates=growth, terminal_growth=2.5)
+        r1 = calc_dcf(1000, 300, 5000, 8.5, params_implicit)
+        r2 = calc_dcf(1000, 300, 5000, 8.5, params_explicit)
+        assert r1.ev_dcf == r2.ev_dcf
+
 
 # ═══════════════════════════════════════════════════════════
 # Sensitivity Tests
@@ -569,6 +595,32 @@ class TestMultiples:
             ev_revenue_multiple=0.5, pe_multiple=15.0, pbv_multiple=1.2,
         )
         assert len(results) == 5
+
+    def test_cross_validate_sotp_ev_ebitda_only_excludes_equity_segments(self):
+        """sotp_ev_ebitda_only corrects implied EV/EBITDA when pbv/pe segments inflate total_ev."""
+        ebitda = 1_000_000
+        ev_only = 5_000_000   # manufacturing EV/EBITDA segments only
+        equity_seg = 2_000_000  # pbv segment equity value (not enterprise value)
+        total_sotp = ev_only + equity_seg  # 7_000_000 passed as sotp_ev
+
+        results_inflated = cross_validate(
+            revenue=10_000_000, ebitda=ebitda, net_income=0,
+            book_value=0, net_debt=1_000_000, shares=50_000_000,
+            sotp_ev=total_sotp, dcf_ev=0,
+        )
+        results_corrected = cross_validate(
+            revenue=10_000_000, ebitda=ebitda, net_income=0,
+            book_value=0, net_debt=1_000_000, shares=50_000_000,
+            sotp_ev=total_sotp, dcf_ev=0,
+            sotp_ev_ebitda_only=ev_only,
+        )
+        sotp_inflated = next(r for r in results_inflated if r.method == "SOTP (EV/EBITDA)")
+        sotp_corrected = next(r for r in results_corrected if r.method == "SOTP (EV/EBITDA)")
+
+        # Implied multiple: inflated uses 7M/1M=7x, corrected uses 5M/1M=5x
+        assert sotp_inflated.multiple > sotp_corrected.multiple
+        # Enterprise value (for equity bridge) must remain the full total in both cases
+        assert sotp_inflated.enterprise_value == sotp_corrected.enterprise_value == total_sotp
 
 
 # ═══════════════════════════════════════════════════════════

@@ -128,6 +128,7 @@ def cross_validate(
     pffo_multiple: float = 0,
     ffo: int = 0,
     unit_multiplier: int = 1_000_000,
+    sotp_ev_ebitda_only: int | None = None,
 ) -> list[MultipleValuation]:
     """Multi-method cross-validation result list.
 
@@ -152,7 +153,10 @@ def cross_validate(
     if sotp_ev > 0:
         sotp_equity = sotp_ev - net_debt
         sotp_ps = _per_share(sotp_equity, unit_multiplier, shares)
-        implied_ev_ebitda = round(sotp_ev / ebitda, 1) if ebitda > 0 else 0
+        # Use ev-only total for implied multiple when provided (excludes equity-based pbv/pe segments
+        # that inflate the implied EV/EBITDA by mixing equity values into an enterprise multiple).
+        ev_for_multiple = sotp_ev_ebitda_only if sotp_ev_ebitda_only is not None else sotp_ev
+        implied_ev_ebitda = round(ev_for_multiple / ebitda, 1) if ebitda > 0 else 0
         results.append(MultipleValuation(
             method="SOTP (EV/EBITDA)", metric_value=ebitda, multiple=implied_ev_ebitda,
             enterprise_value=sotp_ev, equity_value=sotp_equity, per_share=sotp_ps,

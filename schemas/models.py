@@ -535,6 +535,7 @@ class MultiplesResult(BaseModel):
 
 class DCFParams(BaseModel):
     ebitda_growth_rates: Optional[list[float]] = None  # Forecast-period EBITDA growth rates (None=auto-generate)
+    revenue_growth_rates: Optional[list[float]] = None  # Separate revenue growth rates (None=same as EBITDA, backward-compatible)
     tax_rate: float = 22.0
     capex_to_da: float = 1.10
     nwc_to_rev_delta: float = 0.05

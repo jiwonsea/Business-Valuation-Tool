@@ -525,10 +525,13 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             logger.warning("SOTP DCF sensitivity skipped (invalid base DCF)")
 
     # Multiple cross-validation -- apply effective_net_debt
+    # Exclude pbv/pe equity-based segments from implied EV/EBITDA (they inflate the multiple).
+    sotp_ev_ev_only = sum(r.ev for r in sotp.values() if not r.is_equity_based)
     cv_items = _cross_validate_common(
         vi, cons, ebitda_base, total_ev,
         dcf_result.ev_dcf if dcf_result else 0, um,
         net_debt_override=effective_net_debt if is_mixed else None,
+        sotp_ev_ebitda_only=sotp_ev_ev_only,
     )
 
     # Monte Carlo
@@ -662,7 +665,9 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             revenue_by_seg=_cv_seg_revenue,
         )
 
-    cv_items = _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_result.ev_dcf, um)
+    sotp_ev_ev_only = sum(r.ev for r in sotp_result.values() if not r.is_equity_based)
+    cv_items = _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_result.ev_dcf, um,
+                                      sotp_ev_ebitda_only=sotp_ev_ev_only)
 
     # Peer statistics
     seg_names = _seg_names(vi)
@@ -1174,7 +1179,7 @@ def _cross_validate_financial(vi, cons, um):
 
 
 def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
-                           net_debt_override=None):
+                           net_debt_override=None, sotp_ev_ebitda_only=None):
     """Common multiples cross-validation."""
     net_debt = net_debt_override if net_debt_override is not None else vi.net_debt
     cv_results = cross_validate(
@@ -1193,6 +1198,7 @@ def _cross_validate_common(vi, cons, ebitda_base, sotp_ev, dcf_ev, um,
         pffo_multiple=vi.pffo_multiple,
         ffo=vi.ffo,
         unit_multiplier=um,
+        sotp_ev_ebitda_only=sotp_ev_ebitda_only,
     )
     return [
         CrossValidationItem(

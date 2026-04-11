@@ -60,6 +60,11 @@ def calc_rim(
     g = terminal_growth / 100
     payout = payout_ratio / 100
 
+    if k <= -1.0:
+        raise ValueError(
+            f"Ke({ke}%) produces a zero discount factor (1+Ke≤0). Ke must be > -100%."
+        )
+
     if k <= g:
         raise ValueError(
             f"Ke({ke}%) must be greater than terminal_growth({terminal_growth}%). "

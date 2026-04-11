@@ -372,6 +372,11 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                    for c in vi.segments}
 
     # SOTP (base year) -- Mixed Method support
+    if by not in da_allocations:
+        raise ValueError(
+            f"base_year({by})에 해당하는 segment_data가 없습니다. "
+            f"사용 가능한 연도: {sorted(da_allocations.keys()) or list(vi.segment_data.keys())}"
+        )
     base_alloc = da_allocations[by]
     sotp, total_ev = calc_sotp(
         base_alloc, effective_multiples,
@@ -642,14 +647,18 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         total_weighted += r.weighted
 
     # DCF sensitivity
-    sens_dcf_rows, _, _ = sensitivity_dcf(
-        ebitda_base, total_da_base, cons["revenue"],
-        vi.dcf_params, vi.base_year,
-        wacc_base=wacc_result.wacc,
-        shares=vi.company.shares_outstanding,
-        net_debt=vi.net_debt,
-        unit_multiplier=um,
-    )
+    sens_dcf_rows = []
+    try:
+        sens_dcf_rows, _, _ = sensitivity_dcf(
+            ebitda_base, total_da_base, cons["revenue"],
+            vi.dcf_params, vi.base_year,
+            wacc_base=wacc_result.wacc,
+            shares=vi.company.shares_outstanding,
+            net_debt=vi.net_debt,
+            unit_multiplier=um,
+        )
+    except (ValueError, ZeroDivisionError):
+        logger.warning("DCF sensitivity skipped (invalid wacc/tg range)")
 
     # SOTP cross-validation (calculate SOTP if multi-segment)
     sotp_ev = 0
@@ -705,6 +714,12 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     ke = wacc_result.ke
     buyback_ps = vi.ddm_params.buyback_per_share
     base_growth = vi.ddm_params.dividend_growth
+
+    if ke <= 0:
+        raise ValueError(
+            f"Ke({ke:.2f}%)가 0 이하입니다. DDM은 양의 자본비용이 필요합니다. "
+            "WACC 파라미터(rf, erp, bu)를 확인하세요."
+        )
 
     # Base DDM (default growth rate)
     ddm_raw = calc_ddm_engine(

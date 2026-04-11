@@ -2874,3 +2874,120 @@ class TestRNPVSensitivity:
         )
         base_values = {t["base_value"] for t in tornado}
         assert len(base_values) == 1  # All drugs share same base
+
+
+class TestCrashPaths:
+    """Regression tests for CR-1/CR-2/CR-3 crash paths identified in 4th audit."""
+
+    # ── CR-1: DDM ke <= 0 ────────────────────────────────────────────────────
+
+    def test_ddm_ke_zero_raises(self):
+        """calc_ddm: ke=0% with positive growth raises ValueError (not silent crash)."""
+        import pytest
+        with pytest.raises(ValueError, match="Ke.*greater than growth|must be greater"):
+            calc_ddm(dps=500, growth=2.0, ke=0.0)
+
+    def test_ddm_ke_negative_growth_positive_raises(self):
+        """calc_ddm: ke=-1% with growth=2% → ke <= g, raises ValueError."""
+        import pytest
+        with pytest.raises(ValueError):
+            calc_ddm(dps=500, growth=2.0, ke=-1.0)
+
+    # ── CR-1: RIM ke near -100% ZeroDivisionError ────────────────────────────
+
+    def test_rim_ke_exactly_minus100_raises_not_zerodivision(self):
+        """calc_rim: ke=-100% would make (1+Ke)=0 → ZeroDivisionError.
+        After fix: raises ValueError before the discount computation."""
+        import pytest
+        with pytest.raises(ValueError, match="zero discount factor"):
+            calc_rim(
+                book_value=100_000,
+                roe_forecasts=[5.0, 4.0],
+                ke=-100.0,
+                terminal_growth=-101.0,
+            )
+
+    def test_rim_ke_below_minus100_raises(self):
+        """calc_rim: ke < -100% also raises ValueError via same guard."""
+        import pytest
+        with pytest.raises(ValueError, match="zero discount factor"):
+            calc_rim(
+                book_value=100_000,
+                roe_forecasts=[5.0],
+                ke=-150.0,
+                terminal_growth=-200.0,
+            )
+
+    # ── CR-2: sensitivity_dcf negative wacc range ────────────────────────────
+
+    def test_sensitivity_dcf_negative_wacc_no_crash(self):
+        """sensitivity_dcf: wacc_range including negative values returns value=0 (no crash)."""
+        params = DCFParams(
+            ebitda_growth_rates=[0.05, 0.04, 0.03],
+            terminal_growth=2.0,
+            tax_rate=25.0,
+        )
+        # wacc_range includes negative values — should not raise ZeroDivisionError
+        rows, wacc_r, tg_r = sensitivity_dcf(
+            ebitda_base=50_000,
+            da_base=10_000,
+            revenue_base=200_000,
+            params=params,
+            base_year=2025,
+            wacc_range=[-1.0, 0.0, 3.0, 5.0, 8.0],
+            tg_range=[1.0, 2.0, 3.0],
+        )
+        # Negative / zero wacc rows should all have value=0
+        negative_rows = [r for r in rows if r.row_val <= 0]
+        assert all(r.value == 0 for r in negative_rows), "negative wacc rows must be 0"
+        # Positive rows should be normal
+        positive_rows = [r for r in rows if r.row_val > 0 and r.row_val > r.col_val]
+        assert any(r.value > 0 for r in positive_rows)
+
+    def test_sensitivity_dcf_wacc_minus100_no_zerodivision(self):
+        """sensitivity_dcf: wacc=-100% (discount=0) does not raise ZeroDivisionError."""
+        params = DCFParams(
+            ebitda_growth_rates=[0.05],
+            terminal_growth=2.0,
+            tax_rate=25.0,
+        )
+        # Should not raise; row with w=-100 gets value=0
+        rows, _, _ = sensitivity_dcf(
+            ebitda_base=50_000,
+            da_base=10_000,
+            revenue_base=200_000,
+            params=params,
+            base_year=2025,
+            wacc_range=[-100.0, 5.0, 8.0],
+            tg_range=[1.0, 2.0],
+        )
+        minus100_rows = [r for r in rows if r.row_val == -100.0]
+        assert all(r.value == 0 for r in minus100_rows)
+
+    # ── CR-3: SOTP missing segment_data for base_year ────────────────────────
+
+    def test_sotp_missing_segment_data_base_year_raises(self):
+        """_run_sotp_valuation: segment_data missing base_year raises ValueError."""
+        import pytest
+        from schemas.models import ValuationInput, CompanyProfile
+        from valuation_runner import run_valuation
+
+        with pytest.raises((ValueError, KeyError)):
+            vi = ValuationInput(
+                company=CompanyProfile(name="Test", shares_total=100, shares_ordinary=100),
+                segments={"A": {"name": "A", "multiple": 8.0}},
+                # segment_data has only 2024, but base_year is 2025
+                segment_data={2024: {"A": {"revenue": 100, "op": 10, "assets": 50}}},
+                consolidated={2025: {"revenue": 100, "op": 10, "net_income": 8,
+                                     "assets": 200, "liabilities": 100, "equity": 100,
+                                     "dep": 5, "amort": 2, "de_ratio": 50.0}},
+                wacc_params=WACCParams(rf=3.5, erp=7.0, bu=1.0, de=50, tax=22, kd_pre=5, eq_w=70),
+                multiples={"A": 8.0},
+                scenarios={
+                    "Base": ScenarioParams(code="Base", name="Base", prob=100, ipo="N/A", shares=100),
+                },
+                dcf_params=DCFParams(ebitda_growth_rates=[0.05]),
+                base_year=2025,
+                valuation_method="sotp",
+            )
+            run_valuation(vi)

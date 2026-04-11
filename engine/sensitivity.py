@@ -173,6 +173,11 @@ def sensitivity_dcf(
         wacc = w / 100
         # PV of projection period
         discount = 1 + wacc
+        # Guard: discount <= 0 (wacc <= -100%) produces zero/negative discount factors
+        if discount <= 0:
+            for tg in tg_range:
+                rows.append(SensitivityRow(row_val=w, col_val=tg, value=0))
+            continue
         pv_fcff = 0
         df = 1.0
         for fcff in fcffs:

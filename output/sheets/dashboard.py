@@ -648,6 +648,14 @@ def _get_primary_value(ctx: Ctx) -> tuple[int, str]:
     elif ctx.method == "multiples" and ctx.result.multiples_primary:
         return ctx.result.multiples_primary.per_share, "Multiples 적정 주당 가치"
     elif ctx.method == "dcf_primary" and ctx.result.dcf:
+        # Prefer the per-share value from cross-validation DCF entry when available
+        # (DCFResult only stores EV; per-share comes from CrossValidationItem)
+        dcf_cv = next(
+            (cv for cv in (ctx.result.cross_validations or []) if "DCF" in cv.method),
+            None,
+        )
+        if dcf_cv and dcf_cv.per_share:
+            return dcf_cv.per_share, "DCF 적정 주당 가치"
         return ctx.result.dcf.ev_dcf, f"DCF Enterprise Value ({ctx.unit})"
     else:
         return ctx.result.total_ev, f"Enterprise Value ({ctx.unit})"
@@ -698,15 +706,22 @@ def _write_football_field(ws, r: int, ctx: Ctx):
         ff_entries.append((primary_label, primary_val))
 
     for i, (label, val) in enumerate(reversed(ff_entries)):
-        lo = max(round(val * 0.8), 0)
-        hi = round(val * 1.2) if val > 0 else 0
+        # Preserve negative values (distressed companies): no clamping to 0.
+        # For negative val: lo is more-negative (val*1.2), hi is less-negative (val*0.8)
+        if val >= 0:
+            lo = round(val * 0.8)
+            hi = round(val * 1.2)
+        else:
+            lo = round(val * 1.2)
+            hi = round(val * 0.8)
 
         r += 1
         write_cell(ws, r, FF_COL_LABEL, label)
         write_cell(ws, r, FF_COL_LO, lo, fmt=NUM_FMT)
-        write_cell(ws, r, FF_COL_VAL, val, fmt=NUM_FMT, fill=BLUE_FILL)
+        val_fill = BLUE_FILL if val >= 0 else RED_FILL
+        write_cell(ws, r, FF_COL_VAL, val, fmt=NUM_FMT, fill=val_fill)
         write_cell(ws, r, FF_COL_HI, hi, fmt=NUM_FMT)
-        write_cell(ws, r, FF_COL_RANGE, max(hi - lo, 0), fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_RANGE, abs(hi - lo), fmt=NUM_FMT)
         ff_colors_list.append(ff_color_palette[i % len(ff_color_palette)])
 
     ff_data_end = r

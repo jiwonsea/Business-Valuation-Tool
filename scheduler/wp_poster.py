@@ -47,8 +47,8 @@ def _build_post_content(summary: dict) -> str:
     Uses the existing summary_md fields from valuation entries.
     """
     import markdown
+    import re as _re
 
-    summary.get("label", "Weekly Report")
     valuations = summary.get("valuations", [])
     discoveries = summary.get("discoveries", [])
 
@@ -91,7 +91,9 @@ def _build_post_content(summary: dict) -> str:
             cap_str = "N/A"
         summary_md = v.get("summary_md", "")
 
-        lines.append(f"### {name} (Market Cap: {cap_str})\n")
+        # Escape markdown special chars in company name to prevent formatting breaks
+        safe_name = _re.sub(r"([*_\[\]`\\])", r"\\\1", name)
+        lines.append(f"### {safe_name} (Market Cap: {cap_str})\n")
 
         # Use first 15 lines of summary_md for brevity
         md_lines = summary_md.strip().split("\n")[:15]
@@ -108,6 +110,19 @@ def _build_post_content(summary: dict) -> str:
     lines.append(_DISCLAIMER)
 
     md_content = "\n".join(lines)
+    # Strip script/iframe tags before markdown conversion (injection defence)
+    md_content = _re.sub(
+        r"<(script|iframe|object|embed|form)[^>]*>.*?</\1>",
+        "",
+        md_content,
+        flags=_re.IGNORECASE | _re.DOTALL,
+    )
+    md_content = _re.sub(
+        r"<(script|iframe|object|embed|form)[^>]*/?>",
+        "",
+        md_content,
+        flags=_re.IGNORECASE,
+    )
     html_content = markdown.markdown(md_content, extensions=["tables", "fenced_code"])
     return html_content
 

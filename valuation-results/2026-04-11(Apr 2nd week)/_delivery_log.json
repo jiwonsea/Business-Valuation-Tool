@@ -1,0 +1,15 @@
+{
+  "week_label": "Apr 2nd week (4/11)",
+  "run_date": "2026-04-11T00:56:11.918646",
+  "gamma_urls": {
+    "_summary": "https://gamma.app/docs/cajuvotlowsjka0"
+  },
+  "excel_urls": {},
+  "gmail_draft_id": "r3196058593534510461",
+  "status": "completed_with_errors",
+  "errors": [
+    "KR: NAVER_CLIENT_ID/SECRET not set — news collection skipped",
+    "US: Google News RSS 403 Forbidden — news collection failed",
+    "Supabase not configured — delivery log saved locally only"
+  ]
+}

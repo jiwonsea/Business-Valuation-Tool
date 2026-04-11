@@ -1,0 +1,30 @@
+{
+  "run_date": "2026-04-11T00:52:56.915901",
+  "label": "Apr 2nd week (4/11)",
+  "markets": [
+    "KR",
+    "US"
+  ],
+  "discoveries": [
+    {
+      "market": "KR",
+      "news_count": 0,
+      "companies": []
+    },
+    {
+      "market": "US",
+      "news_count": 0,
+      "companies": []
+    }
+  ],
+  "scored_companies": [],
+  "valuations": [],
+  "errors": [],
+  "folder_name": "2026-04-11(Apr 2nd week)",
+  "week_dir": "/home/user/Business-Valuation-Tool/valuation-results/2026-04-11(Apr 2nd week)",
+  "status_summary": {
+    "total": 0,
+    "success": 0,
+    "failed": 0
+  }
+}

@@ -6,9 +6,12 @@ The user reviews/modifies the output before running valuation.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 
 from .news_collector import NewsCollector
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_print(text: str) -> None:
@@ -242,5 +245,11 @@ class DiscoveryEngine:
 
         try:
             return _parse_json(response)
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning(
+                "AI JSON 파싱 실패 [%s]: %s — companies=[] fallback. 원본 응답 앞 200자: %.200s",
+                market,
+                exc,
+                response,
+            )
             return {"summary": response, "companies": [], "scenarios": []}

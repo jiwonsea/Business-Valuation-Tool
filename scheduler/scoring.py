@@ -6,6 +6,7 @@ Score = news_score(0-50) + size_score(0-50) -> 5-level star rating.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -52,17 +53,31 @@ def _time_decay_weight(pub_date_str: str, now: datetime | None = None) -> float:
         return 0.5  # Unparseable date -> neutral weight
 
 
+def _build_mention_pattern(name_lower: str) -> re.Pattern:
+    """Build word-boundary-aware regex for company name matching.
+
+    Prevents partial-name over-counting (e.g. '삼성' matching '삼성전자',
+    'SK' matching 'SK하이닉스').
+    - Korean names: not immediately preceded or followed by a Korean syllable character.
+    - ASCII/mixed names: standard \\b word boundary.
+    """
+    escaped = re.escape(name_lower)
+    if re.search(r"[가-힣]", name_lower):
+        return re.compile(rf"(?<![가-힣]){escaped}(?![가-힣])")
+    return re.compile(rf"\b{escaped}\b", re.IGNORECASE)
+
+
 def _count_news_mentions(company_name: str, news: list[dict]) -> float:
     """Count company name mentions with time decay weighting.
 
     Returns weighted mention score (float).
     """
-    name_lower = company_name.lower()
+    pattern = _build_mention_pattern(company_name.lower())
     now = datetime.now()
     score = 0.0
     for n in news:
         text = f"{n.get('title', '')} {n.get('description', '')}".lower()
-        if name_lower in text:
+        if pattern.search(text):
             score += _time_decay_weight(n.get("pub_date", ""), now)
     return score
 
@@ -151,7 +166,15 @@ def score_companies(
         name = co.get("name", "")
         mention_scores[name] = _count_news_mentions(name, news)
 
-    max_mentions = max(mention_scores.values(), default=0)
+    # Per-market max to prevent cross-market score suppression:
+    # KR company names only match Korean news; US names only match English news.
+    # A global max would let the higher-volume market crush the other market's scores.
+    market_max: dict[str, float] = {}
+    for co in companies:
+        market = co.get("market", "KR")
+        m = mention_scores.get(co.get("name", ""), 0.0)
+        if market not in market_max or m > market_max[market]:
+            market_max[market] = m
 
     # 2) Score each company
     scored = []
@@ -161,7 +184,7 @@ def score_companies(
         market = co.get("market", "KR")
 
         mentions = mention_scores.get(name, 0)
-        ns = _news_score(mentions, max_mentions)
+        ns = _news_score(mentions, market_max.get(market, 0))
 
         cap_usd = _fetch_market_cap_usd(ticker, market)
         ss = _size_score(cap_usd)

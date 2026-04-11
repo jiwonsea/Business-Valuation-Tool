@@ -204,6 +204,11 @@ def run_weekly(
         "기업군",
         "관련 종목",
         "관련종목",
+        # English sector/group expressions (US market AI outputs)
+        " sector",
+        " companies",
+        " firms",
+        " industry",
     )
 
     def _is_real_company(co: dict) -> bool:

@@ -270,3 +270,72 @@ class TestSensitivityRefLabel:
         ctx = self._make_ctx("dcf_primary", weighted=0, dcf_ev=500_000)
         label, _ = _get_ref_label_value(ctx)
         assert label == "DCF EV"
+
+
+# ── rnpv.py: 4-fix cross-review corrections ──
+
+
+class TestRnpvSheetFixes:
+    """Structural checks for the 4 rnpv.py fixes from the cross-review session."""
+
+    def _src(self):
+        import inspect
+        from output.sheets.rnpv import _sheet_pipeline_summary, _sheet_revenue_curves
+
+        return inspect.getsource(_sheet_pipeline_summary) + inspect.getsource(
+            _sheet_revenue_curves
+        )
+
+    def test_fx1_no_duplicate_import(self):
+        """FX-1: style_header_row must not be re-imported inside _sheet_pipeline_summary."""
+        import inspect
+        from output.sheets.rnpv import _sheet_pipeline_summary
+
+        src = inspect.getsource(_sheet_pipeline_summary)
+        assert (
+            "from ..excel_styles import style_header_row" not in src
+        ), "Duplicate inline import of style_header_row still present"
+
+    def test_fx2_rnpv_pct_uses_ne_zero(self):
+        """FX-2: rnpv_pct guard must use != 0 so negative total_rnpv shows actual weights."""
+        src = self._src()
+        assert (
+            "total_rnpv != 0" in src
+        ), "rnpv_pct should guard with != 0, not > 0"
+        assert (
+            "total_rnpv > 0" not in src
+        ), "Old '> 0' guard still present — negative total_rnpv will show all-zero weights"
+
+    def test_fx3_equity_bridge_uses_pipeline_value(self):
+        """FX-3: Equity Bridge must use pipeline_value, not enterprise_value."""
+        import inspect
+        from output.sheets.rnpv import _sheet_pipeline_summary
+
+        src = inspect.getsource(_sheet_pipeline_summary)
+        assert (
+            "rnpv.pipeline_value - ctx.vi.net_debt" in src
+        ), "Equity Bridge should use pipeline_value explicitly"
+        assert (
+            "rnpv.enterprise_value - ctx.vi.net_debt" not in src
+        ), "enterprise_value still used in Equity Bridge — use pipeline_value for clarity"
+
+    def test_fx4_peak_revenue_uses_all_drug_results(self):
+        """FX-4: Peak Revenue summary must iterate rnpv.drug_results, not drugs_with_curves."""
+        import inspect
+        from output.sheets.rnpv import _sheet_revenue_curves
+
+        src = inspect.getsource(_sheet_revenue_curves)
+        # The Peak Revenue for-loop must reference drug_results
+        lines = [l.strip() for l in src.split("\n")]
+        peak_revenue_section = False
+        found_drug_results = False
+        for line in lines:
+            if "Peak Revenue" in line:
+                peak_revenue_section = True
+            if peak_revenue_section and "for dr in rnpv.drug_results:" in line:
+                found_drug_results = True
+                break
+        assert found_drug_results, (
+            "Peak Revenue summary still uses drugs_with_curves — "
+            "drugs without revenue_curve are excluded from summary"
+        )

@@ -73,7 +73,7 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
 
     for dr in rnpv.drug_results:
         r += 1
-        rnpv_pct = dr.rnpv / rnpv.total_rnpv if rnpv.total_rnpv > 0 else 0
+        rnpv_pct = dr.rnpv / rnpv.total_rnpv if rnpv.total_rnpv != 0 else 0
         is_approved = dr.phase == "approved"
         write_cell(ws, r, 1, dr.name, bold=is_approved)
         write_cell(ws, r, 2, phase_labels.get(dr.phase, dr.phase))
@@ -124,7 +124,7 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
         ("(-) PV(R&D Costs)", rnpv.r_and_d_cost_pv),
         ("Pipeline Value", rnpv.pipeline_value),
         ("(-) Net Debt", ctx.vi.net_debt),
-        ("Equity Value", rnpv.enterprise_value - ctx.vi.net_debt),
+        ("Equity Value", rnpv.pipeline_value - ctx.vi.net_debt),
     ]
     for label, val in bridge_items:
         is_total = label == "Equity Value"
@@ -319,9 +319,7 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
             write_cell(ws, r, c, h)
             ws.column_dimensions[get_column_letter(c)].width = 16
         ws.column_dimensions["A"].width = 28
-        from ..excel_styles import style_header_row as _shr
-
-        _shr(ws, r, len(headers))
+        style_header_row(ws, r, len(headers))
 
         for t in tornado:
             r += 1
@@ -384,7 +382,7 @@ def _sheet_revenue_curves(ctx: Ctx, rnpv):
         write_cell(ws, r, c, h)
     style_header_row(ws, r, len(headers))
 
-    for dr in drugs_with_curves:
+    for dr in rnpv.drug_results:
         r += 1
         write_cell(ws, r, 1, dr.name.split("(")[0].strip()[:25])
         write_cell(ws, r, 2, dr.peak_sales, fmt=NUM_FMT)

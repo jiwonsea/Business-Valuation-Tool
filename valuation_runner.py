@@ -739,10 +739,11 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
 
+        # DDM yields common equity directly (DPS/Ke-g); CPS/RCPS are already excluded
+        # from common dividends — passing them to calc_scenario would double-deduct.
+        # net_debt cancel-out (added to sc_ev above, subtracted here) is intentional.
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+                          0, 0, 0, 0, um, 0.0, 0.0)
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -864,10 +865,10 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         # Market sentiment is cumulative
         if sc.market_sentiment_pct != 0:
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
+        # RIM yields common equity value directly; CPS/RCPS are already excluded
+        # from book-value-based residual income — passing them would double-deduct.
         r = calc_scenario(sc, sc_ev, vi.net_debt, vi.eco_frontier,
-                          vi.cps_principal, vi.cps_years,
-                          vi.rcps_principal, vi.rcps_years, um,
-                          vi.cps_dividend_rate, vi.rcps_dividend_rate)
+                          0, 0, 0, 0, um, 0.0, 0.0)
         scenario_results[code] = r
         total_weighted += r.weighted
 

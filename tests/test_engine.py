@@ -1357,7 +1357,7 @@ class TestNAVEnhanced:
 
 class TestMonteCarloEdgeCases:
     def test_negative_equity_clamped_to_zero(self):
-        """claims > EV: negative per-share value clipped to 0"""
+        """claims > EV: negative per-share value propagated (not clipped to 0)"""
         mc = MCInput(
             multiple_params={"A": (2.0, 0.1)},  # low multiple
             wacc_mean=8.0, wacc_std=0.5,
@@ -1372,7 +1372,10 @@ class TestMonteCarloEdgeCases:
             rcps_repay=0, buyback=0, shares=1_000_000,
             unit_multiplier=1_000_000,
         )
-        assert r.min_val >= 0
+        # Negative equity propagates — unbiased distribution (not clipped)
+        assert r.min_val < 0
+        assert r.pct_negative == 100.0
+        assert r.histogram_bins == []  # histogram empty when all negative
 
     def test_dlom_clipped_to_50(self):
         """DLOM mean 45%, std 10%: 50% upper-bound clipping"""

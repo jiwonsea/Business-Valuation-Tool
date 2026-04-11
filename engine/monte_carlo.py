@@ -182,17 +182,18 @@ def run_monte_carlo(
     if shares > 0:
         ps = equity * (unit_multiplier / shares)
         ps *= (1 - dlom_samples / 100)
-        results = np.maximum(ps, 0)
+        results = ps  # preserve negatives — clipping upward-biases mean/percentiles
     else:
         results = np.zeros(n)
 
     results_int = np.round(results).astype(int)
 
-    # Separate positive (valid for display) and track negative %
-    valid = results_int[results_int > 0]
-    pct_neg = round((1 - len(valid) / n) * 100, 1) if n > 0 else 0.0
+    # Count true negatives (before any histogram filtering)
+    neg_mask = results_int < 0
+    pct_neg = round(float(neg_mask.sum()) / n * 100, 1) if n > 0 else 0.0
 
-    # Histogram and statistics use same positive-only set for consistency
+    # Histogram uses positive-only set (display: negative equity not plotted)
+    valid = results_int[~neg_mask]
     n_bins = min(50, max(10, n // 200))
     if len(valid) > 0:
         counts, bin_edges = np.histogram(valid, bins=n_bins)
@@ -201,8 +202,8 @@ def run_monte_carlo(
     else:
         hist_bins, hist_counts = [], []
 
-    # Statistics on positive-only set (consistent with histogram display)
-    stats_set = valid if len(valid) > 0 else results_int
+    # Statistics on full distribution (negatives included) for unbiased percentiles
+    stats_set = results_int if len(results_int) > 0 else valid
 
     return MCResult(
         n_sims=n,

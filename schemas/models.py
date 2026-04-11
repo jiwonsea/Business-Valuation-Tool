@@ -780,7 +780,8 @@ class QualityScore(BaseModel):
     is_rnpv: bool = False             # True when primary_method == "rnpv"
     rnpv_weighted_cv: int = 0         # 0-10: CV among rNPV-appropriate methods (DCF excluded)
     rnpv_pipeline_diversity: int = 0  # 0-8: drug count + phase variety
-    rnpv_pos_grounding: int = 0       # 0-7: custom PoS coverage vs phase defaults
+    rnpv_pos_grounding: int = 0       # 0-6: custom PoS coverage vs phase defaults
+    rnpv_scenario_coverage: int = 0   # 0-1: pos_override present in at least one scenario
     rnpv_reverse_consistency: int = 0 # 0-10: reverse rNPV implied param sanity (listed only)
 
 

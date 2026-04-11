@@ -16,6 +16,7 @@ from engine.quality import (
     _cv_convergence_score_rnpv,
     _rnpv_pipeline_diversity,
     _rnpv_pos_grounding,
+    _rnpv_scenario_coverage,
     _reverse_rnpv_consistency,
     _market_alignment_score_rnpv,
     _wacc_plausibility_score,
@@ -291,21 +292,23 @@ class TestFormat:
 
     def test_rnpv_format(self):
         q = QualityScore(
-            total=87, cv_convergence=15, wacc_plausibility=25,
+            total=87, cv_convergence=16, wacc_plausibility=25,
             scenario_consistency=25, market_alignment=22,
             max_score=100, warnings=[], grade="A",
             is_rnpv=True, rnpv_weighted_cv=3, rnpv_pipeline_diversity=7,
-            rnpv_pos_grounding=5, rnpv_reverse_consistency=7,
+            rnpv_pos_grounding=5, rnpv_scenario_coverage=1, rnpv_reverse_consistency=7,
         )
         report = format_quality_report(q, is_listed=True)
         assert "rNPV 기준" in report
         assert "DCF 제외" in report
         assert "파이프라인 다양성" in report
         assert "PoS 그라운딩" in report
+        assert "시나리오 커버리지" in report
         assert "Reverse rNPV 정합" in report
         assert "3/10" in report
         assert "7/8" in report
-        assert "5/7" in report
+        assert "5/6" in report
+        assert "1/1" in report
 
 
 # ── rNPV CV Convergence Tests ──
@@ -465,17 +468,17 @@ class TestRNPVPoSGrounding:
         return _make_minimal_vi(rnpv_params=RNPVParams(pipeline=pipeline))
 
     def test_majority_custom_pos(self):
-        """≥50% non-approved drugs with custom PoS → 7 pts."""
+        """≥50% non-approved drugs with custom PoS → 6 pts."""
         vi = self._make_vi([
             {"name": "A", "phase": "phase3", "success_prob": 0.60},
             {"name": "B", "phase": "phase3", "success_prob": 0.55},
             {"name": "C", "phase": "phase2"},
         ])
         score, warns = _rnpv_pos_grounding(vi)
-        assert score == 7
+        assert score == 6
 
     def test_partial_custom_pos(self):
-        """25-50% custom PoS → 5 pts."""
+        """25-50% custom PoS → 4 pts."""
         vi = self._make_vi([
             {"name": "A", "phase": "phase3", "success_prob": 0.60},
             {"name": "B", "phase": "phase2"},
@@ -483,7 +486,7 @@ class TestRNPVPoSGrounding:
             {"name": "D", "phase": "preclinical"},
         ])
         score, warns = _rnpv_pos_grounding(vi)
-        assert score == 5
+        assert score == 4
 
     def test_no_custom_pos(self):
         """All defaults → 1 pt with warning."""
@@ -496,13 +499,13 @@ class TestRNPVPoSGrounding:
         assert any("커스텀 설정 부족" in w for w in warns)
 
     def test_all_approved_full_score(self):
-        """All approved drugs → PoS grounding not applicable → 7 pts."""
+        """All approved drugs → PoS grounding not applicable → 6 pts."""
         vi = self._make_vi([
             {"name": "A", "phase": "approved"},
             {"name": "B", "phase": "approved"},
         ])
         score, warns = _rnpv_pos_grounding(vi)
-        assert score == 7
+        assert score == 6
 
 
 # ── Reverse rNPV Consistency Tests ──
@@ -608,3 +611,59 @@ class TestRNPVMarketAlignment:
         score, _ = _market_alignment_score_rnpv(mc)
         assert score == 15
         assert score < 25
+
+
+# ── rNPV Scenario Coverage Tests ──
+
+class TestRNPVScenarioCoverage:
+    def _make_vi_with_scenarios(self, scenarios: dict):
+        from schemas.models import ScenarioParams
+        vi = _make_minimal_vi()
+        # Rebuild with scenarios
+        return vi.model_copy(update={"scenarios": scenarios})
+
+    def _make_scenario(self, code: str, pos_override: dict | None = None):
+        from schemas.models import ScenarioParams
+        return ScenarioParams(
+            code=code, name=code.lower(), prob=33.0,
+            ipo="성공", dlom=20.0, shares=1_000_000,
+            pos_override=pos_override or {},
+        )
+
+    def test_pos_override_present(self):
+        """At least one scenario with pos_override → 1 pt."""
+        scenarios = {
+            "bull": self._make_scenario("BULL", pos_override={"DrugA": 0.8}),
+            "bear": self._make_scenario("BEAR"),
+        }
+        vi = self._make_vi_with_scenarios(scenarios)
+        score, warns = _rnpv_scenario_coverage(vi)
+        assert score == 1
+        assert len(warns) == 0
+
+    def test_no_pos_override(self):
+        """No scenarios have pos_override → 0 pts with warning."""
+        scenarios = {
+            "bull": self._make_scenario("BULL"),
+            "bear": self._make_scenario("BEAR"),
+        }
+        vi = self._make_vi_with_scenarios(scenarios)
+        score, warns = _rnpv_scenario_coverage(vi)
+        assert score == 0
+        assert any("pos_override 없음" in w for w in warns)
+
+    def test_empty_pos_override_dict(self):
+        """Scenario with empty pos_override dict → treated as no override → 0 pts."""
+        scenarios = {
+            "bull": self._make_scenario("BULL", pos_override={}),
+        }
+        vi = self._make_vi_with_scenarios(scenarios)
+        score, warns = _rnpv_scenario_coverage(vi)
+        assert score == 0
+
+    def test_no_scenarios(self):
+        """No scenarios at all → 0 pts with warning."""
+        vi = _make_minimal_vi()
+        score, warns = _rnpv_scenario_coverage(vi)
+        assert score == 0
+        assert any("pos_override 없음" in w for w in warns)

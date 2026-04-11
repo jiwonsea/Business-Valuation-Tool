@@ -5,9 +5,10 @@ Inspired by autoresearch's val_bpb: a clear scalar metric after every run.
 
 rNPV mode (primary_method == "rnpv"):
   cv_convergence bucket (25 pts) is restructured:
-    - rnpv_weighted_cv (0-10):    CV among rNPV-appropriate methods (DCF excluded)
-    - rnpv_pipeline_diversity (0-8): drug count + phase variety
-    - rnpv_pos_grounding (0-7):   custom PoS coverage
+    - rnpv_weighted_cv (0-10):         CV among rNPV-appropriate methods (DCF excluded)
+    - rnpv_pipeline_diversity (0-8):   drug count + phase variety
+    - rnpv_pos_grounding (0-6):        custom PoS coverage
+    - rnpv_scenario_coverage (0-1):    pos_override in at least one scenario
   market_alignment bucket (25 pts, listed only) is restructured:
     - price gap component (0-15): same formula, rescaled
     - rnpv_reverse_consistency (0-10): reverse rNPV implied parameter sanity
@@ -54,10 +55,11 @@ def calc_quality_score(vi: "ValuationInput", result: "ValuationResult") -> "Qual
         wcv_score, wcv_warns = _cv_convergence_score_rnpv(result.cross_validations)
         pd_score, pd_warns = _rnpv_pipeline_diversity(vi)
         pg_score, pg_warns = _rnpv_pos_grounding(vi)
-        cv_score = wcv_score + pd_score + pg_score
-        cv_warns = wcv_warns + pd_warns + pg_warns
+        sc_cov_score, sc_cov_warns = _rnpv_scenario_coverage(vi)
+        cv_score = wcv_score + pd_score + pg_score + sc_cov_score
+        cv_warns = wcv_warns + pd_warns + pg_warns + sc_cov_warns
     else:
-        wcv_score = pd_score = pg_score = 0
+        wcv_score = pd_score = pg_score = sc_cov_score = 0
         cv_score, cv_warns = _cv_convergence_score(result.cross_validations)
 
     wacc_score, wacc_warns = _wacc_plausibility_score(
@@ -103,6 +105,7 @@ def calc_quality_score(vi: "ValuationInput", result: "ValuationResult") -> "Qual
         rnpv_weighted_cv=wcv_score,
         rnpv_pipeline_diversity=pd_score,
         rnpv_pos_grounding=pg_score,
+        rnpv_scenario_coverage=sc_cov_score,
         rnpv_reverse_consistency=rr_score,
     )
 
@@ -245,10 +248,11 @@ def _rnpv_pipeline_diversity(vi: "ValuationInput") -> tuple[int, list[str]]:
 
 
 def _rnpv_pos_grounding(vi: "ValuationInput") -> tuple[int, list[str]]:
-    """PoS grounding score (0-7): custom PoS coverage vs phase-default fallback.
+    """PoS grounding score (0-6): custom PoS coverage vs phase-default fallback.
 
     Analyst-set success probabilities that deviate from generic phase averages
     indicate deeper due diligence and reduce model uncertainty.
+    Reduced from 0-7 to 0-6 to accommodate rnpv_scenario_coverage (0-1).
     """
     warnings: list[str] = []
 
@@ -256,22 +260,21 @@ def _rnpv_pos_grounding(vi: "ValuationInput") -> tuple[int, list[str]]:
         return 0, []
 
     pipeline = vi.rnpv_params.pipeline
-    total = len(pipeline)
     # Approved drugs (PoS=1.0 by definition) are excluded from grounding assessment
     non_approved = [d for d in pipeline if d.phase != "approved"]
     if not non_approved:
         # All drugs approved — PoS grounding not meaningful, give full points
-        return 7, []
+        return 6, []
 
     custom_count = sum(1 for d in non_approved if d.success_prob is not None)
     custom_pct = custom_count / len(non_approved) * 100
 
     if custom_pct >= 50:
-        score = 7
+        score = 6
     elif custom_pct >= 25:
-        score = 5
+        score = 4
     elif custom_pct >= 10:
-        score = 3
+        score = 2
     else:
         score = 1
         warnings.append(
@@ -279,6 +282,26 @@ def _rnpv_pos_grounding(vi: "ValuationInput") -> tuple[int, list[str]]:
         )
 
     return score, warnings
+
+
+def _rnpv_scenario_coverage(vi: "ValuationInput") -> tuple[int, list[str]]:
+    """Scenario pos_override coverage (0-1): rNPV scenario risk differentiation.
+
+    pos_override in at least one scenario means the analyst models pipeline risk
+    differently across bull/bear — a hallmark of thoughtful rNPV scenario design.
+    """
+    warnings: list[str] = []
+
+    has_pos_override = any(
+        sc.pos_override for sc in vi.scenarios.values()
+        if sc.pos_override
+    )
+
+    if has_pos_override:
+        return 1, []
+
+    warnings.append("시나리오 pos_override 없음 — 파이프라인 리스크 시나리오 미반영")
+    return 0, warnings
 
 
 def _reverse_rnpv_consistency(result: "ValuationResult") -> tuple[int, list[str]]:
@@ -545,7 +568,8 @@ def format_quality_report(quality: "QualityScore", is_listed: bool) -> str:
         lines.append(f"  - 교차검증 (rNPV 기준): {quality.cv_convergence}/25")
         lines.append(f"      · 방법론 수렴도 (DCF 제외): {quality.rnpv_weighted_cv}/10")
         lines.append(f"      · 파이프라인 다양성: {quality.rnpv_pipeline_diversity}/8")
-        lines.append(f"      · PoS 그라운딩: {quality.rnpv_pos_grounding}/7")
+        lines.append(f"      · PoS 그라운딩: {quality.rnpv_pos_grounding}/6")
+        lines.append(f"      · 시나리오 커버리지: {quality.rnpv_scenario_coverage}/1")
     else:
         lines.append(f"  - 교차검증 수렴도: {quality.cv_convergence}/25")
 

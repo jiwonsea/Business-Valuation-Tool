@@ -27,6 +27,8 @@ from engine.distress import calc_distress_discount, apply_distress_discount
 from engine.method_selector import classify_industry
 from engine.drivers import resolve_drivers
 from engine.gap_diagnostics import diagnose_gap
+from engine.reverse_rnpv import reverse_rnpv, solve_implied_pos_scale, solve_implied_peak_scale, solve_implied_discount_rate, solve_implied_per_drug_pos
+from engine.sensitivity import sensitivity_rnpv, sensitivity_rnpv_tornado
 from schemas.models import NewsDriver
 
 
@@ -2464,3 +2466,347 @@ class TestRNPV:
         )
         # pharma is in _GROWTH_KEYWORDS → dcf_primary
         assert method == "dcf_primary"
+
+
+class TestReverseRNPV:
+    """Reverse rNPV solver tests."""
+
+    SIMPLE_PIPELINE = [
+        {
+            "name": "DrugA",
+            "phase": "approved",
+            "peak_sales": 10_000,
+            "years_to_peak": 3,
+            "years_at_peak": 5,
+            "patent_expiry_years": 15,
+            "existing_revenue": 8_000,
+            "launch_year_offset": 0,
+        },
+        {
+            "name": "DrugB",
+            "phase": "phase3",
+            "peak_sales": 5_000,
+            "years_to_peak": 5,
+            "years_at_peak": 5,
+            "patent_expiry_years": 15,
+            "launch_year_offset": 2,
+        },
+    ]
+
+    def test_round_trip_pos_scale(self):
+        """PoS scale of 1.0 should reproduce model EV."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        target = float(base.enterprise_value)
+
+        scale = solve_implied_pos_scale(
+            target_ev=target,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert scale is not None
+        assert abs(scale - 1.0) < 0.01
+
+    def test_higher_target_needs_higher_pos(self):
+        """Higher target EV requires higher PoS scale (pipeline-heavy)."""
+        # Use pipeline-heavy drugs (no approved) so PoS scaling has room
+        pipeline_drugs = [
+            {
+                "name": "DrugX",
+                "phase": "phase2",
+                "peak_sales": 8_000,
+                "years_to_peak": 5,
+                "years_at_peak": 5,
+                "patent_expiry_years": 15,
+                "launch_year_offset": 3,
+            },
+            {
+                "name": "DrugY",
+                "phase": "phase3",
+                "peak_sales": 6_000,
+                "years_to_peak": 4,
+                "years_at_peak": 5,
+                "patent_expiry_years": 14,
+                "launch_year_offset": 2,
+            },
+        ]
+        base = calc_rnpv(pipeline_drugs, discount_rate=10.0)
+        higher_target = float(base.enterprise_value) * 1.3
+
+        scale = solve_implied_pos_scale(
+            target_ev=higher_target,
+            pipeline=pipeline_drugs,
+            discount_rate=10.0,
+        )
+        assert scale is not None
+        assert scale > 1.0
+
+    def test_round_trip_peak_scale(self):
+        """Peak scale of 1.0 should reproduce model EV."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        target = float(base.enterprise_value)
+
+        scale = solve_implied_peak_scale(
+            target_ev=target,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert scale is not None
+        assert abs(scale - 1.0) < 0.01
+
+    def test_lower_target_needs_lower_peak(self):
+        """Lower target EV requires lower peak sales scale."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        lower_target = float(base.enterprise_value) * 0.7
+
+        scale = solve_implied_peak_scale(
+            target_ev=lower_target,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert scale is not None
+        assert scale < 1.0
+
+    def test_round_trip_discount_rate(self):
+        """Implied discount rate should match input discount rate."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        target = float(base.enterprise_value)
+
+        dr = solve_implied_discount_rate(
+            target_ev=target,
+            pipeline=self.SIMPLE_PIPELINE,
+        )
+        assert dr is not None
+        assert abs(dr - 10.0) < 0.1
+
+    def test_higher_target_needs_lower_discount(self):
+        """Higher target EV requires lower discount rate."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        higher_target = float(base.enterprise_value) * 1.2
+
+        dr = solve_implied_discount_rate(
+            target_ev=higher_target,
+            pipeline=self.SIMPLE_PIPELINE,
+        )
+        assert dr is not None
+        assert dr < 10.0
+
+    def test_full_reverse_rnpv(self):
+        """Full reverse_rnpv returns all three implied parameters."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        model_ev = float(base.enterprise_value)
+        target_ev = model_ev * 1.15  # Market 15% higher
+
+        result = reverse_rnpv(
+            target_ev=target_ev,
+            model_ev=model_ev,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert result.gap_pct < 0  # Model < target → negative gap
+        # PoS scale may be None if approved drugs dominate (capped at 1.0)
+        assert result.implied_peak_scale is not None
+        assert result.implied_peak_scale > 1.0
+        assert result.implied_discount_rate is not None
+        assert result.implied_discount_rate < 10.0
+        assert len(result.implied_peak_per_drug) == 2
+
+    def test_pos_capped_at_one(self):
+        """Implied PoS should never exceed 1.0 for any drug."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        very_high_target = float(base.enterprise_value) * 2.0
+
+        result = reverse_rnpv(
+            target_ev=very_high_target,
+            model_ev=float(base.enterprise_value),
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        if result.implied_pos_per_drug:
+            for d in result.implied_pos_per_drug:
+                assert d["implied_pos"] <= 1.0
+
+
+    # ── Per-drug independent PoS (solo) tests ──
+
+    def test_solve_implied_per_drug_pos_basic(self):
+        """2-drug pipeline: approved skipped, phase3 solved."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        target_ev = float(base.enterprise_value) * 1.10  # 10% higher
+
+        results = solve_implied_per_drug_pos(
+            target_ev=target_ev,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert len(results) == 2
+        # DrugA (approved) → skipped
+        assert results[0]["skipped"] is True
+        assert results[0]["implied_pos"] is None
+        # DrugB (phase3) → solved with higher PoS
+        assert results[1]["skipped"] is False
+        assert results[1]["solvable"] is True
+        assert results[1]["implied_pos"] > results[1]["base_pos"]
+
+    def test_solve_implied_per_drug_pos_unsolvable(self):
+        """Gap too large for a single drug to resolve → solvable=False."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        very_high_target = float(base.enterprise_value) * 3.0  # 200% higher
+
+        results = solve_implied_per_drug_pos(
+            target_ev=very_high_target,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        drug_b = results[1]  # phase3
+        assert drug_b["solvable"] is False
+        assert drug_b["implied_pos"] is None
+        assert drug_b["max_ev_contribution"] > 0
+
+    def test_solve_implied_per_drug_pos_all_approved(self):
+        """All drugs approved → all skipped, no solves."""
+        all_approved = [
+            {"name": "DrugX", "phase": "approved", "peak_sales": 10000,
+             "years_to_peak": 3, "years_at_peak": 5, "patent_expiry_years": 15,
+             "existing_revenue": 8000},
+            {"name": "DrugY", "phase": "approved", "peak_sales": 5000,
+             "years_to_peak": 2, "years_at_peak": 4, "patent_expiry_years": 10,
+             "existing_revenue": 5000},
+        ]
+        base = calc_rnpv(all_approved, discount_rate=10.0)
+        results = solve_implied_per_drug_pos(
+            target_ev=float(base.enterprise_value) * 1.2,
+            pipeline=all_approved,
+            discount_rate=10.0,
+        )
+        assert all(r["skipped"] for r in results)
+
+    def test_solve_implied_per_drug_pos_single_pipeline(self):
+        """Single pipeline drug: solo solve should give same implied PoS as uniform."""
+        single_pipeline = [
+            {"name": "DrugA", "phase": "phase3", "peak_sales": 5000,
+             "years_to_peak": 5, "years_at_peak": 5, "patent_expiry_years": 15,
+             "launch_year_offset": 0},
+        ]
+        base = calc_rnpv(single_pipeline, discount_rate=10.0)
+        target_ev = float(base.enterprise_value) * 1.5
+
+        results = solve_implied_per_drug_pos(
+            target_ev=target_ev,
+            pipeline=single_pipeline,
+            discount_rate=10.0,
+        )
+        solo_pos = results[0]["implied_pos"]
+
+        # Uniform solver should give same result (only 1 drug to scale)
+        uniform = solve_implied_pos_scale(
+            target_ev=target_ev,
+            pipeline=single_pipeline,
+            discount_rate=10.0,
+        )
+        if solo_pos is not None and uniform is not None:
+            # Uniform returns a scale factor; implied_pos = base_pos * scale
+            base_pos = results[0]["base_pos"]
+            uniform_pos = min(base_pos * uniform, 1.0)
+            assert abs(solo_pos - uniform_pos) < 0.02
+
+    def test_solve_implied_per_drug_pos_negative_gap(self):
+        """Model overvalues → implied PoS should be lower than base."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        target_ev = float(base.enterprise_value) * 0.90  # Market 10% lower
+
+        results = solve_implied_per_drug_pos(
+            target_ev=target_ev,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        drug_b = results[1]  # phase3
+        if drug_b["solvable"]:
+            assert drug_b["implied_pos"] < drug_b["base_pos"]
+
+    def test_solve_implied_per_drug_pos_linear_exact(self):
+        """Verify linear solve is algebraically exact."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        base_ev = float(base.enterprise_value)
+        target_ev = base_ev * 1.05  # Small 5% gap
+
+        results = solve_implied_per_drug_pos(
+            target_ev=target_ev,
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        drug_b = results[1]
+        if drug_b["solvable"] and drug_b["implied_pos"] is not None:
+            # Verify: plug implied_pos back into calc_rnpv
+            modified = [dict(d) for d in self.SIMPLE_PIPELINE]
+            modified[1]["success_prob"] = drug_b["implied_pos"]
+            check = calc_rnpv(modified, discount_rate=10.0)
+            # Should match target_ev within rounding tolerance
+            assert abs(float(check.enterprise_value) - target_ev) < 2.0
+
+    def test_reverse_rnpv_includes_solo(self):
+        """reverse_rnpv() should populate implied_pos_solo field."""
+        base = calc_rnpv(self.SIMPLE_PIPELINE, discount_rate=10.0)
+        result = reverse_rnpv(
+            target_ev=float(base.enterprise_value) * 1.1,
+            model_ev=float(base.enterprise_value),
+            pipeline=self.SIMPLE_PIPELINE,
+            discount_rate=10.0,
+        )
+        assert len(result.implied_pos_solo) == 2
+        assert result.implied_pos_solo[0]["skipped"] is True  # DrugA approved
+        assert result.implied_pos_solo[1]["skipped"] is False  # DrugB pipeline
+
+
+class TestRNPVSensitivity:
+    """rNPV sensitivity table + tornado tests."""
+
+    PIPELINE = TestReverseRNPV.SIMPLE_PIPELINE
+
+    def test_sensitivity_2d_table(self):
+        """2D sensitivity table should have dr_range × pos_scale_range entries."""
+        rows = sensitivity_rnpv(
+            pipeline=self.PIPELINE,
+            discount_rate=10.0,
+            net_debt=5000,
+            shares=100_000_000,
+            unit_multiplier=1_000_000,
+            dr_range=[8.0, 10.0, 12.0],
+            pos_scale_range=[0.8, 1.0, 1.2],
+        )
+        assert len(rows) == 9  # 3 × 3
+        # Higher PoS → higher value (same discount rate)
+        at_10 = {r.col_val: r.value for r in rows if r.row_val == 10.0}
+        assert at_10[1.2] >= at_10[1.0] >= at_10[0.8]
+        # Lower discount rate → higher value (same PoS)
+        at_1x = {r.row_val: r.value for r in rows if r.col_val == 1.0}
+        assert at_1x[8.0] >= at_1x[10.0] >= at_1x[12.0]
+
+    def test_tornado_ordering(self):
+        """Tornado results should be sorted by impact magnitude (largest first)."""
+        tornado = sensitivity_rnpv_tornado(
+            pipeline=self.PIPELINE,
+            discount_rate=10.0,
+            net_debt=5000,
+            shares=100_000_000,
+            unit_multiplier=1_000_000,
+        )
+        assert len(tornado) == 2
+        # Sorted by swing (largest first)
+        swings = [t["high_value"] - t["low_value"] for t in tornado]
+        assert swings == sorted(swings, reverse=True)
+        # Each item has expected keys
+        for t in tornado:
+            assert t["high_value"] >= t["base_value"] >= t["low_value"]
+            assert t["high_peak"] > t["low_peak"]
+
+    def test_tornado_symmetry(self):
+        """Base value should be the same for all drugs."""
+        tornado = sensitivity_rnpv_tornado(
+            pipeline=self.PIPELINE,
+            discount_rate=10.0,
+            net_debt=5000,
+            shares=100_000_000,
+            unit_multiplier=1_000_000,
+        )
+        base_values = {t["base_value"] for t in tornado}
+        assert len(base_values) == 1  # All drugs share same base

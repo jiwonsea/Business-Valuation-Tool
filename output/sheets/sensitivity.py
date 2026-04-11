@@ -86,6 +86,8 @@ def _sensitivity_format(method: str):
         return lambda v: f"{v:,.0f}", lambda v: f"{v:.0f}%", "재평가 \\ 할인율"
     elif method == "multiples":
         return lambda v: f"{v:.1f}x", lambda v: f"{v:.0f}%", "멀티플 \\ 할인율"
+    elif method == "rnpv":
+        return lambda v: f"{v:.1f}%", lambda v: f"{v:.1f}x", "DR \\ PoS Scale"
     return lambda v: f"{v}", lambda v: f"{v}", "Row \\ Col"
 
 

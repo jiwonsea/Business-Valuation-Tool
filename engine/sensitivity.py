@@ -8,6 +8,7 @@ from .dcf import calc_dcf
 from .ddm import calc_ddm
 from .rim import calc_rim
 from .nav import calc_nav
+from .rnpv import calc_rnpv
 from .units import per_share
 
 
@@ -300,3 +301,117 @@ def sensitivity_multiple_range(
                 ps = 0
             rows.append(SensitivityRow(row_val=m, col_val=disc, value=ps))
     return rows
+
+
+def sensitivity_rnpv(
+    pipeline: list[dict],
+    discount_rate: float,
+    net_debt: int,
+    shares: int,
+    unit_multiplier: int = 1_000_000,
+    r_and_d_cost: int = 0,
+    decline_rate: float = 20.0,
+    default_margin: float = 0.35,
+    tax_rate: float = 0.22,
+    dr_range: list[float] | None = None,
+    pos_scale_range: list[float] | None = None,
+) -> list[SensitivityRow]:
+    """Sensitivity: discount rate × PoS scale → per-share value.
+
+    Row = discount rate (%), Col = PoS scale factor (e.g. 0.8 = 80% of base PoS).
+    """
+    from .rnpv import PHASE_POS
+
+    if dr_range is None:
+        center = round(discount_rate * 2) / 2  # snap to nearest 0.5
+        dr_range = [round(center + d * 0.5, 1) for d in range(-4, 5)]
+    if pos_scale_range is None:
+        pos_scale_range = [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4]
+
+    rows = []
+    for dr in dr_range:
+        if dr <= 0:
+            for ps in pos_scale_range:
+                rows.append(SensitivityRow(row_val=dr, col_val=ps, value=0))
+            continue
+        for ps in pos_scale_range:
+            adj = []
+            for d in pipeline:
+                ad = dict(d)
+                base_pos = d.get("success_prob") or PHASE_POS.get(d.get("phase", "preclinical"), 0.10)
+                ad["success_prob"] = min(base_pos * ps, 1.0)
+                adj.append(ad)
+            result = calc_rnpv(
+                pipeline=adj,
+                discount_rate=dr,
+                r_and_d_cost=r_and_d_cost,
+                decline_rate=decline_rate,
+                default_margin=default_margin,
+                tax_rate=tax_rate,
+            )
+            eq = result.enterprise_value - net_debt
+            value = per_share(eq, unit_multiplier, shares) if shares > 0 else eq
+            rows.append(SensitivityRow(row_val=dr, col_val=ps, value=value))
+    return rows
+
+
+def sensitivity_rnpv_tornado(
+    pipeline: list[dict],
+    discount_rate: float,
+    net_debt: int,
+    shares: int,
+    unit_multiplier: int = 1_000_000,
+    r_and_d_cost: int = 0,
+    decline_rate: float = 20.0,
+    default_margin: float = 0.35,
+    tax_rate: float = 0.22,
+    variation_pct: float = 20.0,
+) -> list[dict]:
+    """Tornado data: each drug's ±variation_pct peak sales impact on per-share value.
+
+    Returns list of dicts: {name, base_value, low_value, high_value, low_peak, high_peak}.
+    Sorted by impact magnitude (largest swing first).
+    """
+    # Base case
+    base_result = calc_rnpv(
+        pipeline=pipeline,
+        discount_rate=discount_rate,
+        r_and_d_cost=r_and_d_cost,
+        decline_rate=decline_rate,
+        default_margin=default_margin,
+        tax_rate=tax_rate,
+    )
+    base_eq = base_result.enterprise_value - net_debt
+    base_ps = per_share(base_eq, unit_multiplier, shares) if shares > 0 else base_eq
+
+    tornado = []
+    for i, drug in enumerate(pipeline):
+        results = {}
+        for label, mult in [("low", 1 - variation_pct / 100), ("high", 1 + variation_pct / 100)]:
+            adj = [dict(d) for d in pipeline]
+            adj[i]["peak_sales"] = round(drug.get("peak_sales", 0) * mult)
+            if drug.get("existing_revenue", 0) > 0:
+                adj[i]["existing_revenue"] = round(drug["existing_revenue"] * mult)
+            r = calc_rnpv(
+                pipeline=adj,
+                discount_rate=discount_rate,
+                r_and_d_cost=r_and_d_cost,
+                decline_rate=decline_rate,
+                default_margin=default_margin,
+                tax_rate=tax_rate,
+            )
+            eq = r.enterprise_value - net_debt
+            results[label] = per_share(eq, unit_multiplier, shares) if shares > 0 else eq
+
+        tornado.append({
+            "name": drug["name"],
+            "base_value": base_ps,
+            "low_value": results["low"],
+            "high_value": results["high"],
+            "low_peak": round(drug.get("peak_sales", 0) * (1 - variation_pct / 100)),
+            "high_peak": round(drug.get("peak_sales", 0) * (1 + variation_pct / 100)),
+        })
+
+    # Sort by impact magnitude (largest swing first)
+    tornado.sort(key=lambda x: abs(x["high_value"] - x["low_value"]), reverse=True)
+    return tornado

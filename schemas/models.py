@@ -407,6 +407,51 @@ class RNPVValuationResult(BaseModel):
     discount_rate: float = 0.0  # Applied discount rate (%)
 
 
+class ReverseRNPVDrugImplied(BaseModel):
+    """Per-drug implied parameter from reverse rNPV."""
+    name: str
+    base_value: float = 0.0
+    implied_value: float = 0.0
+
+
+class RNPVTornadoItem(BaseModel):
+    """Single drug's tornado sensitivity result."""
+    name: str
+    base_value: int = 0
+    low_value: int = 0
+    high_value: int = 0
+    low_peak: int = 0
+    high_peak: int = 0
+
+
+class ReverseRNPVDrugSolo(BaseModel):
+    """Per-drug independent PoS analysis — what PoS would this drug need
+    alone to close the model-market gap (all others held at base).
+    Results are NOT additive across drugs."""
+    name: str
+    phase: str = ""
+    base_pos: float = 0.0
+    implied_pos: Optional[float] = None   # None = unsolvable or skipped
+    solvable: bool = False
+    max_ev_contribution: int = 0          # Drug's max marginal EV at PoS=1.0 ($M)
+    skipped: bool = False                 # True for drugs with PoS >= 1.0
+
+
+class ReverseRNPVResult(BaseModel):
+    """Reverse rNPV analysis — what the market implies about pipeline assumptions."""
+    target_ev: int = 0                  # Market EV ($M)
+    model_ev: int = 0                   # Model rNPV EV ($M)
+    gap_pct: float = 0.0               # (model - target) / target * 100
+
+    implied_pos_scale: Optional[float] = None        # Uniform PoS multiplier
+    implied_peak_scale: Optional[float] = None       # Uniform peak-sales multiplier
+    implied_discount_rate: Optional[float] = None    # Discount rate (%) to match market
+
+    implied_pos_per_drug: list[ReverseRNPVDrugImplied] = []
+    implied_peak_per_drug: list[ReverseRNPVDrugImplied] = []
+    implied_pos_solo: list[ReverseRNPVDrugSolo] = []  # Per-drug independent PoS (linear solve)
+
+
 class DDMParams(BaseModel):
     """Dividend Discount Model (DDM) input parameters."""
     dps: float  # Dividend per share (KRW or $)
@@ -771,3 +816,5 @@ class ValuationResult(BaseModel):
     sensitivity_primary_label: str = ""  # Sensitivity table title
     quality: Optional[QualityScore] = None  # Post-valuation quality score
     gap_diagnostic: Optional[GapDiagnostic] = None  # Reverse-DCF gap analysis (when |gap| >= 20%)
+    reverse_rnpv: Optional[ReverseRNPVResult] = None  # Reverse rNPV (when primary_method == "rnpv")
+    rnpv_tornado: list[RNPVTornadoItem] = []  # Per-drug peak sales tornado (rNPV only)

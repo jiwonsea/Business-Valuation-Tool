@@ -139,6 +139,19 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
             lines.append(f"- ⚠ {mc.flag}")
         lines.append("")
 
+    # Reverse rNPV (when primary_method == "rnpv")
+    if result.reverse_rnpv:
+        rv = result.reverse_rnpv
+        lines.append("## 역방향 rNPV")
+        lines.append(f"- 모델 EV: {rv.model_ev:,}{unit} → 시장 EV: {rv.target_ev:,}{unit} (괴리 {rv.gap_pct:+.1f}%)")
+        if rv.implied_pos_scale is not None:
+            lines.append(f"- 시장 내재 PoS 배수: {rv.implied_pos_scale:.3f}x")
+        if rv.implied_peak_scale is not None:
+            lines.append(f"- 시장 내재 Peak Sales 배수: {rv.implied_peak_scale:.3f}x")
+        if rv.implied_discount_rate is not None:
+            lines.append(f"- 시장 내재 할인율: {rv.implied_discount_rate:.2f}%")
+        lines.append("")
+
     # Reverse-DCF gap diagnostic (when |gap| >= 20%)
     if result.gap_diagnostic:
         gd = result.gap_diagnostic

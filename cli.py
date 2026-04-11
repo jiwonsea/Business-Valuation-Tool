@@ -88,6 +88,9 @@ def _fetch_and_compare_market_price(vi: ValuationInput, result: ValuationResult)
         # ── Reverse-DCF gap diagnostics (|gap| >= 20%) ──
         _attach_gap_diagnostic(vi, result)
 
+        # ── Reverse rNPV (rNPV method only) ──
+        _attach_reverse_rnpv(vi, result)
+
     return result
 
 
@@ -148,6 +151,74 @@ def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
             )
     except Exception as e:
         logger.debug("Gap diagnostics failed: %s", e)
+
+
+def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
+    """Compute reverse rNPV when primary method is rNPV and market price is available."""
+    if result.primary_method != "rnpv" or not vi.rnpv_params:
+        return
+
+    mc = result.market_comparison
+    if mc is None or mc.market_price <= 0:
+        return
+
+    from engine.reverse_rnpv import reverse_rnpv
+    from schemas.models import (
+        ReverseRNPVResult as _RR, ReverseRNPVDrugImplied as _DI,
+        ReverseRNPVDrugSolo as _DS,
+    )
+
+    # Market EV = market cap (display units) + net debt
+    shares = vi.company.shares_outstanding
+    market_cap_display = mc.market_price * shares / vi.company.unit_multiplier
+    market_ev = market_cap_display + max(vi.net_debt, 0)
+
+    model_ev = float(result.rnpv.enterprise_value) if result.rnpv else 0
+
+    pipeline_dicts = [d.model_dump() for d in vi.rnpv_params.pipeline]
+    discount_rate = vi.rnpv_params.discount_rate or result.wacc.wacc
+
+    try:
+        raw = reverse_rnpv(
+            target_ev=market_ev,
+            model_ev=model_ev,
+            pipeline=pipeline_dicts,
+            discount_rate=discount_rate,
+            r_and_d_cost=vi.rnpv_params.r_and_d_cost,
+            decline_rate=vi.rnpv_params.decline_rate,
+            default_margin=vi.rnpv_params.default_margin,
+            tax_rate=vi.rnpv_params.tax_rate,
+        )
+        result.reverse_rnpv = _RR(
+            target_ev=raw.target_ev,
+            model_ev=raw.model_ev,
+            gap_pct=raw.gap_pct,
+            implied_pos_scale=raw.implied_pos_scale,
+            implied_peak_scale=raw.implied_peak_scale,
+            implied_discount_rate=raw.implied_discount_rate,
+            implied_pos_per_drug=[
+                _DI(name=d["name"], base_value=d["base_pos"], implied_value=d["implied_pos"])
+                for d in raw.implied_pos_per_drug
+            ],
+            implied_peak_per_drug=[
+                _DI(name=d["name"], base_value=d["base_peak"], implied_value=d["implied_peak"])
+                for d in raw.implied_peak_per_drug
+            ],
+            implied_pos_solo=[
+                _DS(
+                    name=d["name"],
+                    phase=d["phase"],
+                    base_pos=d["base_pos"],
+                    implied_pos=d["implied_pos"],
+                    solvable=d["solvable"],
+                    max_ev_contribution=d["max_ev_contribution"],
+                    skipped=d["skipped"],
+                )
+                for d in raw.implied_pos_solo
+            ],
+        )
+    except Exception as e:
+        logger.debug("Reverse rNPV failed: %s", e)
 
 
 def main():

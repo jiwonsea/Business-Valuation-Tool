@@ -99,7 +99,7 @@ rnpv_params:
     - name: "Ozempic (semaglutide T2D)"
       phase: "approved"
       indication: "Type 2 Diabetes"
-      peak_sales: 22000     # ~$22B peak (currently ~$19B)
+      peak_sales: 24000     # Consensus $22-25B; global T2D expansion supports upper range
       years_to_peak: 2
       years_at_peak: 4
       patent_expiry_years: 12  # Key patents through ~2037
@@ -109,7 +109,7 @@ rnpv_params:
     - name: "Wegovy (semaglutide obesity)"
       phase: "approved"
       indication: "Obesity / Weight Management"
-      peak_sales: 18000     # Obesity blockbuster, capacity-constrained
+      peak_sales: 20000     # Capacity expansion + obesity TAM growth; consensus $20-25B
       years_to_peak: 3
       years_at_peak: 5
       patent_expiry_years: 13
@@ -119,7 +119,7 @@ rnpv_params:
     - name: "Rybelsus (oral semaglutide)"
       phase: "approved"
       indication: "Type 2 Diabetes (oral)"
-      peak_sales: 4000
+      peak_sales: 4500      # Oral convenience premium; consensus $4-5B
       years_to_peak: 2
       years_at_peak: 4
       patent_expiry_years: 11

@@ -68,7 +68,13 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - **enterprise_value = pipeline_value**: `existing_revenue_value` is already included in `total_rnpv` (approved drugs have PoS=1.0). The `existing_revenue_value` field is a reporting-only subset — do not add it to `pipeline_value`.
 - **Decline base**: Decline always starts from `peak_sales` unless `existing_revenue >= peak_sales` (then from `existing_revenue`). Never from a mid-ramp value.
 - **Scenario drivers**: `growth_adj_pct` adjusts peak sales, `wacc_adj` adjusts discount rate, `pos_override` dict (`{drug_name: 0-1}`) overrides per-drug PoS. All three are independent and composable.
+- **patent_expiry_years**: Total remaining commercial life — ramp + plateau + decline all fit within this window. NOT "years until decline starts." If ramp+plateau exceeds this value, decline phase is skipped (edge case, no current profiles trigger this).
 - **Excel output**: rNPV produces two extra sheets — "rNPV Pipeline" (summary table + equity bridge) and "Revenue Curves" (year-by-year revenue per drug, chart-ready data).
+- **cash_flows vs revenue_curve**: `DrugCashFlow.cash_flows` = after-tax operating profit (revenue × margin × (1-tax)). `revenue_curve` = raw revenue projection. Excel Revenue Curves sheet uses `revenue_curve`, not `cash_flows`.
+- **Reverse rNPV**: `engine/reverse_rnpv.py` — binary search for implied PoS scale, peak-sales scale, and discount rate that reconcile model EV with market EV. Called from `cli.py:_attach_reverse_rnpv()` when primary_method=="rnpv" and market price available. Result stored in `ValuationResult.reverse_rnpv`.
+- **rNPV Sensitivity**: `sensitivity_rnpv()` = discount rate × PoS scale 2D table (uses `sensitivity_primary` slot). `sensitivity_rnpv_tornado()` = per-drug ±20% peak sales impact on per-share value (stored in `ValuationResult.rnpv_tornado`).
+- **PoS cap in reverse/sensitivity**: When scaling PoS uniformly, approved drugs (PoS=1.0) are already capped — only pipeline drugs' PoS can increase. This limits the range of achievable EV via PoS-only scaling when approved drugs dominate.
+- **Per-drug solo PoS**: `solve_implied_per_drug_pos()` uses direct algebraic solve (not binary search) — rNPV is linear in each drug's PoS: `implied_pos = gap / npv_i + base_pos`. O(1) total (single `calc_rnpv` call). Filter: `success_prob < 1.0`. Returns `solvable=False` when implied_pos outside [0, 1], with `max_ev_contribution` showing the drug's max marginal EV at PoS=1.0. Results are NOT additive across drugs.
 
 ## Conventions
 
@@ -124,3 +130,4 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - **Equity-direct methods (DDM, RIM, P/E, P/BV) output equity, not EV.** DDM/RIM add `net_debt` to convert equity→EV before `calc_scenario` (so the bridge subtracts it back correctly). NAV passes CPS/RCPS=0 because K-IFRS `total_liabilities` already includes them.
 - Sensitivity multiples grid: when row_seg == col_seg, col_ev must be 0 to prevent double-counting the same segment's EV contribution.
 - `segment_multiples`/`segment_ebitda`/`segment_revenue` keys in scenario YAML must be segment codes (`SEG1`, `AUTONOMOUS_DRIVING`), not human-readable names. LLM frequently generates Korean labels or ticker names instead. `load_profile()` warns on mismatch but doesn't auto-fix — verify keys after `--auto` generation.
+- `pos_override` keys are drug name strings (exact match against YAML pipeline `name` field). Renaming a drug in YAML without updating scenario `pos_override` keys silently drops the override.

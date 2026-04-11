@@ -160,6 +160,42 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print(f"  기업가치(EV): {rn.enterprise_value:,}{unit}")
         print(f"  주당 내재가치: {rn.per_share:,}{currency_sym}")
 
+    # Reverse rNPV
+    if result.reverse_rnpv:
+        rv = result.reverse_rnpv
+        print(f"\n[역방향 rNPV 분석] 모델 EV {rv.model_ev:,} vs 시장 EV {rv.target_ev:,}{unit} (괴리 {rv.gap_pct:+.1f}%)")
+        if rv.implied_pos_scale is not None:
+            print(f"  시장 내재 PoS 배수: {rv.implied_pos_scale:.3f}x (전체 PoS × {rv.implied_pos_scale:.3f})")
+            for d in rv.implied_pos_per_drug:
+                print(f"    {d.name:<30s} {d.base_value:>5.0%} → {d.implied_value:>5.0%}")
+        if rv.implied_peak_scale is not None:
+            print(f"  시장 내재 Peak Sales 배수: {rv.implied_peak_scale:.3f}x")
+            for d in rv.implied_peak_per_drug:
+                print(f"    {d.name:<30s} {int(d.base_value):>12,} → {int(d.implied_value):>12,}")
+        if rv.implied_discount_rate is not None:
+            dr_current = result.rnpv.discount_rate if result.rnpv else 0
+            print(f"  시장 내재 할인율: {rv.implied_discount_rate:.2f}% (현재 {dr_current:.2f}%)")
+        # Per-drug independent PoS (solo analysis)
+        solo_drugs = [d for d in rv.implied_pos_solo if not d.skipped]
+        if solo_drugs:
+            direction = "시장 낙관" if rv.gap_pct < 0 else "시장 비관"
+            print(f"  약물별 독립 PoS ({direction}):")
+            for d in solo_drugs:
+                if d.solvable and d.implied_pos is not None:
+                    print(f"    {d.name:<35s} {d.base_pos:>5.0%} → {d.implied_pos:>5.0%}  (최대 기여 {d.max_ev_contribution:>8,}{unit})")
+                else:
+                    print(f"    {d.name:<35s} {d.base_pos:>5.0%} → 해소불가   (최대 기여 {d.max_ev_contribution:>8,}{unit})")
+            print(f"  ※ 각 약물은 다른 약물을 현재 가정으로 고정한 독립 분석. 결과는 합산 불가.")
+
+    # Tornado (per-drug peak sales sensitivity)
+    if result.rnpv_tornado:
+        print(f"\n[Tornado 분석] Peak Sales ±20% → 주당가치 영향")
+        print(f"  {'약물':<30s} {'Low':>8s} {'Base':>8s} {'High':>8s} {'Swing':>8s}")
+        print(f"  {'-'*30} {'-'*8} {'-'*8} {'-'*8} {'-'*8}")
+        for t in result.rnpv_tornado:
+            swing = t.high_value - t.low_value
+            print(f"  {t.name:<30s} {t.low_value:>8,} {t.base_value:>8,} {t.high_value:>8,} {swing:>+8,}")
+
     # DCF
     if result.dcf:
         dcf = result.dcf

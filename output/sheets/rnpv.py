@@ -119,6 +119,117 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
         write_cell(ws, r, 2, val, fill=BLUE_FILL)
         r += 1
 
+    # Reverse rNPV section
+    rv = ctx.result.reverse_rnpv
+    if rv:
+        r += 2
+        write_cell(ws, r, 1, "역방향 rNPV (시장 내재 가정)", font=SECTION_FONT)
+        r += 1
+        write_cell(ws, r, 1, "모델 EV", fill=GRAY_FILL)
+        write_cell(ws, r, 2, rv.model_ev, fmt=NUM_FMT, fill=GRAY_FILL)
+        write_cell(ws, r, 3, ctx.unit, fill=GRAY_FILL)
+        r += 1
+        write_cell(ws, r, 1, "시장 EV (Target)", fill=GRAY_FILL)
+        write_cell(ws, r, 2, rv.target_ev, fmt=NUM_FMT, fill=GRAY_FILL)
+        write_cell(ws, r, 3, ctx.unit, fill=GRAY_FILL)
+        r += 1
+        write_cell(ws, r, 1, "괴리율")
+        write_cell(ws, r, 2, rv.gap_pct / 100, fmt=PCT_FMT,
+                   fill=RED_FILL if abs(rv.gap_pct) >= 20 else YELLOW_FILL)
+
+        if rv.implied_pos_scale is not None:
+            r += 2
+            write_cell(ws, r, 1, "시장 내재 PoS 배수", bold=True)
+            write_cell(ws, r, 2, f"{rv.implied_pos_scale:.3f}x")
+            r += 1
+            headers = ["Drug", "Base PoS", "Implied PoS", "Δ"]
+            for c, h in enumerate(headers, 1):
+                write_cell(ws, r, c, h)
+            style_header_row(ws, r, len(headers))
+            for d in rv.implied_pos_per_drug:
+                r += 1
+                write_cell(ws, r, 1, d.name)
+                write_cell(ws, r, 2, d.base_value, fmt=PCT_FMT)
+                write_cell(ws, r, 3, d.implied_value, fmt=PCT_FMT,
+                           fill=GREEN_FILL if d.implied_value > d.base_value else RED_FILL)
+                delta = d.implied_value - d.base_value
+                write_cell(ws, r, 4, delta, fmt=PCT_FMT)
+
+        if rv.implied_peak_scale is not None:
+            r += 2
+            write_cell(ws, r, 1, "시장 내재 Peak Sales 배수", bold=True)
+            write_cell(ws, r, 2, f"{rv.implied_peak_scale:.3f}x")
+            r += 1
+            headers = ["Drug", "Base Peak", "Implied Peak", "Δ%"]
+            for c, h in enumerate(headers, 1):
+                write_cell(ws, r, c, h)
+            style_header_row(ws, r, len(headers))
+            for d in rv.implied_peak_per_drug:
+                r += 1
+                write_cell(ws, r, 1, d.name)
+                write_cell(ws, r, 2, int(d.base_value), fmt=NUM_FMT)
+                write_cell(ws, r, 3, int(d.implied_value), fmt=NUM_FMT,
+                           fill=GREEN_FILL if d.implied_value > d.base_value else RED_FILL)
+                delta_pct = (d.implied_value - d.base_value) / d.base_value if d.base_value else 0
+                write_cell(ws, r, 4, delta_pct, fmt=PCT_FMT)
+
+        if rv.implied_discount_rate is not None:
+            r += 2
+            dr_current = rnpv.discount_rate
+            write_cell(ws, r, 1, "시장 내재 할인율", bold=True)
+            write_cell(ws, r, 2, f"{rv.implied_discount_rate:.2f}% (현재 {dr_current:.2f}%)")
+
+        # Per-drug independent PoS (solo analysis)
+        solo_drugs = [d for d in rv.implied_pos_solo if not d.skipped]
+        if solo_drugs:
+            r += 2
+            direction = "시장 낙관" if rv.gap_pct < 0 else "시장 비관"
+            write_cell(ws, r, 1, f"약물별 독립 PoS 분석 ({direction})", font=SECTION_FONT)
+            r += 1
+            headers = ["Drug", "Phase", "Base PoS", "Implied PoS", "Solvable", "Max Contribution"]
+            for c, h in enumerate(headers, 1):
+                write_cell(ws, r, c, h)
+            style_header_row(ws, r, len(headers))
+            for d in solo_drugs:
+                r += 1
+                write_cell(ws, r, 1, d.name)
+                write_cell(ws, r, 2, d.phase)
+                write_cell(ws, r, 3, d.base_pos, fmt=PCT_FMT)
+                if d.solvable and d.implied_pos is not None:
+                    write_cell(ws, r, 4, d.implied_pos, fmt=PCT_FMT,
+                               fill=GREEN_FILL if d.implied_pos > d.base_pos else RED_FILL)
+                else:
+                    write_cell(ws, r, 4, "N/A")
+                write_cell(ws, r, 5, "Y" if d.solvable else "N")
+                write_cell(ws, r, 6, d.max_ev_contribution, fmt=NUM_FMT)
+            r += 1
+            write_cell(ws, r, 1, "※ 각 약물은 다른 약물을 현재 가정으로 고정한 독립 분석. 결과는 합산 불가.",
+                        font=NOTE_FONT)
+
+    # Tornado chart data (per-drug peak sales ±20% impact)
+    tornado = ctx.result.rnpv_tornado
+    if tornado:
+        r += 2
+        write_cell(ws, r, 1, "Tornado 분석 (Peak Sales ±20% 영향)", font=SECTION_FONT)
+        r += 1
+        headers = ["Drug", "Low (-20%)", "Base", "High (+20%)", "Swing"]
+        for c, h in enumerate(headers, 1):
+            write_cell(ws, r, c, h)
+            ws.column_dimensions[get_column_letter(c)].width = 16
+        ws.column_dimensions['A'].width = 28
+        from ..excel_styles import style_header_row as _shr
+        _shr(ws, r, len(headers))
+
+        for t in tornado:
+            r += 1
+            swing = t.high_value - t.low_value
+            write_cell(ws, r, 1, t.name)
+            write_cell(ws, r, 2, t.low_value, fmt=NUM_FMT, fill=RED_FILL)
+            write_cell(ws, r, 3, t.base_value, fmt=NUM_FMT)
+            write_cell(ws, r, 4, t.high_value, fmt=NUM_FMT, fill=GREEN_FILL)
+            write_cell(ws, r, 5, swing, fmt=NUM_FMT,
+                       fill=YELLOW_FILL if swing > 0 else None)
+
 
 def _sheet_revenue_curves(ctx: Ctx, rnpv):
     """Revenue Curves sheet: year-by-year revenue projection per drug (chart-ready data)."""

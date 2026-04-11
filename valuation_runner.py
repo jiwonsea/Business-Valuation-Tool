@@ -28,6 +28,7 @@ from engine.scenario import calc_scenario
 from engine.sensitivity import (
     sensitivity_multiples, sensitivity_irr_dlom, sensitivity_dcf,
     sensitivity_ddm, sensitivity_rim, sensitivity_nav, sensitivity_multiple_range,
+    sensitivity_rnpv, sensitivity_rnpv_tornado,
 )
 from engine.multiples import cross_validate, calc_pe, calc_pbv
 from engine.peer_analysis import calc_peer_stats
@@ -1500,11 +1501,40 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     except ValueError:
         pass
 
-    cv_items = _cross_validate_common(vi, cons, ebitda_base, 0, dcf_ev, um)
+    cv_items = _cross_validate_common(vi, cons, ebitda_base, total_ev, dcf_ev, um)
 
     # Peer stats
     seg_names = _seg_names(vi)
     peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
+
+    # rNPV-specific sensitivity: discount rate × PoS scale
+    sens_kwargs = dict(
+        pipeline=pipeline_dicts,
+        discount_rate=discount_rate,
+        net_debt=vi.net_debt,
+        shares=shares,
+        unit_multiplier=um,
+        r_and_d_cost=vi.rnpv_params.r_and_d_cost,
+        decline_rate=vi.rnpv_params.decline_rate,
+        default_margin=vi.rnpv_params.default_margin,
+        tax_rate=vi.rnpv_params.tax_rate,
+    )
+    sens_rnpv = sensitivity_rnpv(**sens_kwargs)
+
+    # Tornado: per-drug ±20% peak sales impact
+    from schemas.models import RNPVTornadoItem
+    tornado_raw = sensitivity_rnpv_tornado(**sens_kwargs)
+    tornado_items = [
+        RNPVTornadoItem(
+            name=t["name"],
+            base_value=t["base_value"],
+            low_value=t["low_value"],
+            high_value=t["high_value"],
+            low_peak=t["low_peak"],
+            high_peak=t["high_peak"],
+        )
+        for t in tornado_raw
+    ]
 
     return ValuationResult(
         primary_method="rnpv",
@@ -1516,4 +1546,7 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         dcf=dcf_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,
+        sensitivity_primary=sens_rnpv,
+        sensitivity_primary_label=f"할인율 × PoS 배수 → 주당가치 ({vi.company.currency_unit})",
+        rnpv_tornado=tornado_items,
     )

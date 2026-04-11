@@ -143,6 +143,23 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print(f"  자기자본가치: {r.equity_value:,}{unit}")
         print(f"  주당 내재가치: {r.per_share:,}{currency_sym}")
 
+    # rNPV
+    if result.rnpv:
+        rn = result.rnpv
+        print(f"\n[rNPV (파이프라인 밸류에이션)]")
+        print(f"  할인율: {rn.discount_rate:.1f}%")
+        print(f"  {'약물':<25s} {'단계':<12s} {'PoS':>6s} {'피크매출':>12s} {'NPV':>12s} {'rNPV':>12s}")
+        print(f"  {'-'*25} {'-'*12} {'-'*6} {'-'*12} {'-'*12} {'-'*12}")
+        for dr in rn.drug_results:
+            print(f"  {dr.name:<25s} {dr.phase:<12s} {dr.success_prob:>5.0%} "
+                  f"{dr.peak_sales:>12,} {dr.npv_unadjusted:>12,} {dr.rnpv:>12,}")
+        print(f"  {'':>25s} {'':>12s} {'':>6s} {'총 rNPV':>12s} {'':>12s} {rn.total_rnpv:>12,}{unit}")
+        if rn.r_and_d_cost_pv:
+            print(f"  R&D 비용 PV: -{rn.r_and_d_cost_pv:,}{unit}")
+        print(f"  파이프라인 가치: {rn.pipeline_value:,}{unit}")
+        print(f"  기업가치(EV): {rn.enterprise_value:,}{unit}")
+        print(f"  주당 내재가치: {rn.per_share:,}{currency_sym}")
+
     # DCF
     if result.dcf:
         dcf = result.dcf

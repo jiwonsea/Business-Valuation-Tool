@@ -12,7 +12,7 @@ KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML
 ValuationInput (YAML) → run_valuation() → ValuationResult → print_report() / Excel
 ```
 
-- `engine/` — Pure functions (no IO). `method_selector.py` auto-selects methodology by company type.
+- `engine/` — Pure functions (no IO). `method_selector.py` auto-selects methodology by company type. `rnpv.py` — risk-adjusted NPV for pharma/biotech pipeline valuation.
 - `schemas/models.py` — Pydantic models. Core contract: `ValuationInput` → `ValuationResult`.
 - `pipeline/` — Data collection (DART, SEC EDGAR, Yahoo Finance). IO only here.
 - `ai/` — LLM-based segment classification, peer recommendation, scenario design (Claude Sonnet 4).
@@ -67,6 +67,8 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - **NPV discount**: `_npv()` starts at t=0 (first cash flow undiscounted). This is intentional — `launch_year_offset` handles pre-launch zeros, so t=0 is the launch year.
 - **enterprise_value = pipeline_value**: `existing_revenue_value` is already included in `total_rnpv` (approved drugs have PoS=1.0). The `existing_revenue_value` field is a reporting-only subset — do not add it to `pipeline_value`.
 - **Decline base**: Decline always starts from `peak_sales` unless `existing_revenue >= peak_sales` (then from `existing_revenue`). Never from a mid-ramp value.
+- **Scenario drivers**: `growth_adj_pct` adjusts peak sales, `wacc_adj` adjusts discount rate, `pos_override` dict (`{drug_name: 0-1}`) overrides per-drug PoS. All three are independent and composable.
+- **Excel output**: rNPV produces two extra sheets — "rNPV Pipeline" (summary table + equity bridge) and "Revenue Curves" (year-by-year revenue per drug, chart-ready data).
 
 ## Conventions
 

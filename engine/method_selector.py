@@ -75,6 +75,7 @@ def suggest_method(
     ke: float = 0.0,
     has_ddm_params: bool = False,
     has_rim_params: bool = False,
+    has_rnpv_params: bool = False,
     segment_names: list[str] | None = None,
 ) -> str:
     """Suggest the primary valuation method based on company characteristics.
@@ -94,6 +95,10 @@ def suggest_method(
         "sotp" | "dcf_primary" | "ddm" | "rim" | "multiples" | "nav"
     """
     industry_lower = industry.lower()
+
+    # Pharma pipeline with explicit rNPV params -> rNPV
+    if has_rnpv_params:
+        return "rnpv"
 
     # Multi-segment with mixed financial/non-financial subsidiaries -> SOTP
     # (must precede single-keyword checks to avoid mis-routing platform+bank combos)

@@ -17,6 +17,7 @@ from .sheets._ctx import Ctx, make_ctx
 from .sheets.assumptions import sheet_assumptions
 from .sheets.financials import sheet_financials
 from .sheets.valuation import VALUATION_MAP, valuation_dcf
+from .sheets.rnpv import valuation_rnpv
 from .sheets.peers import sheet_peers
 from .sheets.scenarios import sheet_scenarios
 from .sheets.sensitivity import sheet_sensitivity
@@ -35,7 +36,10 @@ def export(vi: ValuationInput, result: ValuationResult, output_dir: str | None =
     sheet_financials(ctx)
 
     # Method-specific Valuation sheet
-    VALUATION_MAP.get(ctx.method, valuation_dcf)(ctx)
+    if ctx.method == "rnpv":
+        valuation_rnpv(ctx)
+    else:
+        VALUATION_MAP.get(ctx.method, valuation_dcf)(ctx)
 
     sheet_peers(ctx)
     if ctx.result.scenarios:

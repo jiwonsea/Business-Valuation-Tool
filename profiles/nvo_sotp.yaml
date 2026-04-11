@@ -1,0 +1,150 @@
+# NOVO NORDISK A/S — SOTP (PSR) comparison variant
+# Same data as nvo.yaml but uses SOTP methodology for PSR comparison
+
+company:
+  name: "Novo Nordisk A/S"
+  legal_status: "상장"
+  market: "US"
+  currency: "USD"
+  currency_unit: "$M"
+  ticker: "NVO"
+  shares_total: 4450000000
+  shares_ordinary: 4450000000
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: "2026-04-10"
+  industry: "pharma"
+
+valuation_method: "sotp"
+
+segments:
+  GLP1_DIABETES:
+    name: "GLP-1 Diabetes (Ozempic/Rybelsus)"
+    multiple: 18.0
+  OBESITY:
+    name: "Obesity Care (Wegovy)"
+    multiple: 25.0
+  INSULIN:
+    name: "Insulin & Legacy"
+    multiple: 10.0
+  PIPELINE:
+    name: "Pipeline (CagriSema/Amycretin)"
+    multiple: 8.0          # EV/Revenue for pipeline
+    method: "ev_revenue"
+
+segment_data:
+  2025:
+    GLP1_DIABETES: {revenue: 22600, gross_profit: 0, op: 11300, assets: 30000}
+    OBESITY:       {revenue: 12500, gross_profit: 0, op: 5000, assets: 15000}
+    INSULIN:       {revenue: 8700,  gross_profit: 0, op: 2100, assets: 20000}
+    PIPELINE:      {revenue: 3000,  gross_profit: 0, op: -2000, assets: 17250}
+
+consolidated:
+  2023:
+    revenue: 33712
+    op: 14839
+    net_income: 11894
+    assets: 56000
+    liabilities: 38000
+    equity: 18000
+    dep: 1800
+    amort: 500
+    gross_borr: 12000
+    net_borr: 9000
+    de_ratio: 66.7
+  2024:
+    revenue: 42139
+    op: 18602
+    net_income: 14210
+    assets: 70560
+    liabilities: 48820
+    equity: 21740
+    dep: 2200
+    amort: 600
+    gross_borr: 15000
+    net_borr: 12000
+    de_ratio: 69.0
+  2025:
+    revenue: 46800
+    op: 19327
+    net_income: 13500
+    assets: 82250
+    liabilities: 52860
+    equity: 29400
+    dep: 2800
+    amort: 700
+    gross_borr: 18500
+    net_borr: 15000
+    de_ratio: 63.0
+
+wacc_params:
+  rf: 4.25
+  erp: 5.5
+  bu: 0.50
+  de: 63.0
+  tax: 22.0
+  kd_pre: 3.50
+  eq_w: 61.3
+
+scenarios:
+  Base:
+    name: "Base Case"
+    prob: 50
+    ipo: "N/A"
+    dlom: 0
+    shares: 4450000000
+    growth_adj_pct: 0
+    desc: "Consensus — EV/EBITDA for mature, EV/Revenue for pipeline"
+    segment_multiples:
+      GLP1_DIABETES: 18.0
+      OBESITY: 25.0
+      INSULIN: 10.0
+      PIPELINE: 8.0
+  Bull:
+    name: "Bull Case"
+    prob: 25
+    ipo: "N/A"
+    dlom: 0
+    shares: 4450000000
+    growth_adj_pct: 0
+    desc: "Premium multiples on obesity and pipeline"
+    segment_multiples:
+      GLP1_DIABETES: 22.0
+      OBESITY: 30.0
+      INSULIN: 10.0
+      PIPELINE: 12.0
+  Bear:
+    name: "Bear Case"
+    prob: 25
+    ipo: "N/A"
+    dlom: 0
+    shares: 4450000000
+    growth_adj_pct: 0
+    desc: "Competition, patent cliff, pricing pressure"
+    segment_multiples:
+      GLP1_DIABETES: 14.0
+      OBESITY: 18.0
+      INSULIN: 8.0
+      PIPELINE: 4.0
+
+dcf_params:
+  ebitda_growth_rates: [0.08, 0.07, 0.06, 0.05, 0.04]
+  tax_rate: 22.0
+  capex_to_da: 1.50
+  nwc_to_rev_delta: 0.04
+  terminal_growth: 2.5
+
+ev_revenue_multiple: 4.0
+pe_multiple: 22.0
+pbv_multiple: 6.0
+
+cps_principal: 0
+cps_years: 0
+net_debt: 15000
+base_year: 2025
+
+peers:
+  - {name: "Eli Lilly", segment_code: "GLP1_DIABETES", ev_ebitda: 35.0, notes: "Primary GLP-1 competitor"}
+  - {name: "AstraZeneca", segment_code: "GLP1_DIABETES", ev_ebitda: 18.0, notes: "Large-cap pharma"}
+  - {name: "Roche", segment_code: "GLP1_DIABETES", ev_ebitda: 16.0, notes: "Large-cap pharma"}
+  - {name: "Pfizer", segment_code: "INSULIN", ev_ebitda: 12.0, notes: "Mature pharma"}

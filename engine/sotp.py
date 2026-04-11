@@ -122,10 +122,10 @@ def calc_sotp(
             )
         else:
             # Standard EV/EBITDA — apply ebitda_override and multiple_override if provided
-            # Negative EBITDA produces negative EV (restructuring/divestiture scenarios)
             m = (multiple_override or {}).get(code, multiples.get(code, 0))
             eb = (ebitda_override or {}).get(code, alloc.ebitda)
-            ev = round(eb * m)
+            # Negative EBITDA floored to 0 EV for valuation conservative
+            ev = max(round(eb * m), 0) if eb > 0 else 0
             result[code] = SOTPSegmentResult(
                 ebitda=eb, multiple=m, ev=ev,
                 method="ev_ebitda", is_equity_based=False,

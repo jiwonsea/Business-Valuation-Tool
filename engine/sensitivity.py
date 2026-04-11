@@ -100,6 +100,9 @@ def sensitivity_irr_dlom(
     cps_dividend_rate: float = 0.0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
     """Sensitivity: FI IRR x DLOM -> Scenario B per-share value (pre-probability)."""
+    if cps_principal <= 0:
+        return [], [], []
+
     if irr_range is None:
         irr_range = [3.0, 5.0, 8.0, 10.0, 12.0, 15.0]
     if dlom_range is None:

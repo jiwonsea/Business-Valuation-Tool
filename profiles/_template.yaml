@@ -93,6 +93,23 @@ dcf_params:
 #   dps: 1000.0                   # Dividend per share (KRW or $)
 #   dividend_growth: 3.0          # Dividend growth rate (%)
 
+# rNPV parameters (for pharma/biotech pipeline valuation, optional)
+# rnpv_params:
+#   r_and_d_cost: 0            # Annual R&D cost (display units)
+#   discount_rate: null         # Override WACC (%, null = use WACC)
+#   decline_rate: 20.0          # Post-patent annual revenue decline (%)
+#   pipeline:
+#     - name: "Drug Name"
+#       phase: "phase2"         # "preclinical" | "phase1" | "phase2" | "phase3" | "filed" | "approved"
+#       indication: "Obesity"
+#       peak_sales: 10000       # Estimated peak annual sales (display units)
+#       years_to_peak: 5
+#       years_at_peak: 5
+#       patent_expiry_years: 15
+#       success_prob: null       # Override PoS (0-1), null = use phase default
+#       launch_year_offset: 2    # Years from base_year to launch
+#       existing_revenue: 0      # Current revenue if already on market
+
 cps_principal: 0
 cps_years: 0
 net_debt: 0

@@ -37,7 +37,8 @@ class DrugCashFlow:
     indication: str
     peak_sales: int
     success_prob: float
-    cash_flows: list[int] = field(default_factory=list)  # Annual revenue stream
+    cash_flows: list[int] = field(default_factory=list)  # Annual after-tax profit stream
+    revenue_curve: list[int] = field(default_factory=list)  # Annual revenue (pre-margin)
     npv: int = 0  # Unadjusted NPV
     rnpv: int = 0  # Risk-adjusted NPV
 
@@ -213,6 +214,7 @@ def calc_rnpv(
             peak_sales=peak_sales,
             success_prob=pos,
             cash_flows=curve,
+            revenue_curve=revenue_curve,
             npv=npv_val,
             rnpv=rnpv_val,
         ))

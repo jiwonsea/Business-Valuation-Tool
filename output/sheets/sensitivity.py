@@ -23,11 +23,13 @@ def sheet_sensitivity(ctx: Ctx):
 
     # ── SOTP: multiple x multiple ──
     if method == "sotp" and ctx.result.sensitivity_multiples:
+        row_name = ctx.seg_names.get(ctx.seg_codes[0], "Row") if len(ctx.seg_codes) > 0 else "Row"
+        col_name = ctx.seg_names.get(ctx.seg_codes[1], "Col") if len(ctx.seg_codes) > 1 else row_name
         r = _write_sensitivity_table(
             ws, r,
             f"① 멀티플 민감도 → 주당가치 ({ctx.currency_sym})",
             ctx.result.sensitivity_multiples,
-            "Row \\ Col", lambda v: f"{v:.0f}x", lambda v: f"{v:.0f}x",
+            f"{row_name} \\ {col_name}", lambda v: f"{v:.0f}x", lambda v: f"{v:.0f}x",
         )
         r += 2
 

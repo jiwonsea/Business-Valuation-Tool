@@ -28,6 +28,7 @@ def _reset_guard(tmp_path: Path):
     # Redirect usage file to tmp_path
     mod._CACHE_DIR = tmp_path
     mod._USAGE_FILE = tmp_path / "api_usage.json"
+    mod._USAGE_LOCK = tmp_path / "api_usage.lock"
     yield
     ApiGuard._reset_singleton()
 

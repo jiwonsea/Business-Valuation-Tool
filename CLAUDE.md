@@ -115,6 +115,7 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 
 ## Gotchas
 
+- `reverse_rnpv.gap_pct = (model_ev - target_ev) / target_ev * 100`. `gap_pct < 0` ⟹ market > model ⟹ "시장 낙관". Label is counterintuitive — do NOT invert. Verified in engine/reverse_rnpv.py:307.
 - `per_share()` propagates negative equity (no zero-clamping). Distress scenarios yield negative per-share values. DLOM is not applied to negative equity.
 - No hardcoding `* 1_000_000` → use `engine.units.per_share()`.
 - No hardcoding segment codes ("HI", "ALC", etc.) in sensitivity analysis.

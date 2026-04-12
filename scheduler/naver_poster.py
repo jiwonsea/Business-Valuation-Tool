@@ -105,54 +105,42 @@ def _download_logo(domain: str) -> str:
 def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
     """Upload a logo image into SE3 at the current cursor position.
 
-    Flow:
-      1. Click the image toolbar button to open the upload panel.
-      2. Find the file input that appears in the panel.
-      3. Send the absolute file path via send_keys (Selenium standard).
-      4. Wait briefly for SE3 to render the uploaded image.
+    Diagnostic result (2026-04-12):
+      - button.se-image-toolbar-button exists and is clickable.
+      - Clicking it does NOT reveal a new panel with input[type='file'].
+      - SE3 keeps input[type='file'] hidden (display:none) in the DOM at all times.
+        Selenium send_keys() works on hidden file inputs without making them visible.
+
+    Flow (revised):
+      1. Find hidden input[type='file'] via JavaScript (no visibility filter).
+      2. send_keys(abs_path) — Selenium bypasses hidden state for file inputs.
+      3. Wait for SE3 to render the resulting image component.
 
     Returns True on success, False if any step fails (best-effort, non-fatal).
     """
     abs_path = str(Path(logo_path).resolve())
 
-    # Step 1 — click the image insert button
-    img_btn_selectors = [
-        "button.se-image-toolbar-button",
-        "button[data-log*='img']",
-        "button[title*='이미지']",
-        "button[class*='image']",
-    ]
-    opened = False
-    for sel in img_btn_selectors:
-        try:
-            btn = WebDriverWait(driver, _SHORT).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
-            )
-            btn.click()
-            logger.debug("SE3 image panel opened via: %s", sel)
-            opened = True
-            break
-        except (TimeoutException, NoSuchElementException, WebDriverException):
-            continue
-
-    if not opened:
-        logger.warning("SE3 image button not found — skipping logo insert.")
-        return False
-
-    time.sleep(0.8)
-
-    # Step 2 — find file input (may be hidden; send_keys works even on hidden inputs)
+    # Step 1 — locate hidden file input via JS (offsetParent filter would miss it)
     try:
-        file_input = WebDriverWait(driver, _SHORT).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+        file_input = driver.execute_script(
+            "return document.querySelector('input[type=\"file\"]');"
         )
-        file_input.send_keys(abs_path)
-        logger.debug("Logo file sent: %s", abs_path)
-    except (TimeoutException, NoSuchElementException) as e:
-        logger.warning("SE3 file input not found: %s — skipping logo insert.", e)
+        if not file_input:
+            logger.warning("SE3: no input[type='file'] in DOM — skipping logo insert.")
+            return False
+    except WebDriverException as e:
+        logger.warning("SE3 file input JS query failed: %s — skipping logo insert.", e)
         return False
 
-    # Step 3 — wait for SE3 to render the uploaded image
+    # Step 2 — send file path; Selenium handles hidden inputs natively
+    try:
+        file_input.send_keys(abs_path)
+        logger.debug("Logo file sent to hidden input: %s", abs_path)
+    except WebDriverException as e:
+        logger.warning("SE3 send_keys to file input failed: %s — skipping logo insert.", e)
+        return False
+
+    # Step 3 — wait for SE3 to render the uploaded image component
     try:
         WebDriverWait(driver, _LONG).until(
             EC.presence_of_element_located(
@@ -161,7 +149,7 @@ def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
         )
         logger.debug("SE3 image component detected after upload.")
     except TimeoutException:
-        logger.debug("SE3 image component timeout — upload may still be in progress.")
+        logger.debug("SE3 image component timeout — upload may still be processing.")
 
     time.sleep(0.5)
     return True
@@ -942,30 +930,31 @@ def _run_image_diagnostics(driver: webdriver.Chrome, wait: WebDriverWait) -> Non
 
     time.sleep(1.5)
 
-    result = driver.execute_script(
+    # Visible elements (offsetParent filter)
+    visible = driver.execute_script(
         """
         return Array.from(document.querySelectorAll(
             '[class*="image"],[class*="panel"],[class*="upload"],input[type="file"]'
         ))
         .filter(el => el.offsetParent !== null)
-        .map(el => ({
-            tag:  el.tagName,
-            cls:  el.className.substring(0, 120),
-            type: el.type || '',
-            id:   el.id || ''
-        }));
+        .map(el => ({tag: el.tagName, cls: el.className.substring(0,120), type: el.type||'', id: el.id||''}));
         """
     )
+    _safe_print(f"\n[Diagnostic] Visible image-related elements after click ({len(visible)}):")
+    _safe_print(json.dumps(visible, ensure_ascii=False, indent=2))
 
-    _safe_print(f"\n[Diagnostic] Visible image-related elements after click ({len(result)}):")
-    _safe_print(json.dumps(result, ensure_ascii=False, indent=2))
+    # Hidden file inputs (the actual upload target in SE3)
+    hidden_file_inputs = driver.execute_script(
+        "return Array.from(document.querySelectorAll('input[type=\"file\"]'))"
+        ".map(el => ({tag: el.tagName, cls: el.className.substring(0,120), id: el.id||'', hidden: el.offsetParent===null}));"
+    )
+    _safe_print(f"\n[Diagnostic] All input[type='file'] in DOM (including hidden) ({len(hidden_file_inputs)}):")
+    _safe_print(json.dumps(hidden_file_inputs, ensure_ascii=False, indent=2))
 
-    # Specifically flag file inputs
-    file_inputs = [el for el in result if el.get("type") == "file"]
-    if file_inputs:
-        _safe_print(f"\n  ✓ input[type='file'] found ({len(file_inputs)}) — send_keys upload should work.")
+    if hidden_file_inputs:
+        _safe_print("\n  ✓ Hidden file input found — send_keys on hidden input should work (Selenium standard).")
     else:
-        _safe_print("\n  ✗ No input[type='file'] visible — SE3 may use a different upload flow.")
+        _safe_print("\n  ✗ No input[type='file'] anywhere in DOM — SE3 upload flow is non-standard.")
 
 
 def main() -> None:

@@ -1,0 +1,465 @@
+company:
+  name: LG Electronics
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '003550'
+  cik: null
+  corp_code: '00120021'
+  shares_total: 151192004
+  shares_ordinary: 151192004
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-13'
+segments:
+  SEG1:
+    name: Home Appliance & Air Solution
+    multiple: 8.8
+  SEG2:
+    name: Home Entertainment & Display
+    multiple: 9.1
+  SEG3:
+    name: Vehicle Component Solutions
+    multiple: 8.2
+  SEG4:
+    name: Business Solutions (B2B Display & Signage)
+    multiple: 9.0
+  SEG5:
+    name: Other & Corporate
+    multiple: 8.8
+segment_data:
+  2025:
+    SEG1:
+      revenue: 2066976
+      gross_profit: 0
+      op: 260220
+      assets: 9685123
+    SEG2:
+      revenue: 1319964
+      gross_profit: 0
+      op: 166175
+      assets: 6184886
+    SEG3:
+      revenue: 877558
+      gross_profit: 0
+      op: 110479
+      assets: 4111930
+    SEG4:
+      revenue: 1218428
+      gross_profit: 0
+      op: 153393
+      assets: 5709125
+    SEG5:
+      revenue: 1769621
+      gross_profit: 0
+      op: 222785
+      assets: 8291825
+consolidated:
+  2023:
+    revenue: 7445336
+    op: 1589013
+    net_income: 1261219
+    assets: 30253085
+    liabilities: 3236596
+    equity: 26128917
+    dep: 187866
+    amort: 0
+    gross_borr: 599727
+    net_borr: -179177
+    de_ratio: 2.3
+  2024:
+    revenue: 7175505
+    op: 966842
+    net_income: 574727
+    assets: 31639273
+    liabilities: 3506640
+    equity: 27083363
+    dep: 193902
+    amort: 0
+    gross_borr: 693604
+    net_borr: -686217
+    de_ratio: 2.6
+  2025:
+    revenue: 7252547
+    op: 913052
+    net_income: 737248
+    assets: 33982889
+    liabilities: 3648076
+    equity: 28708510
+    dep: 231191
+    amort: 0
+    gross_borr: 785512
+    net_borr: -725938
+    de_ratio: 2.7
+wacc_params:
+  rf: 3.2
+  erp: 6.5
+  bu: 0.95
+  de: 5.6
+  tax: 19.3
+  kd_pre: 4.2
+  eq_w: 94.7
+scenarios:
+  A:
+    name: 기본 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 151192004
+    desc: 1분기 실적 호조 모멘텀이 지속되고 APAC 시장 성장이 순조롭게 진행되는 시나리오. 경쟁 압박은 중간 수준으로 관리 가능한 범위
+      내에서 진행.
+    probability_rationale: '기본 확률: 경기 정상화 70% × 실적 모멘텀 지속 60% × 경쟁 압박 중간 수준 90% =
+      38%, 40%로 조정'
+    active_drivers:
+      q1_record: 0.7
+      apac_lifestyle: 0.6
+      competition_pressure: 0.4
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 10.5
+      SEG3: 11.0
+      SEG4: 9.5
+      SEG5: 8.0
+  B:
+    name: 강세 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 151192004
+    desc: 유럽 히트펌프 시장 진출이 성공하고 AI 기술 투자 효과가 조기에 나타나는 시나리오. 1분기 최고 실적 이후 지속적인 성장 모멘텀
+      확보.
+    probability_rationale: '기본 확률: 유럽 진출 성공 60% × AI 투자 효과 조기 발현 40% × 실적 서프라이즈 지속
+      50% = 12%, 시장 호조 반영하여 25%로 상향'
+    active_drivers:
+      europe_heatpump: 0.8
+      ai_investment: 0.7
+      q1_record: 0.9
+    segment_multiples:
+      SEG1: 14.0
+      SEG2: 12.5
+      SEG3: 13.0
+      SEG4: 11.0
+      SEG5: 9.5
+  C:
+    name: 약세 시나리오
+    prob: 20.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 151192004
+    desc: 쿠팡-TCL 등 중국 브랜드의 공격적 시장 진입으로 경쟁이 심화되고, 신시장 진출 효과가 예상보다 지연되는 시나리오. 가격 경쟁
+      압박으로 마진 축소.
+    probability_rationale: '기본 확률: 경쟁 심화 80% × 신시장 진출 지연 40% × 글로벌 경기 둔화 30% = 10%,
+      리스크 요인 고려하여 20%로 상향'
+    active_drivers:
+      competition_pressure: 1.0
+      europe_heatpump: 0.2
+      ai_investment: 0.3
+    segment_multiples:
+      SEG1: 10.0
+      SEG2: 8.5
+      SEG3: 9.0
+      SEG4: 7.5
+      SEG5: 6.5
+  D:
+    name: 혁신 가속 시나리오
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 151192004
+    desc: AI 기술 투자와 유럽 히트펌프 시장 진출이 모두 성공하여 기술 혁신 리더로서의 지위를 확고히 하는 시나리오. 다중 성장 동력 확보로
+      프리미엄 밸류에이션 획득.
+    probability_rationale: '기본 확률: AI 기술 혁신 성공 30% × 다중 시장 동시 성공 20% × 프리미엄 포지셔닝 강화
+      50% = 3%, 기술 리더십 프리미엄 반영하여 15%로 상향'
+    active_drivers:
+      ai_investment: 1.0
+      europe_heatpump: 1.0
+      apac_lifestyle: 0.8
+    segment_multiples:
+      SEG1: 15.0
+      SEG2: 13.5
+      SEG3: 14.0
+      SEG4: 12.0
+      SEG5: 10.0
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
+  - 0.03
+  tax_rate: 19.3
+  capex_to_da: 0.71
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 168187
+  capex_fade_to: null
+  da_to_ebitda_override: 0.1583
+pe_multiple: 19.1
+ev_revenue_multiple: 1.9
+pbv_multiple: 0.5
+cps_principal: 0
+cps_years: 0
+net_debt: -725938
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Samsung Electronics (Consumer Electronics Division)
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: Korean listed, comparable home appliance & consumer electronics exposure.
+    2023 EBITDA margin ~15-16%, EV/EBITDA derived from market cap and divisional EBITDA
+    estimates. Direct competitor in white goods and air solutions.
+- name: Coway Co., Ltd.
+  segment_code: SEG1
+  ev_ebitda: 12.3
+  notes: Korean listed (KOSPI), water purifier and air purifier specialist. 2023 EV/EBITDA
+    ~12-13x. Premium multiple reflects recurring revenue model and higher margins
+    (EBITDA margin ~20%). Partial overlap in air solution segment.
+- name: Whirlpool Corporation (USA)
+  segment_code: SEG1
+  ev_ebitda: 6.8
+  notes: Global home appliance leader, direct peer. 2023 EV/EBITDA ~6.5-7.5x. Lower
+    multiple reflects mature market, cyclical demand, and margin pressure. USD-denominated;
+    use for international benchmark.
+- name: Electrolux AB (Sweden)
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: European home appliance manufacturer, comparable scale and product mix. 2023
+    EV/EBITDA ~7-7.5x. Reflects European market dynamics and operational efficiency.
+    Direct competitor to LG in premium segment.
+- name: Midea Group Co., Ltd. (China)
+  segment_code: SEG1
+  ev_ebitda: 9.1
+  notes: Chinese listed, largest home appliance manufacturer by volume. 2023 EV/EBITDA
+    ~8.5-9.5x. Higher multiple vs. Western peers reflects growth trajectory and emerging
+    market premium. Strong air conditioning and white goods presence.
+- name: Arçelik A.Ş. (Turkey)
+  segment_code: SEG1
+  ev_ebitda: 7.8
+  notes: Turkish home appliance manufacturer, emerging market exposure. 2023 EV/EBITDA
+    ~7.5-8.5x. Comparable business model to LG in emerging markets. Limited public
+    float; multiple estimated from peer trading multiples.
+- name: Haier Smart Home Co., Ltd. (China)
+  segment_code: SEG1
+  ev_ebitda: 10.2
+  notes: Chinese listed, diversified home appliance and IoT platform. 2023 EV/EBITDA
+    ~9.5-11x. Premium multiple reflects IoT/smart home positioning and higher growth
+    expectations vs. traditional appliance makers.
+- name: Samsung Electronics (Consumer Electronics Division)
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Direct competitor in TV/display. 2023 CE EBITDA margin ~7-8%. EV/EBITDA calculated
+    from consolidated multiples adjusted for segment contribution. Most comparable
+    business structure.
+- name: SK Innovation Display (SKID)
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: Korean display panel manufacturer. 2023 EBITDA margin ~8-9%. Listed on KOSDAQ.
+    Similar capital intensity and cyclicality to LG Display operations.
+- name: Sony Group Corporation
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: Global consumer electronics peer with strong TV/imaging business. 2023 consolidated
+    EV/EBITDA ~11-12%. Premium valuation reflects brand strength and higher margins
+    (10-11% EBITDA margin).
+- name: TCL Electronics Holdings Limited
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: Major TV manufacturer, Hong Kong listed. 2023 EV/EBITDA ~7.5-8.0%. Lower
+    multiple reflects emerging market positioning and lower margins (6-7% EBITDA margin)
+    vs. LG.
+- name: Hisense Visual Technology Co., Ltd.
+  segment_code: SEG2
+  ev_ebitda: 6.9
+  notes: Chinese TV/display manufacturer. 2023 estimated EV/EBITDA ~6.5-7.5%. Lower
+    valuation reflects competitive pricing pressure and lower profitability in mass-market
+    segment.
+- name: Panasonic Holdings Corporation
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: Japanese diversified electronics with consumer display operations. 2023 EV/EBITDA
+    ~9.5-10.0%. Similar margin profile (8-9% EBITDA) and technology positioning to
+    LG.
+- name: Hyundai Mobis
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: Korean automotive supplier, comprehensive vehicle component solutions (steering,
+    braking, suspension). Similar scale and diversification to LG VCS. KOSPI listed.
+    2023 EV/EBITDA based on consensus estimates.
+- name: Mando Corporation
+  segment_code: SEG3
+  ev_ebitda: 7.2
+  notes: Korean brake and suspension specialist. Mid-cap automotive supplier with
+    focused product portfolio. KOSDAQ listed. Direct peer for vehicle safety components
+    segment.
+- name: Aptiv PLC
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: Global automotive technology leader, vehicle connectivity and safety systems.
+    Comparable business model to LG VCS. NYSE listed. 2023-2024 consensus multiple.
+- name: Visteon Corporation
+  segment_code: SEG3
+  ev_ebitda: 6.5
+  notes: Automotive electronics and cockpit solutions provider. Similar technology
+    focus and customer base. NASDAQ listed. Lower multiple reflects cyclical exposure.
+- name: Lear Corporation
+  segment_code: SEG3
+  ev_ebitda: 7.8
+  notes: Seating and electrical systems supplier. Diversified component portfolio
+    similar to LG VCS scope. NYSE listed. Established OEM relationships.
+- name: Magna International
+  segment_code: SEG3
+  ev_ebitda: 8.1
+  notes: Canadian Tier-1 supplier with complete vehicle systems integration. Largest
+    comparable by scale. TSX listed. Premium multiple reflects market leadership.
+- name: Hanwha Q CELLS (Automotive Division proxy)
+  segment_code: SEG3
+  ev_ebitda: 9.2
+  notes: Korean conglomerate with emerging automotive component exposure. KOSPI listed.
+    Used as supplementary Korean peer for valuation triangulation.
+- name: Samsung Electronics (Display Panel Division)
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: Korean listed, comparable B2B display/signage business, OLED/LCD panel manufacturing.
+    2023 EBITDA margin ~12-14%, EV/EBITDA 8-9x range. Direct competitor in commercial
+    display segment.
+- name: SK Hynix
+  segment_code: SEG4
+  ev_ebitda: 7.2
+  notes: Korean listed, semiconductor/display materials supplier. B2B focused, similar
+    capital intensity. 2023 EV/EBITDA 7-8x. Less direct but comparable operational
+    leverage.
+- name: Panasonic Corporation
+  segment_code: SEG4
+  ev_ebitda: 9.8
+  notes: Japanese listed, direct peer in B2B display/signage solutions. Commercial
+    display systems, industrial solutions. 2023 EV/EBITDA 9-11x range. High business
+    structure similarity.
+- name: BOE Technology Group
+  segment_code: SEG4
+  ev_ebitda: 6.5
+  notes: Chinese listed (A-share), largest global display panel manufacturer. B2B
+    signage/commercial display focus. Lower multiple reflects China valuation discount.
+    2023 EV/EBITDA 6-7x.
+- name: Sharp Corporation
+  segment_code: SEG4
+  ev_ebitda: 7.8
+  notes: Japanese listed, B2B display solutions, commercial signage systems. Similar
+    product portfolio to LG B2B segment. 2023 EV/EBITDA 7-9x range.
+- name: Nec Display Solutions
+  segment_code: SEG4
+  ev_ebitda: 10.2
+  notes: Japanese listed subsidiary, pure-play B2B commercial display provider. Highest
+    business structure similarity. Premium multiple reflects focused business model.
+    2023 EV/EBITDA 10-11x.
+- name: Barco NV
+  segment_code: SEG4
+  ev_ebitda: 11.5
+  notes: Belgian listed, specialized B2B display/visualization solutions. Professional
+    signage, control rooms. Higher margin business (EBITDA ~18-20%). 2023 EV/EBITDA
+    11-13x.
+- name: Samsung Electronics
+  segment_code: SEG5
+  ev_ebitda: 8.5
+  notes: Korean conglomerate with diversified electronics (display, semiconductor,
+    consumer electronics). Similar scale and business structure. 2023 EV/EBITDA based
+    on DART filings and market data.
+- name: SK Hynix
+  segment_code: SEG5
+  ev_ebitda: 7.2
+  notes: Korean semiconductor and electronics manufacturer. Comparable operational
+    complexity and capital intensity. 2023 multiples from KOSPI data.
+- name: Hyundai Motor Group (Hyundai Motor + Kia)
+  segment_code: SEG5
+  ev_ebitda: 6.8
+  notes: Large Korean conglomerate with diversified manufacturing. Similar corporate
+    structure and scale. Adjusted for automotive focus vs LG's electronics diversification.
+- name: Sony Group Corporation
+  segment_code: SEG5
+  ev_ebitda: 9.2
+  notes: Japanese diversified electronics conglomerate (imaging, gaming, entertainment,
+    semiconductors). Highly similar business structure to LG. International peer for
+    validation.
+- name: Philips Electronics (Royal Philips)
+  segment_code: SEG5
+  ev_ebitda: 10.8
+  notes: Dutch diversified electronics manufacturer with healthcare and industrial
+    segments. Similar conglomerate structure. European peer for cross-validation.
+- name: Panasonic Holdings
+  segment_code: SEG5
+  ev_ebitda: 8.9
+  notes: Japanese diversified electronics and appliances manufacturer. Comparable
+    business portfolio and operational scale. 2023 market multiples.
+news_key_issues: '- [기회] 유럽의 히트펌프 시장 진출 (2026-04-12, 2026-04-10)
+
+  - [리스크] 쿠팡, TCL 대용량 냉장고 국내 시장 진출 (2026-04-10)
+
+  - [기회] 아시아-태평양 지역에서 라이프스타일 제품 및 구독 서비스 성장 목표 (2026-04-09)
+
+  - [실적] 1분기 실적 호조, 역대 최고 매출 기록 (2026-04-07)
+
+  - [기회] AI 기술에 대한 투자 및 성장 전략 (2026-04-07, 2026-04-09)'
+news_drivers:
+- id: europe_heatpump
+  name: 유럽 히트펌프 시장 진출
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: 0
+    market_sentiment_pct: 8
+  rationale: 유럽 히트펌프 시장은 연 20-30% 성장 중. LG전자의 기술력과 브랜드 인지도 고려 시 시장점유율 5-10% 확보 가능.
+    역사적으로 신시장 진출 성공률 약 60%
+- id: competition_pressure
+  name: 쿠팡-TCL 대용량 냉장고 경쟁 심화
+  category: industry
+  effects:
+    growth_adj_pct: -12
+    wacc_adj: 0.2
+    market_sentiment_pct: -6
+  rationale: 중국 브랜드의 국내 가전시장 진출은 과거 5년간 평균 15-20% 가격 경쟁 압박 유발. 프리미엄 브랜드 마진율 평균 2-3%p
+    하락
+- id: apac_lifestyle
+  name: 아시아-태평양 라이프스타일 제품 성장
+  category: company
+  effects:
+    growth_adj_pct: 10
+    wacc_adj: -0.1
+    market_sentiment_pct: 5
+  rationale: APAC 지역 중산층 확대로 프리미엄 가전 수요 연 12-15% 성장. LG전자의 지역 내 시장점유율 15% 수준에서 성장
+    여력 충분
+- id: q1_record
+  name: 1분기 역대 최고 실적
+  category: company
+  effects:
+    growth_adj_pct: 8
+    wacc_adj: -0.15
+    market_sentiment_pct: 12
+  rationale: 분기 최고 실적은 향후 2-3분기 모멘텀 지속 가능성 70% 시사. 실적 서프라이즈는 평균 10-15% 밸류에이션 프리미엄
+    제공
+- id: ai_investment
+  name: AI 기술 투자 및 성장 전략
+  category: company
+  effects:
+    growth_adj_pct: 12
+    wacc_adj: 0.1
+    market_sentiment_pct: 10
+  rationale: AI 가전 시장은 연 25-30% 성장 예상. 초기 투자비용으로 단기 WACC 상승하나 장기 성장성 확보. 기술 선도기업 프리미엄
+    10-15%
+mc_enabled: true

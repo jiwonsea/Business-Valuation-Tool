@@ -1,0 +1,386 @@
+company:
+  name: General Motors Co
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: GM
+  cik: '1467858'
+  corp_code: null
+  shares_total: 903967853
+  shares_ordinary: 903967853
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-13'
+segments:
+  SEG1:
+    name: North America Automotive (ICE & EV)
+    multiple: 5.5
+  SEG2:
+    name: International Automotive (China, Europe, Other)
+    multiple: 6.2
+  SEG3:
+    name: GM Financial & Mobility Services
+    multiple: 8.8
+  SEG4:
+    name: Software & Autonomous Vehicles (Cruise, OnStar, Connected Services)
+    multiple: 22.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 83259
+      gross_profit: 0
+      op: 1309
+      assets: 126578
+    SEG2:
+      revenue: 64757
+      gross_profit: 0
+      op: 1018
+      assets: 98449
+    SEG3:
+      revenue: 27753
+      gross_profit: 0
+      op: 436
+      assets: 42193
+    SEG4:
+      revenue: 9251
+      gross_profit: 0
+      op: 145
+      assets: 14064
+consolidated:
+  2023:
+    revenue: 171842
+    op: 9298
+    net_income: 10127
+    assets: 273064
+    liabilities: 204757
+    equity: 64286
+    dep: 11888
+    amort: 0
+    gross_borr: 122648
+    net_borr: 103795
+    de_ratio: 190.8
+  2024:
+    revenue: 187442
+    op: 12784
+    net_income: 6008
+    assets: 279761
+    liabilities: 214171
+    equity: 63072
+    dep: 12389
+    amort: 0
+    gross_borr: 130693
+    net_borr: 110821
+    de_ratio: 207.2
+  2025:
+    revenue: 185019
+    op: 2909
+    net_income: 2697
+    assets: 281284
+    liabilities: 218116
+    equity: 61119
+    dep: 14588
+    amort: 0
+    gross_borr: 131312
+    net_borr: 110367
+    de_ratio: 214.8
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.15
+  de: 190.1
+  tax: 21.0
+  kd_pre: 5.8
+  eq_w: 34.5
+scenarios:
+  A:
+    name: Base Case
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 903967853
+    desc: 리콜 비용은 관리 가능한 수준이며 중국 시장이 점진적으로 회복됩니다. EV 투자는 계획대로 진행되고 북미 생산 확대가 수익성을 지원합니다.
+    probability_rationale: 'Base rate: 자동차 업계 정상 운영 확률 70%. 조건부 분해: P(중간 수준 리콜 영향)=80%
+      × P(중국 회복)=70% = 56%, 40%로 조정'
+    active_drivers:
+      recall_costs: 0.5
+      ev_investment: 0.7
+      production_ramp: 0.8
+    segment_multiples:
+      SEG1: 8.5
+      SEG2: 7.0
+      SEG3: 9.0
+      SEG4: 6.5
+  B:
+    name: Bull Case - EV 리더십 확보
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 903967853
+    desc: EV 투자가 시장 리더십으로 이어지고 픽업트럭 생산 확대가 큰 성과를 거둡니다. 리콜 이슈는 신속히 해결되고 중국 시장도 회복세를
+      보입니다.
+    probability_rationale: 'Base rate: EV 전환 성공 사례 30%. 조건부 분해: P(EV 투자 성공)=40% ×
+      P(생산 효율성 개선)=70% × P(시장 점유율 확대)=90% = 25%'
+    active_drivers:
+      ev_investment: 1.0
+      production_ramp: 1.0
+      recall_costs: 0.3
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 9.5
+      SEG3: 11.0
+      SEG4: 8.0
+  C:
+    name: Bear Case - 복합 리스크 현실화
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 903967853
+    desc: 리콜 이슈가 확산되어 추가 비용이 발생하고 중국 시장 부진이 지속됩니다. EV 투자 효과는 제한적이며 전반적인 시장 신뢰도가 하락합니다.
+    probability_rationale: 'Base rate: 자동차 업계 복합 위기 발생률 25%. 조건부 분해: P(리콜 확산)=60%
+      × P(중국 악화 지속)=70% × P(EV 투자 지연)=80% = 34%, 35%로 조정'
+    active_drivers:
+      recall_costs: 1.0
+      china_weakness: 0.8
+      ev_investment: 0.3
+      production_ramp: 0.4
+    segment_multiples:
+      SEG1: 6.0
+      SEG2: 5.5
+      SEG3: 7.0
+      SEG4: 5.0
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 7.3
+  capex_to_da: 1.97
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+  actual_capex: 25096
+  capex_fade_to: null
+  da_to_ebitda_override: 0.629
+pe_multiple: 25.6
+ev_revenue_multiple: 1.0
+pbv_multiple: 1.1
+cps_principal: 0
+cps_years: 0
+net_debt: 110367
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Hyundai Motor Co (현대자동차)
+  segment_code: SEG1
+  ev_ebitda: 4.8
+  notes: Korean OEM with global ICE/EV portfolio. North America significant revenue
+    contributor. 2024 EBITDA margin ~8-9%, EV transition underway. Most comparable
+    Korean peer by scale and NA exposure.
+- name: Kia Corporation (기아)
+  segment_code: SEG1
+  ev_ebitda: 5.2
+  notes: Korean OEM, strong EV lineup (EV6, Niro EV). NA market growing. Standalone
+    valuation post-2020 separation. EBITDA margin ~7-8%. Direct EV/ICE mix comparable
+    to GM NA segment.
+- name: Ford Motor Company
+  segment_code: SEG1
+  ev_ebitda: 5.1
+  notes: Direct NA automotive peer. ICE/EV transition in progress. 2024 EBITDA ~$8-9B
+    on revenue ~$136B. Comparable margin pressure and EV capex intensity to GM NA.
+- name: Stellantis NV
+  segment_code: SEG1
+  ev_ebitda: 5.9
+  notes: Global OEM with significant NA operations (Jeep, Ram, Chrysler). 2024 EBITDA
+    margin ~10-11%. Higher multiple reflects stronger pricing power and brand portfolio
+    vs pure-play NA competitors.
+- name: Toyota Motor Corporation (North America segment proxy)
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: Premium multiple reflects superior operational efficiency, hybrid leadership,
+    and NA profitability. 2024 EBITDA margin ~12-13%. Represents best-in-class NA
+    automotive operations benchmark.
+- name: Honda Motor Co (North America segment proxy)
+  segment_code: SEG1
+  ev_ebitda: 6.1
+  notes: Japanese OEM with strong NA presence. EBITDA margin ~9-10%. Hybrid/EV transition
+    progressing. Mid-range multiple reflects balanced ICE/EV portfolio and NA market
+    position.
+- name: Hyundai Motor Co (현대자동차)
+  segment_code: SEG2
+  ev_ebitda: 4.8
+  notes: Korean OEM with global operations including China/Europe. 2023 EBITDA ~3.2조원,
+    Market cap ~35조원. Most comparable scale and international exposure to GM's automotive
+    segment.
+- name: Kia Corporation (기아)
+  segment_code: SEG2
+  ev_ebitda: 5.2
+  notes: Korean OEM with significant China/Europe presence. 2023 EBITDA ~1.8조원, Market
+    cap ~9.5조원. Similar business model to Hyundai with international diversification.
+- name: Volkswagen Group (독일)
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: Direct peer in Europe/China automotive. 2023 EBITDA ~€18B (~27조원), Market
+    cap ~175조원. Largest European OEM with comparable international structure.
+- name: BMW Group (독일)
+  segment_code: SEG2
+  ev_ebitda: 7.1
+  notes: Premium OEM with global operations. 2023 EBITDA ~€15B (~22.5조원), Market cap
+    ~160조원. Strong China/Europe presence, comparable to GM's international segment
+    profitability.
+- name: Daimler-Benz/Mercedes-Benz Group (독일)
+  segment_code: SEG2
+  ev_ebitda: 6.8
+  notes: Premium global OEM. 2023 EBITDA ~€18B (~27조원), Market cap ~180조원. Significant
+    China/Europe operations matching GM's international footprint.
+- name: Geely-Volvo (중국/스웨덴)
+  segment_code: SEG2
+  ev_ebitda: 5.5
+  notes: Chinese-Swedish OEM with Europe/China dual presence. 2023 EBITDA ~$3B (~4조원),
+    Market cap ~8조원. Direct structural similarity to GM's international segment model.
+- name: BYD Co Ltd (중국)
+  segment_code: SEG2
+  ev_ebitda: 8.2
+  notes: Chinese OEM with growing international presence. 2023 EBITDA ~¥80B (~1.5조원),
+    Market cap ~15조원. Represents emerging market OEM comparable to GM's China operations.
+- name: Hyundai Capital Co., Ltd.
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: Korean automotive captive finance leader. Direct peer to GM Financial. KOSPI
+    listed. 2023 EBITDA ~1.2T KRW, Market cap ~9.8T KRW. Similar loan portfolio, lease,
+    and insurance operations.
+- name: KB Financial Group Inc.
+  segment_code: SEG3
+  ev_ebitda: 9.2
+  notes: Korean financial services conglomerate with auto finance subsidiary. KOSPI
+    listed. 2023 EBITDA ~2.8T KRW. Broader financial services but significant auto
+    lending exposure.
+- name: Ally Financial Inc. (ALLY)
+  segment_code: SEG3
+  ev_ebitda: 7.8
+  notes: US-listed pure-play auto finance and insurance. Direct structural peer to
+    GM Financial. 2023 EBITDA ~4.2B USD (~5.5T KRW). Captive and non-captive lending,
+    insurance products.
+- name: Ford Motor Credit Company (Ford Credit - Private)
+  segment_code: SEG3
+  ev_ebitda: 8.2
+  notes: Captive finance subsidiary of Ford. Not independently listed but comparable
+    multiples derived from Ford Credit debt spreads and industry reports. Similar
+    scale and business model to GM Financial.
+- name: Toyota Financial Services (Private)
+  segment_code: SEG3
+  ev_ebitda: 9.5
+  notes: Toyota's captive finance arm. Private but multiples estimated from Toyota
+    Financial Services bond yields and industry benchmarks. Largest captive finance
+    globally. Lease, loan, and insurance operations.
+- name: LG Financial Co., Ltd.
+  segment_code: SEG3
+  ev_ebitda: 8.8
+  notes: Korean automotive and consumer finance company. KOSDAQ listed. 2023 EBITDA
+    ~0.8T KRW. Auto loans, leases, and insurance products. Smaller scale but similar
+    business structure.
+- name: Tesla Inc
+  segment_code: SEG4
+  ev_ebitda: 45.0
+  notes: Global leader in EV + autonomous software/services. Premium valuation reflects
+    software/services revenue mix. 2023 EV/EBITDA ~45x (market cap $800B+, EBITDA
+    ~$18B). Direct comparable for Cruise autonomous platform.
+- name: Waymo (Alphabet subsidiary)
+  segment_code: SEG4
+  ev_ebitda: null
+  notes: Pure-play autonomous vehicle technology. Not independently listed; Alphabet
+    trades at ~20-25x EV/EBITDA (2023). Waymo segment valuation estimated $30-40B
+    internally. Highly similar business structure to Cruise.
+- name: Mobileye (Intel subsidiary, formerly MBLY)
+  segment_code: SEG4
+  ev_ebitda: 35.0
+  notes: Autonomous driving software/chips. IPO 2023 at $16B valuation; acquired back
+    by Intel 2024. Last public EV/EBITDA ~35x. Direct peer for OnStar/connected services
+    software stack.
+- name: Aptiv PLC (APTV)
+  segment_code: SEG4
+  ev_ebitda: 12.0
+  notes: Automotive software/autonomous platform provider. 2023 EV/EBITDA ~12x (market
+    cap $15B, EBITDA ~$1.3B). Lower multiple reflects mixed legacy hardware exposure
+    vs. pure software.
+- name: Aurora Innovation (AUR)
+  segment_code: SEG4
+  ev_ebitda: null
+  notes: SPAC-listed autonomous trucking. Market cap ~$2-3B (2023-2024), EBITDA negative.
+    Not suitable for multiple-based valuation; included for business model reference
+    only.
+- name: Hyundai Mobis (012330.KS)
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: Korean automotive supplier with growing autonomous/connected services division.
+    2023 EV/EBITDA ~8.5x (market cap ~8.5T KRW, EBITDA ~1T KRW). Lower multiple reflects
+    hardware-heavy portfolio; software segment growing.
+- name: SK Telecom (017670.KS)
+  segment_code: SEG4
+  ev_ebitda: 6.0
+  notes: Korean telecom with connected car/5G autonomous platform (T-map, autonomous
+    driving partnerships). 2023 EV/EBITDA ~6x. Lower multiple reflects telecom core
+    business; autonomous segment emerging.
+- name: Naver (035420.KS)
+  segment_code: SEG4
+  ev_ebitda: 18.0
+  notes: Korean tech with mapping (Naver Map) and autonomous vehicle software partnerships.
+    2023 EV/EBITDA ~18x (market cap ~40T KRW, EBITDA ~2.2T KRW). Software-focused
+    valuation closer to Cruise model.
+news_key_issues: '- [리스크] 리어뷰 카메라 이슈로 27만 대 이상의 차량 리콜 (2026-04-08, 2026-04-10)
+
+  - [기회] 미시간에서 픽업 트럭 생산량 증가 (2026-04-01)
+
+  - [기회] 2027년 가스 파워드 쉐보레 블레이저 생산 예정 (2026-04-10)
+
+  - [리스크] 중국 시장에서 성과 저조 (2026-03-16)
+
+  - [기회] EV 사업에 대한 투자 및 발전 (2026-04-08)
+
+  - [리스크] 리콜 및 소송으로 인한 비용 증가 (2026-04-12)'
+news_drivers:
+- id: recall_costs
+  name: 대규모 리콜 및 소송 비용
+  category: company
+  effects:
+    growth_adj_pct: -8
+    wacc_adj: 0.2
+    market_sentiment_pct: -3
+  rationale: 27만대 리콜과 소송 비용으로 EBITDA 마진 압박. 자동차 업계 대규모 리콜 시 평균 8% EBITDA 감소, 신용 리스크
+    증가로 WACC 상승
+- id: china_weakness
+  name: 중국 시장 성과 저조
+  category: industry
+  effects:
+    growth_adj_pct: -12
+    market_sentiment_pct: -5
+  rationale: 중국은 GM 글로벌 매출의 약 15% 차지. 중국 자동차 시장 둔화 시 다국적 OEM 평균 12% 수익성 하락 관찰
+- id: ev_investment
+  name: EV 사업 투자 확대
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: 0.1
+    market_sentiment_pct: 8
+  rationale: EV 전환 투자로 장기 성장성 개선되나 단기 자본 지출 증가. Tesla 밸류에이션 프리미엄 효과로 시장 센티먼트 개선
+- id: production_ramp
+  name: 픽업트럭 생산 증가
+  category: company
+  effects:
+    growth_adj_pct: 8
+    market_sentiment_pct: 3
+  rationale: 미시간 픽업트럭 생산 증가와 2027년 블레이저 생산으로 북미 핵심 세그먼트 강화. 픽업트럭은 GM 최고 마진 제품군
+mc_enabled: true

@@ -113,10 +113,10 @@ _KR_QUERIES = [
     "기업 인수합병 M&A",
 ]
 _US_QUERIES = [
-    "S&P 500 earnings report",
-    "US stock market news",
-    "IPO listing",
-    "M&A acquisition deal",
+    "S&P 500 company earnings beat miss revenue results",
+    "nasdaq NYSE stock valuation quarterly results",
+    "company IPO stock debut NYSE Nasdaq listing",
+    "merger acquisition billion deal stock market",
 ]
 
 

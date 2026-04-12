@@ -306,13 +306,14 @@ class DiscoveryEngine:
 - ticker: 정확히 알고 있는 경우에만 작성하고, 모르거나 불확실하면 반드시 null로 두세요. '미지정', 'N/A', '없음' 등의 문자열 금지.
 - 한국 기업 ticker 형식: 숫자 6자리 (예: "005930"), 미국 기업: 알파벳 또는 점 포함 가능 (예: "NVDA", "BRK.B")
 - 미국 기업 name: SEC EDGAR 검색에 사용되는 영어 공식 명칭을 반드시 사용하세요 (예: "Tesla", "NVIDIA", "Apple"). 뉴스가 한국어로 작성된 경우에도 기업명은 영어 원명으로 출력해야 합니다. 한국어 번역 이름 절대 금지.
+- domain: 해당 기업의 공식 웹사이트 도메인 (예: "samsung.com", "nvidia.com"). 확실히 아는 경우에만 입력하고, 모르거나 불확실하면 null. 서브도메인 없이 루트 도메인만 입력 (corp.example.com 금지 → example.com).
 </rules>
 
 <output_format>
 {{
   "summary": "시장 전체 동향 요약 (3-5문장)",
   "companies": [
-    {{"name": "개별 기업 정식 명칭 (미국 기업은 반드시 영문)", "ticker": "티커 또는 null", "reason": "분석 추천 이유"}}
+    {{"name": "개별 기업 정식 명칭 (미국 기업은 반드시 영문)", "ticker": "티커 또는 null", "domain": "루트 도메인 또는 null", "reason": "분석 추천 이유"}}
   ],
   "scenarios": [
     {{"name": "시나리오명", "prob": 30, "description": "설명"}}

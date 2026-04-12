@@ -72,56 +72,21 @@ def _safe_url(url: str) -> str:
 
 # ── Logo helpers ─────────────────────────────────────────────────────────────
 
-# Company display name → Clearbit domain mapping.
-# Covers the most common KR/US companies that appear in weekly reports.
-_LOGO_DOMAINS: dict[str, str] = {
-    # Korean
-    "삼성전자": "samsung.com",
-    "SK하이닉스": "skhynix.com",
-    "LG화학": "lgchem.com",
-    "LG에너지솔루션": "lge.com",
-    "KB금융": "kbfg.com",
-    "현대자동차": "hyundai.com",
-    "POSCO": "posco.com",
-    "셀트리온": "celltrion.com",
-    "카카오": "kakao.com",
-    "네이버": "naver.com",
-    "삼성SDI": "samsungsdi.com",
-    "한화에어로스페이스": "hanwha.com",
-    "기아": "kia.com",
-    # US
-    "NVIDIA": "nvidia.com",
-    "Apple": "apple.com",
-    "Tesla": "tesla.com",
-    "Microsoft": "microsoft.com",
-    "Amazon": "amazon.com",
-    "Alphabet": "abc.xyz",
-    "Meta": "meta.com",
-    "Netflix": "netflix.com",
-    "Novo Nordisk": "novonordisk.com",
-    "Broadcom": "broadcom.com",
-    "AMD": "amd.com",
-    "Intel": "intel.com",
-}
 
+def _download_logo(domain: str) -> str:
+    """Download company logo PNG from Clearbit to a temp file.
 
-def _clearbit_logo_url(company_name: str) -> str:
-    """Return Clearbit logo URL for known companies, empty string otherwise."""
-    domain = _LOGO_DOMAINS.get(company_name, "")
+    Args:
+        domain: Root domain extracted by discovery AI (e.g. "samsung.com").
+            Empty string or None skips the download immediately.
+
+    Returns:
+        Absolute path to the downloaded temp file on success, empty string
+        otherwise. Caller is responsible for deleting the file.
+    """
     if not domain:
         return ""
-    return f"https://logo.clearbit.com/{domain}"
-
-
-def _download_logo(company_name: str) -> str:
-    """Download company logo PNG to a temp file.
-
-    Returns the temp file path on success, empty string on failure.
-    Caller is responsible for deleting the file.
-    """
-    url = _clearbit_logo_url(company_name)
-    if not url:
-        return ""
+    url = f"https://logo.clearbit.com/{domain}"
     try:
         resp = requests.get(url, timeout=5)
         content_type = resp.headers.get("content-type", "")
@@ -130,10 +95,10 @@ def _download_logo(company_name: str) -> str:
             fd, tmp_path = tempfile.mkstemp(suffix=suffix)
             os.write(fd, resp.content)
             os.close(fd)
-            logger.debug("Logo downloaded for %s → %s", company_name, tmp_path)
+            logger.debug("Logo downloaded domain=%s → %s", domain, tmp_path)
             return tmp_path
     except Exception as e:
-        logger.debug("Logo download failed for %s: %s", company_name, e)
+        logger.debug("Logo download failed domain=%s: %s", domain, e)
     return ""
 
 
@@ -316,13 +281,20 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
 
     title = f"주간 밸류에이션 리포트 — {label}"
 
+    # Build per-company lookups from discovery data (name → news, name → domain)
     company_news: dict[str, list[dict]] = {}
+    company_domains: dict[str, str] = {}
     for d in discoveries:
         for co in d.get("companies", []):
             name = co.get("name", "")
+            if not name:
+                continue
             news_items = co.get("top_news", [])
-            if name and news_items:
+            if news_items:
                 company_news[name] = news_items
+            domain = co.get("domain") or ""
+            if domain:
+                company_domains[name] = domain
 
     sections: list[dict] = []
 
@@ -353,6 +325,8 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
                 {
                     "type": _SEC_COMPANY,
                     "name": name,
+                    # domain from discovery AI — used for Clearbit logo download
+                    "domain": company_domains.get(name, ""),
                     "content": _build_company_text(v, company_news),
                 }
             )
@@ -603,9 +577,11 @@ def _set_content_with_sections(
 
             elif sec["type"] == _SEC_COMPANY:
                 company_name = sec.get("name", "")
+                # domain is extracted by discovery AI; empty string = no logo
+                logo_domain = sec.get("domain", "")
 
                 # Download logo and attempt SE3 upload (best-effort)
-                logo_path = _download_logo(company_name)
+                logo_path = _download_logo(logo_domain)
                 if logo_path:
                     logo_paths.append(logo_path)
                     if _insert_logo_se3(driver, logo_path):

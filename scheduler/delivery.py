@@ -276,7 +276,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
                 links += " &nbsp;|&nbsp; "
             links += (
                 f'<a href="{download_url}" style="color:#1a73e8;text-decoration:none;">'
-                f"📥 Excel</a>"
+                f"📄 Excel</a>"
             )
 
         reason = _esc(v.get("reason", ""))

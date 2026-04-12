@@ -55,6 +55,7 @@ def _is_real_company(co: dict) -> bool:
     name_lower = co.get("name", "").lower()
     return not any(kw in name_lower for kw in _SECTOR_KEYWORDS)
 
+
 _RESULTS_BASE = Path(
     os.environ.get(
         "VALUATION_RESULTS_DIR",
@@ -437,13 +438,31 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
         if entry["status"] == "success" and entry.get("excel_path"):
             try:
                 ticker = entry.get("ticker")
-                if ticker and str(ticker).strip():
-                    remote_filename = f"{ticker}_valuation.xlsx"
-                else:
-                    # Fallback: sanitize company name; if result is empty (Korean-only),
-                    # use positional index to guarantee a valid non-empty key
-                    from db.storage import _sanitize_key as _sk
+                market = entry.get("market", "")
+                from db.storage import _sanitize_key as _sk
 
+                remote_filename = None
+
+                if ticker and str(ticker).strip():
+                    ticker_str = str(ticker).strip()
+                    if market == "KR" and ticker_str.isdigit():
+                        # KR stock code → look up English name from DART corpCode.xml
+                        from pipeline.dart_client import get_corp_eng_name_by_stock_code
+                        eng_name = get_corp_eng_name_by_stock_code(ticker_str)
+                        if eng_name:
+                            # Strip trailing punctuation that _sanitize_key preserves
+                            safe = _sk(eng_name).rstrip("._-")
+                            remote_filename = f"{safe}_valuation.xlsx" if safe else None
+                    if remote_filename is None:
+                        # US ticker (e.g. AAPL) or KR fallback: sanitize company name first
+                        safe = _sk(entry.get("company", ""))
+                        if safe and len(safe) >= 2:
+                            remote_filename = f"{safe}_valuation.xlsx"
+                        else:
+                            remote_filename = f"{ticker_str}_valuation.xlsx"
+
+                if remote_filename is None:
+                    # No ticker: sanitize company name; fall back to positional index
                     safe = _sk(Path(entry["excel_path"]).stem)
                     remote_filename = (
                         f"{safe}_valuation.xlsx"
@@ -471,14 +490,14 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
     success_count = sum(1 for v in summary["valuations"] if v["status"] == "success")
     failed_count = sum(1 for v in summary["valuations"] if v["status"] == "failed")
 
-    summary_json = {
-        **summary,
-        "status_summary": {
-            "total": len(summary["valuations"]),
-            "success": success_count,
-            "failed": failed_count,
-        },
+    # Set on the live summary dict so email (sent before this function returns) gets it too
+    summary["status_summary"] = {
+        "total": len(summary["valuations"]),
+        "success": success_count,
+        "failed": failed_count,
     }
+
+    summary_json = {**summary}
 
     summary_path = week_dir / "_weekly_summary.json"
     try:

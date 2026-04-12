@@ -247,6 +247,47 @@ def load_profile(path: str) -> ValuationInput:
                         _valid_seg_codes,
                     )
 
+    # Clamp segment_multiples Bull/Bear ratio to ≤ 2.0x to prevent unrealistic EV spread.
+    # Finds the per-segment minimum multiple across all scenarios (Bear reference), then
+    # caps any multiple exceeding min × 2.0.
+    _SOTP_MAX_RATIO = 2.0
+    _sc_mults_map: dict[str, dict[str, float]] = {
+        code: dict(sc.segment_multiples)
+        for code, sc in scenarios.items()
+        if sc.segment_multiples
+    }
+    if len(_sc_mults_map) >= 2:
+        # Per-segment minimum across all scenarios = effective Bear floor
+        _seg_min: dict[str, float] = {}
+        for mults in _sc_mults_map.values():
+            for seg, val in mults.items():
+                if val > 0:
+                    _seg_min[seg] = min(_seg_min.get(seg, val), val)
+
+        for sc_code, mults in _sc_mults_map.items():
+            clamped = {}
+            changed = False
+            for seg, val in mults.items():
+                floor = _seg_min.get(seg, 0)
+                cap = floor * _SOTP_MAX_RATIO if floor > 0 else float("inf")
+                if val > cap:
+                    clamped[seg] = round(cap, 2)
+                    changed = True
+                else:
+                    clamped[seg] = val
+            if changed:
+                scenarios[sc_code] = scenarios[sc_code].model_copy(
+                    update={"segment_multiples": clamped}
+                )
+                logger.info(
+                    "[%s] scenario '%s' segment_multiples clamped (Bull/Bear ratio > %.1fx): %s → %s",
+                    company.name,
+                    sc_code,
+                    _SOTP_MAX_RATIO,
+                    mults,
+                    clamped,
+                )
+
     return ValuationInput(
         company=company,
         valuation_method=raw.get("valuation_method", "auto"),

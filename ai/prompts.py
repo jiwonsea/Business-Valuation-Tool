@@ -396,6 +396,8 @@ def prompt_scenario_design(
             sotp_seg_constraint = (
                 f"\nCRITICAL: segment_multiples keys MUST be exactly: [{codes_str}]. "
                 "Do NOT use real business unit names (e.g. DS, HE, DX, MEMORY) — use only the codes above."
+                "\nCRITICAL: Bull/Bear multiple ratio ≤ 2.0x per segment. "
+                "If Bear multiple is 5.0, Bull must be ≤ 10.0. Prevents unrealistic valuation spread."
             )
         return f"""\
 <company>{company_name}</company>
@@ -489,6 +491,8 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
         generic_sotp_constraint = (
             f"\nCRITICAL: segment_multiples keys MUST be exactly: [{codes_str}]. "
             "Do NOT use real business unit names (e.g. DS, HE, DX, MEMORY) — use only the codes above."
+            "\nCRITICAL: Bull/Bear multiple ratio ≤ 2.0x per segment. "
+            "If Bear multiple is 5.0, Bull must be ≤ 10.0. Prevents unrealistic valuation spread."
         )
 
     return f"""\

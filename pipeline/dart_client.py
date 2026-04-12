@@ -109,6 +109,24 @@ def get_corp_info(company_name: str) -> dict | None:
     return best
 
 
+def get_corp_eng_name_by_stock_code(stock_code: str) -> str | None:
+    """Return DART corp_eng_name for a given stock code (6-digit KR code).
+
+    Returns English company name from DART corpCode.xml, or None if not found.
+    Uses the same cached XML as get_corp_info — no extra network calls.
+    """
+    if not stock_code or not stock_code.strip().isdigit():
+        return None
+    code = stock_code.strip()
+    root = _load_corp_code_xml()
+    for corp in root.findall(".//list"):
+        sc = (corp.findtext("stock_code") or "").strip()
+        if sc == code:
+            eng = (corp.findtext("corp_eng_name") or "").strip()
+            return eng if eng else None
+    return None
+
+
 from .api_guard import api_guard
 
 

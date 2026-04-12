@@ -1,26 +1,557 @@
 """Post weekly valuation report to Naver Blog via Selenium.
 
-Status: STUB — implementation pending (Step 6).
-This module exists so weekly_run.py can import without error.
+Posts both KR and US market companies in Korean language.
+Uses Chrome with persistent profile to avoid CAPTCHA on repeated runs.
 
-Env vars: NAVER_ID, NAVER_PW
+Env vars:
+  NAVER_ID  — Naver account ID (never logged)
+  NAVER_PW  — Naver account password (never logged)
 """
 
 from __future__ import annotations
 
+import argparse
+import json
 import logging
+import os
+import re
+import time
+from pathlib import Path
+from urllib.parse import urlparse
+
+from selenium import webdriver
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    WebDriverException,
+)
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 logger = logging.getLogger(__name__)
 
+_LOGIN_URL = "https://nid.naver.com/nidlogin.login"
+_WRITE_URL_TMPL = "https://blog.naver.com/{blog_id}/postwrite"
+_PROFILE_DIR = Path.home() / ".naver_poster_chrome"
 
-def post_to_naver(summary: dict) -> str | None:
-    """Post weekly report to Naver Blog.
+# Wait timeouts (seconds)
+_SHORT = 5
+_LONG = 20
+
+_DISCLAIMER_KR = (
+    "\n\n---\n\n"
+    "이 리포트는 AI 기반 밸류에이션 파이프라인이 자동 생성한 분석 자료이며, "
+    "투자 조언이 아닙니다. 투자 의사결정 시 반드시 자체적인 실사를 진행하세요."
+)
+
+
+# ── Credentials ──────────────────────────────────────────────────────────────
+
+
+def _get_credentials() -> tuple[str, str]:
+    """Return (naver_id, naver_pw) from environment. Never log these values."""
+    return os.getenv("NAVER_ID", ""), os.getenv("NAVER_PW", "")
+
+
+# ── Content building ──────────────────────────────────────────────────────────
+
+
+def _safe_url(url: str) -> str:
+    """Return url only if scheme is http/https; empty string otherwise."""
+    if not url:
+        return ""
+    return url if urlparse(url).scheme in ("http", "https") else ""
+
+
+def _strip_dangerous_tags(text: str) -> str:
+    """Remove script/iframe/object/embed/form tags (injection defence)."""
+    text = re.sub(
+        r"<(script|iframe|object|embed|form)[^>]*>.*?</\1>",
+        "",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    return re.sub(
+        r"<(script|iframe|object|embed|form)[^>]*/?>",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
+def build_blog_content(summary: dict) -> tuple[str, str]:
+    """Build (title, plain_text_body) for Naver Blog post (Korean).
 
     Args:
         summary: The full _weekly_summary.json content.
 
     Returns:
-        Post URL if successful, None otherwise.
+        (title, body) where body is plain text suitable for SmartEditor.
     """
-    logger.info("Naver Blog posting not yet implemented — skipping.")
-    return None
+    label = summary.get("label", "")
+    markets = summary.get("markets", [])
+    status = summary.get("status_summary", {})
+    valuations = summary.get("valuations", [])
+    discoveries = summary.get("discoveries", [])
+
+    title = f"주간 밸류에이션 리포트 — {label}"
+
+    lines: list[str] = []
+
+    # ── 개요 ──
+    lines.append(f"■ 주간 밸류에이션 리포트 — {label}\n")
+    lines.append(
+        f"대상 시장: {', '.join(markets)} | "
+        f"분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상\n"
+    )
+
+    # ── Discovery 요약 ──
+    if discoveries:
+        lines.append("\n■ 이번 주 발굴 기업\n")
+        for d in discoveries:
+            mkt = d.get("market", "")
+            news_count = d.get("news_count", 0)
+            cos = d.get("companies", [])
+            co_names = ", ".join(c.get("name", "") for c in cos[:5])
+            lines.append(f"[{mkt}] 뉴스 {news_count}건 → 후보 기업: {co_names}")
+
+    # ── 기업별 분석 ──
+    success_valuations = [v for v in valuations if v.get("status") == "success"]
+    if success_valuations:
+        lines.append("\n\n■ 기업별 밸류에이션 요약\n")
+
+        for v in success_valuations:
+            name = v.get("company", "")
+            market = v.get("market", "")
+            cap = v.get("market_cap_usd")
+
+            if cap is not None and cap >= 1_000_000_000_000:
+                cap_str = f"${cap / 1_000_000_000_000:.1f}T"
+            elif cap is not None and cap >= 1_000_000_000:
+                cap_str = f"${cap / 1_000_000_000:.1f}B"
+            elif cap is not None:
+                cap_str = f"${cap / 1_000_000:,.0f}M"
+            else:
+                cap_str = "N/A"
+
+            reason = v.get("reason", "")
+            summary_md = v.get("summary_md", "")
+            download_url = _safe_url(v.get("download_url", ""))
+
+            lines.append(f"\n▶ {name} ({market} · {cap_str})")
+            if reason:
+                safe_reason = _strip_dangerous_tags(reason)
+                lines.append(f"  선정 이유: {safe_reason}")
+
+            if summary_md:
+                md_lines = summary_md.strip().split("\n")[:10]
+                lines.extend(f"  {ln}" for ln in md_lines if ln.strip())
+
+            if download_url:
+                lines.append(f"  Excel 다운로드: {download_url}")
+
+            lines.append("")  # blank separator
+
+    lines.append(_DISCLAIMER_KR)
+
+    body = "\n".join(lines)
+    return title, body
+
+
+# ── Chrome driver ─────────────────────────────────────────────────────────────
+
+
+def _build_driver(headless: bool = False) -> webdriver.Chrome:
+    """Create Chrome WebDriver with persistent profile for CAPTCHA avoidance.
+
+    Args:
+        headless: Run Chrome in headless mode.
+            Note: Naver may block headless user-agents; False is safer.
+    """
+    _PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+
+    opts = Options()
+    opts.add_argument(f"--user-data-dir={_PROFILE_DIR}")
+    opts.add_argument("--profile-directory=Default")
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--disable-blink-features=AutomationControlled")
+    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+    opts.add_experimental_option("useAutomationExtension", False)
+
+    if headless:
+        opts.add_argument("--headless=new")
+
+    driver = webdriver.Chrome(options=opts)
+    driver.execute_script(
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
+    return driver
+
+
+# ── Login ─────────────────────────────────────────────────────────────────────
+
+
+def _is_logged_in(driver: webdriver.Chrome) -> bool:
+    """Check if both Naver session cookies are present."""
+    cookies = {c["name"] for c in driver.get_cookies()}
+    return {"NID_AUT", "NID_SES"}.issubset(cookies)
+
+
+def _login(
+    driver: webdriver.Chrome,
+    wait: WebDriverWait,
+    naver_id: str,
+    naver_pw: str,
+) -> bool:
+    """Perform Naver login. Returns True on success.
+
+    Credential values are never written to logs.
+    """
+    try:
+        driver.get(_LOGIN_URL)
+        wait.until(EC.presence_of_element_located((By.ID, "id")))
+
+        id_field = driver.find_element(By.ID, "id")
+        pw_field = driver.find_element(By.ID, "pw")
+
+        # Set values via JavaScript to avoid keystroke detection
+        driver.execute_script("arguments[0].value = arguments[1];", id_field, naver_id)
+        driver.execute_script("arguments[0].value = arguments[1];", pw_field, naver_pw)
+        driver.execute_script(
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+            id_field,
+        )
+        driver.execute_script(
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+            pw_field,
+        )
+
+        login_btn = driver.find_element(By.ID, "log.login")
+        login_btn.click()
+
+        # Wait for both session cookies to be issued (async after redirect)
+        try:
+            WebDriverWait(driver, _LONG).until(
+                lambda d: {"NID_AUT", "NID_SES"}.issubset(
+                    {c["name"] for c in d.get_cookies()}
+                )
+            )
+            logger.info("Naver login successful.")
+            return True
+        except TimeoutException:
+            logger.warning("Naver login: session cookies not issued within timeout.")
+            return False
+
+    except (TimeoutException, NoSuchElementException) as e:
+        logger.error("Naver login failed: %s", e)
+        return False
+
+
+# ── Blog posting ──────────────────────────────────────────────────────────────
+
+
+def _wait_for_editor(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
+    """Wait for SmartEditor to finish loading."""
+    selectors = [
+        (By.CSS_SELECTOR, "div.se-main-container"),
+        (By.CSS_SELECTOR, "div.se2_inputarea"),
+        (By.CSS_SELECTOR, "div[class*='smarteditor']"),
+    ]
+    for by, sel in selectors:
+        try:
+            wait.until(EC.presence_of_element_located((by, sel)))
+            logger.debug("Editor detected with selector: %s", sel)
+            return True
+        except TimeoutException:
+            continue
+    logger.warning("SmartEditor container not found within timeout.")
+    return False
+
+
+def _set_title(driver: webdriver.Chrome, wait: WebDriverWait, title: str) -> bool:
+    """Fill in the post title. Returns True on success."""
+    selectors = [
+        (By.CSS_SELECTOR, "input.se-title-input"),
+        (By.CSS_SELECTOR, "input[placeholder*='제목']"),
+        (By.CSS_SELECTOR, "div.se-title-text"),
+        (By.CSS_SELECTOR, "input.__se_editor_title"),
+        (By.NAME, "subject"),
+    ]
+    for by, sel in selectors:
+        try:
+            elem = wait.until(EC.element_to_be_clickable((by, sel)))
+            elem.click()
+            elem.clear()
+            elem.send_keys(title)
+            logger.debug("Title set via selector: %s", sel)
+            return True
+        except (TimeoutException, NoSuchElementException, WebDriverException):
+            continue
+
+    logger.warning("Could not locate title input field.")
+    return False
+
+
+def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bool:
+    """Fill in the post body. Returns True on success.
+
+    Tries three strategies in order:
+    1. SE3 contenteditable div
+    2. SE2 iframe + contenteditable
+    3. JavaScript injection on any large contenteditable
+    """
+    # Strategy 1: SE3 contenteditable
+    try:
+        area = wait.until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, "div.se-main-container div[contenteditable='true']")
+            )
+        )
+        area.click()
+        area.send_keys(Keys.CONTROL, "a")
+        area.send_keys(body)
+        logger.debug("Content set via SE3 contenteditable.")
+        return True
+    except (TimeoutException, NoSuchElementException, WebDriverException):
+        pass
+
+    # Strategy 2: SE2 iframe
+    try:
+        frame = driver.find_element(
+            By.CSS_SELECTOR, "iframe#mainFrame, iframe.se2_inputarea_frame"
+        )
+        driver.switch_to.frame(frame)
+        area = driver.find_element(
+            By.CSS_SELECTOR, "div#content_editable, div[contenteditable='true']"
+        )
+        area.click()
+        area.send_keys(Keys.CONTROL, "a")
+        area.send_keys(body)
+        driver.switch_to.default_content()
+        logger.debug("Content set via SE2 iframe.")
+        return True
+    except (NoSuchElementException, WebDriverException):
+        driver.switch_to.default_content()
+
+    # Strategy 3: JavaScript injection on any sufficiently large contenteditable
+    try:
+        result = driver.execute_script(
+            """
+            var areas = document.querySelectorAll('[contenteditable="true"]');
+            for (var i = 0; i < areas.length; i++) {
+                var el = areas[i];
+                if (el.offsetWidth > 100 && el.offsetHeight > 100) {
+                    el.focus();
+                    el.innerText = arguments[0];
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                    return true;
+                }
+            }
+            return false;
+            """,
+            body,
+        )
+        if result:
+            logger.debug("Content set via JavaScript fallback.")
+            return True
+    except WebDriverException as e:
+        logger.warning("JavaScript content injection failed: %s", e)
+
+    logger.warning("Could not inject post content into any known editor area.")
+    return False
+
+
+def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
+    """Click the publish button. Returns True on success."""
+    selectors = [
+        (By.CSS_SELECTOR, "button.publish_btn__m9KHH"),
+        (By.CSS_SELECTOR, "button[data-log='pcwriter.publish']"),
+        (By.CSS_SELECTOR, "button.se-publish-btn"),
+        (By.XPATH, "//button[contains(text(), '발행')]"),
+        (By.XPATH, "//button[contains(text(), '등록')]"),
+        (By.CSS_SELECTOR, "button.btn_publish"),
+    ]
+    for by, sel in selectors:
+        try:
+            btn = wait.until(EC.element_to_be_clickable((by, sel)))
+            btn.click()
+            logger.debug("Publish clicked via selector: %s", sel)
+            time.sleep(1.5)
+            # Dismiss any confirmation modal
+            try:
+                confirm = driver.find_element(
+                    By.XPATH,
+                    "//button[contains(text(), '확인') or contains(text(), '발행')]",
+                )
+                confirm.click()
+            except NoSuchElementException:
+                pass
+            return True
+        except (TimeoutException, NoSuchElementException, WebDriverException):
+            continue
+
+    logger.warning("Could not find publish button.")
+    return False
+
+
+def _get_published_url(
+    driver: webdriver.Chrome,
+    wait: WebDriverWait,
+    naver_id: str,
+) -> str:
+    """Wait for navigation to a published post URL and return it."""
+    try:
+        # postview/logNo appear only after the compose page transitions to the published post
+        wait.until(
+            lambda d: "postview" in d.current_url or "logNo" in d.current_url
+        )
+        return driver.current_url
+    except TimeoutException:
+        pass
+    return f"https://blog.naver.com/{naver_id}"
+
+
+# ── Public entry point ────────────────────────────────────────────────────────
+
+
+def post_to_naver(summary: dict) -> str | None:
+    """Post weekly valuation report to Naver Blog.
+
+    Args:
+        summary: The full _weekly_summary.json content.
+
+    Returns:
+        Published post URL if successful, None otherwise.
+    """
+    naver_id, naver_pw = _get_credentials()
+    if not naver_id or not naver_pw:
+        logger.warning("NAVER_ID or NAVER_PW not set — skipping Naver Blog.")
+        return None
+
+    title, body = build_blog_content(summary)
+    if not body.strip():
+        logger.info("No valuation content to post — skipping Naver Blog.")
+        return None
+
+    write_url = _WRITE_URL_TMPL.format(blog_id=naver_id)
+    driver: webdriver.Chrome | None = None
+
+    try:
+        driver = _build_driver(headless=False)
+        wait = WebDriverWait(driver, _LONG)
+
+        # Check for cached session first
+        driver.get("https://www.naver.com")
+        time.sleep(1)
+
+        if not _is_logged_in(driver):
+            logger.info("No cached Naver session — performing login.")
+            if not _login(driver, wait, naver_id, naver_pw):
+                logger.error("Naver login failed — aborting post.")
+                return None
+        else:
+            logger.info("Using cached Naver session.")
+
+        driver.get(write_url)
+        logger.info("Navigated to Naver Blog write page.")
+
+        if not _wait_for_editor(driver, WebDriverWait(driver, _LONG)):
+            logger.error("SmartEditor did not load — aborting post.")
+            return None
+
+        time.sleep(2)  # Allow editor to fully initialise
+
+        if not _set_title(driver, WebDriverWait(driver, _SHORT), title):
+            logger.warning("Title could not be set; proceeding anyway.")
+
+        ActionChains(driver).send_keys(Keys.TAB).perform()
+        time.sleep(0.5)
+
+        if not _set_content(driver, WebDriverWait(driver, _SHORT), body):
+            logger.error("Content injection failed — aborting post.")
+            return None
+
+        time.sleep(1)
+
+        if not _publish(driver, WebDriverWait(driver, _SHORT)):
+            logger.error("Publish button not found — aborting.")
+            return None
+
+        post_url = _get_published_url(driver, WebDriverWait(driver, _LONG), naver_id)
+        logger.info("Naver Blog post published: %s", post_url)
+        return post_url
+
+    except WebDriverException as e:
+        logger.error("Selenium error during Naver posting: %s", e)
+        return None
+    except Exception as e:
+        logger.error("Unexpected error during Naver posting: %s", e)
+        return None
+    finally:
+        if driver is not None:
+            try:
+                driver.quit()
+            except Exception:
+                pass  # Ignore quit errors — driver may already be in a crashed state
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+
+def _safe_print(text: str) -> None:
+    """Print with encoding fallback for Windows cp949 consoles."""
+    import sys
+
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+        print(text.encode(enc, errors="replace").decode(enc, errors="replace"))
+
+
+def main() -> None:
+    """CLI entry point for standalone testing."""
+    parser = argparse.ArgumentParser(description="Post weekly report to Naver Blog")
+    parser.add_argument("--test", action="store_true", help="Dry run: print content only")
+    parser.add_argument("--summary-json", type=str, help="Path to _weekly_summary.json")
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
+
+    if args.summary_json:
+        summary_path = Path(args.summary_json)
+    else:
+        results_dir = Path(__file__).resolve().parent.parent / "valuation-results"
+        summaries = sorted(results_dir.glob("*/_weekly_summary.json"), reverse=True)
+        if not summaries:
+            logger.error("No _weekly_summary.json found in valuation-results/")
+            return
+        summary_path = summaries[0]
+
+    logger.info("Using summary: %s", summary_path)
+    with open(summary_path, encoding="utf-8") as f:
+        summary = json.load(f)
+
+    title, body = build_blog_content(summary)
+
+    if args.test:
+        _safe_print(f"=== TITLE ===\n{title}\n")
+        _safe_print(f"=== BODY ({len(body)} chars) ===\n{body[:2000]}")
+        return
+
+    url = post_to_naver(summary)
+    if url:
+        _safe_print(f"Published: {url}")
+    else:
+        _safe_print("Publishing failed or skipped.")
+
+
+if __name__ == "__main__":
+    main()

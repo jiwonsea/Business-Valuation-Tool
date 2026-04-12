@@ -483,6 +483,14 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
         )
 
     # Generic scenario design (multi-driver)
+    generic_sotp_constraint = ""
+    if segment_codes and valuation_method == "sotp":
+        codes_str = ", ".join(f'"{c}"' for c in segment_codes)
+        generic_sotp_constraint = (
+            f"\nCRITICAL: segment_multiples keys MUST be exactly: [{codes_str}]. "
+            "Do NOT use real business unit names (e.g. DS, HE, DX, MEMORY) — use only the codes above."
+        )
+
     return f"""\
 <company>{company_name}</company>
 <context>
@@ -512,7 +520,7 @@ CORRELATION AWARENESS:
 If two drivers affect the same variable (e.g., growth_adj_pct and terminal_growth_adj both reduce growth),
 note this in driver_rationale. Correlated effects will be dampened downstream.
 
-Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.
+Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.{generic_sotp_constraint}
 </instructions>
 
 <output_format>

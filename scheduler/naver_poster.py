@@ -255,12 +255,35 @@ def _login(
 # ── Blog posting ──────────────────────────────────────────────────────────────
 
 
+def _dismiss_draft_dialog(driver: webdriver.Chrome) -> None:
+    """Dismiss '작성 중인 글이 있습니다' popup if it appears.
+
+    Clicks 확인 to continue into the editor (draft content is overwritten later).
+    Uses a short timeout so a missing dialog is a silent no-op.
+    """
+    try:
+        btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.se-popup-button-confirm"))
+        )
+        btn.click()
+        logger.debug("Draft resume dialog dismissed.")
+        time.sleep(0.5)
+    except TimeoutException:
+        pass  # No dialog — fresh write page, continue normally
+
+
 def _wait_for_editor(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
-    """Wait for SmartEditor to finish loading."""
+    """Wait for SmartEditor 3 to finish loading in the top-level DOM.
+
+    Naver SE3 renders directly in the page (no #mainFrame wrapper).
+    Key containers: div.se-wrap, div.se-body, div.se-component.
+    """
     selectors = [
-        (By.CSS_SELECTOR, "div.se-main-container"),
+        (By.CSS_SELECTOR, "div.se-wrap"),
+        (By.CSS_SELECTOR, "div.se-body"),
+        (By.CSS_SELECTOR, "div.se-component"),
+        (By.CSS_SELECTOR, "div[class*='se-body']"),
         (By.CSS_SELECTOR, "div.se2_inputarea"),
-        (By.CSS_SELECTOR, "div[class*='smarteditor']"),
     ]
     for by, sel in selectors:
         try:
@@ -274,23 +297,32 @@ def _wait_for_editor(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
 
 
 def _set_title(driver: webdriver.Chrome, wait: WebDriverWait, title: str) -> bool:
-    """Fill in the post title. Returns True on success."""
+    """Fill in the post title. Returns True on success.
+
+    SE3 has ONE div[contenteditable='true'] covering the whole canvas.
+    The title lives inside div.se-documentTitle p — clicking it moves the
+    cursor there, then ActionChains can type normally.
+    """
     selectors = [
-        (By.CSS_SELECTOR, "input.se-title-input"),
-        (By.CSS_SELECTOR, "input[placeholder*='제목']"),
-        (By.CSS_SELECTOR, "div.se-title-text"),
-        (By.CSS_SELECTOR, "input.__se_editor_title"),
-        (By.NAME, "subject"),
+        (By.CSS_SELECTOR, "div.se-documentTitle p"),
+        (By.CSS_SELECTOR, "div.se-documentTitle"),
+        (By.CSS_SELECTOR, "div.se-component.se-documentTitle"),
     ]
     for by, sel in selectors:
         try:
-            elem = wait.until(EC.element_to_be_clickable((by, sel)))
+            elem = driver.find_element(by, sel)
+            driver.execute_script("arguments[0].scrollIntoView(true);", elem)
             elem.click()
-            elem.clear()
-            elem.send_keys(title)
+            time.sleep(0.3)
+            # Ctrl+A selects within current component in SE3
+            ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+                Keys.CONTROL
+            ).perform()
+            time.sleep(0.1)
+            ActionChains(driver).send_keys(title).perform()
             logger.debug("Title set via selector: %s", sel)
             return True
-        except (TimeoutException, NoSuchElementException, WebDriverException):
+        except (NoSuchElementException, WebDriverException):
             continue
 
     logger.warning("Could not locate title input field.")
@@ -305,38 +337,42 @@ def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bo
     2. SE2 iframe + contenteditable
     3. JavaScript injection on any large contenteditable
     """
-    # Strategy 1: SE3 contenteditable
+    # Strategy 1: SE3 — click into body area (skip title component, use second component)
     try:
+        # SE3 body: div.se-body contains the main text area
         area = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "div.se-main-container div[contenteditable='true']")
-            )
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "div.se-body, div.__se-body"))
         )
         area.click()
-        area.send_keys(Keys.CONTROL, "a")
-        area.send_keys(body)
-        logger.debug("Content set via SE3 contenteditable.")
+        time.sleep(0.3)
+        # Select all existing content and replace
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+        ActionChains(driver).send_keys(body).perform()
+        logger.debug("Content set via SE3 se-body click.")
         return True
     except (TimeoutException, NoSuchElementException, WebDriverException):
         pass
 
-    # Strategy 2: SE2 iframe
+    # Strategy 2: SE2 — look for a nested content iframe
     try:
-        frame = driver.find_element(
-            By.CSS_SELECTOR, "iframe#mainFrame, iframe.se2_inputarea_frame"
+        inner_frame = driver.find_element(
+            By.CSS_SELECTOR, "iframe.se2_inputarea_frame, iframe#se2_iframe"
         )
-        driver.switch_to.frame(frame)
+        driver.switch_to.frame(inner_frame)
         area = driver.find_element(
-            By.CSS_SELECTOR, "div#content_editable, div[contenteditable='true']"
+            By.CSS_SELECTOR, "div#content_editable, div[contenteditable='true'], body"
         )
         area.click()
         area.send_keys(Keys.CONTROL, "a")
         area.send_keys(body)
-        driver.switch_to.default_content()
-        logger.debug("Content set via SE2 iframe.")
+        driver.switch_to.parent_frame()
+        logger.debug("Content set via SE2 inner frame.")
         return True
     except (NoSuchElementException, WebDriverException):
-        driver.switch_to.default_content()
+        try:
+            driver.switch_to.parent_frame()
+        except WebDriverException:
+            pass
 
     # Strategy 3: JavaScript injection on any sufficiently large contenteditable
     try:
@@ -367,9 +403,47 @@ def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bo
 
 
 def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
-    """Click the publish button. Returns True on success."""
+    """Click the publish button. Returns True on success.
+
+    Strategy 0 uses JS click to bypass scroll/visibility issues after content
+    entry. Selenium EC strategies follow as fallback.
+    """
+    # Strategy 0: JS — finds button by class substring or text, scrolls & clicks
+    try:
+        cls_clicked = driver.execute_script(
+            """
+            var btns = Array.from(document.querySelectorAll('button'));
+            var pub = btns.find(function(b) {
+                return b.className.indexOf('publish_btn') !== -1
+                    || b.innerText.trim() === '발행';
+            });
+            if (pub) {
+                pub.scrollIntoView({block:'center'});
+                pub.click();
+                return pub.className;
+            }
+            return null;
+            """
+        )
+        if cls_clicked:
+            logger.debug("Publish clicked via JavaScript (class=%s).", cls_clicked)
+            time.sleep(1.5)
+            # Dismiss any post-publish confirmation dialog
+            try:
+                confirm = driver.find_element(
+                    By.CSS_SELECTOR,
+                    "button.se-popup-button-confirm",
+                )
+                confirm.click()
+            except NoSuchElementException:
+                pass
+            return True
+    except WebDriverException as e:
+        logger.debug("JS publish click failed: %s", e)
+
+    # Strategy 1–N: Selenium EC (fallback if JS can't reach the button)
     selectors = [
-        (By.CSS_SELECTOR, "button.publish_btn__m9KHH"),
+        (By.XPATH, "//button[contains(@class,'publish_btn')]"),
         (By.CSS_SELECTOR, "button[data-log='pcwriter.publish']"),
         (By.CSS_SELECTOR, "button.se-publish-btn"),
         (By.XPATH, "//button[contains(text(), '발행')]"),
@@ -382,7 +456,6 @@ def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
             btn.click()
             logger.debug("Publish clicked via selector: %s", sel)
             time.sleep(1.5)
-            # Dismiss any confirmation modal
             try:
                 confirm = driver.find_element(
                     By.XPATH,
@@ -460,6 +533,9 @@ def post_to_naver(summary: dict) -> str | None:
         driver.get(write_url)
         logger.info("Navigated to Naver Blog write page.")
 
+        # Dismiss "resume draft?" popup from any previous incomplete run
+        _dismiss_draft_dialog(driver)
+
         if not _wait_for_editor(driver, WebDriverWait(driver, _LONG)):
             logger.error("SmartEditor did not load — aborting post.")
             return None
@@ -481,6 +557,12 @@ def post_to_naver(summary: dict) -> str | None:
         if not _publish(driver, WebDriverWait(driver, _SHORT)):
             logger.error("Publish button not found — aborting.")
             return None
+
+        # Return to top-level context before checking URL
+        try:
+            driver.switch_to.default_content()
+        except WebDriverException:
+            pass
 
         post_url = _get_published_url(driver, WebDriverWait(driver, _LONG), naver_id)
         logger.info("Naver Blog post published: %s", post_url)
@@ -524,6 +606,16 @@ def main() -> None:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
     )
+
+    # Load .env from project root (two levels up from this file)
+    try:
+        from dotenv import load_dotenv
+
+        env_file = Path(__file__).resolve().parent.parent / ".env"
+        if env_file.exists():
+            load_dotenv(env_file, override=False)
+    except ImportError:
+        pass
 
     if args.summary_json:
         summary_path = Path(args.summary_json)

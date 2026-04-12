@@ -910,10 +910,73 @@ def _safe_print(text: str) -> None:
         print(text.encode(enc, errors="replace").decode(enc, errors="replace"))
 
 
+def _run_image_diagnostics(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
+    """Print SE3 image panel DOM structure after clicking the image toolbar button.
+
+    Used to verify which selectors are live in the current SE3 version so that
+    _insert_logo_se3 can be tuned without trial-and-error.  Run via:
+        python -m scheduler.naver_poster --diagnose-image
+    """
+    _safe_print("\n[Diagnostic] Clicking SE3 image button...")
+    clicked = False
+    for sel in [
+        "button.se-image-toolbar-button",
+        "button[data-log*='img']",
+        "button[title*='이미지']",
+        "button[class*='image']",
+    ]:
+        try:
+            btn = WebDriverWait(driver, _SHORT).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
+            )
+            btn.click()
+            _safe_print(f"  ✓ Image button found: {sel}")
+            clicked = True
+            break
+        except (TimeoutException, NoSuchElementException, WebDriverException):
+            _safe_print(f"  ✗ Not found: {sel}")
+
+    if not clicked:
+        _safe_print("[Diagnostic] No image button found — check toolbar selectors.")
+        return
+
+    time.sleep(1.5)
+
+    result = driver.execute_script(
+        """
+        return Array.from(document.querySelectorAll(
+            '[class*="image"],[class*="panel"],[class*="upload"],input[type="file"]'
+        ))
+        .filter(el => el.offsetParent !== null)
+        .map(el => ({
+            tag:  el.tagName,
+            cls:  el.className.substring(0, 120),
+            type: el.type || '',
+            id:   el.id || ''
+        }));
+        """
+    )
+
+    _safe_print(f"\n[Diagnostic] Visible image-related elements after click ({len(result)}):")
+    _safe_print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    # Specifically flag file inputs
+    file_inputs = [el for el in result if el.get("type") == "file"]
+    if file_inputs:
+        _safe_print(f"\n  ✓ input[type='file'] found ({len(file_inputs)}) — send_keys upload should work.")
+    else:
+        _safe_print("\n  ✗ No input[type='file'] visible — SE3 may use a different upload flow.")
+
+
 def main() -> None:
     """CLI entry point for standalone testing."""
     parser = argparse.ArgumentParser(description="Post weekly report to Naver Blog")
     parser.add_argument("--test", action="store_true", help="Dry run: print content only")
+    parser.add_argument(
+        "--diagnose-image",
+        action="store_true",
+        help="Open SE3 editor, click the image button, and print the DOM panel structure",
+    )
     parser.add_argument("--summary-json", type=str, help="Path to _weekly_summary.json")
     args = parser.parse_args()
 
@@ -930,6 +993,43 @@ def main() -> None:
             load_dotenv(env_file, override=False)
     except ImportError:
         pass
+
+    # ── --diagnose-image: open SE3 and inspect image panel DOM ──
+    if args.diagnose_image:
+        naver_id, naver_pw = _get_credentials()
+        if not naver_id or not naver_pw:
+            _safe_print("[ERROR] NAVER_ID / NAVER_PW not set in .env")
+            return
+        write_url = _WRITE_URL_TMPL.format(blog_id=naver_id)
+        driver = None
+        try:
+            driver = _build_driver(headless=False)
+            wait = WebDriverWait(driver, _LONG)
+            driver.get("https://www.naver.com")
+            time.sleep(1)
+            if not _is_logged_in(driver):
+                if not _login(driver, wait, naver_id, naver_pw):
+                    _safe_print("[ERROR] Login failed")
+                    return
+            driver.get(write_url)
+            _dismiss_draft_dialog(driver)
+            if not _wait_for_editor(driver, WebDriverWait(driver, _LONG)):
+                _safe_print("[ERROR] SmartEditor did not load")
+                return
+            time.sleep(2)
+            # Click into body first so toolbar is active
+            _focus_body(driver, WebDriverWait(driver, _SHORT))
+            time.sleep(0.5)
+            _run_image_diagnostics(driver, wait)
+            _safe_print("\n[Diagnostic] Done. Browser stays open for 30s for manual inspection.")
+            time.sleep(30)
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+        return
 
     if args.summary_json:
         summary_path = Path(args.summary_json)

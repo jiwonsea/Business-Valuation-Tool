@@ -12,6 +12,9 @@ paths: ["scheduler/**/*.py"]
 - `_weekly_summary.json` persists `news_count` and `companies[].top_news` only — the raw news array is not stored. Replay-style debugging against last week's news is impossible; regression tests must use synthetic fixtures (`tests/test_top_news_for_company.py`).
 - Python `\b` word boundary is ASCII-only — it does NOT fire around CJK characters. Any regex-based news/title matching must split into an ASCII branch (`\b...\b`) and a CJK branch (plain substring), otherwise Korean aliases silently fail to match. `_top_news_for_company` in `weekly_run.py` is the reference pattern.
 - `python -m scheduler.weekly_run --dry-run` writes `_weekly_summary.json` with `_debug.companies_with_empty_top_news` — zero-cost validation loop for news-matching/alias changes. Counter ≥50% of total means aliases need expansion (most likely missing CJK branch, company-specific aliases, or market routing bug).
+- `_top_news_for_company` length guard is `not t.isdigit() and (_CJK_RE.search(t) or len(t) >= 3)`. The CJK bypass is load-bearing — 2-syllable Korean/Chinese aliases (애플, 메타) must skip the len>=3 rule intended for noisy ASCII tickers (GM/GE). Using len>=3 alone silently drops all 2-syllable CJK aliases.
+- Market tag derives from ticker format via `_market_from_ticker` (6-digit numeric → KR, else US), NOT the discovery loop variable. Discovery AI surfaces cross-market companies (US names from KR news and vice versa); loop-variable tagging breaks downstream EDGAR lookup and news matching.
+- `top_news` attachment runs AFTER dedup against the combined `all_news` pool (not per-market), using company-specific aliases + ticker. Per-market matching alone misses cross-market mentions (e.g. NVDA in Korean news, Samsung in English news); alias anchoring prevents cross-company leakage.
 
 ## Scoring (scoring.py)
 

@@ -1,7 +1,5 @@
 """output package tests — dashboard + wp_poster + Excel sheet fixes."""
 
-import pytest
-
 
 # ── dashboard._get_primary_value & _write_football_field ──
 
@@ -151,7 +149,11 @@ class TestWpPosterBuildContent:
     def test_download_url_scheme_validation(self):
         from scheduler.wp_poster import _build_post_content
 
-        for bad_url in ["javascript:alert(1)", "data:text/html,<h1>xss</h1>", "vbscript:x"]:
+        for bad_url in [
+            "javascript:alert(1)",
+            "data:text/html,<h1>xss</h1>",
+            "vbscript:x",
+        ]:
             summary = self._make_summary(
                 valuations=[
                     {
@@ -194,9 +196,9 @@ class TestWpPosterBuildContent:
         src = inspect.getsource(_build_post_content)
         # The dead line was: summary.get("label", "Weekly Report")  [result discarded]
         # After fix it should not appear as a standalone expression
-        lines = [l.strip() for l in src.split("\n")]
+        lines = [ln.strip() for ln in src.split("\n")]
         dead_pattern = 'summary.get("label"'
-        standalone = [l for l in lines if l.startswith(dead_pattern)]
+        standalone = [ln for ln in lines if ln.startswith(dead_pattern)]
         assert not standalone, f"Dead statement still present: {standalone}"
 
 
@@ -212,9 +214,9 @@ class TestScenariosDlomGuard:
         from output.sheets.scenarios import sheet_scenarios
 
         src = inspect.getsource(sheet_scenarios)
-        lines = [l.strip() for l in src.split("\n")]
+        lines = [ln.strip() for ln in src.split("\n")]
         # Standalone any() starting with 'any(ctx.vi.scenarios' must not exist
-        dead = [l for l in lines if l.startswith("any(ctx.vi.scenarios")]
+        dead = [ln for ln in lines if ln.startswith("any(ctx.vi.scenarios")]
         assert not dead, f"Dead statement still present: {dead}"
 
     def test_has_dlom_assigned(self):
@@ -246,7 +248,9 @@ class TestSensitivityRefLabel:
             nav=None,
             multiples_primary=None,
         )
-        return SimpleNamespace(method=method, result=result, unit="백만원", currency_sym="원")
+        return SimpleNamespace(
+            method=method, result=result, unit="백만원", currency_sym="원"
+        )
 
     def test_sotp_returns_weighted_value(self):
         from output.sheets.sensitivity import _get_ref_label_value
@@ -292,19 +296,17 @@ class TestRnpvSheetFixes:
         from output.sheets.rnpv import _sheet_pipeline_summary
 
         src = inspect.getsource(_sheet_pipeline_summary)
-        assert (
-            "from ..excel_styles import style_header_row" not in src
-        ), "Duplicate inline import of style_header_row still present"
+        assert "from ..excel_styles import style_header_row" not in src, (
+            "Duplicate inline import of style_header_row still present"
+        )
 
     def test_fx2_rnpv_pct_uses_ne_zero(self):
         """FX-2: rnpv_pct guard must use != 0 so negative total_rnpv shows actual weights."""
         src = self._src()
-        assert (
-            "total_rnpv != 0" in src
-        ), "rnpv_pct should guard with != 0, not > 0"
-        assert (
-            "total_rnpv > 0" not in src
-        ), "Old '> 0' guard still present — negative total_rnpv will show all-zero weights"
+        assert "total_rnpv != 0" in src, "rnpv_pct should guard with != 0, not > 0"
+        assert "total_rnpv > 0" not in src, (
+            "Old '> 0' guard still present — negative total_rnpv will show all-zero weights"
+        )
 
     def test_fx3_equity_bridge_uses_pipeline_value(self):
         """FX-3: Equity Bridge must use pipeline_value, not enterprise_value."""
@@ -312,12 +314,12 @@ class TestRnpvSheetFixes:
         from output.sheets.rnpv import _sheet_pipeline_summary
 
         src = inspect.getsource(_sheet_pipeline_summary)
-        assert (
-            "rnpv.pipeline_value - ctx.vi.net_debt" in src
-        ), "Equity Bridge should use pipeline_value explicitly"
-        assert (
-            "rnpv.enterprise_value - ctx.vi.net_debt" not in src
-        ), "enterprise_value still used in Equity Bridge — use pipeline_value for clarity"
+        assert "rnpv.pipeline_value - ctx.vi.net_debt" in src, (
+            "Equity Bridge should use pipeline_value explicitly"
+        )
+        assert "rnpv.enterprise_value - ctx.vi.net_debt" not in src, (
+            "enterprise_value still used in Equity Bridge — use pipeline_value for clarity"
+        )
 
     def test_fx4_peak_revenue_uses_all_drug_results(self):
         """FX-4: Peak Revenue summary must iterate rnpv.drug_results, not drugs_with_curves."""
@@ -326,7 +328,7 @@ class TestRnpvSheetFixes:
 
         src = inspect.getsource(_sheet_revenue_curves)
         # The Peak Revenue for-loop must reference drug_results
-        lines = [l.strip() for l in src.split("\n")]
+        lines = [ln.strip() for ln in src.split("\n")]
         peak_revenue_section = False
         found_drug_results = False
         for line in lines:

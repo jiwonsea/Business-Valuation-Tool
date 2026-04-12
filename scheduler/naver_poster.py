@@ -21,6 +21,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from PIL import Image, UnidentifiedImageError
 
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -44,6 +45,11 @@ _PROFILE_DIR = Path.home() / ".naver_poster_chrome"
 # Wait timeouts (seconds)
 _SHORT = 5
 _LONG = 20
+
+# Normalized logo dimensions (px) — every logo is resized to this exact size
+# so the blog post has visually consistent thumbnails regardless of the
+# Clearbit/DuckDuckGo/Google favicon source resolution.
+_LOGO_SIZE = (160, 160)
 
 _DISCLAIMER_KR = (
     "\n\n---\n\n"
@@ -73,8 +79,36 @@ def _safe_url(url: str) -> str:
 # ── Logo helpers ─────────────────────────────────────────────────────────────
 
 
+def _normalize_logo(path: str) -> bool:
+    """Resize the downloaded logo file to a uniform 160x160 PNG in place.
+
+    Why: Clearbit and Google Favicon return images at wildly different native
+    sizes (16x16 up to 256x256+). Inserting those as-is produces a blog post
+    with visually inconsistent thumbnails. Resizing to a fixed target before
+    upload gives every company row the same visual footprint.
+
+    Uses LANCZOS resampling for high-quality downscaling and converts to
+    RGBA so transparent favicons composite cleanly on the blog background.
+
+    Returns True on success (file is overwritten with normalized PNG),
+    False if the bytes are not a valid image — caller should discard the file.
+    """
+    try:
+        with Image.open(path) as img:
+            normalized = img.convert("RGBA").resize(_LOGO_SIZE, Image.LANCZOS)
+            normalized.save(path, "PNG")
+        return True
+    except (UnidentifiedImageError, OSError, ValueError) as e:
+        logger.debug("Logo normalize failed path=%s: %s", path, e)
+        return False
+
+
 def _download_logo(domain: str) -> str:
-    """Download company logo PNG from Clearbit to a temp file.
+    """Download company logo/favicon PNG to a temp file.
+
+    Sources (tried in order):
+      1. Clearbit Logo API — full vector logo, highest quality.
+      2. Google Favicon API (sz=128) — 128 px favicon fallback.
 
     Args:
         domain: Root domain extracted by discovery AI (e.g. "samsung.com").
@@ -86,61 +120,171 @@ def _download_logo(domain: str) -> str:
     """
     if not domain:
         return ""
-    url = f"https://logo.clearbit.com/{domain}"
-    try:
-        resp = requests.get(url, timeout=5)
-        content_type = resp.headers.get("content-type", "")
-        if resp.ok and content_type.startswith("image/"):
-            suffix = ".png" if "png" in content_type else ".jpg"
-            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
-            os.write(fd, resp.content)
-            os.close(fd)
-            logger.debug("Logo downloaded domain=%s → %s", domain, tmp_path)
-            return tmp_path
-    except Exception as e:
-        logger.debug("Logo download failed domain=%s: %s", domain, e)
+
+    def _fetch(url: str) -> str:
+        try:
+            resp = requests.get(url, timeout=5)
+            content_type = resp.headers.get("content-type", "")
+            if resp.ok and content_type.startswith("image/") and len(resp.content) > 500:
+                # Always save as .png after normalization — uniform format
+                # downstream makes SE3 upload behavior deterministic.
+                fd, tmp_path = tempfile.mkstemp(suffix=".png")
+                os.write(fd, resp.content)
+                os.close(fd)
+                if _normalize_logo(tmp_path):
+                    return tmp_path
+                # Normalization failed — drop the bad file, try next source
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+        except Exception as e:
+            logger.debug("Logo fetch failed url=%s: %s", url, e)
+        return ""
+
+    # 1. Clearbit (full logo, best quality)
+    path = _fetch(f"https://logo.clearbit.com/{domain}")
+    if path:
+        logger.info("Logo downloaded (Clearbit) domain=%s", domain)
+        return path
+
+    # 2. DuckDuckGo icon API — returns correct corporate logos more reliably
+    #    than Google Favicon (which sometimes returns app icons, e.g. samsung.com
+    #    returns Samsung Pay icon instead of the Samsung Electronics logo).
+    path = _fetch(f"https://icons.duckduckgo.com/ip3/{domain}.ico")
+    if path:
+        logger.info("Logo downloaded (DuckDuckGo) domain=%s", domain)
+        return path
+
+    # 3. Google Favicon (128 px last-resort)
+    path = _fetch(
+        f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
+    )
+    if path:
+        logger.info("Logo downloaded (Google favicon) domain=%s", domain)
+        return path
+
+    logger.debug("Logo unavailable for domain=%s", domain)
     return ""
+
+
+def _handle_file_dialog_win32(file_path: str, timeout: float = 10.0) -> bool:
+    """Find Chrome's native file-open dialog and send the file path.
+
+    Strategy A — win32gui:
+      Enumerates top-level windows for class '#32770' (standard Windows dialog).
+      Locates the filename Edit control, sets text via WM_SETTEXT, presses Enter
+      with pyautogui (more reliable than WM_COMMAND IDOK for Chrome dialogs).
+      Also accepts dialogs by known Korean/English title ('열기', 'Open') in case
+      Chrome's dialog class differs on this Windows version.
+
+    Strategy B — pyautogui + clipboard fallback:
+      If no dialog window is found via win32gui, waits for the OS dialog to be
+      the foreground window, then pastes the path from the clipboard and presses
+      Enter.  pyperclip handles the clipboard; pyautogui sends the keystrokes.
+      Clipboard paste avoids the non-ASCII (Korean username) encoding issue that
+      affects pyautogui.typewrite().
+
+    Returns True on success, False if both strategies fail.
+    """
+    _DIALOG_TITLES = {"열기", "Open", "파일 열기", "파일 선택"}
+
+    # ── Strategy A: win32gui ─────────────────────────────────────────────────
+    try:
+        import win32gui
+        import win32con
+    except ImportError:
+        logger.debug("pywin32 not available — skipping Strategy A.")
+    else:
+        deadline = time.time() + timeout
+        hwnd = 0
+        while time.time() < deadline:
+            found: list[int] = []
+
+            def _cb(h: int, out: list) -> None:
+                if not win32gui.IsWindowVisible(h):
+                    return
+                cls = win32gui.GetClassName(h)
+                title = win32gui.GetWindowText(h)
+                if cls == "#32770" and title in _DIALOG_TITLES:
+                    out.append(h)
+
+            win32gui.EnumWindows(_cb, found)
+            if found:
+                hwnd = found[-1]  # most recently opened
+                break
+            time.sleep(0.15)
+
+        if hwnd:
+            # Navigate the dialog's control tree: ComboBoxEx32 → ComboBox → Edit
+            edit = win32gui.FindWindowEx(hwnd, 0, "ComboBoxEx32", None)
+            if edit:
+                edit = win32gui.FindWindowEx(edit, 0, "ComboBox", None)
+            if edit:
+                edit = win32gui.FindWindowEx(edit, 0, "Edit", None)
+            if not edit:
+                edit = win32gui.FindWindowEx(hwnd, 0, "Edit", None)
+
+            if edit:
+                try:
+                    win32gui.SetForegroundWindow(hwnd)
+                except Exception:
+                    pass  # Windows may deny focus-stealing; proceed anyway
+                time.sleep(0.15)
+                win32gui.SendMessage(edit, win32con.WM_SETTEXT, 0, file_path)
+                time.sleep(0.15)
+                import win32api as _win32api
+                _win32api.SendMessage(hwnd, win32con.WM_COMMAND, win32con.IDOK, 0)
+                logger.debug("SE3 file dialog: path set via win32gui.")
+                return True
+            else:
+                logger.debug("SE3 file dialog: Edit control not found (hwnd=%d).", hwnd)
+        else:
+            logger.debug("SE3 file dialog: no file-open dialog found within %.1fs.", timeout)
+
+    return False
 
 
 def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
     """Upload a logo image into SE3 at the current cursor position.
 
-    Diagnostic result (2026-04-12):
+    Diagnostic results (2026-04-12):
       - button.se-image-toolbar-button exists and is clickable.
-      - Clicking it does NOT reveal a new panel with input[type='file'].
-      - SE3 keeps input[type='file'] hidden (display:none) in the DOM at all times.
-        Selenium send_keys() works on hidden file inputs without making them visible.
+      - The only DOM input[type='file'] (id="hidden-file") is the COVER image slot,
+        not the body content image input.
+      - Clicking the toolbar image button opens Chrome's native OS file-open dialog.
+        That dialog must be handled at the OS level (win32gui).
 
-    Flow (revised):
-      1. Find hidden input[type='file'] via JavaScript (no visibility filter).
-      2. send_keys(abs_path) — Selenium bypasses hidden state for file inputs.
+    Flow:
+      1. Click the SE3 image toolbar button.
+      2. Win32gui: find the OS file-open dialog and send the file path.
       3. Wait for SE3 to render the resulting image component.
 
     Returns True on success, False if any step fails (best-effort, non-fatal).
     """
     abs_path = str(Path(logo_path).resolve())
 
-    # Step 1 — locate hidden file input via JS (offsetParent filter would miss it)
+    # Step 1 — click the image insertion button in the toolbar
     try:
-        file_input = driver.execute_script(
-            "return document.querySelector('input[type=\"file\"]');"
+        img_btn = driver.find_element(
+            By.CSS_SELECTOR, "button.se-image-toolbar-button"
         )
-        if not file_input:
-            logger.warning("SE3: no input[type='file'] in DOM — skipping logo insert.")
-            return False
-    except WebDriverException as e:
-        logger.warning("SE3 file input JS query failed: %s — skipping logo insert.", e)
+        img_btn.click()
+        logger.info("SE3 image toolbar button clicked for %s", abs_path)
+    except (NoSuchElementException, WebDriverException) as e:
+        logger.warning("SE3 image button not found/clickable: %s — skipping.", e)
         return False
 
-    # Step 2 — send file path; Selenium handles hidden inputs natively
-    try:
-        file_input.send_keys(abs_path)
-        logger.debug("Logo file sent to hidden input: %s", abs_path)
-    except WebDriverException as e:
-        logger.warning("SE3 send_keys to file input failed: %s — skipping logo insert.", e)
-        return False
+    # Give Chrome time to open the OS file dialog before searching for it
+    time.sleep(1.5)
 
-    # Step 3 — wait for SE3 to render the uploaded image component
+    # Step 2 — handle the OS file-open dialog with win32gui / pyautogui
+    if not _handle_file_dialog_win32(abs_path):
+        logger.warning("SE3: OS file dialog handling failed — skipping logo insert.")
+        return False
+    logger.info("SE3 file dialog: path sent successfully.")
+
+    # Step 3 — wait for SE3 to render the image component
     try:
         WebDriverWait(driver, _LONG).until(
             EC.presence_of_element_located(
@@ -151,7 +295,7 @@ def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
     except TimeoutException:
         logger.debug("SE3 image component timeout — upload may still be processing.")
 
-    time.sleep(0.5)
+    time.sleep(0.8)
     return True
 
 
@@ -573,7 +717,22 @@ def _set_content_with_sections(
                 if logo_path:
                     logo_paths.append(logo_path)
                     if _insert_logo_se3(driver, logo_path):
-                        # Move cursor past the image before typing text
+                        # After pyautogui presses Enter to confirm the file dialog,
+                        # Chrome regains focus but the SE3 body editor may not be the
+                        # active element — ActionChains keystrokes would go nowhere.
+                        # Re-click the body via JavaScript focus (non-destructive: does
+                        # not move cursor to top the way element.click() would) then use
+                        # ARROW_DOWN to exit the image component before typing text.
+                        try:
+                            driver.execute_script(
+                                "var b = document.querySelector('div.se-body, div.__se-body');"
+                                "if (b) b.focus();"
+                            )
+                        except Exception:
+                            pass
+                        time.sleep(0.3)
+                        ActionChains(driver).send_keys(Keys.ARROW_DOWN).perform()
+                        time.sleep(0.2)
                         ActionChains(driver).send_keys(Keys.RETURN).perform()
                         time.sleep(0.2)
                     else:

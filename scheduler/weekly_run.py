@@ -103,6 +103,41 @@ def _ordinal(n: int) -> str:
     return f"{n}{['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]}"
 
 
+def _top_news_for_company(
+    company_name: str, news: list[dict], max_items: int = 3
+) -> list[dict]:
+    """Return up to max_items news articles most relevant to company_name.
+
+    Matches by checking if company_name (or its first word) appears in the
+    article title.  Falls back to the most recent articles if no match found.
+    Returns list of {"title": str, "url": str}.
+    """
+    name_lower = company_name.lower()
+    # Try full name match, then first-word match (e.g. '삼성' from '삼성전자')
+    first_word = name_lower.split()[0] if name_lower.split() else name_lower
+
+    matched: list[dict] = []
+    for n in news:
+        title_lower = (n.get("title") or "").lower()
+        if name_lower in title_lower or first_word in title_lower:
+            url = n.get("link") or n.get("url") or ""
+            title = n.get("title") or ""
+            if url and title:
+                matched.append({"title": title, "url": url})
+        if len(matched) >= max_items:
+            break
+
+    # Fallback: most recent articles if no name match
+    if not matched:
+        for n in news[:max_items]:
+            url = n.get("link") or n.get("url") or ""
+            title = n.get("title") or ""
+            if url and title:
+                matched.append({"title": title, "url": url})
+
+    return matched[:max_items]
+
+
 def _week_folder(dt: datetime) -> str:
     """Folder name: '2026-03-31(Mar 5th week)' (local display)."""
     wn = _week_number(dt)
@@ -196,14 +231,19 @@ def run_weekly(
                 msg = f"[{market}] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요"
                 logger.warning(msg)
                 _alert("Discovery", msg)
-            for co in result.get("companies", []):
+            companies_in_market = result.get("companies", [])
+            for co in companies_in_market:
                 co["market"] = market
+                # Attach top-3 relevant news articles (title + link) for blog output
+                co["top_news"] = _top_news_for_company(
+                    co.get("name", ""), market_news, max_items=3
+                )
                 all_companies.append(co)
             summary["discoveries"].append(
                 {
                     "market": market,
                     "news_count": news_count,
-                    "companies": result.get("companies", []),
+                    "companies": companies_in_market,
                 }
             )
 
@@ -303,10 +343,18 @@ def run_weekly(
         name = co.get("name", "")
         ticker = co.get("ticker")
         reason = co.get("reason", "")
+        # For US companies discovered with Korean names, EDGAR cannot resolve them.
+        # Use the ticker symbol (e.g. "TSLA") as the query instead.
+        market = co.get("market", "")
+        ticker_str = str(ticker).strip() if ticker else ""
+        if market == "US" and ticker_str:
+            query = ticker_str
+        else:
+            query = name
         try:
-            logger.info("Valuation start: %s %s", co.get("stars", ""), name)
+            logger.info("Valuation start: %s %s (query=%r)", co.get("stars", ""), name, query)
             analyze_result = auto_analyze(
-                name, output_dir=str(week_dir), scored_data=co
+                query, output_dir=str(week_dir), scored_data=co
             )
             if analyze_result:
                 return {
@@ -426,6 +474,41 @@ def run_weekly(
     return summary
 
 
+def _excel_date_tag(week_folder_name: str) -> str:
+    """Extract MM-DD date tag from week folder name.
+
+    e.g. '2026-04-12(Apr 3rd week)' → '04-12'
+    """
+    import re as _re
+    m = _re.match(r"\d{4}-(\d{2})-(\d{2})", week_folder_name)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    return ""
+
+
+def _to_camel(name: str) -> str:
+    """Convert an English name to CamelCase suitable for filenames.
+
+    'SAMSUNG ELECTRONICS CO., LTD.' → 'SamsungElectronics'
+    'Apple Inc.' → 'Apple'
+    'SK HYNIX INC' → 'SkHynix'
+
+    Strips common legal suffixes and capitalises each word.
+    """
+    import re as _re
+    # Remove legal suffixes
+    name = _re.sub(
+        r"\b(co\.?|corp\.?|inc\.?|ltd\.?|llc\.?|plc\.?|ag\.?|sa\.?|nv\.?|bv\.?)\b",
+        "",
+        name,
+        flags=_re.IGNORECASE,
+    )
+    # Keep only alphanum and spaces
+    name = _re.sub(r"[^A-Za-z0-9 ]", " ", name)
+    words = [w.capitalize() for w in name.split() if w]
+    return "".join(words[:3])  # max 3 words to keep filenames short
+
+
 def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
     """Upload Excel files to Supabase Storage (best-effort)."""
     try:
@@ -433,6 +516,8 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
     except ImportError:
         logger.debug("db.storage not available — skipping upload")
         return
+
+    date_tag = _excel_date_tag(week_folder_name)  # e.g. "04-12"
 
     for i, entry in enumerate(summary["valuations"]):
         if entry["status"] == "success" and entry.get("excel_path"):
@@ -442,6 +527,7 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                 from db.storage import _sanitize_key as _sk
 
                 remote_filename = None
+                date_suffix = f"({date_tag})" if date_tag else ""
 
                 if ticker and str(ticker).strip():
                     ticker_str = str(ticker).strip()
@@ -450,24 +536,28 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                         from pipeline.dart_client import get_corp_eng_name_by_stock_code
                         eng_name = get_corp_eng_name_by_stock_code(ticker_str)
                         if eng_name:
-                            # Strip trailing punctuation that _sanitize_key preserves
-                            safe = _sk(eng_name).rstrip("._-")
-                            remote_filename = f"{safe}_valuation.xlsx" if safe else None
+                            camel = _to_camel(eng_name)
+                            if camel:
+                                remote_filename = f"{camel}{date_suffix}_valuation.xlsx"
                     if remote_filename is None:
-                        # US ticker (e.g. AAPL) or KR fallback: sanitize company name first
-                        safe = _sk(entry.get("company", ""))
-                        if safe and len(safe) >= 2:
-                            remote_filename = f"{safe}_valuation.xlsx"
+                        # US ticker (e.g. AAPL) — use ticker + date
+                        if market == "US":
+                            remote_filename = f"{ticker_str}{date_suffix}_valuation.xlsx"
                         else:
-                            remote_filename = f"{ticker_str}_valuation.xlsx"
+                            # KR fallback: sanitize company name
+                            safe = _sk(entry.get("company", ""))
+                            if safe and len(safe) >= 2:
+                                remote_filename = f"{safe}{date_suffix}_valuation.xlsx"
+                            else:
+                                remote_filename = f"{ticker_str}{date_suffix}_valuation.xlsx"
 
                 if remote_filename is None:
                     # No ticker: sanitize company name; fall back to positional index
                     safe = _sk(Path(entry["excel_path"]).stem)
                     remote_filename = (
-                        f"{safe}_valuation.xlsx"
+                        f"{safe}{date_suffix}_valuation.xlsx"
                         if safe
-                        else f"company_{i}_valuation.xlsx"
+                        else f"company_{i}{date_suffix}_valuation.xlsx"
                     )
                 upload = upload_and_get_url(
                     entry["excel_path"], week_folder_name, remote_filename

@@ -19,6 +19,8 @@ import time
 from pathlib import Path
 from urllib.parse import urlparse
 
+import requests
+
 from selenium import webdriver
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -67,6 +69,26 @@ def _safe_url(url: str) -> str:
     return url if urlparse(url).scheme in ("http", "https") else ""
 
 
+def _shorten_url(url: str) -> str:
+    """Shorten a long URL via TinyURL (no API key required).
+
+    Falls back to the original URL on any network/timeout error.
+    """
+    if not url:
+        return url
+    try:
+        resp = requests.get(
+            "https://tinyurl.com/api-create.php",
+            params={"url": url},
+            timeout=5,
+        )
+        if resp.ok and resp.text.startswith("http"):
+            return resp.text.strip()
+    except Exception:
+        pass
+    return url
+
+
 def _strip_dangerous_tags(text: str) -> str:
     """Remove script/iframe/object/embed/form tags (injection defence)."""
     text = re.sub(
@@ -99,6 +121,15 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
     discoveries = summary.get("discoveries", [])
 
     title = f"주간 밸류에이션 리포트 — {label}"
+
+    # Build company → top_news lookup from discoveries
+    company_news: dict[str, list[dict]] = {}
+    for d in discoveries:
+        for co in d.get("companies", []):
+            name = co.get("name", "")
+            news_items = co.get("top_news", [])
+            if name and news_items:
+                company_news[name] = news_items
 
     lines: list[str] = []
 
@@ -140,7 +171,7 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
 
             reason = v.get("reason", "")
             summary_md = v.get("summary_md", "")
-            download_url = _safe_url(v.get("download_url", ""))
+            raw_url = _safe_url(v.get("download_url", ""))
 
             lines.append(f"\n▶ {name} ({market} · {cap_str})")
             if reason:
@@ -151,8 +182,21 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
                 md_lines = summary_md.strip().split("\n")[:10]
                 lines.extend(f"  {ln}" for ln in md_lines if ln.strip())
 
-            if download_url:
-                lines.append(f"  Excel 다운로드: {download_url}")
+            # ── 관련 뉴스 링크 ──
+            news_items = company_news.get(name, [])
+            if news_items:
+                lines.append("  [관련 뉴스]")
+                for ni in news_items:
+                    n_title = _strip_dangerous_tags(ni.get("title", ""))
+                    n_url = _safe_url(ni.get("url", ""))
+                    if n_title and n_url:
+                        lines.append(f"  - {n_title}")
+                        lines.append(f"    {n_url}")
+
+            # ── Excel 다운로드 (단축 URL) ──
+            if raw_url:
+                short_url = _shorten_url(raw_url)
+                lines.append(f"  Excel 다운로드: {short_url}")
 
             lines.append("")  # blank separator
 

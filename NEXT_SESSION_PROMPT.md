@@ -1,64 +1,82 @@
 # Business Valuation Tool: 다음 세션
 
 ## 현재 상태
+- 커밋: 05b22e0 (main)
 - 550/550 tests pass
-- origin/main 동기화 필요 (4개 미push 커밋)
+- naver_poster.py 완전 작동 중 (SE3 2-step publish 포함)
 
 ## 완료된 작업 요약
 
-### 이전 세션까지 (CR-1~3, VL-1~4)
-- CR-1/2/3: DDM ke≤0 크래시, sensitivity ZeroDivisionError, SOTP UnboundLocalError 방지
-- VL-1~4: RCPS irr=None 누락, RIM TV 공식, MC normalized FCFF, MC TV spread min 0.5%
-
-### 2026-04-11 세션 (output/ + wp_poster 크로스 리뷰)
-- wp_poster: dead statement, markdown injection, script injection, URL scheme validation
-- dashboard: DCF per_share 불일치, football field 음수 clamping
-- scoring: case-insensitive sector filter (_is_real_company)
-
-### 2026-04-12 세션 A (Excel 5-sheet 리뷰 + push)
-- scenarios.py: dead statement `any(...)` → `has_dlom = any(...)`, DLOM 행 조건화
-- sensitivity.py: `_get_ref_label_value` SOTP fallthrough → "DCF EV" 오표시 수정
-- assumptions.py: `_write_assumption_drivers` SOTP/DCF 분기 추가
-- origin/main push 완료 (커밋 28e9d40 기준)
-
-### 2026-04-12 세션 B (rnpv.py 4-fix 크로스 리뷰)
-4-model cross-review (Gemini + Qwen + Codex + Claude 합성):
-- **FX-1** (P3): Tornado 섹션 내 중복 `style_header_row` import 제거
-- **FX-2** (P2): `rnpv_pct` 가드 `> 0` → `!= 0` (음수 total_rnpv 시 실제 비중 표시)
-- **FX-3** (P2): Equity Bridge `enterprise_value` → `pipeline_value` (명시성)
-- **FX-4** (P2): Peak Revenue 요약 `drugs_with_curves` → `rnpv.drug_results` (모든 약물 포함)
-
-FALSE ALARM 확인 목록:
-- gap_pct /100 표시: PCT_FMT 0-1 float 기대 → 정상
-- total_col 인덱스: drugs col 2..N+1, total N+2 → 정상
-- "시장 낙관/비관" 레이블: gap_pct=(model-target)/target*100 공식 확인 → 정상
-- revenue_curve launch year: engine에서 pre-launch zeros 패딩 확인 → 정상
-- ctx.vi.net_debt null 크래시: int=0 기본값 확인 → 정상
+### 2026-04-12 세션 D (naver_poster.py 구현 + 개선)
+- SE3 SmartEditor 3 완전 구현 (iframe 없음, top-level DOM)
+- 2-step publish: 발행 버튼 → 발행 설정 레이어 → confirm_btn 클릭
+- "작성 중인 글" 임시저장 팝업 자동 처리 (_dismiss_draft_dialog)
+- 뉴스 링크: discovery 시 top_news 수집 → 블로그 포스팅에 관련 뉴스 섹션
+- US 기업 fix: 한국어 이름 대신 ticker(TSLA/NVDA/AAPL)로 EDGAR 쿼리
+- Excel 파일명: SamsungElectronics(04-12)_valuation.xlsx 형식
+- URL 단축: TinyURL API (_shorten_url)
 
 ---
 
-## 다음 작업: scheduler/naver_poster.py 구현 + origin/main push
+## 다음 작업: naver_poster.py 기업 로고 이미지 삽입
 
 **세션 시작 시 아래 프롬프트를 그대로 복사해서 사용:**
 
 ---
 
-Business Valuation Tool — push + naver_poster.py 구현 (선택)
+Business Valuation Tool — naver_poster.py 로고 이미지 삽입
 
 경로: `F:\dev\Portfolio\business-valuation-tool`
-현재 상태: 550/550 tests pass, 4개 미push 커밋
+현재 상태: 550/550 tests pass, 커밋 05b22e0
 
-## 즉시 실행할 작업
+## 작업: 블로그 포스팅에 기업 로고 이미지 삽입
 
-1. `git push origin main` (4개 커밋 push)
+### 배경
+`scheduler/naver_poster.py`는 Selenium으로 네이버 블로그 SmartEditor 3(SE3)에
+텍스트를 주입해서 포스팅한다. 현재 이미지가 없어 밋밋함.
 
-## 선택적 작업: scheduler/naver_poster.py 구현
+### 목표
+각 기업 섹션 앞에 로고 이미지를 삽입.
 
-현재 stub 상태. 크로스 리뷰에서 확정한 보안 패턴:
-- `os.getenv("NAVER_ID")` / `os.getenv("NAVER_PW")` — 절대 로그 금지
-- `try/finally: driver.quit()` — 리소스 누수 방지
-- Chrome Profile 재사용 — CAPTCHA 방지
-- wp_poster.py 보안 패턴 동일 적용 (markdown escaping, URL scheme 검증, script tag 제거)
+### SE3 DOM 구조 (이전 세션 진단 결과)
+- SE3는 iframe 없이 top-level DOM에서 동작
+- 편집 캔버스: `div[contenteditable='true']` (단 1개, class 없음, 17×950px)
+- 이미지 삽입 버튼: `button.se-image-toolbar-button` (data-log='dot.img') — 툴바에 항상 존재
+- 발행 설정 레이어: `div[class*='layer_publish']` → `button[class*='confirm_btn']`
+
+### 구현 방법 후보 (선택 전 진단 필요)
+**A. Clearbit Logo API + SE3 URL 삽입**
+  - `https://logo.clearbit.com/{domain}` (무료, PNG 반환)
+  - SE3 이미지 버튼 클릭 → "URL로 삽입" 옵션 탐색
+  - 도메인 매핑 필요: 삼성전자→samsung.com, 애플→apple.com, ...
+
+**B. 로고 다운로드 후 파일 업로드**
+  - Clearbit PNG 다운로드 → temp file
+  - SE3 이미지 버튼 클릭 → 파일 업로드 input[type=file] 탐색
+  - `input[type='file']`에 `send_keys(file_path)` (Selenium 표준 방식)
+
+### 구현 전 필수 진단
+SE3 이미지 버튼 클릭 후 어떤 패널이 뜨는지 확인:
+```python
+# 이미지 버튼 클릭
+driver.find_element(By.CSS_SELECTOR, "button.se-image-toolbar-button").click()
+time.sleep(1)
+# 패널 구조 캡처
+result = driver.execute_script("""
+    return Array.from(document.querySelectorAll('[class*="image"],[class*="panel"],[class*="upload"],input[type="file"]'))
+        .filter(el => el.offsetParent !== null)
+        .map(el => ({tag: el.tagName, cls: el.className.substring(0,100), type: el.type||''}))
+""")
+```
+
+### 파일 위치
+- `scheduler/naver_poster.py` — 구현 대상
+- `scheduler/naver_poster.py:_set_content()` — 본문 주입 함수 (이미지는 여기에 통합)
+- `scheduler/naver_poster.py:build_blog_content()` — 텍스트 콘텐츠 빌더
+
+### 보안 원칙 유지
+- 이미지 URL은 http/https scheme 검증 후 사용 (_safe_url 패턴)
+- temp 파일은 try/finally로 반드시 삭제
 
 ## 모드: normal
 

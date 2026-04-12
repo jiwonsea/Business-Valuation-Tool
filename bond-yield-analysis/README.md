@@ -93,7 +93,14 @@ jupyter notebook bond_yield_analysis.ipynb
 ## Interview Talking Points
 
 **Q. Why IQR instead of Z-score for anomaly detection?**  
-A. IQR is robust to non-normal distributions and outliers — bond yield distributions often exhibit fat tails and regime shifts (e.g., BoK hiking cycles). Z-score assumes normality and is sensitive to the very outliers we're trying to detect.
+A. Bond yields violate the normality assumption that Z-score requires. During the 2022 BoK hiking cycle, yields shifted from ~1.5% to ~4.5% — a regime change, not an anomaly. Z-score's mean and standard deviation would be distorted by these very outliers we're trying to detect, making the detection threshold unreliable. IQR uses Q1/Q3 (the middle 50%), which is unaffected by extreme values in either tail.
+
+| | IQR | Z-score |
+|---|---|---|
+| Distribution assumption | None (non-parametric) | Normal distribution |
+| Sensitivity to outliers | Robust — Q1/Q3 unaffected | High — mean/σ shift with outliers |
+| Regime-change handling | Rolling window adapts | Threshold drifts with the regime |
+| KTB yield suitability | ✓ | ✗ (fat tails, rate-hike regimes) |
 
 **Q. Why maturity-scaled thresholds instead of a fixed 5bp?**  
 A. Yield volatility increases with maturity due to term premium and liquidity premium differences. A 10Y KTB naturally moves ±10bp in volatile markets; applying 5bp uniformly would produce excessive false positives for long-end bonds.

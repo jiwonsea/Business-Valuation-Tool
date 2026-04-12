@@ -313,8 +313,17 @@ def run_weekly(
     # ── Print results ──
     _print_summary_header(summary["label"], total_news, scored)
 
+    # Output folder setup — runs for both dry-run and full paths so the
+    # _weekly_summary.json artifact (including _debug counters) is always saved.
+    week_folder_name = _week_folder(now)
+    week_dir = _RESULTS_BASE / week_folder_name
+    week_dir.mkdir(parents=True, exist_ok=True)
+    summary["folder_name"] = week_folder_name
+    summary["week_dir"] = str(week_dir)
+
     if dry_run:
         logger.info("Dry run — skipping valuation.")
+        _save_json_summary(summary, week_dir)
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
 
@@ -366,12 +375,7 @@ def run_weekly(
     # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
 
-    week_folder_name = _week_folder(now)
-    week_dir = _RESULTS_BASE / week_folder_name
-    week_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Excel output folder: %s", week_dir)
-    summary["folder_name"] = week_folder_name
-    summary["week_dir"] = str(week_dir)
 
     def _run_valuation(co: dict) -> dict:
         name = co.get("name", "")

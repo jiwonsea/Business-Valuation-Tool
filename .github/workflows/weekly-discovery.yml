@@ -1,15 +1,12 @@
 name: Weekly Discovery & Valuation
-# NOTE: Primary trigger is Claude Code scheduled agent (Gamma + Gmail delivery).
-# This workflow serves as a fallback if the scheduled agent fails.
+# Primary scheduler: Windows Task Scheduler on local PC (Sat 09:00 KST).
+# GitHub-hosted runners use Azure IPs blocked by Google News RSS and Naver API.
+# This workflow is kept for manual workflow_dispatch runs only.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  schedule:
-    # Saturday 00:00 UTC = KST 09:00 (08:00 during DST)
-    # 3+ hour buffer after US market close on Friday
-    - cron: '0 0 * * 6'
   workflow_dispatch:
     inputs:
       markets:

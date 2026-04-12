@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import time
 from pathlib import Path
 from urllib.parse import urlparse
@@ -69,6 +70,138 @@ def _safe_url(url: str) -> str:
     return url if urlparse(url).scheme in ("http", "https") else ""
 
 
+# ── Logo helpers ─────────────────────────────────────────────────────────────
+
+# Company display name → Clearbit domain mapping.
+# Covers the most common KR/US companies that appear in weekly reports.
+_LOGO_DOMAINS: dict[str, str] = {
+    # Korean
+    "삼성전자": "samsung.com",
+    "SK하이닉스": "skhynix.com",
+    "LG화학": "lgchem.com",
+    "LG에너지솔루션": "lge.com",
+    "KB금융": "kbfg.com",
+    "현대자동차": "hyundai.com",
+    "POSCO": "posco.com",
+    "셀트리온": "celltrion.com",
+    "카카오": "kakao.com",
+    "네이버": "naver.com",
+    "삼성SDI": "samsungsdi.com",
+    "한화에어로스페이스": "hanwha.com",
+    "기아": "kia.com",
+    # US
+    "NVIDIA": "nvidia.com",
+    "Apple": "apple.com",
+    "Tesla": "tesla.com",
+    "Microsoft": "microsoft.com",
+    "Amazon": "amazon.com",
+    "Alphabet": "abc.xyz",
+    "Meta": "meta.com",
+    "Netflix": "netflix.com",
+    "Novo Nordisk": "novonordisk.com",
+    "Broadcom": "broadcom.com",
+    "AMD": "amd.com",
+    "Intel": "intel.com",
+}
+
+
+def _clearbit_logo_url(company_name: str) -> str:
+    """Return Clearbit logo URL for known companies, empty string otherwise."""
+    domain = _LOGO_DOMAINS.get(company_name, "")
+    if not domain:
+        return ""
+    return f"https://logo.clearbit.com/{domain}"
+
+
+def _download_logo(company_name: str) -> str:
+    """Download company logo PNG to a temp file.
+
+    Returns the temp file path on success, empty string on failure.
+    Caller is responsible for deleting the file.
+    """
+    url = _clearbit_logo_url(company_name)
+    if not url:
+        return ""
+    try:
+        resp = requests.get(url, timeout=5)
+        content_type = resp.headers.get("content-type", "")
+        if resp.ok and content_type.startswith("image/"):
+            suffix = ".png" if "png" in content_type else ".jpg"
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            os.write(fd, resp.content)
+            os.close(fd)
+            logger.debug("Logo downloaded for %s → %s", company_name, tmp_path)
+            return tmp_path
+    except Exception as e:
+        logger.debug("Logo download failed for %s: %s", company_name, e)
+    return ""
+
+
+def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
+    """Upload a logo image into SE3 at the current cursor position.
+
+    Flow:
+      1. Click the image toolbar button to open the upload panel.
+      2. Find the file input that appears in the panel.
+      3. Send the absolute file path via send_keys (Selenium standard).
+      4. Wait briefly for SE3 to render the uploaded image.
+
+    Returns True on success, False if any step fails (best-effort, non-fatal).
+    """
+    abs_path = str(Path(logo_path).resolve())
+
+    # Step 1 — click the image insert button
+    img_btn_selectors = [
+        "button.se-image-toolbar-button",
+        "button[data-log*='img']",
+        "button[title*='이미지']",
+        "button[class*='image']",
+    ]
+    opened = False
+    for sel in img_btn_selectors:
+        try:
+            btn = WebDriverWait(driver, _SHORT).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
+            )
+            btn.click()
+            logger.debug("SE3 image panel opened via: %s", sel)
+            opened = True
+            break
+        except (TimeoutException, NoSuchElementException, WebDriverException):
+            continue
+
+    if not opened:
+        logger.warning("SE3 image button not found — skipping logo insert.")
+        return False
+
+    time.sleep(0.8)
+
+    # Step 2 — find file input (may be hidden; send_keys works even on hidden inputs)
+    try:
+        file_input = WebDriverWait(driver, _SHORT).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+        )
+        file_input.send_keys(abs_path)
+        logger.debug("Logo file sent: %s", abs_path)
+    except (TimeoutException, NoSuchElementException) as e:
+        logger.warning("SE3 file input not found: %s — skipping logo insert.", e)
+        return False
+
+    # Step 3 — wait for SE3 to render the uploaded image
+    try:
+        WebDriverWait(driver, _LONG).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "div.se-component.se-image, div.se-imageContainer")
+            )
+        )
+        logger.debug("SE3 image component detected after upload.")
+    except TimeoutException:
+        logger.debug("SE3 image component timeout — upload may still be in progress.")
+
+    time.sleep(0.5)
+    return True
+
+
 def _shorten_url(url: str) -> str:
     """Shorten a long URL via TinyURL (no API key required).
 
@@ -105,14 +238,75 @@ def _strip_dangerous_tags(text: str) -> str:
     )
 
 
-def build_blog_content(summary: dict) -> tuple[str, str]:
-    """Build (title, plain_text_body) for Naver Blog post (Korean).
+def _build_company_text(
+    v: dict,
+    company_news: dict[str, list[dict]],
+) -> str:
+    """Build plain-text block for one company valuation entry."""
+    name = v.get("company", "")
+    market = v.get("market", "")
+    cap = v.get("market_cap_usd")
+
+    if cap is not None and cap >= 1_000_000_000_000:
+        cap_str = f"${cap / 1_000_000_000_000:.1f}T"
+    elif cap is not None and cap >= 1_000_000_000:
+        cap_str = f"${cap / 1_000_000_000:.1f}B"
+    elif cap is not None:
+        cap_str = f"${cap / 1_000_000:,.0f}M"
+    else:
+        cap_str = "N/A"
+
+    reason = v.get("reason", "")
+    summary_md = v.get("summary_md", "")
+    raw_url = _safe_url(v.get("download_url", ""))
+
+    lines: list[str] = []
+    lines.append(f"▶ {name} ({market} · {cap_str})")
+
+    if reason:
+        lines.append(f"  선정 이유: {_strip_dangerous_tags(reason)}")
+
+    if summary_md:
+        md_lines = summary_md.strip().split("\n")[:10]
+        lines.extend(f"  {ln}" for ln in md_lines if ln.strip())
+
+    news_items = company_news.get(name, [])
+    if news_items:
+        lines.append("  [관련 뉴스]")
+        for ni in news_items:
+            n_title = _strip_dangerous_tags(ni.get("title", ""))
+            n_url = _safe_url(ni.get("url", ""))
+            if n_title and n_url:
+                lines.append(f"  - {n_title}")
+                lines.append(f"    {n_url}")
+
+    if raw_url:
+        short_url = _shorten_url(raw_url)
+        lines.append(f"  Excel 다운로드: {short_url}")
+
+    return "\n".join(lines)
+
+
+# Section type constants
+_SEC_TEXT = "text"
+_SEC_COMPANY = "company"
+
+
+def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
+    """Build (title, sections) for structured Naver Blog posting.
+
+    Each section is one of:
+      {"type": "text",    "content": "..."}
+      {"type": "company", "name": "...", "content": "..."}
+
+    Company sections carry the company name so the caller can attempt
+    logo insertion before injecting the text content.
 
     Args:
         summary: The full _weekly_summary.json content.
 
     Returns:
-        (title, body) where body is plain text suitable for SmartEditor.
+        (title, sections)
     """
     label = summary.get("label", "")
     markets = summary.get("markets", [])
@@ -122,7 +316,6 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
 
     title = f"주간 밸류에이션 리포트 — {label}"
 
-    # Build company → top_news lookup from discoveries
     company_news: dict[str, list[dict]] = {}
     for d in discoveries:
         for co in d.get("companies", []):
@@ -131,78 +324,58 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
             if name and news_items:
                 company_news[name] = news_items
 
-    lines: list[str] = []
+    sections: list[dict] = []
 
     # ── 개요 ──
-    lines.append(f"■ 주간 밸류에이션 리포트 — {label}\n")
-    lines.append(
+    header_lines = [
+        f"■ 주간 밸류에이션 리포트 — {label}\n",
         f"대상 시장: {', '.join(markets)} | "
-        f"분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상\n"
-    )
-
-    # ── Discovery 요약 ──
+        f"분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상\n",
+    ]
     if discoveries:
-        lines.append("\n■ 이번 주 발굴 기업\n")
+        header_lines.append("\n■ 이번 주 발굴 기업\n")
         for d in discoveries:
             mkt = d.get("market", "")
             news_count = d.get("news_count", 0)
             cos = d.get("companies", [])
             co_names = ", ".join(c.get("name", "") for c in cos[:5])
-            lines.append(f"[{mkt}] 뉴스 {news_count}건 → 후보 기업: {co_names}")
+            header_lines.append(f"[{mkt}] 뉴스 {news_count}건 → 후보 기업: {co_names}")
+
+    sections.append({"type": _SEC_TEXT, "content": "\n".join(header_lines)})
 
     # ── 기업별 분석 ──
     success_valuations = [v for v in valuations if v.get("status") == "success"]
     if success_valuations:
-        lines.append("\n\n■ 기업별 밸류에이션 요약\n")
-
+        sections.append({"type": _SEC_TEXT, "content": "\n\n■ 기업별 밸류에이션 요약\n"})
         for v in success_valuations:
             name = v.get("company", "")
-            market = v.get("market", "")
-            cap = v.get("market_cap_usd")
+            sections.append(
+                {
+                    "type": _SEC_COMPANY,
+                    "name": name,
+                    "content": _build_company_text(v, company_news),
+                }
+            )
 
-            if cap is not None and cap >= 1_000_000_000_000:
-                cap_str = f"${cap / 1_000_000_000_000:.1f}T"
-            elif cap is not None and cap >= 1_000_000_000:
-                cap_str = f"${cap / 1_000_000_000:.1f}B"
-            elif cap is not None:
-                cap_str = f"${cap / 1_000_000:,.0f}M"
-            else:
-                cap_str = "N/A"
+    sections.append({"type": _SEC_TEXT, "content": _DISCLAIMER_KR})
 
-            reason = v.get("reason", "")
-            summary_md = v.get("summary_md", "")
-            raw_url = _safe_url(v.get("download_url", ""))
+    return title, sections
 
-            lines.append(f"\n▶ {name} ({market} · {cap_str})")
-            if reason:
-                safe_reason = _strip_dangerous_tags(reason)
-                lines.append(f"  선정 이유: {safe_reason}")
 
-            if summary_md:
-                md_lines = summary_md.strip().split("\n")[:10]
-                lines.extend(f"  {ln}" for ln in md_lines if ln.strip())
+def build_blog_content(summary: dict) -> tuple[str, str]:
+    """Build (title, plain_text_body) for Naver Blog post (Korean).
 
-            # ── 관련 뉴스 링크 ──
-            news_items = company_news.get(name, [])
-            if news_items:
-                lines.append("  [관련 뉴스]")
-                for ni in news_items:
-                    n_title = _strip_dangerous_tags(ni.get("title", ""))
-                    n_url = _safe_url(ni.get("url", ""))
-                    if n_title and n_url:
-                        lines.append(f"  - {n_title}")
-                        lines.append(f"    {n_url}")
+    Convenience wrapper around build_blog_sections for callers that only
+    need a single text body (e.g. tests, dry-run CLI).
 
-            # ── Excel 다운로드 (단축 URL) ──
-            if raw_url:
-                short_url = _shorten_url(raw_url)
-                lines.append(f"  Excel 다운로드: {short_url}")
+    Args:
+        summary: The full _weekly_summary.json content.
 
-            lines.append("")  # blank separator
-
-    lines.append(_DISCLAIMER_KR)
-
-    body = "\n".join(lines)
+    Returns:
+        (title, body) where body is plain text suitable for SmartEditor.
+    """
+    title, sections = build_blog_sections(summary)
+    body = "\n\n".join(s["content"] for s in sections)
     return title, body
 
 
@@ -371,6 +544,90 @@ def _set_title(driver: webdriver.Chrome, wait: WebDriverWait, title: str) -> boo
 
     logger.warning("Could not locate title input field.")
     return False
+
+
+def _focus_body(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
+    """Click into the SE3 body area to ensure cursor is positioned there.
+
+    Used before inserting logos or typing company sections.
+    Returns True if body area was successfully clicked.
+    """
+    try:
+        area = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "div.se-body, div.__se-body"))
+        )
+        area.click()
+        time.sleep(0.3)
+        return True
+    except (TimeoutException, NoSuchElementException, WebDriverException):
+        return False
+
+
+def _type_text(driver: webdriver.Chrome, text: str) -> None:
+    """Type text at the current SE3 cursor position via ActionChains."""
+    ActionChains(driver).send_keys(text).perform()
+
+
+def _set_content_with_sections(
+    driver: webdriver.Chrome,
+    wait: WebDriverWait,
+    sections: list[dict],
+) -> bool:
+    """Inject blog content section by section, inserting logos for company sections.
+
+    For each company section:
+      1. Try to insert the company logo (best-effort — never fatal).
+      2. Press Enter to move past the image.
+      3. Type the company text.
+
+    Falls back to plain text injection if body focus fails.
+    """
+    logo_paths: list[str] = []
+
+    try:
+        if not _focus_body(driver, wait):
+            logger.warning("Body focus failed — falling back to plain text injection.")
+            body = "\n\n".join(s["content"] for s in sections)
+            return _set_content(driver, wait, body)
+
+        # Select-all to clear any existing draft content
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+        time.sleep(0.1)
+        ActionChains(driver).send_keys(Keys.DELETE).perform()
+        time.sleep(0.1)
+
+        for sec in sections:
+            if sec["type"] == _SEC_TEXT:
+                _type_text(driver, sec["content"])
+                ActionChains(driver).send_keys(Keys.RETURN).perform()
+
+            elif sec["type"] == _SEC_COMPANY:
+                company_name = sec.get("name", "")
+
+                # Download logo and attempt SE3 upload (best-effort)
+                logo_path = _download_logo(company_name)
+                if logo_path:
+                    logo_paths.append(logo_path)
+                    if _insert_logo_se3(driver, logo_path):
+                        # Move cursor past the image before typing text
+                        ActionChains(driver).send_keys(Keys.RETURN).perform()
+                        time.sleep(0.2)
+                    else:
+                        logger.debug("Logo insert skipped for %s.", company_name)
+
+                _type_text(driver, sec["content"])
+                ActionChains(driver).send_keys(Keys.RETURN + Keys.RETURN).perform()
+
+        logger.debug("Sections injected: %d total.", len(sections))
+        return True
+
+    finally:
+        # Clean up all downloaded logo temp files
+        for p in logo_paths:
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
 
 
 def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bool:
@@ -586,8 +843,9 @@ def post_to_naver(summary: dict) -> str | None:
         logger.warning("NAVER_ID or NAVER_PW not set — skipping Naver Blog.")
         return None
 
-    title, body = build_blog_content(summary)
-    if not body.strip():
+    title, sections = build_blog_sections(summary)
+    body_preview = "\n".join(s["content"] for s in sections)
+    if not body_preview.strip():
         logger.info("No valuation content to post — skipping Naver Blog.")
         return None
 
@@ -628,7 +886,7 @@ def post_to_naver(summary: dict) -> str | None:
         ActionChains(driver).send_keys(Keys.TAB).perform()
         time.sleep(0.5)
 
-        if not _set_content(driver, WebDriverWait(driver, _SHORT), body):
+        if not _set_content_with_sections(driver, WebDriverWait(driver, _SHORT), sections):
             logger.error("Content injection failed — aborting post.")
             return None
 

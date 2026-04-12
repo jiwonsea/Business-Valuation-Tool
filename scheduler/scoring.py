@@ -118,30 +118,35 @@ _INVALID_TICKERS: frozenset[str] = frozenset(
 
 
 def _fetch_market_cap_usd(ticker: str | None, market: str) -> int | None:
-    """Fetch market cap and convert to USD."""
+    """Fetch market cap and convert to USD.
+
+    Uses yfinance_fetcher.fetch_market_data() (authenticated) instead of
+    yahoo_finance.get_quote_summary() (unauthenticated v10 endpoint → 401).
+    """
     if not ticker or not ticker.strip() or ticker.strip().lower() in _INVALID_TICKERS:
         return None
     try:
-        from pipeline.yahoo_finance import get_market_cap
+        from pipeline.yfinance_fetcher import fetch_market_data, resolve_kr_ticker
 
-        # KR ticker: use resolve_kr_ticker for proper KOSPI/KOSDAQ detection
         yahoo_ticker = ticker
         if market == "KR" and not ticker.endswith((".KS", ".KQ")):
             try:
-                from pipeline.yfinance_fetcher import resolve_kr_ticker
-
                 yahoo_ticker = resolve_kr_ticker(ticker)
-            except (ImportError, Exception):
+            except Exception:
                 yahoo_ticker = f"{ticker}.KS"
 
-        cap = get_market_cap(yahoo_ticker)
-        if not cap or cap <= 0:
+        mkt = fetch_market_data(yahoo_ticker, market)
+        if not mkt:
             return None
 
-        # KRW -> USD conversion
+        cap_m = mkt.get("market_cap", 0)  # million KRW (KR) or $M (US)
+        if not cap_m or cap_m <= 0:
+            return None
+
+        # Expand from millions → raw, then KRW → USD
         if market == "KR":
-            return int(cap / _KRW_TO_USD)
-        return cap
+            return int(cap_m * 1_000_000 / _KRW_TO_USD)
+        return int(cap_m * 1_000_000)
     except Exception as e:
         logger.debug("시가총액 조회 실패 (%s): %s", ticker, e)
         return None

@@ -364,7 +364,18 @@ class ApiGuard:
         self._save_usage(snapshot)
 
     def record_failure(self, provider: str, error: Exception | None = None) -> None:
-        """Record a failed API call."""
+        """Record a failed API call.
+
+        "No data" responses from DART (조회된 데이타가 없습니다) are expected when
+        querying non-existent or US companies — they do NOT count toward the circuit
+        breaker to avoid blocking subsequent valid KR lookups.
+        """
+        if provider == "dart" and error is not None:
+            msg = str(error)
+            if "조회된 데이타가 없습니다" in msg or "no data" in msg.lower():
+                logger.debug("dart: 'no data' response — not counted as circuit failure")
+                return
+
         with self._lock:
             self._ensure_today()
             cfg = self._get_config(provider)

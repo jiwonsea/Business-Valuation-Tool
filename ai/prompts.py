@@ -386,10 +386,16 @@ def prompt_scenario_design(
         effect_json = ", ".join(f'"{k}": 0' for k in scalar_effect_drivers)
         # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
         sotp_segment_block = ""
+        sotp_seg_constraint = ""
         if segment_codes and valuation_method == "sotp":
             seg_mult_example = ", ".join(f'"{c}": 10.0' for c in segment_codes[:4])
             sotp_segment_block = (
                 f',\n            "segment_multiples": {{{seg_mult_example}}}'
+            )
+            codes_str = ", ".join(f'"{c}"' for c in segment_codes)
+            sotp_seg_constraint = (
+                f"\nCRITICAL: segment_multiples keys MUST be exactly: [{codes_str}]. "
+                "Do NOT use real business unit names (e.g. DS, HE, DX, MEMORY) — use only the codes above."
             )
         return f"""\
 <company>{company_name}</company>
@@ -416,7 +422,7 @@ Step 2: Quantify the partial effect of each driver on SCALAR financial variables
   IMPORTANT: news_driver effects must contain ONLY scalar values (growth_adj_pct, wacc_adj, market_sentiment_pct, etc.)
   Do NOT put segment_multiples or segment_ebitda inside news_driver effects — these are per-segment dicts, not scalars.
 Step 3: For each scenario, decide which drivers to apply at what intensity (weight, 0~1)
-  For SOTP: also set "segment_multiples" directly on each scenario with differentiated per-segment multiples.
+  For SOTP: also set "segment_multiples" directly on each scenario with differentiated per-segment multiples.{sotp_seg_constraint}
 
 PROBABILITY ASSIGNMENT (mandatory reasoning chain):
 1. Anchor: Start from base rate — the historical frequency of similar events occurring

@@ -200,8 +200,18 @@ def load_profile(path: str) -> ValuationInput:
         company.currency_unit = label
         company.unit_multiplier = multiplier
 
-    # Validate scenario override keys against known segment codes
+    # Validate scenario override keys against known segment codes.
+    # Build a name→code reverse map so AI-generated real names (e.g. "DS", "MEMORY")
+    # are silently remapped to their SEG codes before the bad-key check.
     _valid_seg_codes = set(segments.keys())
+    _name_to_code: dict[str, str] = {}
+    for seg_code, seg_info in segments.items():
+        seg_name = getattr(seg_info, "name", "") or ""
+        # Index by full name and leading word (e.g. "반도체 (메모리/파운드리)" → "반도체")
+        for variant in {seg_name.lower(), seg_name.split("(")[0].strip().lower(), seg_name.split(" ")[0].lower()}:
+            if variant:
+                _name_to_code[variant] = seg_code
+
     for sc_code, sc in scenarios.items():
         for attr_name in ("segment_multiples", "segment_ebitda", "segment_revenue"):
             override_dict = getattr(sc, attr_name, None)
@@ -209,15 +219,33 @@ def load_profile(path: str) -> ValuationInput:
                 continue
             bad_keys = set(override_dict.keys()) - _valid_seg_codes
             if bad_keys:
-                logger.warning(
-                    "[%s] scenario '%s' %s has unrecognized keys %s "
-                    "(valid: %s) — overrides will be ignored",
-                    company.name,
-                    sc_code,
-                    attr_name,
-                    bad_keys,
-                    _valid_seg_codes,
-                )
+                # Attempt name→code remapping before giving up
+                remapped = {}
+                still_bad = set()
+                for k in bad_keys:
+                    target = _name_to_code.get(k.lower())
+                    if target:
+                        remapped[k] = target
+                    else:
+                        still_bad.add(k)
+                if remapped:
+                    new_dict = {remapped.get(k, k): v for k, v in override_dict.items()}
+                    setattr(sc, attr_name, new_dict)
+                    logger.info(
+                        "[%s] scenario '%s' %s: remapped keys %s → %s",
+                        company.name, sc_code, attr_name,
+                        list(remapped.keys()), list(remapped.values()),
+                    )
+                if still_bad:
+                    logger.warning(
+                        "[%s] scenario '%s' %s has unrecognized keys %s "
+                        "(valid: %s) — overrides will be ignored",
+                        company.name,
+                        sc_code,
+                        attr_name,
+                        still_bad,
+                        _valid_seg_codes,
+                    )
 
     return ValuationInput(
         company=company,
@@ -606,7 +634,19 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         revenue_by_seg=seg_revenue if needs_dispatch else None,
         cps_repay=round(
             vi.cps_principal
-            * (1 + max(((ref_sc.cps_irr if ref_sc.cps_irr is not None else ref_sc.irr) if ref_sc else 0) - vi.cps_dividend_rate, 0) / 100)
+            * (
+                1
+                + max(
+                    (
+                        (ref_sc.cps_irr if ref_sc.cps_irr is not None else ref_sc.irr)
+                        if ref_sc
+                        else 0
+                    )
+                    - vi.cps_dividend_rate,
+                    0,
+                )
+                / 100
+            )
             ** vi.cps_years
         )
         if vi.cps_principal
@@ -944,7 +984,9 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             logger.warning(
                 "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
-            sc_eq = ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+            sc_eq = (
+                ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+            )
 
         # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
         # for high-D/E financial companies where equity << net_debt.
@@ -1071,7 +1113,9 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     total_weighted = 0
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
-        sc_eq = rim_raw.equity_value  # track equity separately to avoid leverage amplification
+        sc_eq = (
+            rim_raw.equity_value
+        )  # track equity separately to avoid leverage amplification
         sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
         sc_ke = sc_wacc.ke
         needs_recalc = (sc.rim_roe_adj != 0) or (sc.wacc_adj != 0)
@@ -1428,7 +1472,9 @@ def _derive_rcps_repay(ref_sc: ScenarioParams | None, vi) -> int:
     if ref_sc.rcps_repay is not None:
         return ref_sc.rcps_repay
     if vi.rcps_principal > 0:
-        rcps_effective_irr = ref_sc.rcps_irr if ref_sc.rcps_irr is not None else ref_sc.irr
+        rcps_effective_irr = (
+            ref_sc.rcps_irr if ref_sc.rcps_irr is not None else ref_sc.irr
+        )
         effective_rate = max((rcps_effective_irr or 0) - vi.rcps_dividend_rate, 0.0)
         return round(vi.rcps_principal * (1 + effective_rate / 100) ** vi.rcps_years)
     return 0
@@ -1627,7 +1673,11 @@ def _run_monte_carlo(
         _derive_rcps_repay(ref_sc, vi),
         ref_sc.buyback if ref_sc else 0,
         ref_sc.shares if ref_sc else vi.company.shares_outstanding,
-        irr=(ref_sc.cps_irr if ref_sc and ref_sc.cps_irr is not None else (ref_sc.irr if ref_sc and ref_sc.irr else 5.0)),
+        irr=(
+            ref_sc.cps_irr
+            if ref_sc and ref_sc.cps_irr is not None
+            else (ref_sc.irr if ref_sc and ref_sc.irr else 5.0)
+        ),
         unit_multiplier=um,
         seg_revenues=seg_revenues,
         cps_dividend_rate=vi.cps_dividend_rate,

@@ -96,28 +96,36 @@ class DataFetcher:
             self._cache[cache_key] = price
         return price
 
-    def identify(self, query: str) -> CompanyIdentity | None:
+    def identify(
+        self, query: str, market_hint: str | None = None
+    ) -> CompanyIdentity | None:
         """Company name/ticker -> auto-detect market + identify.
 
-        Detection logic:
+        Args:
+            market_hint: "KR" or "US" — skips heuristic detection and goes directly
+                to the correct registry. Prevents Korean-named US companies (e.g. "테슬라")
+                from triggering DART lookups.
+
+        Detection logic (when market_hint is None):
         1. Contains Korean -> KR first (DART search)
         2. 1-5 uppercase letters -> US ticker first (SEC search)
-        3. General English -> SEC search first, fallback to DART
+        3. General English -> US first, fallback to DART
         """
         query = query.strip()
 
-        cache_key = f"id:{query}"
+        cache_key = f"id:{market_hint or ''}:{query}"
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        # Korean text -> Korean company
-        if _is_korean(query):
+        if market_hint == "KR":
+            result = self._identify_kr(query)
+        elif market_hint == "US":
+            result = self._identify_us(query)
+        elif _is_korean(query):
             result = self._identify_kr(query)
         elif _is_likely_ticker(query):
-            # English ticker pattern -> US first
             result = self._identify_us(query) or self._identify_kr(query)
         else:
-            # General English -> US first, fallback to Korea
             result = self._identify_us(query) or self._identify_kr(query)
 
         if result is not None:

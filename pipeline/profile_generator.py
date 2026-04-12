@@ -31,15 +31,21 @@ class AnalyzeResult:
 _PROJECT_ROOT = Path(__file__).parent.parent
 
 
-def auto_fetch(company_query: str) -> dict:
-    """Company name/ticker input -> auto-detect market -> collect financials -> return raw dict."""
+def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
+    """Company name/ticker input -> auto-detect market -> collect financials -> return raw dict.
+
+    Args:
+        market_hint: "KR" or "US" — bypasses heuristic detection. Pass when the caller
+            already knows the market (e.g. weekly discovery pipeline) to avoid
+            Korean-named US companies (e.g. "테슬라") triggering DART lookups.
+    """
     from pipeline.data_fetcher import DataFetcher
 
     fetcher = DataFetcher()
 
     # Step 1: Company identification
     print(f"\n[1/3] 기업 식별 중: '{company_query}'")
-    identity = fetcher.identify(company_query)
+    identity = fetcher.identify(company_query, market_hint=market_hint)
     if not identity:
         print(f"  [ERROR] 기업을 찾을 수 없습니다: {company_query}")
         return {}
@@ -496,8 +502,9 @@ def auto_analyze(
     from valuation_runner import load_profile, run_valuation
     from output.console_report import print_report
 
-    # Step 1: Data collection
-    fetch_result = auto_fetch(company_query)
+    # Step 1: Data collection — pass market hint from scoring to avoid wrong registry lookups
+    _market_hint = (scored_data or {}).get("market")
+    fetch_result = auto_fetch(company_query, market_hint=_market_hint)
     if not fetch_result or not fetch_result.get("yaml_path"):
         print("[ERROR] 데이터 수집 실패. --auto 중단.")
         return None

@@ -117,6 +117,7 @@ def _ask_openrouter(
     model: str = "",
     max_tokens: int = 4096,
     temperature: float = 0.3,
+    json_mode: bool = False,
 ) -> str:
     """OpenRouter API call (OpenAI-compatible format)."""
 
@@ -150,6 +151,8 @@ def _ask_openrouter(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
@@ -230,5 +233,19 @@ def ask_structured(
     """Request structured response (JSON, etc.).
 
     Fixed temperature=0 for deterministic output.
+    Uses response_format=json_object on OpenRouter to prevent markdown wrapping and truncation.
     """
-    return ask(prompt, system=system, model=model, max_tokens=max_tokens, temperature=0)
+    provider = _get_provider()
+    if provider == "openrouter":
+        try:
+            return _ask_openrouter(
+                prompt, system, model, max_tokens, temperature=0, json_mode=True
+            )
+        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ApiGuardError) as e:
+            if os.getenv("ANTHROPIC_API_KEY"):
+                logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
+                anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
+                return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)
+            raise
+    anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
+    return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)

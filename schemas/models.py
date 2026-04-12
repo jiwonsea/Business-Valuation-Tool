@@ -259,7 +259,9 @@ class ScenarioParams(BaseModel):
     ipo: str  # "성공" | "불발"
     irr: Optional[float] = None  # FI IRR (%) — shared fallback for CPS and RCPS
     cps_irr: Optional[float] = None  # CPS-specific IRR (%, falls back to irr when None)
-    rcps_irr: Optional[float] = None  # RCPS-specific IRR (%, falls back to irr when None)
+    rcps_irr: Optional[float] = (
+        None  # RCPS-specific IRR (%, falls back to irr when None)
+    )
     dlom: float = 0  # DLOM (%)
     cps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
     rcps_repay: Optional[int] = None  # In display units (None=calculated from IRR)

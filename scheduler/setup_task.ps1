@@ -5,9 +5,9 @@
 # Schedule: Every Saturday at 09:00 KST (local time).
 # Logs:      logs\weekly_YYYYMMDD.log  (written by weekly_run.py)
 
-$TaskName   = "ValuationWeeklyRun"
-$BatPath    = "F:\dev\Portfolio\business-valuation-tool\scheduler\run_weekly.bat"
-$TriggerAt  = "09:00AM"
+$TaskName  = "ValuationWeeklyRun"
+$BatPath   = "F:\dev\Portfolio\business-valuation-tool\scheduler\run_weekly.bat"
+$TriggerAt = "09:00AM"
 
 # Remove existing task if present (idempotent re-registration)
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -17,17 +17,17 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
 
 $action  = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$BatPath`""
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At $TriggerAt
-$settings = New-ScheduledTaskSettingsSet `
-    -StartWhenAvailable `       # Run at next opportunity if PC was off at trigger time
-    -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
-    -MultipleInstances IgnoreNew
+
+# StartWhenAvailable: run at next boot if PC was off at trigger time
+# ExecutionTimeLimit: 2-hour cap to prevent hung processes
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
 
 Register-ScheduledTask `
-    -TaskName $TaskName `
-    -Action   $action `
-    -Trigger  $trigger `
-    -Settings $settings `
-    -RunLevel Highest `
+    -TaskName    $TaskName `
+    -Action      $action `
+    -Trigger     $trigger `
+    -Settings    $settings `
+    -RunLevel    Highest `
     -Description "Weekly valuation pipeline: news discovery + AI analysis + Excel upload"
 
 Write-Host ""

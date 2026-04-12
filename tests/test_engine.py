@@ -4020,7 +4020,9 @@ class TestNumericalFixes:
         )
         # Compute expected TV manually
         # BV after 3 years (no payout): BV_3 = BV_0 * (1 + ROE/100)^3
-        bv3 = round(round(round(bv0 * (1 + roe / 100)) * (1 + roe / 100)) * (1 + roe / 100))
+        bv3 = round(
+            round(round(bv0 * (1 + roe / 100)) * (1 + roe / 100)) * (1 + roe / 100)
+        )
         ri4 = round(bv3 * (roe / 100 - ke / 100))
         expected_tv = round(ri4 / (ke / 100 - g / 100))
         assert r.terminal_ri == expected_tv
@@ -4066,7 +4068,9 @@ class TestNumericalFixes:
         )
         last_p = result.projections[-1]
         raw_fcff = last_p.fcff
-        normalized_fcff = last_p.nopat - last_p.delta_nwc if last_p.nopat > 0 else last_p.fcff
+        normalized_fcff = (
+            last_p.nopat - last_p.delta_nwc if last_p.nopat > 0 else last_p.fcff
+        )
         # With capex_to_da=2.0, capex > D&A, so raw FCFF < normalized FCFF
         assert normalized_fcff > raw_fcff
 
@@ -4076,8 +4080,8 @@ class TestNumericalFixes:
         """MC TV is bounded even when WACC std causes samples near TG."""
         mc_input = MCInput(
             multiple_params={"A": (8.0, 1.0)},
-            wacc_mean=3.5,   # very close to TG
-            wacc_std=2.0,    # wide std — many samples will have w close to g
+            wacc_mean=3.5,  # very close to TG
+            wacc_std=2.0,  # wide std — many samples will have w close to g
             dlom_mean=0.0,
             dlom_std=0.0,
             tg_mean=3.0,
@@ -4223,8 +4227,14 @@ class TestNumericalFixes:
         sentiment_pct = 10.0  # 10% positive sentiment
 
         sc = ScenarioParams(
-            code="BASE", name="test", prob=100, ipo="성공",
-            irr=None, dlom=0.0, shares=1_000_000, buyback=0,
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
+            irr=None,
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
             market_sentiment_pct=sentiment_pct,
         )
 
@@ -4245,7 +4255,9 @@ class TestNumericalFixes:
         )
         # Confirms the wrong path amplifies equity by 100% (2x) instead of 10% (1.1x)
         assert result_wrong.equity_value == 2_000_000
-        assert result_wrong.equity_value > result.equity_value * 1.5  # wrong path is >1.5x correct
+        assert (
+            result_wrong.equity_value > result.equity_value * 1.5
+        )  # wrong path is >1.5x correct
 
     # ── F-P2-9: CPS/RCPS separate IRR via cps_irr / rcps_irr fields ──────────
 
@@ -4255,22 +4267,30 @@ class TestNumericalFixes:
         from schemas.models import ScenarioParams
 
         sc = ScenarioParams(
-            code="BASE", name="test", prob=100, ipo="성공",
-            irr=10.0,       # shared fallback
-            cps_irr=5.0,    # CPS-specific: lower return
-            dlom=0.0, shares=1_000_000, buyback=0,
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
+            irr=10.0,  # shared fallback
+            cps_irr=5.0,  # CPS-specific: lower return
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
         )
         # CPS: effective_rate = max(5.0 - 0, 0) = 5.0%; repay = 100_000 * 1.05^3
-        expected_cps = round(100_000 * (1.05 ** 3))
+        expected_cps = round(100_000 * (1.05**3))
         # RCPS: uses irr=10.0; effective_rate = max(10.0 - 0, 0) = 10.0%; repay = 50_000 * 1.1^2
-        expected_rcps = round(50_000 * (1.10 ** 2))
+        expected_rcps = round(50_000 * (1.10**2))
 
         result = calc_scenario(
             sc,
             total_ev=1_000_000,
-            net_debt=0, eco_frontier=0,
-            cps_principal=100_000, cps_years=3,
-            rcps_principal=50_000, rcps_years=2,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=100_000,
+            cps_years=3,
+            rcps_principal=50_000,
+            rcps_years=2,
             unit_multiplier=1,
         )
         assert result.cps_repay == expected_cps
@@ -4282,22 +4302,30 @@ class TestNumericalFixes:
         from schemas.models import ScenarioParams
 
         sc = ScenarioParams(
-            code="BASE", name="test", prob=100, ipo="성공",
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
             irr=10.0,
-            rcps_irr=3.0,   # RCPS-specific: near-dividend pref
-            dlom=0.0, shares=1_000_000, buyback=0,
+            rcps_irr=3.0,  # RCPS-specific: near-dividend pref
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
         )
         # CPS: uses irr=10.0; repay = 200_000 * 1.1^2
-        expected_cps = round(200_000 * (1.10 ** 2))
+        expected_cps = round(200_000 * (1.10**2))
         # RCPS: effective_rate = max(3.0 - 2.0, 0) = 1.0%; repay = 100_000 * 1.01^3
-        expected_rcps = round(100_000 * (1.01 ** 3))
+        expected_rcps = round(100_000 * (1.01**3))
 
         result = calc_scenario(
             sc,
             total_ev=2_000_000,
-            net_debt=0, eco_frontier=0,
-            cps_principal=200_000, cps_years=2,
-            rcps_principal=100_000, rcps_years=3,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=200_000,
+            cps_years=2,
+            rcps_principal=100_000,
+            rcps_years=3,
             unit_multiplier=1,
             rcps_dividend_rate=2.0,
         )
@@ -4307,12 +4335,20 @@ class TestNumericalFixes:
     def test_derive_rcps_repay_uses_rcps_irr_when_set(self):
         """_derive_rcps_repay must prefer rcps_irr over irr."""
         from valuation_runner import _derive_rcps_repay
-        from schemas.models import ScenarioParams, ValuationInput, CompanyProfile, WACCParams
+        from schemas.models import (
+            ScenarioParams,
+        )
 
         sc = ScenarioParams(
-            code="BASE", name="test", prob=100, ipo="성공",
-            irr=10.0, rcps_irr=4.0,  # RCPS investor has lower target return
-            dlom=0.0, shares=1_000_000, buyback=0,
+            code="BASE",
+            name="test",
+            prob=100,
+            ipo="성공",
+            irr=10.0,
+            rcps_irr=4.0,  # RCPS investor has lower target return
+            dlom=0.0,
+            shares=1_000_000,
+            buyback=0,
         )
 
         class _VI:
@@ -4321,7 +4357,7 @@ class TestNumericalFixes:
             rcps_dividend_rate = 0.0
 
         result = _derive_rcps_repay(sc, _VI())
-        expected = round(300_000 * (1.04 ** 2))
+        expected = round(300_000 * (1.04**2))
         assert result == expected
 
     # ── F-P2-10: distress ICR uses actual interest_expense when available ─────
@@ -4337,7 +4373,9 @@ class TestNumericalFixes:
 
         consolidated = {
             2023: {
-                "op": 150, "dep": 50, "amort": 0,  # EBITDA=200
+                "op": 150,
+                "dep": 50,
+                "amort": 0,  # EBITDA=200
                 "gross_borr": 1000,
                 "interest_expense": 250,  # actual: high-coupon debt
                 "de_ratio": 50,
@@ -4351,7 +4389,9 @@ class TestNumericalFixes:
 
         # Without actual data: estimate = 1000 * 5% = 50 → ICR = 200/50 = 4.0 → penalty=0
         consolidated_no_actual = {
-            2023: {k: v for k, v in consolidated[2023].items() if k != "interest_expense"}
+            2023: {
+                k: v for k, v in consolidated[2023].items() if k != "interest_expense"
+            }
         }
         result_estimated = calc_distress_discount(
             consolidated_no_actual, 2023, kd_pre=5.0, market="KR"
@@ -4368,11 +4408,11 @@ class TestNumericalFixes:
             total_ev=1_000_000,
             net_debt=0,
             eco_frontier=0,
-            cps_principal=0,       # no CPS
+            cps_principal=0,  # no CPS
             cps_years=0,
             rcps_repay=0,
             buyback=0,
-            shares=1,              # shares=1 so per_share == equity value
+            shares=1,  # shares=1 so per_share == equity value
             unit_multiplier=1,
             rcps_principal=200_000,  # RCPS only
             rcps_years=3,
@@ -4382,7 +4422,7 @@ class TestNumericalFixes:
 
         # At irr=5%: effective_rate = max(5-2, 0) = 3%; rcps_repay = 200k * 1.03^3
         irr5_rows = [r for r in rows if r.row_val == 5.0 and r.col_val == 0]
-        expected_rcps = round(200_000 * (1.03 ** 3))
+        expected_rcps = round(200_000 * (1.03**3))
         expected_equity = 1_000_000 - expected_rcps
         assert irr5_rows[0].value == expected_equity
 
@@ -4391,8 +4431,14 @@ class TestNumericalFixes:
         from engine.sensitivity import sensitivity_irr_dlom
 
         rows, _, _ = sensitivity_irr_dlom(
-            total_ev=1_000_000, net_debt=0, eco_frontier=0,
-            cps_principal=0, cps_years=0, rcps_repay=0, buyback=0,
-            shares=1_000_000, unit_multiplier=1,
+            total_ev=1_000_000,
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=1_000_000,
+            unit_multiplier=1,
         )
         assert rows == []

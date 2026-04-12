@@ -11,42 +11,18 @@ company:
   shares_ordinary: 14681140000
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-08'
+  analysis_date: '2026-04-12'
 segments:
-  SEG1:
-    name: iPhone (스마트폰)
-    multiple: 14.5
-  SEG2:
-    name: Services (소프트웨어/구독)
+  MAIN:
+    name: Main Business
     multiple: 10.0
-  SEG3:
-    name: Mac & iPad (컴퓨터/태블릿)
-    multiple: 9.8
-  SEG4:
-    name: Wearables & Accessories (웨어러블/액세서리)
-    multiple: 11.8
 segment_data:
   2025:
-    SEG1:
-      revenue: 216404
+    MAIN:
+      revenue: 416161
       gross_profit: 0
-      op: 69186
-      assets: 186805
-    SEG2:
-      revenue: 91555
-      gross_profit: 0
-      op: 29271
-      assets: 79033
-    SEG3:
-      revenue: 62424
-      gross_profit: 0
-      op: 19958
-      assets: 53886
-    SEG4:
-      revenue: 45778
-      gross_profit: 0
-      op: 14636
-      assets: 39517
+      op: 133050
+      assets: 359241
 consolidated:
   2023:
     revenue: 383285
@@ -85,17 +61,17 @@ consolidated:
     net_borr: 62723
     de_ratio: 133.8
 wacc_params:
-  rf: 3.2
+  rf: 4.25
   erp: 5.5
-  bu: 1.15
+  bu: 1.085
   de: 2.6
-  tax: 15.0
-  kd_pre: 4.2
+  tax: 15.8
+  kd_pre: 6.25
   eq_w: 97.5
 scenarios:
-  A:
-    name: 기본 시나리오 (혼재된 신호)
-    prob: 40.0
+  Base:
+    name: Base Case
+    prob: 50
     ipo: N/A
     irr: null
     dlom: 0
@@ -103,23 +79,12 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 14681140000
-    desc: AI 경쟁력 우려와 공급망 투자 효과가 상쇄되는 상황. 기관투자자 매도는 일시적 현상으로 판단되며, 폴더블 아이폰 기대감이 부분적으로
-      반영됨.
-    probability_rationale: '기본 확률: 50%. 조건부 분해: P(AI지연 부분적 영향)=80% × P(공급망 투자 효과)=70%
-      × P(기관 매도 일시적)=90% ≈ 50%, 기본 시나리오로 40% 할당'
-    active_drivers:
-      ai_competition_lag: 0.4
-      supply_chain_investment: 0.6
-      foldable_iphone_hype: 0.3
-      institutional_selling: 0.5
-    segment_multiples:
-      SEG1: 18.5
-      SEG2: 25.0
-      SEG3: 15.5
-      SEG4: 20.0
-  B:
-    name: 혁신 모멘텀 시나리오
-    prob: 25.0
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: Base case with consensus estimates
+  Bull:
+    name: Bull Case
+    prob: 25
     ipo: N/A
     irr: null
     dlom: 0
@@ -127,21 +92,12 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 14681140000
-    desc: 폴더블 아이폰 출시 성공과 AI 경쟁력 회복으로 혁신 리더십 재확인. 공급망 투자 효과가 본격화되며 프리미엄 밸류에이션 정당화됨.
-    probability_rationale: '기본 확률: 20%. 조건부 분해: P(폴더블 성공적 출시)=60% × P(AI 경쟁력 회복)=50%
-      × P(시장 수용성 높음)=80% ≈ 24%, 25%로 반올림'
-    active_drivers:
-      foldable_iphone_hype: 1.0
-      supply_chain_investment: 0.8
-      ai_competition_lag: 0.2
-    segment_multiples:
-      SEG1: 22.0
-      SEG2: 28.0
-      SEG3: 17.25
-      SEG4: 24.0
-  C:
-    name: 경쟁력 약화 시나리오
-    prob: 20.0
+    growth_adj_pct: 20
+    terminal_growth_adj: 0.3
+    desc: Upside scenario
+  Bear:
+    name: Bear Case
+    prob: 25
     ipo: N/A
     irr: null
     dlom: 0
@@ -149,205 +105,30 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 14681140000
-    desc: AI 경쟁에서 뒤처지고 신제품 출시 지연이 지속되면서 기술 리더십 약화. 기관투자자들의 지속적인 비중 축소로 밸류에이션 디스카운트
-      확대됨.
-    probability_rationale: '기본 확률: 15%. 조건부 분해: P(AI 경쟁 심화)=70% × P(신제품 지연 지속)=60%
-      × P(시장점유율 하락)=50% ≈ 21%, 20%로 조정'
-    active_drivers:
-      ai_competition_lag: 1.0
-      product_launch_delay: 0.8
-      institutional_selling: 0.7
-    segment_multiples:
-      SEG1: 15.0
-      SEG2: 20.0
-      SEG3: 12.75
-      SEG4: 16.0
-  D:
-    name: 구조적 전환 시나리오
-    prob: 15.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 14681140000
-    desc: 미국 제조 투자를 통한 공급망 재편이 성공하며 지정학적 리스크 크게 감소. 하드웨어 의존도 낮추고 서비스 중심 비즈니스 모델로 안정적
-      전환 달성.
-    probability_rationale: '기본 확률: 10%. 조건부 분해: P(공급망 재편 성공)=80% × P(서비스 중심 전환)=60%
-      × P(지정학적 안정)=40% ≈ 19%, 보수적으로 15% 할당'
-    active_drivers:
-      supply_chain_investment: 1.0
-      institutional_selling: 0.3
-    segment_multiples:
-      SEG1: 17.0
-      SEG2: 30.0
-      SEG3: 14.5
-      SEG4: 18.0
+    growth_adj_pct: -25
+    terminal_growth_adj: -0.3
+    desc: Downside scenario
 dcf_params:
   ebitda_growth_rates:
-  - 0.1
-  - 0.085
   - 0.07
-  - 0.055
+  - 0.06
+  - 0.06
+  - 0.05
   - 0.04
   tax_rate: 15.8
   capex_to_da: 0.95
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.9
   actual_capex: 12715
+  capex_fade_to: null
   da_to_ebitda_override: 0.0858
-pe_multiple: 33.9
+pe_multiple: 34.1
 ev_revenue_multiple: 9.3
-pbv_multiple: 51.5
+pbv_multiple: 51.9
 cps_principal: 0
 cps_years: 0
 net_debt: 62723
 eco_frontier: 0
 base_year: 2025
-peers:
-- name: 삼성전자 (Samsung Electronics)
-  segment_code: SEG1
-  ev_ebitda: 8.5
-  notes: 국내 최대 스마트폰 제조사, 프리미�m 갤럭시 라인업. 2023년 EBITDA 기준 계산. 다각화된 사업구조로 인해 순수 모바일 세그먼트
-    다소 할인.
-- name: Apple Inc.
-  segment_code: SEG1
-  ev_ebitda: 24.5
-  notes: iPhone 매출 비중 52% (2023). 프리미엄 포지셔닝, 높은 마진율(EBITDA margin ~30%). 브랜드 프리미엄
-    반영.
-- name: QUALCOMM Inc.
-  segment_code: SEG1
-  ev_ebitda: 12.8
-  notes: 모바일 칩셋 설계 리더, 스마트폰 제조사와 밀접. 2023년 기준. 간접 노출이나 업계 구조 이해에 유용.
-- name: SK하이닉스 (SK Hynix)
-  segment_code: SEG1
-  ev_ebitda: 6.2
-  notes: 메모리 반도체 공급사. 스마트폰 DRAM/NAND 의존도 높음. 순환적 산업 특성으로 할인율 높음.
-- name: LG Display
-  segment_code: SEG1
-  ev_ebitda: 4.8
-  notes: OLED 디스플레이 공급사, iPhone 주요 부품 공급처. 2023년 적자 근처로 EBITDA 낮음. 구조적 어려움 반영.
-- name: Broadcom Inc.
-  segment_code: SEG1
-  ev_ebitda: 18.2
-  notes: RF/아날로그 칩셋, 스마트폰 통신 부품 공급. 높은 기술 진입장벽, 안정적 마진. 2023년 기준.
-- name: Samsung Electronics (삼성전자)
-  segment_code: SEG3
-  ev_ebitda: 8.5
-  notes: PC/태블릿 사업부 보유. 2023년 consolidated EBITDA 기반 추정. 한국 최대 IT 하드웨어 제조사. 다만 반도체/디스플레이
-    사업 비중이 크므로 순수 PC/태블릿 세그먼트 다중도는 낮음.
-- name: Dell Technologies (DELL)
-  segment_code: SEG3
-  ev_ebitda: 9.2
-  notes: 순수 PC/태블릿 제조사. 2023년 FY 기준 EV/EBITDA. 글로벌 PC 시장 2위. 비즈니스 모델 및 제품 포트폴리오가 Apple
-    Mac/iPad와 직접 경쟁.
-- name: HP Inc. (HPQ)
-  segment_code: SEG3
-  ev_ebitda: 7.8
-  notes: 글로벌 PC/프린터 제조사. 2023년 기준. PC 시장 점유율 높음. Apple과 유사한 프리미엄 세그먼트 진출.
-- name: Lenovo Group (레노보)
-  segment_code: SEG3
-  ev_ebitda: 10.5
-  notes: 글로벌 PC 시장 1위. 2023년 기준 추정. 태블릿(ThinkPad, Yoga) 포트폴리오 보유. 중국 상장사이나 국제 비교 필수.
-- name: ASUS (ASUSTeK Computer)
-  segment_code: SEG3
-  ev_ebitda: 11.2
-  notes: 대만 상장. PC/태블릿/노트북 전문. 2023년 기준. 프리미엄 브랜드 포지셔닝이 Apple과 유사.
-- name: Microsoft Surface (Microsoft Corp - Hardware segment proxy)
-  segment_code: SEG3
-  ev_ebitda: 12.8
-  notes: Microsoft 전체 EV/EBITDA 기준. Surface 세그먼트 순수 다중도 추출 불가. 참고용으로만 활용. 프리미엄 태블릿/2-in-1
-    경쟁사.
-- name: Samsung Electronics (웨어러블 부문)
-  segment_code: SEG4
-  ev_ebitda: 12.5
-  notes: Galaxy Watch, Galaxy Buds 등 웨어러블 제품 포트폴리오. 2023년 전자부품 부문 EBITDA 마진 기반 추정.
-    한국 상장사 중 가장 유사한 비즈니스 구조.
-- name: LG Electronics (웨어러블/IoT)
-  segment_code: SEG4
-  ev_ebitda: 8.2
-  notes: 스마트홈, 웨어러블 기기 제조. 2023년 HE 부문 EBITDA 마진 약 4-5% 기반. 액세서리 포함 유사 제품군.
-- name: SK Hynix (센서/칩셋 공급)
-  segment_code: SEG4
-  ev_ebitda: 6.8
-  notes: 웨어러블 기기용 센서, 메모리 칩셋 공급. 간접 노출이나 산업 구조 유사성 고려. 2023년 EBITDA 마진 약 25% 기반.
-- name: Garmin Ltd. (미국)
-  segment_code: SEG4
-  ev_ebitda: 18.5
-  notes: 순수 웨어러블/GPS 기기 전문. 2023년 EBITDA 마진 약 22%. 프리미엄 포지셔닝으로 높은 멀티플.
-- name: Fitbit (Google 자회사, 공개 데이터 기반)
-  segment_code: SEG4
-  ev_ebitda: 14.2
-  notes: 헬스 트래킹 웨어러블 전문. Google 인수(2021) 이후 공개 멀티플 추정. 소비자 웨어러블 시장 벤치마크.
-- name: Xiaomi (샤오미, 중국)
-  segment_code: SEG4
-  ev_ebitda: 9.8
-  notes: Mi Band, Mi Watch 등 저가 웨어러블 시장 리더. 2023년 IoT/웨어러블 부문 EBITDA 마진 약 8-10% 기반.
-- name: GoPro Inc. (미국)
-  segment_code: SEG4
-  ev_ebitda: 11.3
-  notes: 액션카메라 및 액세서리 생태계. 웨어러블 액세서리 마운트 포함. 2023년 EBITDA 마진 약 12%.
-news_key_issues: '# Apple Inc. (AAPL) 밸류에이션 영향 핵심 이슈
-
-
-  - [리스크] Siri 재구축 지연으로 AI 경쟁력 약화 우려 (2026-04-05, TipRanks)
-
-
-  - [리스크] 스마트홈 디스플레이 출시 연기로 신규 수익원 지연 (2026-03-09, Bloomberg)
-
-
-  - [기회] 미국 제조 확대에 4억 달러 투자로 공급망 강화 (2026-04-01, Yahoo Finance)
-
-
-  - [기회] 주요 공급업체 폭스콘의 AI 호황으로 인한 매출 증가 (2026-04-06, Benzinga)
-
-
-  - [긍정신호] 폴더블 아이폰 출시 기대감으로 Wedbush 아웃퍼폼 유지 (2026-03-31, Yahoo Finance)
-
-
-  - [기관투자자] 주요 기관들의 지분 조정 활발 - 매도 우위 (2026-04-01~06, MarketBeat 다수)'
-news_drivers:
-- id: ai_competition_lag
-  name: AI 경쟁력 약화 (Siri 재구축 지연)
-  category: company
-  effects:
-    growth_adj_pct: -15
-    wacc_adj: 0.3
-    market_sentiment_pct: -8
-  rationale: AI 경쟁력 지연은 서비스 부문 성장률을 직접 타격. 역사적으로 핵심 기술 지연 시 애플 성장률 10-20% 하락. 투자자
-    리스크 프리미엄 증가로 WACC 상승, 시장 심리 악화
-- id: product_launch_delay
-  name: 신제품 출시 연기 (스마트홈 디스플레이)
-  category: company
-  effects:
-    growth_adj_pct: -8
-    market_sentiment_pct: -5
-  rationale: 신규 카테고리 진입 지연으로 웨어러블/홈 부문 성장 둔화. 애플 신제품 출시 연기 시 해당 부문 성장률 평균 5-10% 하락하는
-    패턴
-- id: supply_chain_investment
-  name: 공급망 강화 투자 (미국 제조 4억달러)
-  category: company
-  effects:
-    growth_adj_pct: 5
-    wacc_adj: -0.2
-    market_sentiment_pct: 3
-  rationale: 공급망 리스크 감소로 마진 안정성 향상. 지정학적 리스크 헤지로 투자자 리스크 프리미엄 하락. ESG 투자 확대 시 애플 밸류에이션
-    프리미엄 3-5% 상승 경험
-- id: foldable_iphone_hype
-  name: 폴더블 아이폰 기대감
-  category: company
-  effects:
-    growth_adj_pct: 12
-    market_sentiment_pct: 8
-  rationale: 새로운 프리미엄 제품 카테고리로 아이폰 부문 ASP 상승 기대. 애플 혁신 제품 출시 전 기대감 시 주가 5-15% 프리미엄
-    형성하는 역사적 패턴
-- id: institutional_selling
-  name: 기관투자자 매도 압력
-  category: macro
-  effects:
-    market_sentiment_pct: -12
-    wacc_adj: 0.2
-  rationale: 주요 기관들의 지분 조정으로 단기 유동성 압박. 기관 매도 우위 시 대형주 평균 5-15% 할인 거래되는 시장 패턴. 유동성
-    프리미엄 상승
+peers: []
 mc_enabled: true

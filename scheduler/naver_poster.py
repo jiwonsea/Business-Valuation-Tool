@@ -403,19 +403,24 @@ def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bo
 
 
 def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
-    """Click the publish button. Returns True on success.
+    """Click the publish button and confirm in the publish-settings layer.
 
-    Strategy 0 uses JS click to bypass scroll/visibility issues after content
-    entry. Selenium EC strategies follow as fallback.
+    Naver Blog SE3 requires two clicks:
+      Step 1 — click the toolbar '발행' button → publish-settings layer appears
+      Step 2 — click '발행' (confirm_btn) inside the layer → post is actually saved
+
+    JS is used for Step 1 to bypass scroll/visibility issues after content entry.
     """
-    # Strategy 0: JS — finds button by class substring or text, scrolls & clicks
+    # ── Step 1: open publish-settings layer ──────────────────────────────────
+    opened = False
+
+    # JS strategy — most reliable when page has scrolled after content entry
     try:
         cls_clicked = driver.execute_script(
             """
             var btns = Array.from(document.querySelectorAll('button'));
             var pub = btns.find(function(b) {
-                return b.className.indexOf('publish_btn') !== -1
-                    || b.innerText.trim() === '발행';
+                return b.className.indexOf('publish_btn') !== -1;
             });
             if (pub) {
                 pub.scrollIntoView({block:'center'});
@@ -426,49 +431,80 @@ def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
             """
         )
         if cls_clicked:
-            logger.debug("Publish clicked via JavaScript (class=%s).", cls_clicked)
-            time.sleep(1.5)
-            # Dismiss any post-publish confirmation dialog
-            try:
-                confirm = driver.find_element(
-                    By.CSS_SELECTOR,
-                    "button.se-popup-button-confirm",
-                )
-                confirm.click()
-            except NoSuchElementException:
-                pass
-            return True
+            logger.debug("Publish layer opened via JS (class=%s).", cls_clicked)
+            opened = True
     except WebDriverException as e:
-        logger.debug("JS publish click failed: %s", e)
+        logger.debug("JS publish-open failed: %s", e)
 
-    # Strategy 1–N: Selenium EC (fallback if JS can't reach the button)
-    selectors = [
-        (By.XPATH, "//button[contains(@class,'publish_btn')]"),
-        (By.CSS_SELECTOR, "button[data-log='pcwriter.publish']"),
-        (By.CSS_SELECTOR, "button.se-publish-btn"),
-        (By.XPATH, "//button[contains(text(), '발행')]"),
-        (By.XPATH, "//button[contains(text(), '등록')]"),
-        (By.CSS_SELECTOR, "button.btn_publish"),
-    ]
-    for by, sel in selectors:
-        try:
-            btn = wait.until(EC.element_to_be_clickable((by, sel)))
-            btn.click()
-            logger.debug("Publish clicked via selector: %s", sel)
-            time.sleep(1.5)
+    if not opened:
+        # Selenium EC fallback
+        selectors = [
+            (By.XPATH, "//button[contains(@class,'publish_btn')]"),
+            (By.CSS_SELECTOR, "button[data-click-area='tpb.publish']"),
+            (By.XPATH, "//button[contains(text(), '발행')]"),
+        ]
+        for by, sel in selectors:
             try:
-                confirm = driver.find_element(
-                    By.XPATH,
-                    "//button[contains(text(), '확인') or contains(text(), '발행')]",
+                btn = WebDriverWait(driver, _SHORT).until(
+                    EC.element_to_be_clickable((by, sel))
                 )
-                confirm.click()
-            except NoSuchElementException:
-                pass
+                btn.click()
+                logger.debug("Publish layer opened via selector: %s", sel)
+                opened = True
+                break
+            except (TimeoutException, NoSuchElementException, WebDriverException):
+                continue
+
+    if not opened:
+        logger.warning("Could not open publish-settings layer.")
+        return False
+
+    # ── Step 2: click confirm inside the publish-settings layer ──────────────
+    # Layer has class 'layer_publish__*' and the confirm button 'confirm_btn__*'
+    confirm_selectors = [
+        (By.XPATH, "//div[contains(@class,'layer_publish')]//button[contains(@class,'confirm_btn')]"),
+        (By.XPATH, "//div[contains(@class,'layer_popup')]//button[contains(@class,'confirm_btn')]"),
+        (By.XPATH, "//div[contains(@class,'layer_btn_area')]//button[contains(@class,'confirm_btn')]"),
+        (By.CSS_SELECTOR, "div[class*='layer_publish'] button[class*='confirm_btn']"),
+        (By.CSS_SELECTOR, "div[class*='layer_popup'] button[class*='confirm_btn']"),
+    ]
+    for by, sel in confirm_selectors:
+        try:
+            btn = WebDriverWait(driver, _LONG).until(
+                EC.element_to_be_clickable((by, sel))
+            )
+            btn.click()
+            logger.debug("Publish confirmed via selector: %s", sel)
             return True
         except (TimeoutException, NoSuchElementException, WebDriverException):
             continue
 
-    logger.warning("Could not find publish button.")
+    # Last resort: any visible confirm-looking button inside a visible layer
+    try:
+        result = driver.execute_script(
+            """
+            var layers = document.querySelectorAll('[class*="layer_publish"],[class*="layer_popup"]');
+            for (var l of layers) {
+                if (l.offsetParent === null) continue;
+                var btns = l.querySelectorAll('button');
+                for (var b of btns) {
+                    var cls = b.className || '';
+                    if (cls.indexOf('confirm_btn') !== -1) {
+                        b.click();
+                        return cls;
+                    }
+                }
+            }
+            return null;
+            """
+        )
+        if result:
+            logger.debug("Publish confirmed via JS layer scan (class=%s).", result)
+            return True
+    except WebDriverException as e:
+        logger.debug("JS layer-confirm failed: %s", e)
+
+    logger.warning("Could not confirm publish in settings layer.")
     return False
 
 

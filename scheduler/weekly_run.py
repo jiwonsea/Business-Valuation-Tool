@@ -275,9 +275,26 @@ def run_weekly(
             market_news = result.get("news", [])
             all_news.extend(market_news)
             if not market_news:
+                # Distinguish quota exhaustion (expected, don't alert) from real failures.
+                # Silent quota alerts used to flood Gmail when the pipeline ran repeatedly
+                # within a day; see .claude/rules/scheduler.md.
+                from pipeline.api_guard import ApiGuard
+
+                provider = "naver" if market == "KR" else "google_rss"
+                usage = ApiGuard.get().get_usage_summary().get(provider, {})
+                quota_exhausted = usage.get("remaining", -1) == 0
                 msg = f"[{market}] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요"
                 logger.warning(msg)
-                _alert("Discovery", msg)
+                if quota_exhausted:
+                    logger.info(
+                        "[%s] skipping alert — %s daily quota exhausted (%d/%d)",
+                        market,
+                        provider,
+                        usage.get("calls", 0),
+                        usage.get("limit", 0),
+                    )
+                else:
+                    _alert("Discovery", msg)
             companies_in_market = result.get("companies", [])
             for co in companies_in_market:
                 ticker_str = str(co.get("ticker") or "")
@@ -319,6 +336,8 @@ def run_weekly(
 
     scored = score_companies(unique_companies, all_news)
     summary["scored_companies"] = scored
+    if os.environ.get("DUMP_NEWS_TITLES"):
+        summary["_debug_news_titles"] = [n.get("title", "") for n in all_news]
 
     # ── Per-market selection: top N per market ──
     targets: list[dict] = []
@@ -657,8 +676,8 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
             1 for co in summary.get("scored_companies", []) if not co.get("top_news")
         ),
     }
-    if os.environ.get("DUMP_NEWS_TITLES"):
-        summary["_debug"]["news_titles"] = [n.get("title", "") for n in all_news]
+    if "_debug_news_titles" in summary:
+        summary["_debug"]["news_titles"] = summary.pop("_debug_news_titles")
 
     summary_json = {**summary}
 
@@ -759,6 +778,33 @@ def _finalize_run(
         logger.debug("DB 기록 실패 (완료): %s", e)
 
 
+_LOCK_PATH = Path(__file__).resolve().parent.parent / "logs" / ".weekly_run.lock"
+_LOCK_MIN_INTERVAL_SECONDS = 3600  # 1 hour
+
+
+def _acquire_lock(force: bool) -> bool:
+    """Prevent rapid re-runs. Returns True if lock acquired, False if recent run exists."""
+    _LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if _LOCK_PATH.exists() and not force:
+        age = time.time() - _LOCK_PATH.stat().st_mtime
+        if age < _LOCK_MIN_INTERVAL_SECONDS:
+            logger.warning(
+                "Recent run detected (%.0f min ago). Skipping to prevent duplicate runs "
+                "and quota exhaustion. Use --force to override.",
+                age / 60,
+            )
+            return False
+    _LOCK_PATH.write_text(f"pid={os.getpid()} ts={datetime.now().isoformat()}\n", encoding="utf-8")
+    return True
+
+
+def _release_lock() -> None:
+    try:
+        _LOCK_PATH.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Weekly automated news collection + valuation",
@@ -785,17 +831,27 @@ def main() -> None:
         action="store_true",
         help="Discovery only, skip valuation",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass lockfile (allow rapid re-runs)",
+    )
     args = parser.parse_args()
 
     max_val = args.max_per_market
     if args.max_companies is not None:
         max_val = args.max_companies
 
-    run_weekly(
-        markets=args.markets.split(","),
-        max_per_market=max_val,
-        dry_run=args.dry_run,
-    )
+    if not _acquire_lock(force=args.force):
+        return
+    try:
+        run_weekly(
+            markets=args.markets.split(","),
+            max_per_market=max_val,
+            dry_run=args.dry_run,
+        )
+    finally:
+        _release_lock()
 
 
 if __name__ == "__main__":

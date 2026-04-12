@@ -15,6 +15,8 @@ paths: ["scheduler/**/*.py"]
 - `_top_news_for_company` length guard is `not t.isdigit() and (_CJK_RE.search(t) or len(t) >= 3)`. The CJK bypass is load-bearing — 2-syllable Korean/Chinese aliases (애플, 메타) must skip the len>=3 rule intended for noisy ASCII tickers (GM/GE). Using len>=3 alone silently drops all 2-syllable CJK aliases.
 - Market tag derives from ticker format via `_market_from_ticker` (6-digit numeric → KR, else US), NOT the discovery loop variable. Discovery AI surfaces cross-market companies (US names from KR news and vice versa); loop-variable tagging breaks downstream EDGAR lookup and news matching.
 - `top_news` attachment runs AFTER dedup against the combined `all_news` pool (not per-market), using company-specific aliases + ticker. Per-market matching alone misses cross-market mentions (e.g. NVDA in Korean news, Samsung in English news); alias anchoring prevents cross-company leakage.
+- Lockfile at `logs/.weekly_run.lock` blocks re-runs within 1 hour to prevent naver+google_rss daily-quota burn. Pass `--force` to override. Stuck background python processes (e.g., PowerShell window closed but process survives) are the main cause of quota exhaustion — always verify `Get-Process python` after closing a shell mid-run.
+- `_alert("Discovery", ...)` skips email when empty-news cause is quota exhaustion (`ApiGuard.get_usage_summary()[provider].remaining == 0`). Only fires for unexpected failures (bad API key, network outage). Do NOT revert — alerts flood Gmail at 2 emails × N-runs/day when reverted.
 
 ## Scoring (scoring.py)
 

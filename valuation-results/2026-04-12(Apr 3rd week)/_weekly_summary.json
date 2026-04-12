@@ -1,0 +1,294 @@
+{
+  "run_date": "2026-04-12T19:26:48.795195",
+  "label": "Apr 3rd week (4/12)",
+  "markets": [
+    "KR",
+    "US"
+  ],
+  "discoveries": [
+    {
+      "market": "KR",
+      "news_count": 117,
+      "companies": [
+        {
+          "name": "삼성전자",
+          "ticker": "005930",
+          "reason": "어닝 서프라이즈와 반도체 실적에 대한 기대",
+          "market": "KR",
+          "domain": "samsung.com"
+        },
+        {
+          "name": "LG전자",
+          "ticker": "066570",
+          "reason": "반도체 실적에 대한 기대",
+          "market": "KR",
+          "domain": "lg.com"
+        },
+        {
+          "name": "SK하이닉스",
+          "ticker": "000660",
+          "reason": "반도체 실적에 대한 기대",
+          "market": "KR",
+          "domain": "skhynix.com"
+        },
+        {
+          "name": "현대자동차",
+          "ticker": "005380",
+          "reason": "중동 리스크의 완화에 따른 수혜",
+          "market": "KR",
+          "domain": "hyundai.com"
+        },
+        {
+          "name": "기아자동차",
+          "ticker": "000270",
+          "reason": "중동 리스크의 완화에 따른 수혜",
+          "market": "KR",
+          "domain": "kia.com"
+        }
+      ]
+    },
+    {
+      "market": "US",
+      "news_count": 119,
+      "companies": [
+        {
+          "name": "테슬라",
+          "ticker": "TSLA",
+          "reason": "최근 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+          "market": "US"
+        },
+        {
+          "name": "일렉트렉",
+          "ticker": null,
+          "reason": "테슬라의 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+          "market": "US"
+        },
+        {
+          "name": "야후 파이낸스",
+          "ticker": null,
+          "reason": "엘론 머스크의 발언과 관련된 뉴스",
+          "market": "US"
+        },
+        {
+          "name": "엔비디아",
+          "ticker": "NVDA",
+          "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+          "market": "US"
+        },
+        {
+          "name": "애플",
+          "ticker": "AAPL",
+          "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+          "market": "US"
+        }
+      ]
+    }
+  ],
+  "scored_companies": [
+    {
+      "name": "삼성전자",
+      "ticker": "005930",
+      "reason": "어닝 서프라이즈와 반도체 실적에 대한 기대",
+      "market": "KR",
+      "score": 70,
+      "stars": "★★★★☆",
+      "news_count": 19.6,
+      "market_cap_usd": null
+    },
+    {
+      "name": "테슬라",
+      "ticker": "TSLA",
+      "reason": "최근 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+      "market": "US",
+      "score": 45,
+      "stars": "★★★☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "일렉트렉",
+      "ticker": null,
+      "reason": "테슬라의 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+      "market": "US",
+      "score": 45,
+      "stars": "★★★☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "야후 파이낸스",
+      "ticker": null,
+      "reason": "엘론 머스크의 발언과 관련된 뉴스",
+      "market": "US",
+      "score": 45,
+      "stars": "★★★☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "엔비디아",
+      "ticker": "NVDA",
+      "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+      "market": "US",
+      "score": 45,
+      "stars": "★★★☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "애플",
+      "ticker": "AAPL",
+      "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+      "market": "US",
+      "score": 45,
+      "stars": "★★★☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "SK하이닉스",
+      "ticker": "000660",
+      "reason": "반도체 실적에 대한 기대",
+      "market": "KR",
+      "score": 30,
+      "stars": "★★☆☆☆",
+      "news_count": 4.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "LG전자",
+      "ticker": "066570",
+      "reason": "반도체 실적에 대한 기대",
+      "market": "KR",
+      "score": 20,
+      "stars": "★★☆☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "현대자동차",
+      "ticker": "005380",
+      "reason": "중동 리스크의 완화에 따른 수혜",
+      "market": "KR",
+      "score": 20,
+      "stars": "★★☆☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    },
+    {
+      "name": "기아자동차",
+      "ticker": "000270",
+      "reason": "중동 리스크의 완화에 따른 수혜",
+      "market": "KR",
+      "score": 20,
+      "stars": "★★☆☆☆",
+      "news_count": 0.0,
+      "market_cap_usd": null
+    }
+  ],
+  "valuations": [
+    {
+      "company": "삼성전자",
+      "ticker": "005930",
+      "reason": "어닝 서프라이즈와 반도체 실적에 대한 기대",
+      "market": "KR",
+      "status": "success",
+      "excel_path": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)\\삼성전자_밸류에이션_모델.xlsx",
+      "summary_md": "# 삼성전자 기업가치평가 요약\n분석일: 2026-04-12  |  방법론: **SOTP**\n\n## WACC: 8.4%\n- βL=0.963, Ke=8.5%, Kd(세후)=2.96%\n\n## SOTP EV: 789,337,678백만원\n- 반도체 (메모리/파운드리): EBITDA 34,853,143 × 9.5x = 331,104,858백만원\n- 디스플레이 (LCD/OLED): EBITDA 16,476,031 × 4.9x = 80,732,552백만원\n- 소비자전자 (스마트폰/TV/가전): EBITDA 28,968,845 × 9.5x = 275,204,028백만원\n- 기타 (통신/네트워크/부품): EBITDA 10,229,624 × 10.0x = 102,296,240백만원\n\n## DCF EV: 447,213,424백만원\n- SOTP 대비 -43.3%\n\n## 시나리오 분석\n- 반도체 호황 지속 (Base Case) (40.0%): 주당 169,204원 → 가중 67,682원\n- 칩플레이션 충격 (25.0%): 주당 114,541원 → 가중 28,635원\n- 균형 성장 (20.0%): 주당 155,265원 → 가중 31,053원\n- 복합 리스크 현실화 (15.0%): 주당 125,096원 → 가중 18,764원\n- **확률가중 주당 가치: 146,134원**\n\n## 시장가격 비교\n- 내재가치: 146,134원  |  시장가: 206,000원\n- 괴리율: -29.1%\n\n## 역방향 DCF 진단\n- 진단 유형: **WACC 과대추정**\n- 시장 내재 WACC: 4.51%\n- 시장 내재 성장배수: 5.25x\n- 권고사항:\n  - wacc_params 검토: 현재 WACC=8.4%, 시장 내재 WACC≈4.5%\n  - 베타(bu) 또는 ERP를 업계 컨센서스와 비교해 재보정\n\n## 교차검증\n- SOTP (EV/EBITDA): 141,040원\n- DCF (FCFF): 82,335원\n- EV/Revenue: 211,675원\n- P/E: 205,819원\n- P/BV: 203,863원\n",
+      "market_cap_usd": null,
+      "download_url": "https://znhrkbfpzrwmxxugzyle.supabase.co/storage/v1/object/sign/valuation-excels/2026-04-12_Apr-3rd-week/005930_valuation.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYzNmOGI2ZS0xNTA0LTQ5MjQtOWYwNS01YTQ4YmRmNGMzZjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2YWx1YXRpb24tZXhjZWxzLzIwMjYtMDQtMTJfQXByLTNyZC13ZWVrLzAwNTkzMF92YWx1YXRpb24ueGxzeCIsImlhdCI6MTc3NTk5MDAzMCwiZXhwIjoxNzc4NTgyMDMwfQ.dIduz5z7DRwMDgC8dDHVcaSXdjvOpdyfgWgUuqVlRxU",
+      "remote_path": "2026-04-12_Apr-3rd-week/005930_valuation.xlsx"
+    },
+    {
+      "company": "LG전자",
+      "ticker": "066570",
+      "reason": "반도체 실적에 대한 기대",
+      "market": "KR",
+      "status": "success",
+      "excel_path": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)\\LG전자_밸류에이션_모델.xlsx",
+      "summary_md": "# LG전자 기업가치평가 요약\n분석일: 2026-04-12  |  방법론: **SOTP**\n\n## WACC: 8.69%\n- βL=1.586, Ke=11.93%, Kd(세후)=3.74%\n\n## SOTP EV: 55,179,875백만원\n- Home Appliance & Air Solution: EBITDA 2,128,150 × 9.5x = 20,217,425백만원\n- Consumer Electronics (TV/Display): EBITDA 1,520,107 × 9.0x = 13,680,963백만원\n- Display Panel (LCD/OLED): EBITDA 1,216,085 × 8.5x = 10,336,722백만원\n- Vehicle Components & Solutions: EBITDA 729,651 × 8.8x = 6,420,929백만원\n- Business Solutions & Others: EBITDA 486,434 × 9.3x = 4,523,836백만원\n\n## DCF EV: 38,113,959백만원\n- SOTP 대비 -30.9%\n\n## 시나리오 분석\n- 기준 시나리오 (40.0%): 주당 290,475원 → 가중 116,190원\n- 프리미엄 성공 시나리오 (25.0%): 주당 349,150원 → 가중 87,288원\n- 복합 악재 시나리오 (20.0%): 주당 238,004원 → 가중 47,601원\n- 신사업 돌파 시나리오 (15.0%): 주당 337,519원 → 가중 50,628원\n- **확률가중 주당 가치: 301,707원**\n\n## 시장가격 비교\n- 내재가치: 301,707원  |  시장가: 118,400원\n- 괴리율: +154.8%\n- ⚠ 심각한 괴리. 입력 데이터를 반드시 재검토하세요.\n\n## 역방향 DCF 진단\n- 진단 유형: **시장 저평가 가능성**\n- 시장 내재 WACC: 12.13%\n- 권고사항:\n  - 시장 내재 WACC≈12.1% (모델 WACC=8.7%보다 높음)\n  - 시장 컨센서스 대비 성장가정이 지나치게 낙관적인지 점검\n  - 유동성 리스크, 지배구조 이슈, 업황 악화 시나리오 반영 여부 확인\n\n## 교차검증\n- SOTP (EV/EBITDA): 306,901원\n- DCF (FCFF): 202,128원\n- EV/Revenue: 132,424원\n- P/E: 118,536원\n- P/BV: 117,322원\n",
+      "market_cap_usd": null,
+      "download_url": "https://znhrkbfpzrwmxxugzyle.supabase.co/storage/v1/object/sign/valuation-excels/2026-04-12_Apr-3rd-week/066570_valuation.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYzNmOGI2ZS0xNTA0LTQ5MjQtOWYwNS01YTQ4YmRmNGMzZjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2YWx1YXRpb24tZXhjZWxzLzIwMjYtMDQtMTJfQXByLTNyZC13ZWVrLzA2NjU3MF92YWx1YXRpb24ueGxzeCIsImlhdCI6MTc3NTk5MDAzMSwiZXhwIjoxNzc4NTgyMDMxfQ.uvx0AaafmzJSfw5MhzJFv6IHV4Er12XXuOOQ-oam6To",
+      "remote_path": "2026-04-12_Apr-3rd-week/066570_valuation.xlsx"
+    },
+    {
+      "company": "SK하이닉스",
+      "ticker": "000660",
+      "reason": "반도체 실적에 대한 기대",
+      "market": "KR",
+      "status": "success",
+      "excel_path": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)\\SK하이닉스_밸류에이션_모델.xlsx",
+      "summary_md": "# SK하이닉스 기업가치평가 요약\n분석일: 2026-04-12  |  방법론: **SOTP**\n\n## WACC: 10.64%\n- βL=1.181, Ke=10.88%, Kd(세후)=3.74%\n\n## SOTP EV: 546,804,399백만원\n- 메모리 반도체 (DRAM): EBITDA 27,511,403 × 9.1x = 250,353,767백만원\n- 메모리 반도체 (NAND Flash): EBITDA 29,345,495 × 8.6x = 252,371,257백만원\n- 파운드리 및 기타 반도체: EBITDA 4,279,551 × 10.3x = 44,079,375백만원\n\n## DCF EV: -254,819,800백만원\n- SOTP 대비 -146.6%\n\n## 시나리오 분석\n- 기본 시나리오 (40.0%): 주당 1,007,876원 → 가중 403,150원\n- 강세 시나리오 (25.0%): 주당 1,022,386원 → 가중 255,596원\n- 약세 시나리오 (20.0%): 주당 752,675원 → 가중 150,535원\n- 스트레스 시나리오 (15.0%): 주당 697,118원 → 가중 104,568원\n- **확률가중 주당 가치: 913,849원**\n\n## 시장가격 비교\n- 내재가치: 913,849원  |  시장가: 1,027,000원\n- 괴리율: -11.0%\n\n## 교차검증\n- SOTP (EV/EBITDA): 777,705원\n- EV/Revenue: 1,026,933원\n- P/E: 1,025,654원\n- P/BV: 1,029,821원\n",
+      "market_cap_usd": null,
+      "download_url": "https://znhrkbfpzrwmxxugzyle.supabase.co/storage/v1/object/sign/valuation-excels/2026-04-12_Apr-3rd-week/000660_valuation.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYzNmOGI2ZS0xNTA0LTQ5MjQtOWYwNS01YTQ4YmRmNGMzZjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2YWx1YXRpb24tZXhjZWxzLzIwMjYtMDQtMTJfQXByLTNyZC13ZWVrLzAwMDY2MF92YWx1YXRpb24ueGxzeCIsImlhdCI6MTc3NTk5MDAzMSwiZXhwIjoxNzc4NTgyMDMxfQ.yvuFgL7kw1YcbpLc4YvGA_puiHMpOkftx4Kuo2oGYTU",
+      "remote_path": "2026-04-12_Apr-3rd-week/000660_valuation.xlsx"
+    },
+    {
+      "company": "테슬라",
+      "ticker": "TSLA",
+      "reason": "최근 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+      "market": "US",
+      "status": "no_result"
+    },
+    {
+      "company": "일렉트렉",
+      "ticker": null,
+      "reason": "테슬라의 모델 S와 X 플레이드의 최종 생산 및 판매와 관련된 뉴스",
+      "market": "US",
+      "status": "no_result"
+    },
+    {
+      "company": "야후 파이낸스",
+      "ticker": null,
+      "reason": "엘론 머스크의 발언과 관련된 뉴스",
+      "market": "US",
+      "status": "no_result"
+    },
+    {
+      "company": "엔비디아",
+      "ticker": "NVDA",
+      "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+      "market": "US",
+      "status": "no_result"
+    },
+    {
+      "company": "애플",
+      "ticker": "AAPL",
+      "reason": "테크 산업의 성장 가능성과 관련된 뉴스",
+      "market": "US",
+      "status": "no_result"
+    },
+    {
+      "company": "현대자동차",
+      "ticker": "005380",
+      "reason": "중동 리스크의 완화에 따른 수혜",
+      "market": "KR",
+      "status": "success",
+      "excel_path": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)\\현대자동차_밸류에이션_모델.xlsx",
+      "summary_md": "# 현대자동차 기업가치평가 요약\n분석일: 2026-04-12  |  방법론: **SOTP**\n\n## WACC: 8.08%\n- βL=1.957, Ke=13.96%, Kd(세후)=3.74%\n\n## SOTP EV: 93,171,110백만원\n- 승용차 (Passenger Vehicles): EBITDA 9,066,384 × 4.4x = 39,529,434백만원\n- 상용차 (Commercial Vehicles): EBITDA 4,615,614 × 7.0x = 32,401,610백만원\n- 기타 자동차 관련 (Other Automotive & Parts): EBITDA 1,978,120 × 7.0x = 13,846,840백만원\n- 금융 및 기타 사업 (Financial Services & Others): EBITDA 824,217 × 9.0x = 7,393,226백만원\n\n## DCF EV: 165,968,752백만원\n- SOTP 대비 +78.1%\n\n## 시나리오 분석\n- 기본 시나리오 (40.0%): 주당 -297,232원 → 가중 -118,893원\n- 중국 성공 시나리오 (25.0%): 주당 -176,653원 → 가중 -44,163원\n- 리스크 현실화 시나리오 (20.0%): 주당 -354,167원 → 가중 -70,833원\n- 신사업 가속화 시나리오 (15.0%): 주당 -171,009원 → 가중 -25,651원\n- **확률가중 주당 가치: -259,540원**\n\n## 교차검증\n- SOTP (EV/EBITDA): -319,942원\n- DCF (FCFF): 38,474원\n- EV/Revenue: 505,156원\n- P/E: 488,323원\n- P/BV: 511,557원\n",
+      "market_cap_usd": null,
+      "download_url": "https://znhrkbfpzrwmxxugzyle.supabase.co/storage/v1/object/sign/valuation-excels/2026-04-12_Apr-3rd-week/005380_valuation.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYzNmOGI2ZS0xNTA0LTQ5MjQtOWYwNS01YTQ4YmRmNGMzZjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2YWx1YXRpb24tZXhjZWxzLzIwMjYtMDQtMTJfQXByLTNyZC13ZWVrLzAwNTM4MF92YWx1YXRpb24ueGxzeCIsImlhdCI6MTc3NTk5MDAzMSwiZXhwIjoxNzc4NTgyMDMxfQ.MfclfZD7h7w7YTnQHNZ2cHySRsL88bj855KAjpyHbWI",
+      "remote_path": "2026-04-12_Apr-3rd-week/005380_valuation.xlsx"
+    },
+    {
+      "company": "기아자동차",
+      "ticker": "000270",
+      "reason": "중동 리스크의 완화에 따른 수혜",
+      "market": "KR",
+      "status": "success",
+      "excel_path": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)\\기아자동차_밸류에이션_모델.xlsx",
+      "summary_md": "# 기아자동차 기업가치평가 요약\n분석일: 2026-04-12  |  방법론: **SOTP**\n\n## WACC: 10.6%\n- βL=1.192, Ke=10.95%, Kd(세후)=3.28%\n\n## SOTP EV: 91,742,329백만원\n- 국내 승용차 및 소형 상용차: EBITDA 4,127,225 × 5.2x = 21,461,570백만원\n- 해외 승용차 및 SUV: EBITDA 5,306,433 × 10.0x = 53,064,330백만원\n- 상용차 및 특장차: EBITDA 1,415,049 × 6.5x = 9,197,818백만원\n- 부품 및 기타 사업: EBITDA 943,366 × 8.5x = 8,018,611백만원\n\n## DCF EV: 98,864,462백만원\n- SOTP 대비 +7.8%\n\n## 시나리오 분석\n- 기준 시나리오 (40.0%): 주당 293,927원 → 가중 117,571원\n- 모빌리티 전환 가속화 (25.0%): 주당 322,153원 → 가중 80,538원\n- 리스크 시나리오 (20.0%): 주당 275,322원 → 가중 55,064원\n- 균형 성장 시나리오 (15.0%): 주당 304,324원 → 가중 45,649원\n- **확률가중 주당 가치: 298,822원**\n\n## 시장가격 비교\n- 내재가치: 298,822원  |  시장가: 149,000원\n- 괴리율: +100.6%\n- ⚠ 심각한 괴리. 입력 데이터를 반드시 재검토하세요.\n\n## 역방향 DCF 진단\n- 진단 유형: **시장 저평가 가능성**\n- 시장 내재 WACC: 15.99%\n- 권고사항:\n  - 시장 내재 WACC≈16.0% (모델 WACC=10.6%보다 높음)\n  - 시장 컨센서스 대비 성장가정이 지나치게 낙관적인지 점검\n  - 유동성 리스크, 지배구조 이슈, 업황 악화 시나리오 반영 여부 확인\n\n## 교차검증\n- SOTP (EV/EBITDA): 265,082원\n- DCF (FCFF): 283,409원\n- EV/Revenue: 175,860원\n- P/E: 149,818원\n- P/BV: 141,711원\n",
+      "market_cap_usd": null,
+      "download_url": "https://znhrkbfpzrwmxxugzyle.supabase.co/storage/v1/object/sign/valuation-excels/2026-04-12_Apr-3rd-week/000270_valuation.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mYzNmOGI2ZS0xNTA0LTQ5MjQtOWYwNS01YTQ4YmRmNGMzZjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2YWx1YXRpb24tZXhjZWxzLzIwMjYtMDQtMTJfQXByLTNyZC13ZWVrLzAwMDI3MF92YWx1YXRpb24ueGxzeCIsImlhdCI6MTc3NTk5MDAzMiwiZXhwIjoxNzc4NTgyMDMyfQ.CkSXDNliGWW_FvZujLG5RcgPToWsFsKwWkR6V-J6hqI",
+      "remote_path": "2026-04-12_Apr-3rd-week/000270_valuation.xlsx"
+    }
+  ],
+  "errors": [],
+  "folder_name": "2026-04-12(Apr 3rd week)",
+  "week_dir": "F:\\dev\\Portfolio\\business-valuation-tool\\valuation-results\\2026-04-12(Apr 3rd week)",
+  "status_summary": {
+    "total": 10,
+    "success": 5,
+    "failed": 0
+  }
+}

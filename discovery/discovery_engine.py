@@ -59,17 +59,19 @@ def _contains_korean(text: str) -> bool:
 
 
 def _filter_companies(companies: list[dict], market: str) -> list[dict]:
-    """Remove AI hallucinations: media outlets and mis-named US companies.
+    """Remove AI hallucinations: media outlets and mis-classified companies.
 
     Filters:
     1. Any company whose name (lowercased) matches the media blocklist.
-    2. US companies whose name contains Korean characters — the AI was
-       instructed to use English names; Korean output means it misidentified
-       a media article source as a company.
+    2. US market: name must not contain Hangul (AI was told to use English).
+    3. KR market: must be a genuine Korean listing — requires either Hangul
+       in the name or a 6-digit KRX ticker. Otherwise it's a US/foreign
+       company mentioned in Korean news, not a KR-listed company.
     """
     filtered: list[dict] = []
     for co in companies:
         name: str = co.get("name") or ""
+        ticker: str = (co.get("ticker") or "").strip()
         name_lower = name.lower().strip()
 
         # Filter 1: media/data-provider blocklist
@@ -83,9 +85,21 @@ def _filter_companies(companies: list[dict], market: str) -> list[dict]:
                 "Discovery filter: rejected Korean-named US company %r "
                 "(ticker=%r) — AI should have used English name",
                 name,
-                co.get("ticker"),
+                ticker,
             )
             continue
+
+        # Filter 3: KR market — must be KR-listed (Hangul name or 6-digit ticker)
+        if market == "KR":
+            has_krx_ticker = ticker.isdigit() and len(ticker) == 6
+            if not _contains_korean(name) and not has_krx_ticker:
+                logger.info(
+                    "Discovery filter: rejected non-KR company %r in KR market "
+                    "(ticker=%r) — English name with no KRX ticker",
+                    name,
+                    ticker,
+                )
+                continue
 
         filtered.append(co)
 

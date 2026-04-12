@@ -338,6 +338,7 @@ def _strip_dangerous_tags(text: str) -> str:
 def _build_company_text(
     v: dict,
     company_news: dict[str, list[dict]],
+    company_stars: dict[str, str] | None = None,
 ) -> str:
     """Build plain-text block for one company valuation entry."""
     name = v.get("company", "")
@@ -356,9 +357,13 @@ def _build_company_text(
     reason = v.get("reason", "")
     summary_md = v.get("summary_md", "")
     raw_url = _safe_url(v.get("download_url", ""))
+    stars = (company_stars or {}).get(name, "")
 
     lines: list[str] = []
-    lines.append(f"▶ {name} ({market} · {cap_str})")
+    header = f"▶ {name} ({market} · {cap_str})"
+    if stars:
+        header = f"▶ {name} {stars} ({market} · {cap_str})"
+    lines.append(header)
 
     if reason:
         lines.append(f"  선정 이유: {_strip_dangerous_tags(reason)}")
@@ -410,8 +415,16 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
     status = summary.get("status_summary", {})
     valuations = summary.get("valuations", [])
     discoveries = summary.get("discoveries", [])
+    scored = summary.get("scored_companies", [])
 
     title = f"주간 밸류에이션 리포트 — {label}"
+
+    # Importance stars by name (from scoring phase)
+    company_stars: dict[str, str] = {
+        sc.get("name", ""): sc.get("stars", "")
+        for sc in scored
+        if sc.get("name") and sc.get("stars")
+    }
 
     # Build per-company lookups from discovery data (name → news, name → domain)
     company_news: dict[str, list[dict]] = {}
@@ -459,7 +472,7 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
                     "name": name,
                     # domain from discovery AI — used for Clearbit logo download
                     "domain": company_domains.get(name, ""),
-                    "content": _build_company_text(v, company_news),
+                    "content": _build_company_text(v, company_news, company_stars),
                 }
             )
 

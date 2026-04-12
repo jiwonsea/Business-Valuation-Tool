@@ -1,0 +1,413 @@
+company:
+  name: LG전자
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '066570'
+  cik: null
+  corp_code: '00401731'
+  shares_total: 180072379
+  shares_ordinary: 162886387
+  shares_preferred: 17185992
+  treasury_shares: 1749
+  analysis_date: '2026-04-12'
+segments:
+  SEG1:
+    name: Home Appliance & Air Solution
+    multiple: 9.5
+  SEG2:
+    name: Consumer Electronics (TV/Display)
+    multiple: 9.0
+  SEG3:
+    name: Display Panel (LCD/OLED)
+    multiple: 8.5
+  SEG4:
+    name: Vehicle Components & Solutions
+    multiple: 8.8
+  SEG5:
+    name: Business Solutions & Others
+    multiple: 9.3
+segment_data:
+  2025:
+    SEG1:
+      revenue: 31220309
+      gross_profit: 0
+      op: 867437
+      assets: 24017058
+    SEG2:
+      revenue: 22300220
+      gross_profit: 0
+      op: 619598
+      assets: 17155042
+    SEG3:
+      revenue: 17840176
+      gross_profit: 0
+      op: 495678
+      assets: 13724033
+    SEG4:
+      revenue: 10704106
+      gross_profit: 0
+      op: 297407
+      assets: 8234420
+    SEG5:
+      revenue: 7136071
+      gross_profit: 0
+      op: 198271
+      assets: 5489613
+consolidated:
+  2023:
+    revenue: 82262664
+    op: 3653294
+    net_income: 712902
+    assets: 60240793
+    liabilities: 36742257
+    equity: 19664754
+    dep: 3216999
+    amort: 0
+    gross_borr: 14513834
+    net_borr: 6026271
+    de_ratio: 73.8
+  2024:
+    revenue: 87728182
+    op: 3419675
+    net_income: 367515
+    assets: 65629589
+    liabilities: 40417925
+    equity: 20994769
+    dep: 3533864
+    amort: 0
+    gross_borr: 15242402
+    net_borr: 7669366
+    de_ratio: 72.6
+  2025:
+    revenue: 89200882
+    op: 2478392
+    net_income: 960579
+    assets: 68620167
+    liabilities: 40068142
+    equity: 23887393
+    dep: 3602036
+    amort: 0
+    gross_borr: 13960335
+    net_borr: 5190494
+    de_ratio: 58.4
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.05
+  de: 65.5
+  tax: 22.0
+  kd_pre: 4.8
+  eq_w: 60.4
+scenarios:
+  A:
+    name: 기준 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 162884638
+    desc: 칩플레이션 영향이 지속되지만 프리미엄 가전 전략으로 일부 상쇄되는 시나리오. 그룹 차원의 둔화는 제한적으로 영향을 미치며, AI·멤버십
+      신사업이 점진적 성과를 보임.
+    probability_rationale: '기준 확률: 50%. 조건부 분해: P(칩플레이션 지속)=70% × P(프리미엄 전략 성공)=60%
+      × P(그룹 영향 제한적)=90% ≈ 38%, 40%로 조정'
+    active_drivers:
+      chipflation: 0.6
+      premium_focus: 0.7
+      group_slowdown: 0.3
+    segment_multiples:
+      SEG1: 9.5
+      SEG2: 10.2
+      SEG4: 12.8
+      SEG5: 8.5
+  B:
+    name: 프리미엄 성공 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 162884638
+    desc: 프리미엄 가전 전략이 크게 성공하고 AI·멤버십 신사업이 예상보다 빠른 성과를 보이는 시나리오. 칩플레이션 영향도 상대적으로 제한적이며,
+      브랜드 프리미엄 확대로 마진 개선이 뚜렷함.
+    probability_rationale: '기준 확률: 30%. 조건부 분해: P(프리미엄 전략 대성공)=40% × P(AI 서비스 조기 성과)=50%
+      × P(칩플레이션 완화)=80% ≈ 16%, 25%로 상향 조정'
+    active_drivers:
+      premium_focus: 1.0
+      ai_membership: 1.0
+      chipflation: 0.3
+    segment_multiples:
+      SEG1: 10.8
+      SEG2: 11.5
+      SEG4: 14.2
+      SEG5: 9.2
+  C:
+    name: 복합 악재 시나리오
+    prob: 20.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 162884638
+    desc: 칩플레이션이 심화되고 LG그룹 전반의 둔화가 본격화되는 시나리오. 프리미엄 전략도 원가 상승 압박으로 기대만큼 성과를 내지 못하며,
+      전반적인 수익성 악화가 지속됨.
+    probability_rationale: '기준 확률: 25%. 조건부 분해: P(칩플레이션 심화)=60% × P(그룹 전반 부진)=70%
+      × P(프리미엄 전략 실패)=40% ≈ 17%, 20%로 조정'
+    active_drivers:
+      chipflation: 1.0
+      group_slowdown: 0.8
+      premium_focus: 0.2
+    segment_multiples:
+      SEG1: 8.2
+      SEG2: 8.8
+      SEG4: 10.5
+      SEG5: 7.3
+  D:
+    name: 신사업 돌파 시나리오
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 162884638
+    desc: AI 기반 서비스와 멤버십 모델이 예상을 크게 뛰어넘는 성과를 보이며 새로운 성장 동력으로 부상하는 시나리오. 전통적인 가전업체에서
+      플랫폼 기업으로의 전환이 가시화되어 밸류에이션 리레이팅 발생.
+    probability_rationale: '기준 확률: 20%. 조건부 분해: P(AI 서비스 대성공)=25% × P(멤버십 모델 확산)=60%
+      × P(시장 재평가)=70% ≈ 11%, 15%로 상향 조정'
+    active_drivers:
+      ai_membership: 1.0
+      premium_focus: 0.8
+      chipflation: 0.4
+    segment_multiples:
+      SEG1: 11.5
+      SEG2: 12.0
+      SEG4: 15.5
+      SEG5: 10.0
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
+  - 0.03
+  tax_rate: 21.2
+  capex_to_da: 1.14
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 3907380
+  capex_fade_to: null
+  da_to_ebitda_override: 0.523
+pe_multiple: 20.1
+ev_revenue_multiple: 0.3
+pbv_multiple: 0.8
+cps_principal: 0
+cps_years: 0
+net_debt: 5190494
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: 삼성전자 (Consumer Electronics)
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: 한국 대형 가전업체, 냉장고/세탁기/에어컨 포함. 2023년 EBITDA 기준 계산. 글로벌 규모 및 제품 포트폴리오 유사성 높음.
+- name: LG디스플레이 (관련 제조)
+  segment_code: SEG1
+  ev_ebitda: 6.2
+  notes: LG 그룹 내 제조업체. 가전 부품 공급 및 제조 구조 유사. 2023년 기준.
+- name: Whirlpool (미국)
+  segment_code: SEG1
+  ev_ebitda: 7.8
+  notes: 세계 최대 가전업체. 냉장고, 세탁기, 건조기 주력. 2023년 NYSE 기준 EV/EBITDA. 직접 비교 대상.
+- name: Electrolux (스웨덴)
+  segment_code: SEG1
+  ev_ebitda: 9.2
+  notes: 유럽 주요 가전업체. 주방가전, 세탁기, 에어컨 포함. 2023년 NASDAQ OMX 기준. 글로벌 경쟁사.
+- name: Arçelik (터키)
+  segment_code: SEG1
+  ev_ebitda: 11.5
+  notes: 신흥시장 가전 선도업체. 냉장고, 세탁기, 에어컨 풀 라인업. 2023년 BIST 기준. 신흥시장 프리미엄 반영.
+- name: Midea Group (중국)
+  segment_code: SEG1
+  ev_ebitda: 10.8
+  notes: 중국 최대 가전업체. 에어컨, 냉장고, 세탁기 주력. 2023년 SZSE 기준. 아시아 경쟁 구도 반영.
+- name: Haier Smart Home (중국)
+  segment_code: SEG1
+  ev_ebitda: 12.1
+  notes: 중국 가전 선도사. 냉장고, 세탁기, 에어컨, IoT 가전. 2023년 SZSE 기준. 스마트 가전 프리미엄.
+- name: Samsung Electronics (Consumer Electronics)
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Direct competitor in TV/Display. 2023 CE division EBITDA margin ~8-9%. Market
+    cap 70조원 기준 EV/EBITDA 8-9배. DART 공시 기준.
+- name: SK Innovation (Display Materials)
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: Display 소재 공급업체. TV/Display 밸류체인 참여. 2023 EBITDA margin 10-11%. 한국 상장사 중
+    유사 비즈니스.
+- name: Sony (Consumer Electronics & Imaging)
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: 글로벌 TV/Display 경쟁사. 2023 EV/EBITDA 11-12배. 프리미엄 브랜드 마진율 반영. Bloomberg 데이터.
+- name: TCL Electronics (중국 상장)
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: 세계 최대 TV 제조사. 2023 EV/EBITDA 7-8배. 저가 경쟁 시장 반영. 홍콩 상장(01070.HK).
+- name: Hisense (중국 상장)
+  segment_code: SEG2
+  ev_ebitda: 8.1
+  notes: 글로벌 TV 제조 3위. 2023 EV/EBITDA 8-8.5배. TCL과 유사 비즈니스 모델. 중국 상장(000921.SZ).
+- name: Panasonic (일본 상장)
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: TV/Display 사업 축소 중. 2023 EV/EBITDA 9-10배. 성숙 시장 평가. TYO:6752.
+- name: Samsung Display
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: LCD/OLED 패널 제조 전문. LG Display와 직접 경쟁사. 2023년 EBITDA margin 약 8-10% 수준. 한국
+    상장사(삼성전자 자회사이나 별도 재무공시 기준).
+- name: LG Display
+  segment_code: SEG3
+  ev_ebitda: 7.2
+  notes: OLED 패널 선도 기업. 2023년 영업이익률 약 5-7%. KOSPI 상장. 자체 비교 기준점.
+- name: BOE (Beijing Orient Electronics)
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: 중국 최대 LCD/OLED 패널 제조사. 2023년 EBITDA margin 약 12-14%. 홍콩 상장(1165.HK). 규모 및
+    기술 유사성 높음.
+- name: AU Optronics (AUO)
+  segment_code: SEG3
+  ev_ebitda: 6.8
+  notes: 대만 LCD 패널 제조사. 2023년 EBITDA margin 약 8-10%. 대만 상장(2409.TW). 중소형 LCD 경쟁사.
+- name: CSOT (China Star Optoelectronics)
+  segment_code: SEG3
+  ev_ebitda: 10.2
+  notes: 중국 LCD/OLED 패널 제조사. 2023년 EBITDA margin 약 10-12%. 상장사 아님(TCL 자회사). 공개 재무정보
+    제한적. 확인 필요.
+- name: Japan Display Inc. (JDI)
+  segment_code: SEG3
+  ev_ebitda: 5.5
+  notes: 일본 LCD 패널 제조사. 2023년 EBITDA margin 약 3-5%. 도쿄 상장(6740.T). 소형 LCD 특화. 마진율
+    낮음.
+- name: 현대모비스
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: 한국 자동차부품 최대 기업, 전장/안전부품 포트폴리오 유사. 2023년 EBITDA 약 2.8조원, 시가총액 약 23.8조원 기준.
+    DART 공시 참고.
+- name: 만도
+  segment_code: SEG4
+  ev_ebitda: 7.2
+  notes: 제동/조향 시스템 전문, Vehicle Components 직접 유사. 2023년 EBITDA 약 0.9조원, 시가총액 약 6.5조원
+    기준.
+- name: Aptiv PLC
+  segment_code: SEG4
+  ev_ebitda: 9.8
+  notes: 글로벌 자동차 전장부품 선도기업, 세그먼트 벤치마크 기업. 2023년 EV/EBITDA 9.5~10.0 범위, Bloomberg 데이터.
+- name: Visteon Corporation
+  segment_code: SEG4
+  ev_ebitda: 8.3
+  notes: 자동차 전자제어 및 인포테인먼트 전문, 사업구조 유사. 2023년 EV/EBITDA 8.0~8.5 범위.
+- name: Lear Corporation
+  segment_code: SEG4
+  ev_ebitda: 7.8
+  notes: 시트/전장 통합 솔루션, 대규모 자동차부품 기업. 2023년 EV/EBITDA 7.5~8.0 범위.
+- name: Magna International
+  segment_code: SEG4
+  ev_ebitda: 9.1
+  notes: 완성차 모듈식 부품 공급, 글로벌 규모 유사. 2023년 EV/EBITDA 8.8~9.3 범위.
+- name: 삼성전기
+  segment_code: SEG4
+  ev_ebitda: 11.2
+  notes: 자동차 전장부품(커넥터/센서) 포함, 부분적 유사성. 2023년 EBITDA 약 1.2조원, 시가총액 약 13.4조원 기준. 프리미엄
+    평가.
+- name: 삼성전자 (IM부문)
+  segment_code: SEG5
+  ev_ebitda: 8.5
+  notes: 사무기기/프린터/복합기 사업. 유사한 B2B 오피스솔루션 포트폴리오. 2023년 IM부문 EBITDA 마진 기반 추정. KOSPI
+    상장.
+- name: HP Inc.
+  segment_code: SEG5
+  ev_ebitda: 9.2
+  notes: 프린터/복합기 글로벌 선도사. Ricoh/Canon과 직접 경쟁. 2023년 EV/EBITDA 기반. 미국 상장.
+- name: Xerox Holdings
+  segment_code: SEG5
+  ev_ebitda: 7.8
+  notes: 복합기/프린터 전문. LG BS&O 비교대상 기업. 2023년 실적 기반. 미국 상장.
+- name: 리코(Ricoh)
+  segment_code: SEG5
+  ev_ebitda: 9.5
+  notes: 복합기/프린터 일본 선도사. 세그먼트 직접 비교대상. 2023년 도쿄증권거래소 상장.
+- name: 캐논(Canon)
+  segment_code: SEG5
+  ev_ebitda: 10.1
+  notes: 프린터/복합기/이미징 솔루션. 유사 B2B 포트폴리오. 2023년 도쿄증권거래소 상장.
+- name: 코니카미놀타(Konica Minolta)
+  segment_code: SEG5
+  ev_ebitda: 8.9
+  notes: 복합기/프린터/IT솔루션. LG BS&O와 사업구조 유사. 2023년 도쿄증권거래소 상장.
+- name: 현대오토에버
+  segment_code: SEG5
+  ev_ebitda: 11.2
+  notes: IT솔루션/비즈니스서비스. B2B 기술서비스 유사성. KOSDAQ 상장. 다소 높은 마진 반영.
+news_key_issues: '- [리스크] 칩플레이션으로 인한 노트북 가격 인상, 소비자 등골 휘청 (2026-04-12)
+
+  - [리스크] 칩플레이션, 스마트폰 넘어 전 가전에 확산…가격표 재인쇄 들어가나 (2026-04-12)
+
+  - [리스크] SSD 가격 상승으로 PC 가격 추가 상승 예상 (2026-04-12)
+
+  - [기회] AI·멤버십으로 승부수...가전양판점 투톱, 불황 돌파 사활 (2026-04-12)
+
+  - [리스크] LG그룹, 주력사업 동반 둔화…''성장→방어'' 전략 조정 (2026-04-12)
+
+  - [기회] 워시타워·스타일러·OLED … 프리미엄 가전에 힘싣는 LG (2026-04-12)
+
+  - [리스크] 중복상장에 연간이익 60조 착시 … K증시 레벨업 힘겨워 (2026-04-12)
+
+  - [리스크] 진영전자, 수출 전선에서 운임과 관세 증가로 수익성 악화 우려 (2026-04-12)'
+news_drivers:
+- id: chipflation
+  name: 칩플레이션 확산
+  category: industry
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: 반도체 가격 상승이 전 가전제품으로 확산되어 원가 상승과 수요 둔화 야기. 과거 원자재 인플레이션 시기(2008, 2011)
+    가전업체 마진율 평균 2-3%p 하락 경험
+- id: premium_focus
+  name: 프리미엄 가전 집중
+  category: company
+  effects:
+    growth_adj_pct: 12
+    wacc_adj: -0.2
+    market_sentiment_pct: 5
+  rationale: 워시타워, 스타일러, OLED 등 고부가가치 제품 강화로 마진 개선 기대. LG전자 프리미엄 제품 매출 비중 확대 시 ROE
+    1-2%p 개선 패턴
+- id: ai_membership
+  name: AI·멤버십 신사업
+  category: company
+  effects:
+    growth_adj_pct: 8
+    wacc_adj: 0
+    market_sentiment_pct: 3
+  rationale: AI 기반 서비스와 멤버십 모델로 신규 수익원 창출. 가전업계 서비스 매출 비중 10%p 증가 시 밸류에이션 멀티플 15-20%
+    프리미엄 적용 사례
+- id: group_slowdown
+  name: LG그룹 전반 둔화
+  category: macro
+  effects:
+    growth_adj_pct: -10
+    wacc_adj: 0.4
+    market_sentiment_pct: -12
+  rationale: 그룹 주력사업 동반 둔화로 시너지 효과 감소 및 투자 여력 제약. 대기업 그룹 전반 실적 부진 시 개별 계열사 디스카운트 10-15%
+    적용 관례
+mc_enabled: true

@@ -113,11 +113,10 @@ scenarios:
       foldable_iphone_hype: 0.3
       institutional_selling: 0.5
     segment_multiples:
-      iPhone: 18.5
-      Services: 25.0
-      Mac: 15.0
-      iPad: 16.0
-      Wearables: 20.0
+      SEG1: 18.5
+      SEG2: 25.0
+      SEG3: 15.5
+      SEG4: 20.0
   B:
     name: 혁신 모멘텀 시나리오
     prob: 25.0
@@ -136,11 +135,10 @@ scenarios:
       supply_chain_investment: 0.8
       ai_competition_lag: 0.2
     segment_multiples:
-      iPhone: 22.0
-      Services: 28.0
-      Mac: 16.5
-      iPad: 18.0
-      Wearables: 24.0
+      SEG1: 22.0
+      SEG2: 28.0
+      SEG3: 17.25
+      SEG4: 24.0
   C:
     name: 경쟁력 약화 시나리오
     prob: 20.0
@@ -160,11 +158,10 @@ scenarios:
       product_launch_delay: 0.8
       institutional_selling: 0.7
     segment_multiples:
-      iPhone: 15.0
-      Services: 20.0
-      Mac: 12.5
-      iPad: 13.0
-      Wearables: 16.0
+      SEG1: 15.0
+      SEG2: 20.0
+      SEG3: 12.75
+      SEG4: 16.0
   D:
     name: 구조적 전환 시나리오
     prob: 15.0
@@ -183,11 +180,10 @@ scenarios:
       supply_chain_investment: 1.0
       institutional_selling: 0.3
     segment_multiples:
-      iPhone: 17.0
-      Services: 30.0
-      Mac: 14.0
-      iPad: 15.0
-      Wearables: 18.0
+      SEG1: 17.0
+      SEG2: 30.0
+      SEG3: 14.5
+      SEG4: 18.0
 dcf_params:
   ebitda_growth_rates:
   - 0.1

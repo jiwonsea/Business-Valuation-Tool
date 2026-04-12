@@ -1,0 +1,328 @@
+company:
+  name: 기아자동차
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '000270'
+  cik: null
+  corp_code: '00106641'
+  shares_total: 390412998
+  shares_ordinary: 390412998
+  shares_preferred: 0
+  treasury_shares: 1810273
+  analysis_date: '2026-04-12'
+segments:
+  SEG1:
+    name: 국내 승용차 및 소형 상용차
+    multiple: 5.2
+  SEG2:
+    name: 해외 승용차 및 SUV
+    multiple: 10.0
+  SEG3:
+    name: 상용차 및 특장차
+    multiple: 6.5
+  SEG4:
+    name: 부품 및 기타 사업
+    multiple: 8.5
+segment_data:
+  2025:
+    SEG1:
+      revenue: 39949322
+      gross_profit: 0
+      op: 3177352
+      assets: 34642669
+    SEG2:
+      revenue: 51363414
+      gross_profit: 0
+      op: 4085167
+      assets: 44540575
+    SEG3:
+      revenue: 13696910
+      gross_profit: 0
+      op: 1089378
+      assets: 11877487
+    SEG4:
+      revenue: 9131274
+      gross_profit: 0
+      op: 726252
+      assets: 7918324
+consolidated:
+  2023:
+    revenue: 99808420
+    op: 11610599
+    net_income: 8776970
+    assets: 80627826
+    liabilities: 34069591
+    equity: 46552384
+    dep: 2353435
+    amort: 0
+    gross_borr: 4127631
+    net_borr: -10225511
+    de_ratio: 8.9
+  2024:
+    revenue: 107448752
+    op: 12667139
+    net_income: 9772957
+    assets: 92755874
+    liabilities: 36915565
+    equity: 55831165
+    dep: 2549269
+    amort: 0
+    gross_borr: 3596491
+    net_borr: -9970077
+    de_ratio: 6.4
+  2025:
+    revenue: 114140919
+    op: 9078148
+    net_income: 7560983
+    assets: 98979055
+    liabilities: 37788591
+    equity: 61187884
+    dep: 2713924
+    amort: 0
+    gross_borr: 2728968
+    net_borr: -11269138
+    de_ratio: 4.5
+wacc_params:
+  rf: 3.2
+  erp: 6.5
+  bu: 1.15
+  de: 4.7
+  tax: 22.0
+  kd_pre: 4.2
+  eq_w: 95.5
+scenarios:
+  A:
+    name: 기준 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 388602725
+    desc: 기아의 모빌리티 전환이 계획대로 진행되고 제품 리뉴얼 효과가 나타나는 시나리오. 지정학적 리스크는 제한적 영향.
+    probability_rationale: '기준 확률: 40%. 현재 진행 중인 모빌리티 전환과 제품 리뉴얼은 기정사실화된 상황으로 중간 강도로
+      반영'
+    active_drivers:
+      mobility_transformation: 0.6
+      product_refresh_cycle: 0.8
+      geopolitical_risk: 0.3
+    segment_multiples:
+      SEG1: 8.5
+      SEG2: 8.5
+      SEG3: 5.5
+      SEG4: 7.0
+  B:
+    name: 모빌리티 전환 가속화
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 388602725
+    desc: 기아의 모빌리티 사업 전환이 예상보다 빠르게 진행되고 친환경 모빌리티 시장에서 강력한 포지션을 확보하는 시나리오. 그룹 차원의 시너지
+      효과도 극대화.
+    probability_rationale: '기준 확률: 30%. P(전환 가속화)=60% × P(시장 수용성|가속화)=70% × P(수익성
+      확보|수용성)=60% ≈ 25%'
+    active_drivers:
+      mobility_transformation: 1.0
+      eco_mobility_acceleration: 0.8
+      product_refresh_cycle: 0.6
+    segment_multiples:
+      SEG1: 10.0
+      SEG2: 10.0
+      SEG3: 6.5
+      SEG4: 8.5
+  C:
+    name: 리스크 시나리오
+    prob: 20.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 388602725
+    desc: 중동 리스크가 확산되어 글로벌 경기 둔화와 공급망 차질이 발생하는 시나리오. 모빌리티 전환 투자는 지속되지만 단기 실적에 부담.
+    probability_rationale: '기준 확률: 25%. P(지정학적 악화)=40% × P(시장 충격|악화)=80% × P(기업 영향|충격)=70%
+      ≈ 22%, 반올림하여 20%'
+    active_drivers:
+      geopolitical_risk: 1.0
+      mobility_transformation: 0.4
+      eco_mobility_acceleration: 0.3
+    segment_multiples:
+      SEG1: 7.0
+      SEG2: 7.0
+      SEG3: 4.5
+      SEG4: 6.0
+  D:
+    name: 균형 성장 시나리오
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 388602725
+    desc: 모든 긍정적 요인들이 균형있게 작용하면서 안정적인 성장을 보이는 시나리오. 리스크 요인들도 관리 가능한 수준에서 통제.
+    probability_rationale: '기준 확률: 20%. P(모든 요인 균형)=50% × P(안정적 성장|균형)=60% ≈ 30%,
+      하지만 현실적으로 모든 요인이 균형잡힐 확률은 낮아 15%로 조정'
+    active_drivers:
+      mobility_transformation: 0.7
+      eco_mobility_acceleration: 0.6
+      product_refresh_cycle: 0.7
+      geopolitical_risk: 0.2
+    segment_multiples:
+      SEG1: 9.0
+      SEG2: 9.0
+      SEG3: 6.0
+      SEG4: 7.5
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.0675
+  - 0.055
+  - 0.0425
+  - 0.03
+  tax_rate: 16.7
+  capex_to_da: 1.67
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 4993069
+  capex_fade_to: null
+  da_to_ebitda_override: 0.1887
+pe_multiple: 7.7
+ev_revenue_multiple: 0.5
+pbv_multiple: 0.9
+cps_principal: 0
+cps_years: 0
+net_debt: -11269138
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: 현대자동차
+  segment_code: SEG1
+  ev_ebitda: 4.2
+  notes: 국내 완성차 제조사, 동일 산업 분류. 2024년 EBITDA 기준 시장 데이터. 기아와 유사한 제품 포트폴리오 및 시장 지위.
+- name: 롯데정밀화학 자동차부문
+  segment_code: SEG1
+  ev_ebitda: 6.8
+  notes: 국내 자동차 부품/소재 공급사. 기아의 공급망 파트너. 자동차 산업 노출도 유사.
+- name: BMW
+  segment_code: SEG1
+  ev_ebitda: 5.1
+  notes: 국제 완성차 제조사. 프리미엄 세그먼트. 글로벌 규모 및 기술 수준 비교 기준. 2024년 Bloomberg 데이터.
+- name: Volkswagen
+  segment_code: SEG1
+  ev_ebitda: 4.8
+  notes: 국제 완성차 제조사. 대중차 세그먼트. 기아와 유사한 시장 포지셔닝. 글로벌 경쟁사 벤치마크.
+- name: Geely-Volvo
+  segment_code: SEG1
+  ev_ebitda: 5.5
+  notes: 중국-스웨덴 합작 완성차 제조사. 신흥시장 및 선진시장 이중 노출. 기아의 글로벌 전략과 유사.
+- name: Hyundai Mobis
+  segment_code: SEG1
+  ev_ebitda: 7.2
+  notes: 국내 자동차 부품 제조사. 기아의 주요 부품 공급사. 자동차 산업 사이클 노출도 높음.
+- name: 만트럭버스
+  segment_code: SEG3
+  ev_ebitda: 5.2
+  notes: 국내 상용차 제조사, 직접 경쟁사. 2023년 EBITDA 마진 4-5% 기반. DART 공시 참고
+- name: 현대트럭
+  segment_code: SEG3
+  ev_ebitda: 6.8
+  notes: 현대자동차 상용차 부문, 유사 사업구조. 2023년 영업이익률 5-6% 기반
+- name: Volvo AB (Trucks Division)
+  segment_code: SEG3
+  ev_ebitda: 7.5
+  notes: 글로벌 프리미엄 상용차, 유사 기술/마진. 2023년 트럭 부문 EBITDA 마진 8-9%
+- name: Daimler Truck Holding
+  segment_code: SEG3
+  ev_ebitda: 6.2
+  notes: 글로벌 대형 상용차 제조, 유사 규모/구조. 2023년 EBITDA 마진 6-7%
+- name: Paccar Inc
+  segment_code: SEG3
+  ev_ebitda: 8.1
+  notes: 북미 프리미엄 상용차, 높은 마진(10-12%). 글로벌 벤치마크
+- name: Weichai Power
+  segment_code: SEG3
+  ev_ebitda: 4.8
+  notes: 중국 상용차 엔진/파워트레인, 저마진 시장 반영. 2023년 EBITDA 마진 3-4%
+- name: 현대모비스
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: 국내 최대 자동차부품 기업, 현대·기아 계열사. 2023년 EBITDA 약 2.8조원, 시가총액 약 23.8조원 기준. 부품사업 구조
+    동일성 최고.
+- name: 만도
+  segment_code: SEG4
+  ev_ebitda: 7.2
+  notes: 국내 주요 자동차부품 기업, 제동·조향·현가 시스템 전문. 2023년 EBITDA 약 0.9조원, 시가총액 약 6.5조원 기준. 기아
+    부품공급 비중 높음.
+- name: 삼성전자 자동차부품사업부
+  segment_code: SEG4
+  ev_ebitda: 9.8
+  notes: 삼성전자 내 자동차부품 부문(배터리, 반도체, 디스플레이). 별도 상장 미진행으로 삼성전자 전체 멀티플 9.8배 참고. 전장화 추세
+    반영.
+- name: Bosch (독일)
+  segment_code: SEG4
+  ev_ebitda: 11.5
+  notes: 글로벌 최대 자동차부품 기업, 매출 약 88조원(2023). 다각화된 포트폴리오(전장, 센서, 소프트웨어). 국제 벤치마크 역할.
+- name: Aptiv (미국)
+  segment_code: SEG4
+  ev_ebitda: 6.8
+  notes: 자동차 전장화 선도 기업, 자율주행·전기화 솔루션 전문. 2023년 EBITDA 약 1.5조원, 시가총액 약 10.2조원 기준. 성장성
+    프리미엄 반영.
+- name: Magna International (캐나다)
+  segment_code: SEG4
+  ev_ebitda: 7.9
+  notes: 글로벌 2위 부품사, 완성차 위탁생산(CIMS) 포함. 2023년 EBITDA 약 2.0조원, 시가총액 약 15.8조원 기준. 다각화
+    구조 유사.
+news_key_issues: '- [기회] 기아, 미래 사업 전환 본격화…기업가치 상승 기대 (2026-04-11)
+
+  - [기회] 현대차·기아, 친환경 모빌리티 행보 ''속도전'' (2026-04-09)
+
+  - [기회] 기아, 車 넘어 ''모빌리티''로 대전환 (2026-04-08)
+
+  - [리스크] 중동 리스크 재부각에 외국인 1조 매도… 코스피 5800선 내줘 (2026-04-09)
+
+  - [기회] 기아 K5 두 번째 페이스리프트 모델 최초 포착 (2026-04-10)'
+news_drivers:
+- id: mobility_transformation
+  name: 기아 모빌리티 사업 전환 가속화
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 8
+  rationale: 기아의 미래 사업 전환 본격화로 기업가치 상승 기대. 과거 자동차 업계 사업 전환 성공 사례(테슬라, BYD) 기준 15-25%
+    성장률 개선 효과. 모빌리티 전환 성공 기업들의 밸류에이션 프리미엄 평균 8-12%
+- id: eco_mobility_acceleration
+  name: 현대차그룹 친환경 모빌리티 속도전
+  category: industry
+  effects:
+    growth_adj_pct: 10
+    market_sentiment_pct: 5
+  rationale: 친환경 모빌리티 시장 확대로 업계 전반 성장 가속화. IEA 전망 기준 글로벌 EV 시장 연평균 20% 성장 지속, 한국 완성차
+    업체들의 시장점유율 확대 기대로 10% 성장률 상향
+- id: product_refresh_cycle
+  name: K5 페이스리프트 등 제품 리뉴얼
+  category: company
+  effects:
+    growth_adj_pct: 5
+    market_sentiment_pct: 3
+  rationale: 주력 모델 페이스리프트로 제품 경쟁력 강화. 과거 기아 주력 모델 페이스리프트 시 평균 5-8% 판매량 증가, 단기 마진 개선
+    효과
+- id: geopolitical_risk
+  name: 중동 리스크 재부각
+  category: macro
+  effects:
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: 중동 리스크로 글로벌 증시 변동성 확대, 외국인 자금 유출. 과거 중동 위기 시 한국 증시 평균 8-12% 조정, 리스크 프리미엄
+    30bp 상승
+mc_enabled: true

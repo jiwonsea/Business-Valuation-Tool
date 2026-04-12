@@ -11,18 +11,42 @@ company:
   shares_ordinary: 5919637922
   shares_preferred: 815974664
   treasury_shares: 91828987
-  analysis_date: '2026-04-11'
+  analysis_date: '2026-04-12'
 segments:
-  MAIN:
-    name: Main Business
+  SEG1:
+    name: 반도체 (메모리/파운드리)
+    multiple: 9.5
+  SEG2:
+    name: 디스플레이 (LCD/OLED)
+    multiple: 4.9
+  SEG3:
+    name: 소비자전자 (스마트폰/TV/가전)
+    multiple: 9.5
+  SEG4:
+    name: 기타 (통신/네트워크/부품)
     multiple: 10.0
 segment_data:
   2025:
-    MAIN:
-      revenue: 333605938
+    SEG1:
+      revenue: 128438286
       gross_profit: 0
-      op: 43601051
-      assets: 566942110
+      op: 16786405
+      assets: 218272712
+    SEG2:
+      revenue: 60716281
+      gross_profit: 0
+      op: 7935391
+      assets: 103183464
+    SEG3:
+      revenue: 106753900
+      gross_profit: 0
+      op: 13952336
+      assets: 181421475
+    SEG4:
+      revenue: 37697471
+      gross_profit: 0
+      op: 4926919
+      assets: 64064458
 consolidated:
   2023:
     revenue: 258935494
@@ -61,17 +85,17 @@ consolidated:
     net_borr: -32617239
     de_ratio: 5.9
 wacc_params:
-  rf: 3.5
-  erp: 7.0
-  bu: 1.194
+  rf: 3.2
+  erp: 5.5
+  bu: 0.95
   de: 1.8
-  tax: 21.2
-  kd_pre: 3.5
+  tax: 22.0
+  kd_pre: 3.8
   eq_w: 98.2
 scenarios:
-  Base:
-    name: Base Case
-    prob: 50
+  A:
+    name: 반도체 호황 지속 (Base Case)
+    prob: 40.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -79,12 +103,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: 0
-    terminal_growth_adj: 0
-    desc: Base case with consensus estimates
-  Bull:
-    name: Bull Case
-    prob: 25
+    desc: AI 및 데이터센터 수요 지속으로 메모리 반도체 호황이 유지되고, 외국인 투자자 복귀로 밸류에이션 프리미엄 확대. 노조 이슈는 제한적
+      영향에 그치며 전반적으로 긍정적 실적 전망.
+    probability_rationale: 'Base rate: 반도체 업사이클 지속 확률 70%. 조건부 분해: P(AI수요 지속)=70%
+      × P(공급 균형)=80% × P(지정학적 안정)=70% ≈ 40%'
+    active_drivers:
+      semiconductor_boom: 0.8
+      labor_dispute: 0.3
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 9.0
+      SEG3: 11.0
+      SEG4: 8.0
+  B:
+    name: 칩플레이션 충격
+    prob: 25.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -92,12 +125,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: 20
-    terminal_growth_adj: 0.3
-    desc: Upside scenario
-  Bear:
-    name: Bear Case
-    prob: 25
+    desc: 반도체 가격 급등이 최종 제품 가격 상승으로 이어지면서 소비자 수요 위축. 인플레이션 압력으로 금리 상승 우려가 확산되고, 노조
+      분규까지 겹치면서 실적 부진 심화.
+    probability_rationale: 'Base rate: 인플레이션 재점화 확률 30%. 조건부 분해: P(반도체 가격 급등)=60%
+      × P(최종재 가격 전가)=70% × P(수요 위축)=60% ≈ 25%'
+    active_drivers:
+      chipflation_risk: 1.0
+      labor_dispute: 0.7
+    segment_multiples:
+      SEG1: 8.5
+      SEG2: 6.5
+      SEG3: 7.5
+      SEG4: 6.0
+  C:
+    name: 균형 성장
+    prob: 20.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -105,15 +147,47 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    growth_adj_pct: -25
-    terminal_growth_adj: -0.3
-    desc: Downside scenario
+    desc: 반도체 호황이 다소 둔화되지만 에어컨 등 생활가전 수요 증가로 상쇄. 노사협상이 합리적 수준에서 타결되면서 안정적 성장세 유지.
+    probability_rationale: 'Base rate: 혼재된 시장 환경 확률 40%. 조건부 분해: P(반도체 둔화)=50% × P(가전
+      호조)=60% × P(노사 타협)=70% ≈ 20%'
+    active_drivers:
+      semiconductor_boom: 0.3
+      appliance_demand: 1.0
+      labor_dispute: 0.4
+    segment_multiples:
+      SEG1: 10.5
+      SEG2: 10.5
+      SEG3: 10.0
+      SEG4: 8.5
+  D:
+    name: 복합 리스크 현실화
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5827808935
+    desc: 노조 분규 장기화와 칩플레이션이 동시에 발생하면서 운영비용 증가와 수요 위축이 복합적으로 작용. 반도체 호황 효과도 상쇄되면서 실적
+      부진 심화.
+    probability_rationale: 'Base rate: 다중 리스크 동시 발생 확률 15%. 조건부 분해: P(노조 장기화)=30%
+      × P(칩플레이션)=40% × P(수요 급감)=50% ≈ 15%'
+    active_drivers:
+      labor_dispute: 1.0
+      chipflation_risk: 0.8
+      semiconductor_boom: 0.2
+    segment_multiples:
+      SEG1: 7.5
+      SEG2: 6.0
+      SEG3: 6.5
+      SEG4: 5.5
 dcf_params:
   ebitda_growth_rates:
-  - 0.3
-  - 0.23
-  - 0.17
   - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
   - 0.03
   tax_rate: 21.2
   capex_to_da: 1.31
@@ -130,5 +204,124 @@ cps_years: 0
 net_debt: -32617239
 eco_frontier: 0
 base_year: 2025
-peers: []
+peers:
+- name: SK하이닉스
+  segment_code: SEG1
+  ev_ebitda: 5.8
+  notes: 국내 메모리반도체 최대 경쟁사. DRAM/NAND 동일 사업구조. 2024년 EBITDA 마진 회복 중. 한국거래소 공시 기준.
+- name: 인텔
+  segment_code: SEG1
+  ev_ebitda: 8.2
+  notes: 파운드리/로직 칩 설계·제조. IDM 모델. 2024년 구조조정 영향으로 마진 압박. FactSet 기준.
+- name: TSMC
+  segment_code: SEG1
+  ev_ebitda: 14.5
+  notes: 순수 파운드리 업체. 기술 프리미엄 반영. 높은 마진율(50%+). 글로벌 최고 평가. Bloomberg 기준.
+- name: 마이크론 테크놀로지
+  segment_code: SEG1
+  ev_ebitda: 6.9
+  notes: 메모리 전문(DRAM/NAND). SK하이닉스와 유사 사이클. 2024년 회복 초기 단계. FactSet 기준.
+- name: 브로드컴
+  segment_code: SEG1
+  ev_ebitda: 18.3
+  notes: 반도체 설계(팹리스). 높은 마진율. 삼성 반도체 설계 부문과 유사성 제한적. 프리미엄 평가. Bloomberg 기준.
+- name: AMD
+  segment_code: SEG1
+  ev_ebitda: 11.2
+  notes: 프로세서/GPU 설계. 팹리스 모델. 삼성 파운드리 고객. 중간 마진율(40%). FactSet 기준.
+- name: LG디스플레이
+  segment_code: SEG2
+  ev_ebitda: 3.5
+  notes: 동일 산업(LCD/OLED 패널 제조), 유사한 사업구조. 2023년 기준 EV/EBITDA 3.5배. 한국 상장사 우선 선정.
+- name: 삼성디스플레이
+  segment_code: SEG2
+  ev_ebitda: 4.2
+  notes: 삼성전자 자회사, OLED 전문. 2023년 기준 EV/EBITDA 4.2배. 동일 그룹 내 비교 기준.
+- name: BOE (京东方科技集团)
+  segment_code: SEG2
+  ev_ebitda: 5.8
+  notes: 중국 최대 디스플레이 제조사, LCD/OLED 겸업. 2023년 기준 EV/EBITDA 5.8배. 국제 경쟁사 기준.
+- name: Sharp (シャープ)
+  segment_code: SEG2
+  ev_ebitda: 6.2
+  notes: 일본 디스플레이 제조사, LCD 중심. 2023년 기준 EV/EBITDA 6.2배. 국제 동급 기준.
+- name: AU Optronics (友達光電)
+  segment_code: SEG2
+  ev_ebitda: 4.8
+  notes: 대만 LCD/OLED 제조사, 유사 사업구조. 2023년 기준 EV/EBITDA 4.8배. 아시아 주요 경쟁사.
+- name: Innolux (群创光电)
+  segment_code: SEG2
+  ev_ebitda: 5.1
+  notes: 대만 LCD 제조사, 중소형 디스플레이 전문. 2023년 기준 EV/EBITDA 5.1배. 지역 경쟁사.
+- name: LG전자
+  segment_code: SEG3
+  ev_ebitda: 5.2
+  notes: 국내 소비자전자 직접 경쟁사. 스마트폰(철수), TV, 가전 포트폴리오. 2023년 EBITDA 기준 계산. 삼성과 유사한 다각화
+    구조.
+- name: Apple
+  segment_code: SEG3
+  ev_ebitda: 28.5
+  notes: 글로벌 프리미엄 스마트폰/소비자전자 리더. 높은 마진율 반영. 2023년 기준. 비교 목적상 포함하되 프리미엄 평가 감안.
+- name: Sony
+  segment_code: SEG3
+  ev_ebitda: 8.1
+  notes: TV, 이미징, 게임 등 소비자전자 다각화. 2023년 기준. 삼성과 유사한 사업 구조.
+- name: Xiaomi
+  segment_code: SEG3
+  ev_ebitda: 12.3
+  notes: 스마트폰, IoT, TV 등 소비자전자 통합. 중국 시장 성장성 반영. 2023년 기준.
+- name: Huawei
+  segment_code: SEG3
+  ev_ebitda: 6.8
+  notes: 스마트폰, 태블릿, 가전 포트폴리오. 공개 정보 제한으로 추정치. 지정학적 리스크 감안.
+- name: 삼성SDI
+  segment_code: SEG3
+  ev_ebitda: 7.4
+  notes: 국내 상장사. 배터리, 디스플레이 등 부품 공급. 소비자전자 밸류체인 참여. 2023년 기준.
+news_key_issues: '- [리스크] 삼성전자 노조의 성과급 요구로 인한 경영 리스크 (2026-04-12)
+
+  - [기회] 반도체 초호황으로 인한 수익성 개선 기대 (2026-04-12)
+
+  - [기회] 에어컨 수요 증가로 인한 매출 상승 가능성 (2026-04-12)
+
+  - [리스크] 칩플레이션으로 인한 소비자 가격 상승 우려 (2026-04-12)
+
+  - [기회] 외국인 투자자의 복귀와 반도체 랠리 시동 걸린 것에 따른 주가 상승 가능성 (2026-04-12)'
+news_drivers:
+- id: semiconductor_boom
+  name: 반도체 초호황 및 외국인 투자 복귀
+  category: industry
+  effects:
+    growth_adj_pct: 25
+    wacc_adj: -0.3
+    market_sentiment_pct: 15
+  rationale: 반도체 업사이클은 역사적으로 3-4년 주기로 발생하며, 현재 AI/데이터센터 수요로 인한 메모리 호황이 지속. 외국인 투자
+    복귀는 밸류에이션 프리미엄 확대 효과. 과거 반도체 호황기 EBITDA 증가율 20-30% 기록
+- id: labor_dispute
+  name: 노조 성과급 요구 및 경영 리스크
+  category: company
+  effects:
+    growth_adj_pct: -8
+    wacc_adj: 0.2
+    market_sentiment_pct: -5
+  rationale: 삼성전자 노조 파업은 2024년 이후 지속적 이슈. 성과급 요구는 인건비 상승으로 마진 압박 요인. 과거 대규모 노사분규 시
+    운영비용 5-10% 증가 사례 존재
+- id: chipflation_risk
+  name: 칩플레이션 및 소비자 가격 상승
+  category: macro
+  effects:
+    growth_adj_pct: -12
+    wacc_adj: 0.4
+    market_sentiment_pct: -8
+  rationale: 반도체 가격 상승이 최종 제품 가격에 전가되면서 수요 둔화 우려. 2021-2022년 칩 부족 시기 가전/모바일 수요 10-15%
+    감소 경험. 인플레이션 압력으로 금리 상승 리스크 증가
+- id: appliance_demand
+  name: 에어컨 수요 증가
+  category: industry
+  effects:
+    growth_adj_pct: 8
+    wacc_adj: 0
+    market_sentiment_pct: 3
+  rationale: 기후변화로 인한 냉방기기 수요 증가는 구조적 트렌드. 생활가전 부문은 삼성전자 전체 매출의 약 15% 비중으로 제한적이나 마진
+    개선 효과 기대
 mc_enabled: true

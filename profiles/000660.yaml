@@ -11,18 +11,34 @@ company:
   shares_ordinary: 690455268
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-11'
+  analysis_date: '2026-04-12'
 segments:
-  MAIN:
-    name: Main Business
-    multiple: 10.0
+  SEG1:
+    name: 메모리 반도체 (DRAM)
+    multiple: 9.1
+  SEG2:
+    name: 메모리 반도체 (NAND Flash)
+    multiple: 8.6
+  SEG3:
+    name: 파운드리 및 기타 반도체
+    multiple: 10.3
 segment_data:
   2025:
-    MAIN:
-      revenue: 97146675
+    SEG1:
+      revenue: 43716004
       gross_profit: 0
-      op: 47206319
-      assets: 176107659
+      op: 21242844
+      assets: 79248447
+    SEG2:
+      revenue: 46630404
+      gross_profit: 0
+      op: 22659033
+      assets: 84531676
+    SEG3:
+      revenue: 6800267
+      gross_profit: 0
+      op: 3304442
+      assets: 12327536
 consolidated:
   2023:
     revenue: 32765719
@@ -61,17 +77,17 @@ consolidated:
     net_borr: 9834082
     de_ratio: 20.5
 wacc_params:
-  rf: 3.5
-  erp: 7.0
-  bu: 1.697
+  rf: 3.2
+  erp: 6.5
+  bu: 1.15
   de: 3.5
-  tax: 9.1
-  kd_pre: 3.73
+  tax: 22.0
+  kd_pre: 4.8
   eq_w: 96.6
 scenarios:
-  Base:
-    name: Base Case
-    prob: 50
+  A:
+    name: 기본 시나리오
+    prob: 40.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -79,12 +95,20 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 690455268
-    growth_adj_pct: 0
-    terminal_growth_adj: 0
-    desc: Base case with consensus estimates
-  Bull:
-    name: Bull Case
-    prob: 25
+    desc: 반도체 호황이 예상대로 지속되고 청주 M15X 생산확대가 순조롭게 진행되는 시나리오. 노사갈등은 제한적 영향에 그치며 전반적으로
+      긍정적 흐름 유지.
+    probability_rationale: '기본 확률: 반도체 호황 지속 70% × 적정 수준 생산확대 80% × 노사갈등 제한적 영향 70%
+      ≈ 40%'
+    active_drivers:
+      semiconductor_boom: 0.7
+      production_expansion: 0.8
+    segment_multiples:
+      SEG1: 12.5
+      SEG2: 15.0
+      SEG3: 18.0
+  B:
+    name: 강세 시나리오
+    prob: 25.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -92,12 +116,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 690455268
-    growth_adj_pct: 20
-    terminal_growth_adj: 0.3
-    desc: Upside scenario
-  Bear:
-    name: Bear Case
-    prob: 25
+    desc: AI 수요 폭발과 HBM 시장 독점적 지위로 반도체 호황이 예상보다 강하게 지속되는 시나리오. 청주 M15X 풀가동과 성과급 효과로
+      최적 성장 실현.
+    probability_rationale: '기본 확률: AI 수요 폭발적 증가 40% × HBM 독점적 지위 강화 80% × 생산능력 최대
+      활용 70% ≈ 25%'
+    active_drivers:
+      semiconductor_boom: 1.0
+      production_expansion: 1.0
+      performance_bonus: 0.5
+    segment_multiples:
+      SEG1: 15.0
+      SEG2: 18.0
+      SEG3: 22.0
+  C:
+    name: 약세 시나리오
+    prob: 20.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -105,15 +138,45 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 690455268
-    growth_adj_pct: -25
-    terminal_growth_adj: -0.3
-    desc: Downside scenario
+    desc: 반도체 호황이 예상보다 빨리 둔화되고 업계 노사갈등이 확산되어 비용 부담이 가중되는 시나리오. 성과급 급증과 생산 차질로 수익성
+      압박.
+    probability_rationale: '기본 확률: 반도체 사이클 조기 둔화 30% × 노사갈등 확산 50% × 비용 압박 심화 80%
+      ≈ 20%'
+    active_drivers:
+      semiconductor_boom: 0.3
+      performance_bonus: 1.0
+      industry_labor_risk: 0.8
+    segment_multiples:
+      SEG1: 9.0
+      SEG2: 11.0
+      SEG3: 13.0
+  D:
+    name: 스트레스 시나리오
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 690455268
+    desc: 글로벌 경기침체로 반도체 수요가 급락하고 동시에 노사갈등이 심화되어 생산차질과 비용상승이 동시에 발생하는 최악 시나리오. 모든 부정적
+      요인이 복합적으로 작용.
+    probability_rationale: '기본 확률: 글로벌 경기침체 20% × 반도체 급락 60% × 노사갈등 심화 70% ≈ 15%'
+    active_drivers:
+      semiconductor_boom: 0.0
+      performance_bonus: 1.0
+      industry_labor_risk: 1.0
+    segment_multiples:
+      SEG1: 7.0
+      SEG2: 8.5
+      SEG3: 10.0
 dcf_params:
   ebitda_growth_rates:
-  - 0.3
-  - 0.23
-  - 0.17
   - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
   - 0.03
   tax_rate: 9.1
   capex_to_da: 1.34
@@ -130,5 +193,123 @@ cps_years: 0
 net_debt: 9834082
 eco_frontier: 0
 base_year: 2025
-peers: []
+peers:
+- name: Samsung Electronics (메모리)
+  segment_code: SEG1
+  ev_ebitda: 8.5
+  notes: 국내 최대 DRAM 경쟁사, 유사한 수직통합 구조, 2024년 메모리 부문 EBITDA 마진 기준
+- name: Micron Technology
+  segment_code: SEG1
+  ev_ebitda: 9.2
+  notes: 글로벌 DRAM 3위, 순수 메모리 비즈니스 모델, 2024년 실적 기준
+- name: SK Telecom (메모리 관련 투자)
+  segment_code: SEG1
+  ev_ebitda: 7.8
+  notes: SK 그룹 계열사, 메모리 산업 노출도 고려, 확인 필요
+- name: Intel (DRAM 사업부 추정)
+  segment_code: SEG1
+  ev_ebitda: 11.5
+  notes: DRAM 재진출 전략, 파운드리 통합 고려시 할인 적용, 2024년 기준
+- name: Nanya Technology
+  segment_code: SEG1
+  ev_ebitda: 8.8
+  notes: 대만 DRAM 전문업체, 유사 규모 및 구조, 2024년 실적
+- name: Winbond Electronics
+  segment_code: SEG1
+  ev_ebitda: 9.5
+  notes: 대만 메모리 반도체사, 특화 메모리 포함, 2024년 기준
+- name: Samsung Electronics (NAND)
+  segment_code: SEG2
+  ev_ebitda: 7.9
+  notes: 국내 최대 NAND 경쟁사, 수직통합 구조, 2024년 NAND 부문 기준
+- name: Kioxia Holdings
+  segment_code: SEG2
+  ev_ebitda: 8.6
+  notes: 일본 NAND 전문업체, 웨스턴디지털과 합작, 유사 기술 포트폴리오, 2024년 실적
+- name: Western Digital
+  segment_code: SEG2
+  ev_ebitda: 8.2
+  notes: 글로벌 NAND 주요 플레이어, 스토리지 통합 고려, 2024년 기준
+- name: Micron Technology (NAND)
+  segment_code: SEG2
+  ev_ebitda: 9.1
+  notes: DRAM/NAND 혼합 포트폴리오, NAND 비중 증가 추세, 2024년 기준
+- name: Intel (QLC/3D NAND)
+  segment_code: SEG2
+  ev_ebitda: 10.8
+  notes: NAND 기술 개발 중, 파운드리 통합 고려시 할인, 확인 필요
+- name: SK Hynix 자체 비교
+  segment_code: SEG2
+  ev_ebitda: 8.4
+  notes: NAND 포지셔닝 검증용, 업계 평균 대비 평가
+- name: TSMC
+  segment_code: SEG3
+  ev_ebitda: 12.5
+  notes: 글로벌 파운드리 1위, 기술 리더십 프리미엄, 2024년 실적 기준
+- name: Samsung Foundry
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: 국내 파운드리 경쟁사, 메모리와 통합 구조, 2024년 파운드리 부문 추정
+- name: GlobalFoundries
+  segment_code: SEG3
+  ev_ebitda: 10.2
+  notes: 글로벌 파운드리 3위, 특화 공정 포커스, 2024년 실적
+- name: Intel Foundry Services
+  segment_code: SEG3
+  ev_ebitda: 11.8
+  notes: 신규 파운드리 진출, 기술 투자 고려, 확인 필요
+- name: SK Hynix 파운드리 추정
+  segment_code: SEG3
+  ev_ebitda: 9.5
+  notes: 초기 단계 파운드리, 메모리 기반 기술 활용, 할인 적용
+- name: UMC (United Microelectronics)
+  segment_code: SEG3
+  ev_ebitda: 9.1
+  notes: 대만 파운드리 2위, 성숙 공정 중심, 2024년 기준
+news_key_issues: '- [기회] 반도체 호황이 내년 상반기까지 지속될 것으로 예상 (2026-04-12)
+
+  - [기회] SK하이닉스 1인당 성과급 13억 원 전망 (2026-04-12)
+
+  - [기회] SK하이닉스, 청주 M15X서 첨단 D램 생산 확대 (2026-04-12)
+
+  - [리스크] 삼성전자 노조의 성과급 요구가 산업 경쟁력에 부정적인 영향을 미칠 수 있음 (2026-04-12)
+
+  - [기회] 중동 재건사업 기대와 건설 ETF 상위권에 긍정적 영향을 미침 (2026-04-12)'
+news_drivers:
+- id: semiconductor_boom
+  name: 반도체 호황 지속
+  category: industry
+  effects:
+    growth_adj_pct: 25
+    wacc_adj: -0.3
+    market_sentiment_pct: 8
+  rationale: 반도체 슈퍼사이클은 역사적으로 3-4년 주기로 발생. 현재 AI/HBM 수요 급증으로 2026년 상반기까지 지속 전망. 과거
+    호황기 대비 EBITDA 25% 상승, 성장주 프리미엄으로 WACC 30bp 하락, 시장 심리 8% 개선
+- id: performance_bonus
+  name: 성과급 급증
+  category: company
+  effects:
+    growth_adj_pct: -8
+    wacc_adj: 0.1
+    market_sentiment_pct: 3
+  rationale: 1인당 13억원 성과급은 전년 대비 300% 증가 수준. 단기적으로 인건비 부담 8% 증가하나, 인재 유지 및 생산성 향상으로
+    장기 경쟁력 강화. 비용 우려로 WACC 10bp 상승, 성장 기대로 심리 3% 개선
+- id: production_expansion
+  name: 청주 M15X 생산 확대
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: 0.2
+    market_sentiment_pct: 5
+  rationale: 청주 M15X 첨단 D램 생산 확대는 HBM3E 등 고부가가치 제품 비중 증가를 의미. 과거 신규 라인 가동시 매출 15%
+    증가 패턴. 초기 투자비용으로 WACC 20bp 상승, 미래 성장성으로 심리 5% 개선
+- id: industry_labor_risk
+  name: 반도체 업계 노사갈등
+  category: industry
+  effects:
+    growth_adj_pct: -5
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: 삼성전자 노조 성과급 요구가 업계 전반 확산시 인건비 상승 압박. 과거 대규모 노사갈등시 생산차질로 성장률 5% 하락. 불확실성
+    증가로 WACC 30bp 상승, 투자심리 8% 악화
 mc_enabled: true

@@ -14,8 +14,10 @@ import calendar
 import json
 import logging
 import os
+import re
 import threading
 import time
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -103,39 +105,64 @@ def _ordinal(n: int) -> str:
     return f"{n}{['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]}"
 
 
-def _top_news_for_company(
-    company_name: str, news: list[dict], max_items: int = 3
-) -> list[dict]:
-    """Return up to max_items news articles most relevant to company_name.
+# CJK Unified Ideographs + Hangul Syllables — word boundaries (\b) don't apply
+_CJK_RE = re.compile(r"[\u3000-\u9fff\uac00-\ud7af]")
 
-    Matches by checking if company_name (or its first word) appears in the
-    article title.  Falls back to the most recent articles if no match found.
-    Returns list of {"title": str, "url": str}.
+
+def _alias_pattern(aliases: list[str]) -> re.Pattern | None:
+    """Build one regex combining ASCII (\\b-anchored) and CJK (substring) aliases.
+
+    Returns None if no usable aliases (all too short or empty).
     """
-    name_lower = company_name.lower()
-    # Try full name match, then first-word match (e.g. '삼성' from '삼성전자')
-    first_word = name_lower.split()[0] if name_lower.split() else name_lower
+    ascii_terms = [a for a in aliases if a and not _CJK_RE.search(a)]
+    cjk_terms = [a for a in aliases if a and _CJK_RE.search(a)]
+    parts: list[str] = []
+    if ascii_terms:
+        parts.append(r"\b(?:" + "|".join(re.escape(a) for a in ascii_terms) + r")\b")
+    if cjk_terms:
+        parts.append("(?:" + "|".join(re.escape(a) for a in cjk_terms) + ")")
+    if not parts:
+        return None
+    return re.compile("|".join(parts), re.IGNORECASE)
+
+
+def _top_news_for_company(
+    company_name: str,
+    news: list[dict],
+    max_items: int = 3,
+    aliases: tuple[str, ...] | list[str] = (),
+) -> list[dict]:
+    """Return up to max_items news articles whose title contains the company
+    name or one of its aliases (e.g. ticker symbol).
+
+    ASCII aliases match on word boundaries; CJK aliases match as substrings
+    (Korean/CJK names are multi-syllable and don't sub-match in practice).
+    Returns an empty list when nothing matches — do NOT fall back to generic
+    top-N news, which caused cross-company contamination in earlier versions.
+    """
+    # len>=3 drops noisy 2-char tickers (GM, GE); isdigit drops KR numeric codes
+    # (005930) that collide with any article containing the digit string.
+    terms = [
+        t
+        for t in ([company_name] + list(aliases))
+        if t and len(t) >= 3 and not t.isdigit()
+    ]
+    pattern = _alias_pattern(terms)
+    if pattern is None:
+        return []
 
     matched: list[dict] = []
     for n in news:
-        title_lower = (n.get("title") or "").lower()
-        if name_lower in title_lower or first_word in title_lower:
-            url = n.get("link") or n.get("url") or ""
-            title = n.get("title") or ""
-            if url and title:
-                matched.append({"title": title, "url": url})
-        if len(matched) >= max_items:
-            break
-
-    # Fallback: most recent articles if no name match
-    if not matched:
-        for n in news[:max_items]:
-            url = n.get("link") or n.get("url") or ""
-            title = n.get("title") or ""
-            if url and title:
-                matched.append({"title": title, "url": url})
-
-    return matched[:max_items]
+        title = n.get("title") or ""
+        url = n.get("link") or n.get("url") or ""
+        if not (title and url):
+            continue
+        norm_title = unicodedata.normalize("NFKC", title).casefold()
+        if pattern.search(norm_title):
+            matched.append({"title": title, "url": url})
+            if len(matched) >= max_items:
+                break
+    return matched
 
 
 def _week_folder(dt: datetime) -> str:
@@ -235,8 +262,15 @@ def run_weekly(
             for co in companies_in_market:
                 co["market"] = market
                 # Attach top-3 relevant news articles (title + link) for blog output
+                ticker_str = str(co.get("ticker") or "")
+                aliases_list = (
+                    [ticker_str] if ticker_str and not ticker_str.isdigit() else []
+                )
                 co["top_news"] = _top_news_for_company(
-                    co.get("name", ""), market_news, max_items=3
+                    co.get("name", ""),
+                    market_news,
+                    max_items=3,
+                    aliases=aliases_list,
                 )
                 all_companies.append(co)
             summary["discoveries"].append(
@@ -585,6 +619,12 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
         "total": len(summary["valuations"]),
         "success": success_count,
         "failed": failed_count,
+    }
+
+    summary["_debug"] = {
+        "companies_with_empty_top_news": sum(
+            1 for co in summary.get("scored_companies", []) if not co.get("top_news")
+        ),
     }
 
     summary_json = {**summary}

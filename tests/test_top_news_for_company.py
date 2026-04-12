@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scheduler.weekly_run import _top_news_for_company  # noqa: E402
+from discovery.cjk_aliases import get_aliases  # noqa: E402
 
 
 NEWS = [
@@ -101,3 +102,49 @@ def test_no_regression_never_returns_unmatched_news():
     # Crucially, Tesla news must not leak in:
     assert all(n["url"] != "u1" for n in result)
     assert all(n["url"] != "u2" for n in result)
+
+
+# ── CJK alias tests (get_aliases integration) ──
+
+
+def test_get_aliases_nvidia_returns_korean():
+    assert "엔비디아" in get_aliases("NVDA")
+
+
+def test_get_aliases_case_insensitive():
+    assert get_aliases("nvda") == get_aliases("NVDA")
+
+
+def test_get_aliases_missing_returns_empty():
+    assert get_aliases("UNKNOWN") == []
+    assert get_aliases(None) == []
+    assert get_aliases("") == []
+
+
+def test_nvidia_korean_alias_matches_korean_title():
+    aliases = ["NVDA"] + get_aliases("NVDA")
+    result = _top_news_for_company("NVIDIA", NEWS, aliases=aliases)
+    assert "u6" in urls(result)  # "엔비디아, 한국 데이터센터..."
+
+
+def test_samsung_english_alias_matches_english_title():
+    aliases = get_aliases("005930")
+    result = _top_news_for_company("삼성전자", NEWS, aliases=aliases)
+    assert "u9" in urls(result)  # "Samsung Electronics posts record..."
+
+
+def test_apple_korean_alias_matches_when_korean_title_present():
+    """2-char CJK alias '애플' must match — the len>=3 guard only applies to ASCII."""
+    news = NEWS + [{"title": "애플 비전프로 매출 부진", "url": "u_kor_apple"}]
+    aliases = ["AAPL"] + get_aliases("AAPL")
+    result = _top_news_for_company("Apple", news, aliases=aliases)
+    assert "u_kor_apple" in urls(result)
+    assert "u4" in urls(result)
+
+
+def test_two_char_cjk_alias_not_filtered():
+    """Regression: 2-syllable Korean aliases (애플, 메타) must NOT be dropped
+    by the ASCII-collision guard intended for 2-char tickers like GM/GE."""
+    news = [{"title": "메타 AI 신모델 공개", "url": "u_meta_kor"}]
+    result = _top_news_for_company("Meta", news, aliases=["메타"])
+    assert urls(result) == ["u_meta_kor"]

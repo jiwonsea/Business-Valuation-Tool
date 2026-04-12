@@ -97,6 +97,7 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 
 - Engine pure function tests: fixed input → exact value assertion OK.
 - Pipeline E2E tests: range-based validation. Avoid exact-value regression since methodology may vary by company type.
+- Pre-existing failure: `TestScenarioDriverRoundTrip` (YAML segment_multiples Bull/Bear round-trip) has unresolved `KeyError: 'Bull'` — deselect with `--deselect tests/test_engine.py::TestScenarioDriverRoundTrip` during regression runs until fixed.
 
 ## Efficiency
 
@@ -167,3 +168,4 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - **`sensitivity_irr_dlom` triggers for CPS or RCPS** (not CPS-only). Caller guard is `if vi.cps_principal > 0 or vi.rcps_principal > 0`. When `rcps_principal > 0` is passed, RCPS repayment is recomputed per-IRR inside the loop (same as CPS). When `rcps_principal == 0`, the precomputed `rcps_repay` scalar is used unchanged (backward-compatible).
 - `output/sheets/rnpv.py` Peak Revenue and summary sections must iterate `rnpv.drug_results` (all drugs), not `drugs_with_curves` (subset that only includes drugs with computed revenue curves). `drugs_with_curves` silently omits early-stage pipeline drugs that have a PoS but no revenue curve.
 - `rnpv_pct` calculation in `output/sheets/rnpv.py` uses `!= 0` guard (not `> 0`). When `total_rnpv < 0` (all drugs net-negative NPV), the `> 0` guard silently zeros all drug percentages; `!= 0` correctly computes negative proportions.
+- Windows `python -c` one-liners that emit Korean fail with `UnicodeEncodeError: 'cp949'`. Prefix shell call with `PYTHONIOENCODING=utf-8` AND rewrap stdout: `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')`. Running as a saved `.py` script usually avoids this; inline `-c` invocation does not.

@@ -11,6 +11,7 @@ paths: ["scheduler/**/*.py"]
 - Google RSS US news queries must be finance-specific (earnings/valuation/IPO/M&A keywords). Generic queries like 'US stock market news' pull sports, obituaries, and unrelated articles through the same RSS feed.
 - `_weekly_summary.json` persists `news_count` and `companies[].top_news` only — the raw news array is not stored. Replay-style debugging against last week's news is impossible; regression tests must use synthetic fixtures (`tests/test_top_news_for_company.py`).
 - Python `\b` word boundary is ASCII-only — it does NOT fire around CJK characters. Any regex-based news/title matching must split into an ASCII branch (`\b...\b`) and a CJK branch (plain substring), otherwise Korean aliases silently fail to match. `_top_news_for_company` in `weekly_run.py` is the reference pattern.
+- `python -m scheduler.weekly_run --dry-run` writes `_weekly_summary.json` with `_debug.companies_with_empty_top_news` — zero-cost validation loop for news-matching/alias changes. Counter ≥50% of total means aliases need expansion (most likely missing CJK branch, company-specific aliases, or market routing bug).
 
 ## Scoring (scoring.py)
 

@@ -33,6 +33,7 @@ except ImportError:
     pass
 
 from .scoring import score_companies
+from discovery.cjk_aliases import get_aliases
 
 # Sector/theme names to exclude from per-market selection
 # (e.g. '반도체 관련주', 'AI Sector Companies')
@@ -56,6 +57,22 @@ def _is_real_company(co: dict) -> bool:
     """Return True if *co* looks like an individual listed company, not a sector/theme group."""
     name_lower = co.get("name", "").lower()
     return not any(kw in name_lower for kw in _SECTOR_KEYWORDS)
+
+
+def _market_from_ticker(ticker: str | None, fallback: str) -> str:
+    """Derive market from ticker format. 6-digit numeric -> KR, else US.
+
+    The discovery loop variable is unreliable — the AI may surface US
+    companies from KR news (and vice versa), and the loop previously tagged
+    them with the LOOP market, breaking downstream news matching. Ticker
+    format is deterministic: matches the prompt rule at
+    discovery/discovery_engine.py:307.
+    """
+    if ticker and ticker.isdigit() and len(ticker) == 6:
+        return "KR"
+    if ticker and not ticker.isdigit():
+        return "US"
+    return fallback
 
 
 _RESULTS_BASE = Path(
@@ -142,10 +159,13 @@ def _top_news_for_company(
     """
     # len>=3 drops noisy 2-char tickers (GM, GE); isdigit drops KR numeric codes
     # (005930) that collide with any article containing the digit string.
+    # CJK aliases bypass the length guard — 2-syllable Korean/Chinese words
+    # (애플, 메타) are already meaningful and don't have the collision risk
+    # that short ASCII tickers do.
     terms = [
         t
         for t in ([company_name] + list(aliases))
-        if t and len(t) >= 3 and not t.isdigit()
+        if t and not t.isdigit() and (_CJK_RE.search(t) or len(t) >= 3)
     ]
     pattern = _alias_pattern(terms)
     if pattern is None:
@@ -260,18 +280,14 @@ def run_weekly(
                 _alert("Discovery", msg)
             companies_in_market = result.get("companies", [])
             for co in companies_in_market:
-                co["market"] = market
-                # Attach top-3 relevant news articles (title + link) for blog output
                 ticker_str = str(co.get("ticker") or "")
-                aliases_list = (
-                    [ticker_str] if ticker_str and not ticker_str.isdigit() else []
-                )
-                co["top_news"] = _top_news_for_company(
-                    co.get("name", ""),
-                    market_news,
-                    max_items=3,
-                    aliases=aliases_list,
-                )
+                co["market"] = _market_from_ticker(ticker_str, fallback=market)
+                # Attach top-3 relevant news articles (title + link) for blog output
+                aliases_list: list[str] = []
+                if ticker_str and not ticker_str.isdigit():
+                    aliases_list.append(ticker_str)
+                aliases_list.extend(get_aliases(ticker_str))
+                co["_top_news_aliases"] = aliases_list  # stash for phase-2 rerun
                 all_companies.append(co)
             summary["discoveries"].append(
                 {
@@ -289,6 +305,17 @@ def run_weekly(
         if name and name not in seen_names:
             seen_names.add(name)
             unique_companies.append(co)
+
+    # Attach top_news using combined news pool + CJK aliases. Matching against
+    # all_news (not per-market) covers US companies mentioned in KR news and
+    # vice versa — name/alias anchoring prevents cross-company leakage.
+    for co in unique_companies:
+        co["top_news"] = _top_news_for_company(
+            co.get("name", ""),
+            all_news,
+            max_items=3,
+            aliases=co.pop("_top_news_aliases", []),
+        )
 
     scored = score_companies(unique_companies, all_news)
     summary["scored_companies"] = scored
@@ -630,6 +657,8 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
             1 for co in summary.get("scored_companies", []) if not co.get("top_news")
         ),
     }
+    if os.environ.get("DUMP_NEWS_TITLES"):
+        summary["_debug"]["news_titles"] = [n.get("title", "") for n in all_news]
 
     summary_json = {**summary}
 

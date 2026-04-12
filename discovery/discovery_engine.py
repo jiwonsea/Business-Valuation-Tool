@@ -14,6 +14,84 @@ from .news_collector import NewsCollector
 logger = logging.getLogger(__name__)
 
 
+# Known media outlets, financial data providers, and non-company entities that
+# the AI occasionally misidentifies as investable companies.
+_MEDIA_BLOCKLIST: frozenset[str] = frozenset(
+    {
+        "electrek",
+        "yahoo finance",
+        "yahoo",
+        "bloomberg",
+        "reuters",
+        "cnbc",
+        "wsj",
+        "wall street journal",
+        "financial times",
+        "ft",
+        "marketwatch",
+        "benzinga",
+        "seeking alpha",
+        "investopedia",
+        "motley fool",
+        "barrons",
+        "the street",
+        "zerohedge",
+        "techcrunch",
+        "the verge",
+        "ars technica",
+        "engadget",
+        "wired",
+        "fortune",
+        "business insider",
+        "forbes",
+        "nikkei",
+        "한국경제",
+        "매일경제",
+        "조선비즈",
+        "연합뉴스",
+    }
+)
+
+
+def _contains_korean(text: str) -> bool:
+    """Return True if text contains any Hangul syllable."""
+    return any("\uAC00" <= ch <= "\uD7A3" for ch in text)
+
+
+def _filter_companies(companies: list[dict], market: str) -> list[dict]:
+    """Remove AI hallucinations: media outlets and mis-named US companies.
+
+    Filters:
+    1. Any company whose name (lowercased) matches the media blocklist.
+    2. US companies whose name contains Korean characters — the AI was
+       instructed to use English names; Korean output means it misidentified
+       a media article source as a company.
+    """
+    filtered: list[dict] = []
+    for co in companies:
+        name: str = co.get("name") or ""
+        name_lower = name.lower().strip()
+
+        # Filter 1: media/data-provider blocklist
+        if any(blocked in name_lower for blocked in _MEDIA_BLOCKLIST):
+            logger.info("Discovery filter: rejected media/non-company %r", name)
+            continue
+
+        # Filter 2: US market — name must be English (no Hangul)
+        if market == "US" and _contains_korean(name):
+            logger.info(
+                "Discovery filter: rejected Korean-named US company %r "
+                "(ticker=%r) — AI should have used English name",
+                name,
+                co.get("ticker"),
+            )
+            continue
+
+        filtered.append(co)
+
+    return filtered
+
+
 def _safe_print(text: str) -> None:
     """Print with encoding fallback for Windows cp949 consoles."""
     try:
@@ -246,7 +324,7 @@ class DiscoveryEngine:
         )
 
         try:
-            return _parse_json(response)
+            parsed = _parse_json(response)
         except (json.JSONDecodeError, ValueError) as exc:
             logger.warning(
                 "AI JSON 파싱 실패 [%s]: %s — companies=[] fallback. 원본 응답 앞 200자: %.200s",
@@ -255,3 +333,15 @@ class DiscoveryEngine:
                 response,
             )
             return {"summary": response, "companies": [], "scenarios": []}
+
+        # Post-processing: remove media outlets and mis-named US companies
+        raw_count = len(parsed.get("companies", []))
+        parsed["companies"] = _filter_companies(parsed.get("companies", []), market)
+        filtered_count = raw_count - len(parsed["companies"])
+        if filtered_count:
+            logger.info(
+                "Discovery post-filter [%s]: removed %d non-company entry(s) from AI output",
+                market,
+                filtered_count,
+            )
+        return parsed

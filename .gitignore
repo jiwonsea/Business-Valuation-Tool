@@ -22,6 +22,7 @@ venv/
 # Output
 *.xlsx
 *.csv
+*_executed.ipynb
 
 # Logs (may contain API keys in URLs)
 logs/

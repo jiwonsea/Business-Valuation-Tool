@@ -81,7 +81,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 ## Conventions
 
 - English code/comments; Korean user-facing output.
-- **Excel output filename**: use English company name, not stock code — `SKhynix_valuation.xlsx` not `000660_valuation.xlsx`. KR ticker is a 6-digit stock code, not a company identifier. Korean characters in filenames risk encoding failures on Windows.
+- **Excel output filename**: `CamelCase(MM-DD)_valuation.xlsx`. `_to_camel()` strips `co.`/`corp.`/`inc.`/`ltd.` suffixes, title-cases remaining words, joins first 3. Date extracted from weekly folder name via `(\d{2})-(\d{2})` regex (e.g., `2026-04-12(Apr 3rd week)` → `04-12`). Example: `SamsungElectronics(04-12)_valuation.xlsx`. US tickers stay as-is: `AAPL(04-12)_valuation.xlsx`. Korean characters in filenames risk encoding failures on Windows.
 - Env vars: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `DART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_KEY`
 - `engine/` functions must be pure (no IO, no state). `import httpx`, `requests` etc. forbidden.
 - IO contract: `ValuationInput` → `ValuationResult` (`schemas/models.py`).
@@ -117,6 +117,9 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 
 ## Gotchas
 
+- Discovery `_filter_companies()` post-filter runs deterministically after every AI JSON parse — prompt rules alone are insufficient to exclude media outlets (Bloomberg, Yahoo Finance, Electrek). Request 8 candidates from AI; `weekly_run.py` caps final output at `max_per_market`. Filtered slots are not refilled — buffer is the only compensation.
+- US EDGAR company identification uses ticker symbol as query (e.g., `TSLA`, `NVDA`) when `market=='US'` and ticker is known (`_run_valuation` in `weekly_run.py`). Korean/localized names (`테슬라`) return no_result — EDGAR search is English-only.
+- Google RSS US news queries must be finance-specific (earnings/valuation/IPO/M&A keywords). Generic queries like 'US stock market news' pull sports, obituaries, and unrelated articles through the same RSS feed.
 - `reverse_rnpv.gap_pct = (model_ev - target_ev) / target_ev * 100`. `gap_pct < 0` ⟹ market > model ⟹ "시장 낙관". Label is counterintuitive — do NOT invert. Verified in engine/reverse_rnpv.py:307.
 - `per_share()` propagates negative equity (no zero-clamping). Distress scenarios yield negative per-share values. DLOM is not applied to negative equity.
 - No hardcoding `* 1_000_000` → use `engine.units.per_share()`.
@@ -166,3 +169,5 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - **`ScenarioParams.cps_irr` / `rcps_irr`**: Optional per-instrument IRR fields. When set, CPS uses `cps_irr`, RCPS uses `rcps_irr`; both fall back to `irr` when their specific field is None. This separation is load-bearing when CPS and RCPS investors have different return requirements. `_derive_rcps_repay`, `calc_scenario`, and MC `irr` parameter all honor this hierarchy.
 - **Distress ICR prefers actual `interest_expense` over estimate.** `calc_distress_discount` checks `base.get("interest_expense", 0)` first; falls back to `gross_borr × kd_pre / 100` when absent. yfinance (US) provides this automatically; DART parser now extracts `이자비용`/`금융비용`/`금융원가` for KR companies. Do not remove the fallback — many older profiles and manual YAMLs won't have this field.
 - **`sensitivity_irr_dlom` triggers for CPS or RCPS** (not CPS-only). Caller guard is `if vi.cps_principal > 0 or vi.rcps_principal > 0`. When `rcps_principal > 0` is passed, RCPS repayment is recomputed per-IRR inside the loop (same as CPS). When `rcps_principal == 0`, the precomputed `rcps_repay` scalar is used unchanged (backward-compatible).
+- `output/sheets/rnpv.py` Peak Revenue and summary sections must iterate `rnpv.drug_results` (all drugs), not `drugs_with_curves` (subset that only includes drugs with computed revenue curves). `drugs_with_curves` silently omits early-stage pipeline drugs that have a PoS but no revenue curve.
+- `rnpv_pct` calculation in `output/sheets/rnpv.py` uses `!= 0` guard (not `> 0`). When `total_rnpv < 0` (all drugs net-negative NPV), the `> 0` guard silently zeros all drug percentages; `!= 0` correctly computes negative proportions.

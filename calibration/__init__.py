@@ -27,20 +27,32 @@ from .tuner import (
     search_sc_prob,
 )
 from .report import emit_yaml_diff, render_report
+from .walk_forward import (
+    FoldResult,
+    WalkForwardResult,
+    format_summary,
+    tune_walk_forward,
+    walk_forward_splits,
+)
 
 __all__ = [
     "Bucket",
     "BucketKey",
+    "FoldResult",
     "GRID_STEP",
     "PROB_BOUNDS",
     "Recommendation",
+    "WalkForwardResult",
     "bucket_records",
     "classify_scenarios",
     "confidence_tier",
     "emit_yaml_diff",
     "enumerate_prob_grid",
+    "format_summary",
     "horizon_is_mature",
     "predict_with_probs",
     "render_report",
     "search_sc_prob",
+    "tune_walk_forward",
+    "walk_forward_splits",
 ]

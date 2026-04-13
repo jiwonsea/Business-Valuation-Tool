@@ -165,6 +165,12 @@ Python 3.11+ | Pydantic v2 | httpx | NumPy | Pandas | openpyxl | PyYAML | Anthro
 
 365 tests covering engine calculations, pipeline data fetching, AI prompt/validator logic, backtest metrics, market signals integration, and scheduler workflows. All external API calls are mocked in tests.
 
+## Data Sources & Disclaimer
+
+Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Any company-specific output (profiles, weekly reports, calibration data) is generated locally and is **not** included in this repository.
+
+This project is for **research and educational purposes only**. It does not constitute investment advice, and the author is not registered as an investment adviser under any jurisdiction. Past valuations or backtested results do not guarantee future returns. Use at your own discretion.
+
 ```
 tests/test_engine.py            88 tests  — pure calculation correctness
 tests/test_validators.py        38 tests  — AI output validation rules

@@ -54,11 +54,7 @@ jobs:
             --max-per-market "${{ inputs.max_per_market || '5' }}" \
             ${{ inputs.dry_run == true && '--dry-run' || '' }}
 
-      - name: Upload results as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: weekly-valuation-${{ github.run_number }}
-          path: valuation-results/
-          retention-days: 30
-          if-no-files-found: ignore
+      # Artifact upload removed: weekly outputs contain absolute paths and
+      # operational logs that should not be downloadable from a public repo.
+      # Local Windows Task Scheduler is the primary execution path; outputs
+      # remain on the local filesystem under valuation-results/ (gitignored).

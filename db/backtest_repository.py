@@ -208,7 +208,9 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
         resp = (
             client.table("backtest_outcomes")
             .select("*, prediction_snapshots!inner(analysis_date)")
-            .is_("price_t3m", "null")  # At least one NULL
+            .or_(
+                "price_t3m.is.null,price_t6m.is.null,price_t12m.is.null"
+            )
             .order("created_at", desc=False)
             .limit(200)
             .execute()
@@ -216,7 +218,17 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
 
         results = []
         for row in resp.data:
-            analysis_date_str = row.get("analysis_date", "")
+            snap = row.get("prediction_snapshots") or {}
+            # Supabase may return the embedded resource as a dict (to-one)
+            # or list (to-many). `!inner` on a FK normally yields a dict,
+            # but handle both for safety.
+            if isinstance(snap, list):
+                snap = snap[0] if snap else {}
+            analysis_date_str = (
+                snap.get("analysis_date")
+                or row.get("analysis_date")
+                or ""
+            )
             try:
                 ad = date.fromisoformat(analysis_date_str)
             except (ValueError, TypeError):

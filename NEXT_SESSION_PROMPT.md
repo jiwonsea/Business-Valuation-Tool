@@ -1,9 +1,10 @@
 # Business Valuation Tool: 다음 세션
 
 ## 현재 상태 (2026-04-13 기준)
-- 커밋: `ef75039` (main, origin 동기화 완료)
-- 테스트: 576 pass / 2 fail (pre-existing `TestScenarioDriverRoundTrip`)
-- 로고 삽입·US 파이프라인 실전 검증 완료 (04-13 run 성공)
+- 커밋: `2203856` (main, origin 동기화 완료)
+- 테스트: 578 pass / 0 fail
+- `TestScenarioDriverRoundTrip` 고정 fixture 분리 완료 (`tests/fixtures/msft_frozen.yaml`, `tsla_frozen.yaml`)
+- 주간 파이프라인이 `profiles/*.yaml`을 덮어써도 테스트 영향 없음
 
 ---
 
@@ -11,41 +12,28 @@
 
 ---
 
-[Business Valuation Tool] Phase 3 캘리브레이션 진입 전 테스트 정합성 복구
+[Business Valuation Tool] Phase 3 캘리브레이션 인프라 스펙 확정 (인터뷰 모드)
 
 경로: `F:\dev\Portfolio\business-valuation-tool`
-현재 상태: `ef75039`, 576 pass / 2 fail
+현재 상태: `2203856`, 578 pass
 
 ## 배경
-주간 파이프라인이 `profiles/msft.yaml`, `profiles/tsla.yaml`을 AI 생성 결과로 덮어쓰면서 시나리오 코드가 `Bull/Base/Bear`가 아닌 `A/B/C/D`로 바뀜. 반면 `tests/test_engine.py::TestScenarioDriverRoundTrip`의 2개 테스트는 `Bull/Base/Bear` 키를 하드코딩 → 주간 run 후마다 KeyError.
+Phase 1(엔진 감사) / Phase 2(distress 엔진, scenario 개선) 커밋 완료. Phase 3는 `memory/project_valuation_tool_audit.md`에 "캘리브레이션 인프라"로만 백로그 기록 — 구체 스펙 없음.
 
-실패 테스트:
-- `test_sotp_segment_multiples_differentiate_ev` (line 2340, msft.yaml)
-- `test_yaml_segment_multiples_round_trip` (line 2419, msft.yaml)
-- `test_dcf_growth_adj_differentiates_ev`는 tsla.yaml 기준 — 현재 pass 중이나 tsla.yaml이 재생성되면 동일 위험
+## 이번 세션 목표 (스펙 확정만, 구현 X)
+AskUserQuestion 기반 인터뷰로 Phase 3 스펙을 `SPEC_phase3_calibration.md`에 확정.
 
-관련 커밋: `57904bb chore(profiles): regenerate from 2026-04-13 pipeline run`
-
-## 작업 1: 테스트 픽스처 분리 (primary)
-
-**문제의 본질**: `profiles/`는 volatile(주간 AI 재생성). 테스트 고정 픽스처 아님.
-
-**수정 방향 (선호 순)**:
-1. `tests/fixtures/` 디렉토리 신설 → `msft_frozen.yaml`, `tsla_frozen.yaml` 복사본 고정 (Bull/Base/Bear 키로 수동 편집)
-2. 3개 테스트가 `fixtures/` 경로를 로드하도록 수정
-3. 주간 파이프라인이 `profiles/`만 덮어쓰도록 경계 유지 (이미 그럼)
-
-**결정 포인트**: Bull/Base/Bear 하드코딩 vs. `list(vi.scenarios.values())` 상위 prob 3개로 유연화. 전자가 명시적이라 선호, 후자는 프로파일 무관 추상화. 시작 시 사용자에게 선택 확인.
-
-## 작업 2: Phase 3 캘리브레이션 인프라 (secondary, 범위 확인 후 분리 세션 권장)
-
-`memory/project_valuation_tool_audit.md` 참조. Phase 1-2 완료, Phase 3는 "캘리브레이션 인프라"로만 백로그 기록됨 — 구체 스펙 없음.
-
-**먼저 해야 할 것**: Phase 3 요구사항 정의 (인터뷰 모드로 스펙 확정 → 별도 세션에서 구현). 이번 세션에서는 **작업 1만 완료 후 /clear** 권장.
+## 인터뷰에서 반드시 물을 것
+1. **캘리브레이션 대상**: (a) 시나리오 확률 조정, (b) segment multiple 보정, (c) WACC 파라미터 튜닝, (d) DCF growth 조정 — 무엇을 자동/반자동 튜닝할 것인가?
+2. **정답 신호(ground truth)**: 실현 주가? 애널리스트 consensus? 과거 예측 오차? → 어느 지표를 loss로 쓸지
+3. **캘리브레이션 범위**: 종목별 단일 튜닝 vs. 시장(KR/US)·섹터 단위 공통 파라미터 학습
+4. **자동화 수준**: 수동 override 유지 vs. 파이프라인에서 자동 적용
+5. **성공 기준**: 예측 오차 감소 %? 특정 벤치마크 일치?
+6. **데이터 요구**: 과거 분석 결과 저장 여부, 신규 수집 필요한 데이터
+7. **스코프 경계**: 이번 단계에서 하지 않을 것 (예: ML 모델, 실시간 재계산 등)
 
 ## 완료 기준
-- 576 pass → 578 pass (2건 복구) + 기존 passes 유지
-- `profiles/msft.yaml` 재생성에 영향받지 않는지 확인 (픽스처가 `tests/fixtures/` 하위에 격리돼 있으면 구조적으로 보장)
-- 커밋 + push
+- `SPEC_phase3_calibration.md` 작성 + 커밋
+- 구현은 **별도 세션**에서 clean context로 진행
 
-## 모드: normal
+## 모드: plan (인터뷰 + 스펙 작성만, 코드 X)

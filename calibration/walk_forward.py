@@ -12,13 +12,21 @@ result. Synthetic fixtures exercise the harness in tests/test_walk_forward.py.
 
 from __future__ import annotations
 
+import logging
 import statistics
 from dataclasses import dataclass, field
+from datetime import date
+from pathlib import Path
 
 from backtest.models import BacktestRecord
 
 from .grid import Bucket, BucketKey
 from .tuner import Recommendation, _bucket_loss, search_sc_prob
+
+logger = logging.getLogger(__name__)
+
+PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
+DEFAULT_REPORT_DIR: Path = PROJECT_ROOT / "output" / "calibration"
 
 
 @dataclass
@@ -205,6 +213,122 @@ def tune_walk_forward(
     )
 
 
+def _fmt_pct(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value * 100:.2f}%"
+
+
+def _fmt_signed_pp(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value * 100:+.2f}pp"
+
+
+def _fmt_probs(probs: dict[str, float] | None) -> str:
+    if probs is None:
+        return "n/a"
+    return f"{probs.get('bull', 0):.0f}/{probs.get('base', 0):.0f}/{probs.get('bear', 0):.0f}"
+
+
+def render_report(
+    result: WalkForwardResult,
+    *,
+    report_date: date | None = None,
+) -> str:
+    """Render a :class:`WalkForwardResult` into a markdown document.
+
+    Includes the bucket header, aggregate train/test MAPE + overfitting gap,
+    and a per-fold table. When ``result.folds`` is empty (insufficient data),
+    only the bucket header and notes are emitted so the file is still useful
+    as a "harness ready" placeholder before mature records arrive.
+    """
+    report_date = report_date or date.today()
+    lines: list[str] = []
+    lines.append(
+        f"# Walk-Forward CV Report -- {report_date.isoformat()} "
+        f"({result.market}/{result.sector}/{result.horizon})"
+    )
+    lines.append("")
+    lines.append(
+        f"Records: **{result.n_records}**, "
+        f"folds: **{len(result.folds)}** "
+        f"(requested {result.n_splits_requested})"
+    )
+    lines.append("")
+
+    if not result.folds:
+        notes = "; ".join(result.notes) if result.notes else "no folds produced"
+        lines.append(f"_No folds were produced: {notes}._")
+        lines.append("")
+        lines.append(
+            "Re-run after additional mature records accrue (first t3m batch "
+            "expected 2026-07)."
+        )
+        return "\n".join(lines) + "\n"
+
+    lines.append("## Aggregate")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|---|---|")
+    lines.append(f"| Mean train MAPE | {_fmt_pct(result.mean_train_mape)} |")
+    lines.append(f"| Mean test MAPE  | {_fmt_pct(result.mean_test_mape)} |")
+    lines.append(f"| Test MAPE std   | {_fmt_pct(result.std_test_mape)} |")
+    lines.append(f"| Overfit gap (test - train) | {_fmt_signed_pp(result.overfitting_gap)} |")
+    lines.append("")
+
+    lines.append("## Per-fold")
+    lines.append("")
+    lines.append(
+        "| Fold | Train N | Test N | Tier | Recommended (bull/base/bear) | "
+        "Train MAPE | Test MAPE | Baseline Test MAPE | Notes |"
+    )
+    lines.append("|---:|---:|---:|---|---|---|---|---|---|")
+    for fold in result.folds:
+        notes = "; ".join(fold.notes) if fold.notes else ""
+        lines.append(
+            f"| {fold.fold_index} | {fold.train_size} | {fold.test_size} | "
+            f"{fold.tier} | {_fmt_probs(fold.recommended_probs)} | "
+            f"{_fmt_pct(fold.train_mape)} | {_fmt_pct(fold.test_mape)} | "
+            f"{_fmt_pct(fold.baseline_test_mape)} | {notes} |"
+        )
+    lines.append("")
+    lines.append("## How to read")
+    lines.append(
+        "- A positive **overfit gap** means recommended probs underperform on "
+        "held-out folds vs. their train slice -- treat the recommendation as "
+        "tentative until the gap narrows.\n"
+        "- **Baseline Test MAPE** is the held-out MAPE under each fold's "
+        "current/baseline prob mix; a recommendation is only worth promoting "
+        "when Test MAPE < Baseline Test MAPE consistently across folds.\n"
+        "- Folds with `tier=insufficient` contribute baseline test MAPE only "
+        "(the tuner suppresses a recommendation)."
+    )
+    return "\n".join(lines) + "\n"
+
+
+def write_report(
+    result: WalkForwardResult,
+    *,
+    output_dir: Path | None = None,
+    report_date: date | None = None,
+) -> Path:
+    """Render and write the walk-forward report to ``output/calibration/``.
+
+    Returns the written path. Output directory is created if missing.
+    """
+    report_date = report_date or date.today()
+    output_dir = output_dir or DEFAULT_REPORT_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+    text = render_report(result, report_date=report_date)
+    out_path = output_dir / f"walk_forward_{report_date.isoformat()}.md"
+    out_path.write_text(text, encoding="utf-8")
+    logger.info(
+        "Wrote walk-forward report: %s (%d folds)", out_path, len(result.folds)
+    )
+    return out_path
+
+
 def format_summary(result: WalkForwardResult) -> str:
     """Single-paragraph human summary suitable for CLI output."""
     if not result.folds:
@@ -240,6 +364,10 @@ def main() -> None:
     parser.add_argument("--n-splits", type=int, default=5)
     parser.add_argument("--min-age-days", type=int, default=90)
     parser.add_argument("--min-train-size", type=int, default=10)
+    parser.add_argument(
+        "--no-report", action="store_true",
+        help="skip writing output/calibration/walk_forward_<date>.md",
+    )
     args = parser.parse_args()
 
     from backtest.dataset import build_backtest_dataset
@@ -254,6 +382,18 @@ def main() -> None:
         print(
             "[WalkForward] Harness ready -- rerun after 2026-07 (first t3m mature records)."
         )
+        if not args.no_report:
+            empty = WalkForwardResult(
+                market="unknown", sector="unknown", horizon=args.horizon,
+                n_splits_requested=args.n_splits, n_records=len(records), folds=[],
+                mean_train_mape=None, mean_test_mape=None, std_test_mape=None,
+                overfitting_gap=None,
+                notes=[
+                    f"no listed records after min_age_days={args.min_age_days} filter"
+                ],
+            )
+            out = write_report(empty)
+            print(f"[WalkForward] Placeholder report -> {out}")
         return
 
     result = tune_walk_forward(
@@ -261,6 +401,9 @@ def main() -> None:
         min_train_size=args.min_train_size,
     )
     print(format_summary(result))
+    if not args.no_report:
+        out = write_report(result)
+        print(f"[WalkForward] Report -> {out}")
     for fold in result.folds:
         train_mape = (
             f"{fold.train_mape * 100:.2f}%" if fold.train_mape is not None else "n/a"

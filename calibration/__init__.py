@@ -31,8 +31,10 @@ from .walk_forward import (
     FoldResult,
     WalkForwardResult,
     format_summary,
+    render_report as render_walk_forward_report,
     tune_walk_forward,
     walk_forward_splits,
+    write_report as write_walk_forward_report,
 )
 
 __all__ = [
@@ -52,7 +54,9 @@ __all__ = [
     "horizon_is_mature",
     "predict_with_probs",
     "render_report",
+    "render_walk_forward_report",
     "search_sc_prob",
     "tune_walk_forward",
     "walk_forward_splits",
+    "write_walk_forward_report",
 ]

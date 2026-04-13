@@ -8,8 +8,10 @@ from backtest.models import BacktestRecord, ScenarioSnapshot
 from calibration.walk_forward import (
     FoldResult,
     WalkForwardResult,
+    render_report,
     tune_walk_forward,
     walk_forward_splits,
+    write_report,
 )
 
 
@@ -133,3 +135,36 @@ def test_tune_walk_forward_empty_returns_notes():
     assert result.mean_test_mape is None
     assert result.notes
     assert "insufficient data" in result.notes[0]
+
+
+# ── render_report / write_report ──
+
+
+def test_render_report_with_folds_contains_aggregate_and_per_fold():
+    records = _build_dataset(30)
+    result = tune_walk_forward(records, horizon="t6m", n_splits=5)
+    text = render_report(result, report_date=date(2026, 4, 13))
+    assert "Walk-Forward CV Report -- 2026-04-13" in text
+    assert "US/dcf_primary/t6m" in text
+    assert "## Aggregate" in text
+    assert "## Per-fold" in text
+    assert "Mean train MAPE" in text
+    for fold in result.folds:
+        assert f"| {fold.fold_index} |" in text
+
+
+def test_render_report_empty_emits_placeholder():
+    result = tune_walk_forward([], horizon="t6m", n_splits=5)
+    text = render_report(result, report_date=date(2026, 4, 13))
+    assert "No folds were produced" in text
+    assert "## Aggregate" not in text
+    assert "rerun" in text.lower() or "re-run" in text.lower()
+
+
+def test_write_report_creates_file(tmp_path):
+    records = _build_dataset(30)
+    result = tune_walk_forward(records, horizon="t6m", n_splits=5)
+    out = write_report(result, output_dir=tmp_path, report_date=date(2026, 4, 13))
+    assert out.exists()
+    assert out.name == "walk_forward_2026-04-13.md"
+    assert "Walk-Forward CV Report" in out.read_text(encoding="utf-8")

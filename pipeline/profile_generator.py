@@ -531,6 +531,12 @@ def auto_analyze(
 
         path = export(vi, result, output_dir)
         print(f"\n[Excel] 저장 완료: {path}")
+        try:
+            from orchestrator import _save_to_db
+
+            _save_to_db(vi, result, yaml_path)
+        except Exception:
+            logger.debug("auto_analyze DB save skipped")
         from orchestrator import format_summary
 
         return AnalyzeResult(
@@ -952,6 +958,13 @@ def auto_analyze(
 
     path = export(vi, result, output_dir)
     print(f"\n[Excel] 저장 완료: {path}")
+
+    try:
+        from orchestrator import _save_to_db
+
+        _save_to_db(vi, result, yaml_path)
+    except Exception:
+        logger.debug("auto_analyze DB save skipped")
 
     from orchestrator import format_summary
 

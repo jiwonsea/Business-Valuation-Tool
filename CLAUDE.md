@@ -46,6 +46,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 ## Workflow Rules
 
 - **Session-start backlog validation**: Before acting on NEXT_SESSION_PROMPT items, check whether they were already resolved in another session. Review `git log --oneline -15` and inspect the files/functions named in the prompt before starting work. If already resolved, refresh the backlog first.
+- **Regression audit timestamp check**: Weekly artifacts under `valuation-results/YYYY-MM-DD(...)/` and `logs/weekly_YYYYMMDD.log` are frozen snapshots of pipeline state at run time. Before diagnosing a "regression bug" from an old artifact, compare its mtime against `git log -- <file>` for the suspect code — stale snapshots masquerade as regressions already fixed upstream.
 - **Auto method selection**: `engine/method_selector.py` branches to SOTP/DCF/DDM/RIM/NAV based on segment count, industry, ROE/Ke. Financials use ROE-Ke spread for DDM/RIM auto-selection. Manual override (`valuation_method`) takes priority.
 - **Reverse DCF / Narrative→Numbers (Damodaran)**: When |market - intrinsic gap| ≥ 20%, `gap_diagnostics.py` auto-extracts implied WACC, TGR, or growth multiplier the market is pricing in. Primary DCF use case for optionality-heavy stocks — decoding market assumptions, not finding a 'correct' price target. If gap ≥ 50%, also re-verify raw data and assumptions.
 - **Scenarios/probabilities**: AI proposes, but user makes final decisions.
@@ -97,7 +98,7 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 
 - Engine pure function tests: fixed input → exact value assertion OK.
 - Pipeline E2E tests: range-based validation. Avoid exact-value regression since methodology may vary by company type.
-- Pre-existing failure: `TestScenarioDriverRoundTrip` (YAML segment_multiples Bull/Bear round-trip) has unresolved `KeyError: 'Bull'` — deselect with `--deselect tests/test_engine.py::TestScenarioDriverRoundTrip` during regression runs until fixed.
+- **`profiles/` is AI-regenerated, not a test fixture**: the weekly pipeline rewrites `profiles/*.yaml` (scenario codes drift Bull/Base/Bear ↔ A/B/C/D), so tests that load from `profiles/` with hardcoded keys break after every run. Fix by moving test-owned YAML into `tests/fixtures/`. Current casualty: `TestScenarioDriverRoundTrip::test_sotp_segment_multiples_differentiate_ev` and `::test_yaml_segment_multiples_round_trip` — deselect with `--deselect tests/test_engine.py::TestScenarioDriverRoundTrip` until fixtures are split.
 
 ## Efficiency
 

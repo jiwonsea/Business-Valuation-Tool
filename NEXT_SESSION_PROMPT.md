@@ -1,92 +1,51 @@
 # Business Valuation Tool: 다음 세션
 
-## 현재 상태
-- 커밋: f9d1f21 (main)
-- 550/550 tests pass
-- naver_poster.py: SE3 로고 이미지 삽입 구현 완료 (실전 테스트 미완)
-
-## 완료된 작업 요약
-
-### 2026-04-12 세션 E (로고 삽입 + US 기업 파이프라인 진단)
-
-#### 로고 이미지 삽입 (완료)
-- Discovery AI가 기업별 `domain` 필드 추출 (discovery_engine.py 프롬프트 수정)
-- `_download_logo(domain)` — Clearbit PNG → tempfile
-- `_insert_logo_se3(driver, path)` — SE3 hidden `input[type='file']` 직접 send_keys
-  - 진단 결과: SE3는 이미지 버튼 클릭 불필요, `input[type='file']`이 항상 DOM에 존재
-- `build_blog_sections(summary)` → sections 구조 (type: company 섹션에 domain 포함)
-- `_set_content_with_sections(driver, wait, sections)` → 섹션별 로고 삽입 후 텍스트
-
-#### US 기업 no_result 근본 원인 확인 (완료)
-- 원인: `eaf80a3` 코드에서 `auto_analyze`가 `market_hint` 없이 `auto_fetch` 호출
-  - "테슬라" → `_is_korean` → `_identify_kr` → DART가 한국 법인 '테슬라' 발견 → 재무제표 없음
-  - "엔비디아"/"애플" → DART circuit OPEN 오류
-- 수정 완료 (이미 커밋):
-  - `401d687`: `auto_analyze`에 `market_hint` 추가
-  - `753f7db`: discovery에서 한국어명 US 기업 필터링
-  - `20339466`: market_cap scoring에서 yfinance_fetcher 사용 (v10 401 우회)
-- 현재 검증: `auto_fetch('TSLA', market_hint='US')` → 정상, market_cap 조회 정상
+## 현재 상태 (2026-04-13 기준)
+- 커밋: `ef75039` (main, origin 동기화 완료)
+- 테스트: 576 pass / 2 fail (pre-existing `TestScenarioDriverRoundTrip`)
+- 로고 삽입·US 파이프라인 실전 검증 완료 (04-13 run 성공)
 
 ---
 
-## 다음 작업: 실전 포스팅 테스트 + 로고 삽입 확인
-
-**세션 시작 시 아래 프롬프트를 그대로 복사해서 사용:**
+## 세션 시작 프롬프트 (복사해서 사용)
 
 ---
 
-Business Valuation Tool — 실전 포스팅 + 로고 삽입 테스트
+[Business Valuation Tool] Phase 3 캘리브레이션 진입 전 테스트 정합성 복구
 
 경로: `F:\dev\Portfolio\business-valuation-tool`
-현재 상태: 550/550 tests pass, 커밋 f9d1f21
+현재 상태: `ef75039`, 576 pass / 2 fail
 
-## 현황
-- naver_poster.py 로고 삽입 구현 완료 (Clearbit + SE3 hidden file input)
-- US 기업 파이프라인 수정 완료 (market_hint, Korean 필터, market_cap)
-- 실전 포스팅 테스트 아직 미실시
+## 배경
+주간 파이프라인이 `profiles/msft.yaml`, `profiles/tsla.yaml`을 AI 생성 결과로 덮어쓰면서 시나리오 코드가 `Bull/Base/Bear`가 아닌 `A/B/C/D`로 바뀜. 반면 `tests/test_engine.py::TestScenarioDriverRoundTrip`의 2개 테스트는 `Bull/Base/Bear` 키를 하드코딩 → 주간 run 후마다 KeyError.
 
-## 작업 1: 로고 삽입 실전 확인
+실패 테스트:
+- `test_sotp_segment_multiples_differentiate_ev` (line 2340, msft.yaml)
+- `test_yaml_segment_multiples_round_trip` (line 2419, msft.yaml)
+- `test_dcf_growth_adj_differentiates_ev`는 tsla.yaml 기준 — 현재 pass 중이나 tsla.yaml이 재생성되면 동일 위험
 
-기존 `_weekly_summary.json` 파일로 dry-run 포스팅:
-```
-python -m scheduler.naver_poster --test    # dry-run (no browser)
-```
-또는 실제 포스팅:
-```
-python -m scheduler.naver_poster
-```
+관련 커밋: `57904bb chore(profiles): regenerate from 2026-04-13 pipeline run`
 
-SE3 hidden input 진단:
-```
-python -m scheduler.naver_poster --diagnose-image
-```
+## 작업 1: 테스트 픽스처 분리 (primary)
 
-### 구현 내용 (f9d1f21)
-- `_download_logo(domain)` — `https://logo.clearbit.com/{domain}` → tempfile
-- `_insert_logo_se3(driver, path)`:
-  ```python
-  file_input = driver.execute_script('return document.querySelector(\'input[type="file"]\');')
-  file_input.send_keys(abs_path)
-  ```
-- `build_blog_sections(summary)` → company 섹션에 `domain` 필드
-- `_set_content_with_sections(driver, wait, sections)` → 섹션별 로고 → 텍스트
+**문제의 본질**: `profiles/`는 volatile(주간 AI 재생성). 테스트 고정 픽스처 아님.
 
-### 예상 이슈
-- SE3 `input[type='file']` send_keys 후 이미지가 실제로 삽입되는지 확인 필요
-- 로고 다운로드 실패 시 텍스트만 삽입 (graceful degradation 구현됨)
+**수정 방향 (선호 순)**:
+1. `tests/fixtures/` 디렉토리 신설 → `msft_frozen.yaml`, `tsla_frozen.yaml` 복사본 고정 (Bull/Base/Bear 키로 수동 편집)
+2. 3개 테스트가 `fixtures/` 경로를 로드하도록 수정
+3. 주간 파이프라인이 `profiles/`만 덮어쓰도록 경계 유지 (이미 그럼)
 
-## 작업 2: 주간 파이프라인 재실행 (선택)
+**결정 포인트**: Bull/Base/Bear 하드코딩 vs. `list(vi.scenarios.values())` 상위 prob 3개로 유연화. 전자가 명시적이라 선호, 후자는 프로파일 무관 추상화. 시작 시 사용자에게 선택 확인.
 
-US 기업 수정 확인을 위한 재실행:
-```
-python -m scheduler.weekly_run --dry-run    # Discovery만 (valuation 스킵)
-python -m scheduler.weekly_run              # 전체 실행
-```
+## 작업 2: Phase 3 캘리브레이션 인프라 (secondary, 범위 확인 후 분리 세션 권장)
 
-기대 결과:
-- US 기업 5개 valuation success (이전: 5개 no_result)
-- 기업별 market_cap USD 표시 (이전: N/A)
+`memory/project_valuation_tool_audit.md` 참조. Phase 1-2 완료, Phase 3는 "캘리브레이션 인프라"로만 백로그 기록됨 — 구체 스펙 없음.
+
+**먼저 해야 할 것**: Phase 3 요구사항 정의 (인터뷰 모드로 스펙 확정 → 별도 세션에서 구현). 이번 세션에서는 **작업 1만 완료 후 /clear** 권장.
+
+## 완료 기준
+- 576 pass → 578 pass (2건 복구) + 기존 passes 유지
+- `profiles/msft.yaml` 재생성에 영향받지 않는지 확인 (픽스처가 `tests/fixtures/` 하위에 격리돼 있으면 구조적으로 보장)
+- 커밋 + push
 
 ## 모드: normal
-
----

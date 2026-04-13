@@ -151,9 +151,11 @@ class TestSearchSCProb:
         assert any("suppressed" in n for n in rec.notes)
 
     def test_preliminary_tier_for_t6m_with_enough_samples(self):
+        # Baseline is deliberately mis-specified so grid search finds a
+        # materially better mix (crosses the MAPE-improvement threshold).
         records = []
         for i in range(15):
-            scenarios = [_scn("A", 50, 100), _scn("B", 25, 150), _scn("C", 25, 50)]
+            scenarios = [_scn("A", 50, 200), _scn("B", 25, 100), _scn("C", 25, 50)]
             records.append(
                 _record(
                     f"T{i}",

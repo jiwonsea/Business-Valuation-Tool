@@ -36,6 +36,21 @@ def _fmt_probs(probs: dict[str, float] | None) -> str:
     return f"{probs.get('bull', 0):.0f}/{probs.get('base', 0):.0f}/{probs.get('bear', 0):.0f}"
 
 
+LARGE_SHIFT_PP: float = 10.0  # any role moving ≥10pp flags the recommendation
+
+
+def _max_shift_pp(
+    baseline: dict[str, float] | None, recommended: dict[str, float] | None
+) -> float:
+    """Max absolute per-role probability shift (pp) between baseline and rec."""
+    if baseline is None or recommended is None:
+        return 0.0
+    return max(
+        abs(recommended.get(role, 0) - baseline.get(role, 0))
+        for role in ("bull", "base", "bear")
+    )
+
+
 def render_report(
     recommendations: list[Recommendation],
     *,
@@ -66,17 +81,27 @@ def render_report(
     lines.append("")
     lines.append(
         "| Market | Sector | Horizon | N | Tier | Baseline (bull/base/bear) | "
-        "Recommended | MAPE base→rec | Coverage base→rec | Notes |"
+        "Recommended | Shift | MAPE base→rec | Coverage base→rec | Notes |"
     )
-    lines.append("|---|---|---|---:|---|---|---|---|---|---|")
+    lines.append("|---|---|---|---:|---|---|---|---|---|---|---|")
 
     ordered = sorted(recommendations, key=lambda r: r.bucket_key)
     for rec in ordered:
         market, sector, horizon = rec.bucket_key
-        notes = "; ".join(rec.notes) if rec.notes else ""
+        notes_parts = list(rec.notes)
+        shift = _max_shift_pp(rec.baseline, rec.recommended)
+        if rec.recommended is None:
+            shift_cell = "—"
+        elif shift >= LARGE_SHIFT_PP:
+            shift_cell = f"⚠️ {shift:.0f}pp"
+            notes_parts.append(f"large shift ({shift:.0f}pp) — review before applying")
+        else:
+            shift_cell = f"{shift:.0f}pp"
+        notes = "; ".join(notes_parts) if notes_parts else ""
         lines.append(
             f"| {market} | {sector} | {horizon} | {rec.n} | {rec.tier} | "
             f"{_fmt_probs(rec.baseline)} | {_fmt_probs(rec.recommended)} | "
+            f"{shift_cell} | "
             f"{_fmt_pct(rec.baseline_mape)} → {_fmt_pct(rec.recommended_mape)} | "
             f"{_fmt_pct(rec.baseline_coverage)} → {_fmt_pct(rec.recommended_coverage)} | "
             f"{notes} |"

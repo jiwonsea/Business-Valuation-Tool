@@ -22,6 +22,13 @@ GRID_STEP: int = 5
 N_STABLE: int = 30
 N_PRELIMINARY: int = 10
 
+# Minimum MAPE improvement required to emit a recommendation.
+# Without these gates, grid search can pick an extreme (e.g. 5/90/5) over the
+# baseline (25/50/25) on a fractional MAPE tie — advising a large prob shift
+# for no real gain.
+MIN_REL_MAPE_IMPROVEMENT: float = 0.05  # 5% relative drop
+MIN_ABS_MAPE_IMPROVEMENT: float = 0.005  # 0.5pp absolute drop
+
 
 @dataclass
 class Recommendation:
@@ -210,14 +217,29 @@ def search_sc_prob(bucket: Bucket) -> Recommendation:
         )
 
     triple, best_mape, best_coverage = best
-    recommended = {"bull": float(triple[0]), "base": float(triple[1]), "bear": float(triple[2])}
+    recommended: dict[str, float] | None = {
+        "bull": float(triple[0]), "base": float(triple[1]), "bear": float(triple[2]),
+    }
 
     if best_coverage is not None and best_coverage < 0.60:
         notes.append(
             f"coverage_rate={best_coverage:.0%} below 60% — scenario range may be too narrow"
         )
-    if baseline_mape is not None and best_mape >= baseline_mape - 1e-9:
-        notes.append("recommended MAPE not strictly better than baseline — keep current probs")
+
+    # Gate: require material MAPE improvement before recommending a shift.
+    if baseline_mape is not None:
+        abs_delta = baseline_mape - best_mape
+        rel_delta = abs_delta / baseline_mape if baseline_mape > 0 else 0.0
+        if abs_delta < MIN_ABS_MAPE_IMPROVEMENT or rel_delta < MIN_REL_MAPE_IMPROVEMENT:
+            notes.append(
+                f"MAPE improvement {rel_delta:+.1%} "
+                f"({abs_delta * 100:+.2f}pp) below threshold "
+                f"(≥{MIN_REL_MAPE_IMPROVEMENT:.0%} rel, "
+                f"≥{MIN_ABS_MAPE_IMPROVEMENT * 100:.1f}pp abs) — keep baseline"
+            )
+            recommended = None
+            best_mape = None  # suppress recommended_mape display
+            best_coverage = None
 
     return Recommendation(
         bucket_key=(market, sector, horizon),

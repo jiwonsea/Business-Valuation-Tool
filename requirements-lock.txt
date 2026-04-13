@@ -44,7 +44,7 @@ colorama==0.4.6
     #   click
     #   pytest
     #   tqdm
-cryptography==46.0.6
+cryptography==46.0.7
     # via pyjwt
 curl-cffi==0.14.0
     # via yfinance

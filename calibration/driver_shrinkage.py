@@ -30,6 +30,7 @@ DEFAULT_REPORT_DIR: Path = PROJECT_ROOT / "output" / "calibration"
 
 DEFAULT_TAU: float = 5.0
 MIN_OBSERVATIONS: int = 3
+MIN_PROFILES: int = 2
 LARGE_DELTA_THRESHOLD: float = 0.15
 
 # Profiles that are hand-crafted test fixtures or not subject to the weekly
@@ -57,11 +58,13 @@ class DriverShrinkageRec:
     sector: str
     driver_id: str
     n_observations: int
+    n_profiles: int
     sector_mean_weight: float
     sector_std_weight: float | None
     # {profile: {scenario_code: {"current": w, "shrunk": w_hat}}}
     per_profile: dict[str, dict[str, dict[str, float]]]
     tau: float
+    eligible: bool  # True only when n_obs >= min_obs AND n_profiles >= min_profiles
     notes: list[str] = field(default_factory=list)
 
 
@@ -134,6 +137,7 @@ def shrink_weights(
     *,
     tau: float = DEFAULT_TAU,
     min_observations: int = MIN_OBSERVATIONS,
+    min_profiles: int = MIN_PROFILES,
 ) -> list[DriverShrinkageRec]:
     """Shrink each weight toward its (sector, driver_id) bucket mean.
 
@@ -143,9 +147,11 @@ def shrink_weights(
         alpha = tau / (tau + n)
         w_hat = (1 - alpha) * w_i + alpha * mu
 
-    Larger ``tau`` or smaller ``n`` pulls harder toward ``mu``. Buckets with
-    fewer than ``min_observations`` observations are emitted as notes-only
-    records without a shrunk recommendation.
+    Larger ``tau`` or smaller ``n`` pulls harder toward ``mu``. A bucket is
+    eligible only when both ``n_observations >= min_observations`` AND
+    ``n_profiles >= min_profiles``. Single-profile buckets (observations all
+    come from one profile's scenarios) are suppressed because the spread
+    across bull/base/bear is intentional scenario differentiation, not noise.
     """
     if tau <= 0:
         raise ValueError("tau must be positive")
@@ -158,16 +164,25 @@ def shrink_weights(
     for (sector, driver_id), bucket in sorted(buckets.items()):
         weights = [o.weight for o in bucket]
         n = len(weights)
+        distinct_profiles = {o.profile for o in bucket}
+        n_profiles = len(distinct_profiles)
         mu = _mean(weights)
         std = _std(weights, mu)
         notes: list[str] = []
         per_profile: dict[str, dict[str, dict[str, float]]] = {}
 
-        if n < min_observations:
-            notes.append(
-                f"insufficient observations (n={n} < min={min_observations}); "
-                "no recommendation emitted."
-            )
+        eligible = n >= min_observations and n_profiles >= min_profiles
+        if not eligible:
+            if n < min_observations:
+                notes.append(
+                    f"insufficient observations (n={n} < min={min_observations})."
+                )
+            if n_profiles < min_profiles:
+                notes.append(
+                    f"single-profile bucket (n_profiles={n_profiles} < "
+                    f"min={min_profiles}); scenario spread is intentional, "
+                    "shrinkage would wash out bull/bear differentiation."
+                )
             for obs in bucket:
                 per_profile.setdefault(obs.profile, {})[obs.scenario_code] = {
                     "current": obs.weight,
@@ -178,10 +193,12 @@ def shrink_weights(
                     sector=sector,
                     driver_id=driver_id,
                     n_observations=n,
+                    n_profiles=n_profiles,
                     sector_mean_weight=mu,
                     sector_std_weight=std,
                     per_profile=per_profile,
                     tau=tau,
+                    eligible=False,
                     notes=notes,
                 )
             )
@@ -206,10 +223,12 @@ def shrink_weights(
                 sector=sector,
                 driver_id=driver_id,
                 n_observations=n,
+                n_profiles=n_profiles,
                 sector_mean_weight=mu,
                 sector_std_weight=std,
                 per_profile=per_profile,
                 tau=tau,
+                eligible=True,
                 notes=notes,
             )
         )
@@ -235,7 +254,8 @@ def render_report(
     lines.append("")
     lines.append(
         f"Prior strength `tau` = **{tau:.2f}** (tunable). "
-        f"Min observations per (sector, driver) bucket: **{MIN_OBSERVATIONS}**. "
+        f"Eligibility: **n_obs >= {MIN_OBSERVATIONS}** AND "
+        f"**n_profiles >= {MIN_PROFILES}**. "
         f"Large-delta flag threshold: **{LARGE_DELTA_THRESHOLD}**."
     )
     lines.append("")
@@ -252,28 +272,37 @@ def render_report(
 
     lines.append("## Bucket summary")
     lines.append("")
-    lines.append("| Sector | Driver | N | Sector mean | Sector std | Status |")
-    lines.append("|---|---|---:|---:|---:|---|")
+    lines.append(
+        "| Sector | Driver | N obs | N profiles | Sector mean | "
+        "Sector std | Status |"
+    )
+    lines.append("|---|---|---:|---:|---:|---:|---|")
     for rec in recs:
-        status = "ok" if rec.n_observations >= MIN_OBSERVATIONS else "insufficient"
+        if rec.eligible:
+            status = "ok"
+        elif rec.n_profiles < MIN_PROFILES:
+            status = "single-profile"
+        else:
+            status = "insufficient"
         lines.append(
             f"| {rec.sector} | {rec.driver_id} | {rec.n_observations} | "
-            f"{_fmt(rec.sector_mean_weight)} | {_fmt(rec.sector_std_weight)} | "
-            f"{status} |"
+            f"{rec.n_profiles} | {_fmt(rec.sector_mean_weight)} | "
+            f"{_fmt(rec.sector_std_weight)} | {status} |"
         )
     lines.append("")
 
     lines.append("## Per-profile recommendations")
     lines.append("")
     for rec in recs:
-        if rec.n_observations < MIN_OBSERVATIONS:
+        if not rec.eligible:
             continue
         lines.append(f"### {rec.sector} / {rec.driver_id}")
         lines.append("")
         lines.append(
             f"mu = {_fmt(rec.sector_mean_weight)}, "
             f"sigma = {_fmt(rec.sector_std_weight)}, "
-            f"n = {rec.n_observations}"
+            f"n_obs = {rec.n_observations}, "
+            f"n_profiles = {rec.n_profiles}"
         )
         lines.append("")
         lines.append("| Profile | Scenario | Current | Shrunk | Delta |")
@@ -294,14 +323,42 @@ def render_report(
                 lines.append(f"- {note}")
         lines.append("")
 
-    suppressed = [r for r in recs if r.n_observations < MIN_OBSERVATIONS]
-    if suppressed:
-        lines.append("## Suppressed buckets (insufficient data)")
+    single_profile = [
+        r for r in recs
+        if not r.eligible and r.n_profiles < MIN_PROFILES
+    ]
+    if single_profile:
+        lines.append("## Suppressed: single-profile buckets")
         lines.append("")
-        for rec in suppressed:
+        lines.append(
+            "Scenario spread within one profile (bull/base/bear weights) is "
+            "designer intent, not noise. Shrinkage would wash out the "
+            "differentiation, so these are excluded from recommendations."
+        )
+        lines.append("")
+        for rec in single_profile:
             profiles = ", ".join(sorted(rec.per_profile))
             lines.append(
-                f"- **{rec.sector} / {rec.driver_id}** (n={rec.n_observations}): "
+                f"- **{rec.sector} / {rec.driver_id}** "
+                f"(n_obs={rec.n_observations}, n_profiles={rec.n_profiles}): "
+                f"{profiles}"
+            )
+        lines.append("")
+
+    insufficient = [
+        r for r in recs
+        if not r.eligible
+        and r.n_profiles >= MIN_PROFILES
+        and r.n_observations < MIN_OBSERVATIONS
+    ]
+    if insufficient:
+        lines.append("## Suppressed: insufficient observations")
+        lines.append("")
+        for rec in insufficient:
+            profiles = ", ".join(sorted(rec.per_profile))
+            lines.append(
+                f"- **{rec.sector} / {rec.driver_id}** "
+                f"(n_obs={rec.n_observations}, n_profiles={rec.n_profiles}): "
                 f"{profiles}"
             )
         lines.append("")
@@ -309,14 +366,15 @@ def render_report(
     lines.append("## How to read")
     lines.append(
         "- Sector key is the profile's `valuation_method` field; `auto` covers "
-        "profiles without an explicit method override.\n"
+        "profiles without an explicit method override. This axis is a proxy "
+        "and will be replaced by a proper business-sector taxonomy once a "
+        "scenario-role-aware redesign lands.\n"
         "- Shrinkage pulls each weight toward its (sector, driver) mean by "
         "`alpha = tau / (tau + n)`. Increase `tau` to pull harder.\n"
-        "- `⚠` marks moves of at least "
-        f"{LARGE_DELTA_THRESHOLD:.2f} in absolute weight -- review before "
-        "applying.\n"
-        "- Suppressed buckets have too few observations to pool reliably; "
-        "keep current weights until more profiles use the driver."
+        "- Single-profile buckets are suppressed: cross-scenario weights "
+        "within one profile are intentional bull/base/bear differentiation.\n"
+        f"- `⚠` marks moves of at least {LARGE_DELTA_THRESHOLD:.2f} in "
+        "absolute weight -- review before applying."
     )
     return "\n".join(lines) + "\n"
 
@@ -361,8 +419,12 @@ def main() -> None:
         f"[DriverShrinkage] observations={len(observations)} "
         f"buckets={len(recs)} tau={args.tau}"
     )
-    eligible = sum(1 for r in recs if r.n_observations >= MIN_OBSERVATIONS)
-    print(f"[DriverShrinkage] eligible buckets (n >= {MIN_OBSERVATIONS}): {eligible}")
+    eligible = sum(1 for r in recs if r.eligible)
+    single = sum(1 for r in recs if not r.eligible and r.n_profiles < MIN_PROFILES)
+    print(
+        f"[DriverShrinkage] eligible buckets: {eligible}, "
+        f"single-profile suppressed: {single}"
+    )
     if not args.no_report:
         out = write_report(recs, tau=args.tau)
         print(f"[DriverShrinkage] Report -> {out}")

@@ -60,7 +60,8 @@ def test_collect_observations_smoke(tmp_path: Path) -> None:
 
 
 def test_shrinkage_pulls_outliers_toward_mean() -> None:
-    # Cluster of four 0.3 weights plus one 1.0 outlier in same bucket.
+    # Cluster of four 0.3 weights plus one 1.0 outlier in same bucket;
+    # five distinct profiles so the distinct-profile gate passes.
     obs = [
         DriverWeightObservation("p1", "sotp", "A", "d", 0.3),
         DriverWeightObservation("p2", "sotp", "A", "d", 0.3),
@@ -72,7 +73,9 @@ def test_shrinkage_pulls_outliers_toward_mean() -> None:
 
     assert len(recs) == 1
     rec = recs[0]
+    assert rec.eligible
     assert rec.n_observations == 5
+    assert rec.n_profiles == 5
     mu = rec.sector_mean_weight
     assert mu == pytest.approx((0.3 * 4 + 1.0) / 5)
 
@@ -91,9 +94,44 @@ def test_shrinkage_zero_when_uniform() -> None:
     ]
     recs = shrink_weights(obs, tau=5.0)
     rec = recs[0]
+    assert rec.eligible
     for profile in rec.per_profile.values():
         for entry in profile.values():
             assert entry["shrunk"] == pytest.approx(entry["current"])
+
+
+def test_shrinkage_suppresses_single_profile_bucket() -> None:
+    # One profile, three scenarios with extreme spread -- scenario
+    # differentiation, not cross-profile noise.
+    obs = [
+        DriverWeightObservation("solo", "sotp", "Bull", "d", 1.0),
+        DriverWeightObservation("solo", "sotp", "Base", "d", 0.5),
+        DriverWeightObservation("solo", "sotp", "Bear", "d", 0.0),
+    ]
+    recs = shrink_weights(obs, tau=5.0)
+    assert len(recs) == 1
+    rec = recs[0]
+    assert not rec.eligible
+    assert rec.n_observations == 3
+    assert rec.n_profiles == 1
+    assert any("single-profile" in n for n in rec.notes)
+    # Shrunk values equal current when suppressed -- scenario spread preserved.
+    for profile in rec.per_profile.values():
+        for entry in profile.values():
+            assert entry["shrunk"] == entry["current"]
+
+
+def test_shrinkage_eligible_requires_both_gates() -> None:
+    # Two profiles, two observations -- passes distinct_profiles (>=2) but
+    # fails n_observations (>=3). Must stay suppressed.
+    obs = [
+        DriverWeightObservation("p1", "sotp", "A", "d", 0.4),
+        DriverWeightObservation("p2", "sotp", "A", "d", 0.6),
+    ]
+    recs = shrink_weights(obs, tau=5.0)
+    assert not recs[0].eligible
+    assert recs[0].n_profiles == 2
+    assert recs[0].n_observations == 2
 
 
 def test_shrinkage_suppressed_below_min_n() -> None:
@@ -104,8 +142,9 @@ def test_shrinkage_suppressed_below_min_n() -> None:
     recs = shrink_weights(obs, tau=5.0, min_observations=MIN_OBSERVATIONS)
     assert len(recs) == 1
     rec = recs[0]
+    assert not rec.eligible
     assert rec.n_observations == 2
-    assert rec.notes and "insufficient" in rec.notes[0]
+    assert any("insufficient" in n for n in rec.notes)
     # Shrunk values equal current when suppressed.
     for profile in rec.per_profile.values():
         for entry in profile.values():

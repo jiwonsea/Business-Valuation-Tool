@@ -2341,7 +2341,7 @@ class TestScenarioDriverRoundTrip:
         """SOTP: segment_multiples in YAML → different EV per scenario."""
         from valuation_runner import load_profile, run_valuation
 
-        profile_path = str(Path(__file__).parent.parent / "profiles" / "msft.yaml")
+        profile_path = str(Path(__file__).parent / "fixtures" / "msft_frozen.yaml")
         vi = load_profile(profile_path)
         result = run_valuation(vi)
 
@@ -2358,7 +2358,7 @@ class TestScenarioDriverRoundTrip:
         """DCF: growth_adj_pct in YAML → different EV per scenario."""
         from valuation_runner import load_profile, run_valuation
 
-        profile_path = str(Path(__file__).parent.parent / "profiles" / "tsla.yaml")
+        profile_path = str(Path(__file__).parent / "fixtures" / "tsla_frozen.yaml")
         vi = load_profile(profile_path)
         result = run_valuation(vi)
 
@@ -2420,7 +2420,7 @@ class TestScenarioDriverRoundTrip:
         """YAML with segment_multiples loads correctly into ScenarioParams."""
         from valuation_runner import load_profile
 
-        profile_path = str(Path(__file__).parent.parent / "profiles" / "msft.yaml")
+        profile_path = str(Path(__file__).parent / "fixtures" / "msft_frozen.yaml")
         vi = load_profile(profile_path)
 
         bull_sc = vi.scenarios["Bull"]

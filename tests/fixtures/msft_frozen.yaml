@@ -1,0 +1,297 @@
+company:
+  name: MICROSOFT CORP
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: MSFT
+  cik: '789019'
+  corp_code: null
+  shares_total: 7425629076
+  shares_ordinary: 7425629076
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-13'
+segments:
+  PBP:
+    name: Productivity & Business Processes (Office 365, Dynamics 365, LinkedIn)
+    multiple: 22.0
+  IC:
+    name: Intelligent Cloud (Azure, Server Products, Enterprise Services)
+    multiple: 22.0
+  MPC:
+    name: More Personal Computing (Windows, Gaming, Surface, Search)
+    multiple: 10.0
+segment_data:
+  2025:
+    PBP:
+      revenue: 98603
+      gross_profit: 0
+      op: 44985
+      assets: 216651
+    IC:
+      revenue: 112690
+      gross_profit: 0
+      op: 51411
+      assets: 247601
+    MPC:
+      revenue: 70431
+      gross_profit: 0
+      op: 32132
+      assets: 154751
+consolidated:
+  2023:
+    revenue: 211915
+    op: 88523
+    net_income: 72361
+    assets: 411976
+    liabilities: 205753
+    equity: 206223
+    dep: 13861
+    amort: 0
+    gross_borr: 59965
+    net_borr: 25261
+    de_ratio: 29.1
+  2024:
+    revenue: 245122
+    op: 109433
+    net_income: 88136
+    assets: 512163
+    liabilities: 243686
+    equity: 268477
+    dep: 22287
+    amort: 0
+    gross_borr: 67127
+    net_borr: 48812
+    de_ratio: 25.0
+  2025:
+    revenue: 281724
+    op: 128528
+    net_income: 101832
+    assets: 619003
+    liabilities: 275524
+    equity: 343479
+    dep: 34153
+    amort: 0
+    gross_borr: 60588
+    net_borr: 30346
+    de_ratio: 17.6
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 0.95
+  de: 2.2
+  tax: 21.0
+  kd_pre: 3.8
+  eq_w: 97.8
+scenarios:
+  Base:
+    name: 기본 시나리오
+    prob: 47.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 7425629076
+    desc: 실적 발표 전 관망세 속에서 기관투자자 매수가 지속되는 상황. AI 전략 리스크와 일본 투자 기회가 상쇄되며 현재 밸류에이션 수준
+      유지.
+    probability_rationale: '기본 확률: 실적 발표 전 중립적 상황 60% × 기관 매수 지속 확률 70% = 42%, 40%로
+      조정'
+    active_drivers:
+      institutional_buying: 1.0
+      earnings_uncertainty: 0.3
+    segment_multiples:
+      PBP: 28.0
+      IC: 22.0
+      MPC: 18.0
+  Bull:
+    name: AI 투자 성공 시나리오
+    prob: 29.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 7425629076
+    desc: 일본 AI 투자 계획이 성공적으로 진행되며 AI 전략 우려가 해소되는 상황. 아시아 시장 확장과 AI 경쟁력 강화로 프리미엄 밸류에이션
+      정당화.
+    probability_rationale: '기본 확률: 일본 AI 투자 성공 30% × 전략 리스크 완화 확률 80% × 시장 긍정 반응 확률
+      90% = 22%, 25%로 조정'
+    active_drivers:
+      japan_ai_investment: 1.0
+      ai_strategy_risk: 0.2
+      institutional_buying: 0.8
+    segment_multiples:
+      PBP: 32.0
+      IC: 26.0
+      MPC: 20.0
+  Bear:
+    name: 전략 리스크 현실화 시나리오
+    prob: 24.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 7425629076
+    desc: AI 전략 변경이 실제 경쟁력 저하로 이어지며 실적 발표에서 부정적 결과가 나타나는 상황. 성장성 둔화와 리스크 프리미엄 상승으로
+      밸류에이션 하락.
+    probability_rationale: '기본 확률: AI 전략 변경 부정적 영향 25% × 경쟁력 저하 현실화 60% × 실적 부진 확률
+      70% = 11%, 보수적으로 20% 할당'
+    active_drivers:
+      ai_strategy_risk: 1.0
+      earnings_uncertainty: 0.8
+      japan_ai_investment: 0.3
+    segment_multiples:
+      PBP: 22.0
+      IC: 18.0
+      MPC: 15.0
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 20.8
+  capex_to_da: 1.97
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+  actual_capex: 64551
+  capex_fade_to: null
+  da_to_ebitda_override: 0.1715
+pe_multiple: 27.0
+ev_revenue_multiple: 9.9
+pbv_multiple: 8.0
+cps_principal: 0
+cps_years: 0
+net_debt: 30346
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Salesforce Inc. (CRM)
+  segment_code: PBP
+  ev_ebitda: 28.5
+  notes: Global SaaS leader, CRM/enterprise software. FY2024 EV/EBITDA ~28-30x. Direct
+    comparable to Dynamics 365. High growth, subscription-based model.
+- name: Adobe Inc. (ADBE)
+  segment_code: PBP
+  ev_ebitda: 24.0
+  notes: Enterprise SaaS, creative/productivity software. FY2024 EV/EBITDA ~23-25x.
+    Subscription-dominant, similar margin profile to Office 365.
+- name: ServiceNow Inc. (NOW)
+  segment_code: PBP
+  ev_ebitda: 32.0
+  notes: Enterprise workflow SaaS platform. FY2024 EV/EBITDA ~30-34x. High-growth
+    SaaS, comparable to Dynamics 365 enterprise positioning.
+- name: Workday Inc. (WDAY)
+  segment_code: PBP
+  ev_ebitda: 26.5
+  notes: HCM/ERP SaaS. FY2024 EV/EBITDA ~25-28x. Direct competitor to Dynamics 365
+    in enterprise HR/finance modules.
+- name: 'Naver Corp. (NAVER, KOSPI: 035420)'
+  segment_code: PBP
+  ev_ebitda: 12.5
+  notes: Korean SaaS/cloud platform (Naver Cloud, WorkSmartly). FY2024 EV/EBITDA ~11-14x.
+    Lower multiple reflects Korea market discount vs. US SaaS peers.
+- name: 'Kakao Corp. (KAKAO, KOSPI: 035720)'
+  segment_code: PBP
+  ev_ebitda: 9.0
+  notes: Korean platform/cloud services (Kakao Cloud, enterprise solutions). FY2024
+    EV/EBITDA ~8-10x. Domestic comparable, lower growth/margin than US SaaS.
+- name: 'Coupang Inc. (CPNG, KOSPI: 149780)'
+  segment_code: PBP
+  ev_ebitda: 15.0
+  notes: Korean tech platform with logistics/cloud infrastructure. FY2024 EV/EBITDA
+    ~14-16x. Platform/SaaS hybrid, domestic scale reference.
+- name: Amazon Web Services (AWS) - Amazon.com Inc.
+  segment_code: IC
+  ev_ebitda: 28.5
+  notes: Global cloud infrastructure leader. FY2023 AWS revenue $80.1B, operating
+    margin ~30%. EV/EBITDA based on AWS segment valuation (~$2.0T implied value /
+    $70B EBITDA). Direct Azure competitor, highest scale comparability.
+- name: Google Cloud - Alphabet Inc.
+  segment_code: IC
+  ev_ebitda: 32.0
+  notes: Cloud infrastructure & platform services. FY2023 Google Cloud revenue $33.1B,
+    operating margin ~8-10%. Segment valuation implies EV/EBITDA ~32x. Growing cloud
+    platform with enterprise focus similar to Azure.
+- name: Oracle Cloud Infrastructure (OCI) - Oracle Corporation
+  segment_code: IC
+  ev_ebitda: 24.0
+  notes: Enterprise cloud platform & database services. FY2024 cloud revenue $16.3B,
+    operating margin ~35%. OCI segment EV/EBITDA ~24x. Strong enterprise positioning,
+    database-centric cloud model.
+- name: IBM Cloud - IBM Corporation
+  segment_code: IC
+  ev_ebitda: 12.5
+  notes: Hybrid cloud & infrastructure services. FY2023 cloud revenue $23.4B (Red
+    Hat + IBM Cloud), operating margin ~15%. Lower multiple reflects hybrid/legacy
+    positioning. Enterprise infrastructure focus.
+- name: Naver Cloud - Naver Corporation
+  segment_code: IC
+  ev_ebitda: 18.0
+  notes: Korean domestic cloud infrastructure leader. FY2023 cloud revenue ~₩1.2T,
+    EBITDA margin ~12-15%. Market cap ~₩20T implies EV/EBITDA ~18x. Domestic peer
+    with similar enterprise/platform positioning.
+- name: Kakao Cloud - Kakao Corporation
+  segment_code: IC
+  ev_ebitda: 16.5
+  notes: Korean cloud infrastructure & platform services. FY2023 cloud revenue ~₩800B,
+    EBITDA margin ~10-12%. Emerging domestic competitor. Lower scale than Naver Cloud
+    but growing enterprise segment.
+- name: SK C&C - SK Telecom subsidiary
+  segment_code: IC
+  ev_ebitda: 14.0
+  notes: Korean enterprise cloud & IT services. FY2023 cloud/IT revenue ~₩2.5T, operating
+    margin ~8-10%. Established enterprise infrastructure provider. Telecom-backed
+    infrastructure advantage.
+news_key_issues: '- [리스크] AI 관련 비즈니스 전략 변경으로 경쟁력 저하 우려 (2026-04-11)
+
+  - [기회] 일본에서 AI에 100억 달러 투자 계획 발표 (2026-04-03)
+
+  - [재무] 2026년 4월 29일 분기 실적 발표 예정 (2026-04-08)
+
+  - [투자] 로열 펀드 매니지먼트, 마이크로소프트 주식 3,661주 추가 매수 (2026-04-11)
+
+  - [분석] 애널리스트, 마이크로소프트의 AI 비즈니스 전망에 우려 표명 (2026-04-09)'
+news_drivers:
+- id: ai_strategy_risk
+  name: AI 비즈니스 전략 변경 리스크
+  category: company
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: AI 전략 변경으로 인한 경쟁력 저하 우려. 과거 빅테크 전략 변경 시 성장률 10-20% 하락, 리스크 프리미엄 상승으로
+    WACC 20-50bp 증가 사례 참조
+- id: japan_ai_investment
+  name: 일본 AI 투자 확대
+  category: company
+  effects:
+    growth_adj_pct: 25
+    wacc_adj: -0.2
+    market_sentiment_pct: 12
+  rationale: 100억 달러 일본 AI 투자로 아시아 시장 확장 기대. 대규모 투자 발표 시 성장률 20-30% 상향, 투자자 신뢰도 증가로
+    리스크 프리미엄 하락 패턴
+- id: earnings_uncertainty
+  name: 4월 실적 발표 불확실성
+  category: company
+  effects:
+    growth_adj_pct: 0
+    wacc_adj: 0.4
+    market_sentiment_pct: -5
+  rationale: 실적 발표 전 불확실성 증가. 애널리스트 우려 표명으로 변동성 확대, 리스크 프리미엄 30-50bp 상승 예상
+- id: institutional_buying
+  name: 기관투자자 매수 증가
+  category: company
+  effects:
+    growth_adj_pct: 0
+    wacc_adj: -0.1
+    market_sentiment_pct: 3
+  rationale: 로열 펀드 등 기관투자자 지속 매수로 주가 지지. 기관 매수 증가 시 유동성 개선, 소폭 리스크 프리미엄 하락 효과
+mc_enabled: true

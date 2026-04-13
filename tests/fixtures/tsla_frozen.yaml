@@ -1,0 +1,325 @@
+company:
+  name: Tesla, Inc.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: TSLA
+  cik: '1318605'
+  corp_code: null
+  shares_total: 3752431984
+  shares_ordinary: 3752431984
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-13'
+segments:
+  SEG1:
+    name: Automotive (EV & ICE)
+    multiple: 10.0
+  SEG2:
+    name: Energy Storage & Solar
+    multiple: 9.8
+  SEG3:
+    name: Services & Other
+    multiple: 9.2
+  SEG_OPT1:
+    name: FSD / 완전자율주행 및 로보택시
+    multiple: 20.0
+    optionality: true
+    method: ev_revenue
+  SEG_OPT2:
+    name: 에너지 저장 및 태양광 사업
+    multiple: 15.0
+    optionality: true
+    method: ev_revenue
+segment_data:
+  2025:
+    SEG1:
+      revenue: 82025
+      gross_profit: 0
+      op: 4194
+      assets: 119202
+    SEG2:
+      revenue: 8724
+      gross_profit: 0
+      op: 446
+      assets: 12678
+    SEG3:
+      revenue: 4078
+      gross_profit: 0
+      op: 209
+      assets: 5926
+    SEG_OPT1:
+      revenue: 1000
+      gross_profit: 0
+      op: 0
+      assets: 0
+    SEG_OPT2:
+      revenue: 6000
+      gross_profit: 0
+      op: 0
+      assets: 0
+consolidated:
+  2023:
+    revenue: 96773
+    op: 8891
+    net_income: 14999
+    assets: 106618
+    liabilities: 43009
+    equity: 62634
+    dep: 4667
+    amort: 0
+    gross_borr: 9573
+    net_borr: -6825
+    de_ratio: 15.3
+  2024:
+    revenue: 97690
+    op: 7760
+    net_income: 7130
+    assets: 122070
+    liabilities: 48390
+    equity: 72913
+    dep: 5368
+    amort: 0
+    gross_borr: 13623
+    net_borr: -2516
+    de_ratio: 18.7
+  2025:
+    revenue: 94827
+    op: 4849
+    net_income: 3794
+    assets: 137806
+    liabilities: 54941
+    equity: 82137
+    dep: 6148
+    amort: 0
+    gross_borr: 14719
+    net_borr: -1794
+    de_ratio: 17.9
+wacc_params:
+  rf: 4.25
+  erp: 5.5
+  bu: 1.898
+  de: 1.1
+  tax: 21.0
+  kd_pre: 4.25
+  eq_w: 98.9
+scenarios:
+  Bull:
+    name: 저가 EV 성공 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    desc: 저가 전기차와 컴팩트 SUV가 시장에서 큰 성공을 거두며 판매량이 급증하는 시나리오. 기관투자자들의 지속적인 투자 확대로 밸류에이션
+      프리미엄이 확대된다.
+    probability_rationale: 'Base rate: 신제품 성공률 30%. 조건부 분해: P(저가EV 출시)=90% × P(시장수용|출시)=70%
+      × P(수익성 확보|수용)=40% ≈ 25%'
+    active_drivers:
+      low_cost_ev_plan: 1.0
+      institutional_confidence: 0.8
+    segment_multiples:
+      SEG1: 18.0
+      SEG2: 12.0
+      SEG3: 25.0
+    segment_revenue:
+      SEG_OPT1: 25000
+      SEG_OPT2: 35000
+  Base:
+    name: 균형 성장 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    desc: 저가 EV 계획이 부분적으로 성공하나 모델 S/X 단종 영향이 상쇄하는 시나리오. 로보택시 우려는 지속되지만 FSD 승인 등 긍정적
+      신호도 혼재한다.
+    probability_rationale: 'Base rate: 현상유지 확률 40%. 조건부 분해: P(점진적 성장)=80% × P(혼재된
+      실적)=60% × P(시장 중립)=85% ≈ 40%'
+    active_drivers:
+      low_cost_ev_plan: 0.6
+      model_sx_lifecycle_end: 0.8
+      robotaxi_concerns: 0.4
+    segment_multiples:
+      SEG1: 15.0
+      SEG2: 10.0
+      SEG3: 20.0
+    segment_revenue:
+      SEG_OPT1: 8000
+      SEG_OPT2: 18000
+  Bear:
+    name: 로보택시 실망 시나리오
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 3752431984
+    desc: 로보택시 상용화가 예상보다 크게 지연되고 저가 전기차의 수익성 악화 우려가 현실화되는 시나리오. 모델 S/X 단종으로 프리미엄 세그먼트
+      공백이 발생한다.
+    probability_rationale: 'Base rate: 기술주 실망 확률 35%. 조건부 분해: P(로보택시 지연)=60% × P(저가EV
+      수익성 악화)=70% × P(시장 실망)=85% ≈ 35%'
+    active_drivers:
+      robotaxi_concerns: 1.0
+      model_sx_lifecycle_end: 1.0
+      low_cost_ev_plan: 0.0
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 8.0
+      SEG3: 15.0
+    segment_revenue:
+      SEG_OPT1: 2000
+      SEG_OPT2: 8000
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 21.0
+  capex_to_da: 1.8
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+  actual_capex: 8527
+  capex_fade_to: null
+  da_to_ebitda_override: 0.4374
+pe_multiple: 345.1
+ev_revenue_multiple: 13.8
+pbv_multiple: 15.9
+cps_principal: 0
+cps_years: 0
+net_debt: -1794
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: LG Energy Solution (051910.KS)
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Korean battery storage & energy solutions leader. Direct comparable to Tesla
+    Energy Storage. EV/EBITDA based on 2023 consensus (DART filings, Bloomberg). Battery
+    pack manufacturing & grid-scale storage operations.
+- name: SK Innovation (096770.KS)
+  segment_code: SEG2
+  ev_ebitda: 7.2
+  notes: Korean integrated energy storage & battery manufacturer. Operates grid-scale
+    battery systems and renewable integration. 2023-2024 DART data. Lower multiple
+    reflects commodity battery exposure vs. Tesla's premium positioning.
+- name: Hanwha Q CELLS (054980.KS)
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: Korean solar + energy storage integrated player. Direct structural similarity
+    to Tesla's solar-storage bundling strategy. 2024 consensus estimates from Korean
+    sell-side research.
+- name: Enphase Energy (ENPH, NASDAQ)
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: US-listed solar microinverter + battery storage software platform. Highest
+    multiple reflects recurring software revenue and residential storage growth. 2024
+    Bloomberg consensus. Direct peer to Tesla's residential storage business model.
+- name: Sunrun Inc. (RUN, NASDAQ)
+  segment_code: SEG2
+  ev_ebitda: 10.2
+  notes: US residential solar + battery storage operator. Largest US residential solar
+    company with integrated storage. 2024 consensus. Similar customer acquisition
+    and recurring revenue model to Tesla Energy.
+- name: Fluence Energy (FLNC, NASDAQ)
+  segment_code: SEG2
+  ev_ebitda: 12.8
+  notes: Pure-play grid-scale battery storage software + services. Highest multiple
+    justified by high-margin SaaS-like recurring revenue. 2024 trading multiples.
+    Direct comparable to Tesla's grid storage software positioning.
+- name: Eos Energy Enterprises (EOSE, NASDAQ)
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: Long-duration energy storage technology provider. Lower multiple reflects
+    pre-profitability and technology risk. 2024 estimates. Emerging competitor in
+    grid storage segment.
+- name: 현대모비스 (Hyundai Mobis)
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: 한국 최대 자동차 부품·서비스 기업. 애프터마켓 서비스, 소프트웨어 솔루션 포함. 2023년 EBITDA 마진 8-9% 기준. DART
+    공시 기준.
+- name: 만도 (Mando Corporation)
+  segment_code: SEG3
+  ev_ebitda: 7.2
+  notes: 자동차 부품 및 서비스 사업. 애프터마켓 관련 사업 비중 증가. 2023년 기준 EV/EBITDA 추정.
+- name: AutoZone, Inc. (AZO)
+  segment_code: SEG3
+  ev_ebitda: 11.8
+  notes: 미국 자동차 애프터마켓 소매 및 서비스 선두. 순수 애프터마켓 비즈니스 모델. 2024년 기준 실적.
+- name: O'Reilly Automotive, Inc. (ORLY)
+  segment_code: SEG3
+  ev_ebitda: 10.5
+  notes: 미국 자동차 부품·서비스 소매. AutoZone과 유사 비즈니스 구조. 2024년 기준.
+- name: Aptiv PLC (APTV)
+  segment_code: SEG3
+  ev_ebitda: 9.3
+  notes: 자동차 소프트웨어·전자 부품 공급업체. 애프터마켓 소프트웨어 솔루션 포함. 2023년 기준.
+- name: Visteon Corporation (VC)
+  segment_code: SEG3
+  ev_ebitda: 8.8
+  notes: 자동차 전자·소프트웨어 공급업체. 차량 소프트웨어 및 서비스 플랫폼 사업. 2023년 기준.
+- name: SK네트웍스 (SK Networks)
+  segment_code: SEG3
+  ev_ebitda: 6.5
+  notes: 한국 자동차 유통·서비스 기업. 애프터마켓 서비스 포함. DART 공시 기준. 확인 필요.
+news_key_issues: '- [리스크] 테슬라의 8주간의 하락은 실망스러운 판매 실적과 로보택시에 대한 우려 때문이다 (2026-04-11)
+
+  - [기회] 테슬라의 저가 전기차 계획은 판매량을 늘릴 수 있지만 이익률에 악영향을 미칠 수 있다 (2026-04-09)
+
+  - [규제] 네덜란드 규제 당국은 테슬라의 완전 자율 주행 소프트웨어를 승인했다 (2026-04-10)
+
+  - [기회] 테슬라의 독일 등록 대수는 3월에 315% 증가했다 (2026-04-10)
+
+  - [리스크] 테슬라의 모델 S와 X 재고는 거의หมด났으며, 이 차종은 수명주기의 끝에 있다 (2026-04-09)
+
+  - [기회] 테슬라는 컴팩트 SUV를 개발 중이며, 이는 저렴한 전기차 계획의 부활을 의미한다 (2026-04-12)
+
+  - [기회] 카티 우드가 테슬라에 대한 투자를 2배로 늘렸다 (2026-04-10)'
+news_drivers:
+- id: robotaxi_concerns
+  name: 로보택시 우려 및 FSD 승인 지연
+  category: company
+  effects:
+    growth_adj_pct: -15
+    market_sentiment_pct: -8
+  rationale: 로보택시 사업은 테슬라 미래 성장의 핵심 동력. 네덜란드 FSD 승인은 긍정적이나 전반적 우려가 지배적. 자율주행 기술 상용화
+    지연 시 성장률 15% 하락, 시장 심리 8% 악화 추정
+- id: low_cost_ev_plan
+  name: 저가 전기차 계획 및 컴팩트 SUV 개발
+  category: company
+  effects:
+    growth_adj_pct: 20
+    market_sentiment_pct: 5
+  rationale: 저가 전기차는 판매량 확대의 핵심 전략. 독일 등록 315% 증가가 수요 잠재력 입증. 컴팩트 SUV 개발로 대중시장 진입
+    가속화. 볼륨 증가로 성장률 20% 상승, 시장 심리 5% 개선
+- id: model_sx_lifecycle_end
+  name: 모델 S/X 수명주기 종료
+  category: company
+  effects:
+    growth_adj_pct: -8
+    market_sentiment_pct: -3
+  rationale: 고급 모델 S/X 재고 고갈로 프리미엄 세그먼트 매출 감소. 전체 매출 대비 비중은 낮으나 마진이 높은 제품군. 성장률 8%
+    하락, 시장 심리 3% 악화
+- id: institutional_confidence
+  name: 기관투자자 신뢰도 변화
+  category: company
+  effects:
+    market_sentiment_pct: 10
+    wacc_adj: -0.3
+  rationale: 카티 우드의 테슬라 투자 2배 확대는 기관투자자 신뢰 회복 신호. 기관 자금 유입으로 시장 심리 10% 개선, 자본비용 0.3%p
+    하락 효과
+multiples:
+  SEG_OPT1: 20.0
+  SEG_OPT2: 15.0
+mc_enabled: true

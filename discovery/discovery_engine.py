@@ -49,6 +49,13 @@ _MEDIA_BLOCKLIST: frozenset[str] = frozenset(
         "매일경제",
         "조선비즈",
         "연합뉴스",
+        # Korean transliterations — AI occasionally returns the Hangul
+        # spelling of foreign outlets even after being told to use English.
+        "일렉트렉",
+        "야후 파이낸스",
+        "야후파이낸스",
+        "블룸버그",
+        "로이터",
     }
 )
 

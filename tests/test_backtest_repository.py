@@ -238,6 +238,7 @@ def _make_vi_result(signals_version_attr):
         market_comparison=None,
         wacc=SimpleNamespace(wacc=0.09),
         primary_method="sotp",
+        valuation_bucket="holding_governance_sensitive",
     )
     if signals_version_attr != "absent":
         result_kwargs["market_signals_version"] = signals_version_attr
@@ -263,6 +264,7 @@ def test_market_signals_version_preserves_explicit_zero(attr, expected):
     upsert_call = next(c for c in client.query.calls if c[0] == "upsert")
     row = upsert_call[1][0]
     assert row["market_signals_version"] == expected
+    assert row["valuation_bucket"] == "holding_governance_sensitive"
 
 
 # ── update_backtest_prices: zero-row detection ──
@@ -366,3 +368,70 @@ def test_pagination_warns_when_max_rows_reached(today, caplog, monkeypatch):
         "truncated" in rec.message and "max_rows" in rec.message
         for rec in caplog.records
     )
+
+
+# ── save_prediction_snapshot: log hygiene on failure ──
+
+
+class _RaisingQuery:
+    """FakeQuery that raises on execute() — simulates schema drift / PGRST204."""
+
+    def __init__(self, exc):
+        self._exc = exc
+
+    def upsert(self, *a, **kw):
+        return self
+
+    def insert(self, *a, **kw):
+        return self
+
+    def execute(self):
+        raise self._exc
+
+
+class _RaisingClient:
+    def __init__(self, exc):
+        self._exc = exc
+
+    def table(self, _name):
+        return _RaisingQuery(self._exc)
+
+
+def test_save_prediction_snapshot_logs_warning_not_traceback(caplog):
+    """Schema drift / PGRST204 style error should log one WARNING, no traceback."""
+    import logging
+
+    # Simulate supabase-py raising with PGRST204-style message
+    exc = RuntimeError(
+        "{'code': 'PGRST204', 'message': \"Could not find the "
+        "'valuation_bucket' column of 'prediction_snapshots' in the schema cache\"}"
+    )
+    vi, result = _make_vi_result("absent")
+    client = _RaisingClient(exc)
+
+    with patch.object(repo, "get_client", return_value=client):
+        with caplog.at_level(logging.DEBUG, logger="db.backtest_repository"):
+            uid = repo.save_prediction_snapshot(vi, result, valuation_id="val-x")
+
+    assert uid is None
+
+    repo_records = [
+        r for r in caplog.records if r.name == "db.backtest_repository"
+    ]
+    warnings = [r for r in repo_records if r.levelno == logging.WARNING]
+    errors = [r for r in repo_records if r.levelno >= logging.ERROR]
+
+    assert len(warnings) == 1, (
+        f"Expected exactly one WARNING, got {len(warnings)}: "
+        f"{[r.getMessage() for r in warnings]}"
+    )
+    assert errors == [], (
+        f"Expected no ERROR-level records (no traceback dump), got: "
+        f"{[r.getMessage() for r in errors]}"
+    )
+
+    msg = warnings[0].getMessage()
+    assert "Acme" in msg
+    assert "RuntimeError" in msg  # exception class surfaced
+    # No explicit exc_info attached → no traceback will be rendered
+    assert warnings[0].exc_info is None

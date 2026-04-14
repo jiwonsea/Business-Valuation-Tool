@@ -85,9 +85,12 @@ def save_prediction_snapshot(
                 vi.company.name,
             )
             return uid
-        except Exception:
-            logger.exception(
-                "Failed to save prediction snapshot for %s", vi.company.name
+        except Exception as exc:
+            logger.warning(
+                "prediction snapshot save failed for %s: %s: %s",
+                vi.company.name,
+                type(exc).__name__,
+                str(exc).splitlines()[0] if str(exc) else "",
             )
             return None
 

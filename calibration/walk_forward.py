@@ -188,7 +188,15 @@ def tune_walk_forward(
         )
 
     train_values = [f.train_mape for f in fold_results if f.train_mape is not None]
-    test_values = [f.test_mape for f in fold_results if f.test_mape is not None]
+    # Per docstring, suppressed folds (no recommendation) contribute the
+    # baseline test MAPE to the aggregate rather than being dropped. Excluding
+    # them silently biased mean_test_mape / overfitting_gap toward only the
+    # folds that actually emitted a recommendation.
+    test_values: list[float] = []
+    for f in fold_results:
+        value = f.test_mape if f.test_mape is not None else f.baseline_test_mape
+        if value is not None:
+            test_values.append(value)
     mean_train = sum(train_values) / len(train_values) if train_values else None
     mean_test = sum(test_values) / len(test_values) if test_values else None
     std_test = statistics.stdev(test_values) if len(test_values) >= 2 else None

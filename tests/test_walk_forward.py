@@ -128,6 +128,85 @@ def test_tune_walk_forward_overfit_gap():
     )
 
 
+def test_suppressed_folds_contribute_baseline_to_aggregate(monkeypatch):
+    """When a fold suppresses its recommendation, mean_test_mape must still
+    include that fold's baseline_test_mape. Previously the aggregation
+    silently dropped suppressed folds, biasing mean_test_mape toward only
+    the folds that emitted a recommendation (docstring contract violated).
+
+    Deterministic: patch search_sc_prob so every other fold returns
+    recommended=None (suppressed) while the rest emit a normal
+    recommendation. Then verify the aggregate uses baseline_test_mape for
+    the suppressed folds.
+    """
+    import calibration.walk_forward as wf
+    from calibration.tuner import Recommendation
+
+    call_state = {"i": 0}
+
+    def fake_search_sc_prob(bucket):
+        i = call_state["i"]
+        call_state["i"] += 1
+        baseline = {"bull": 25.0, "base": 50.0, "bear": 25.0}
+        # Odd folds suppressed (recommended=None), even folds emit a rec.
+        if i % 2 == 1:
+            return Recommendation(
+                bucket_key=bucket.key,
+                n=len(bucket.records),
+                tier="preliminary",
+                baseline=baseline,
+                recommended=None,
+                baseline_mape=0.10,
+                recommended_mape=None,
+                baseline_coverage=None,
+                recommended_coverage=None,
+                notes=["suppressed"],
+            )
+        return Recommendation(
+            bucket_key=bucket.key,
+            n=len(bucket.records),
+            tier="preliminary",
+            baseline=baseline,
+            recommended={"bull": 30.0, "base": 45.0, "bear": 25.0},
+            baseline_mape=0.10,
+            recommended_mape=0.08,
+            baseline_coverage=None,
+            recommended_coverage=None,
+            notes=[],
+        )
+
+    monkeypatch.setattr(wf, "search_sc_prob", fake_search_sc_prob)
+
+    records = _build_dataset(30)
+    result = tune_walk_forward(records, horizon="t6m", n_splits=5)
+    assert result.folds, "synthetic dataset should produce folds"
+
+    suppressed = [f for f in result.folds if f.recommended_probs is None]
+    emitted = [f for f in result.folds if f.recommended_probs is not None]
+    assert suppressed, "patch should have produced suppressed folds"
+    assert emitted, "patch should have produced emitted folds"
+
+    # Every suppressed fold must have baseline_test_mape populated (from the
+    # patched recommendation's baseline). Aggregate must include them.
+    for f in suppressed:
+        assert f.baseline_test_mape is not None
+        assert f.test_mape is None  # current contract: None signals suppression
+
+    expected_values: list[float] = []
+    for f in result.folds:
+        v = f.test_mape if f.test_mape is not None else f.baseline_test_mape
+        if v is not None:
+            expected_values.append(v)
+    expected_mean = sum(expected_values) / len(expected_values)
+    assert result.mean_test_mape is not None
+    assert abs(result.mean_test_mape - expected_mean) < 1e-9
+    # The bug: the old code dropped suppressed folds, so mean_test_mape
+    # would have equaled the mean over emitted folds only. Verify the fix
+    # uses more values than just the emitted subset.
+    emitted_values = [f.test_mape for f in emitted if f.test_mape is not None]
+    assert len(expected_values) > len(emitted_values)
+
+
 def test_tune_walk_forward_empty_returns_notes():
     """Empty input yields a result with no folds and a diagnostic note."""
     result = tune_walk_forward([], horizon="t6m", n_splits=5)

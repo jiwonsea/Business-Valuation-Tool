@@ -92,6 +92,49 @@ def _adjust_wacc(base: WACCResult, wacc_adj: float, eq_w: float = 100.0) -> WACC
     )
 
 
+def _sotp_scenarios_undifferentiated(resolved_scenarios) -> bool:
+    """True iff scenarios differ by neither EV drivers nor equity-bridge fields.
+
+    Operates on scenarios AFTER resolve_drivers() so that active_drivers
+    contributing to growth_adj_pct/market_sentiment_pct are accounted for.
+
+    Two legitimate SOTP differentiation patterns:
+      EV-driver:     segment_multiples / segment_ebitda / segment_revenue /
+                     segment_method_override / growth_adj_pct / market_sentiment_pct
+      Equity-bridge: irr / cps_irr / rcps_irr / dlom /
+                     cps_repay / rcps_repay / buyback / shares
+    """
+    if len(resolved_scenarios) <= 1:
+        return False
+
+    undiff_ev = all(
+        not sc.segment_ebitda
+        and not sc.segment_multiples
+        and not sc.segment_revenue
+        and not sc.segment_method_override
+        and sc.growth_adj_pct == 0
+        and sc.market_sentiment_pct == 0
+        for sc in resolved_scenarios
+    )
+    if not undiff_ev:
+        return False
+
+    bridge_sigs = {
+        (
+            sc.irr,
+            sc.cps_irr,
+            sc.rcps_irr,
+            sc.dlom,
+            sc.cps_repay,
+            sc.rcps_repay,
+            sc.buyback,
+            sc.shares,
+        )
+        for sc in resolved_scenarios
+    }
+    return len(bridge_sigs) == 1
+
+
 def load_profile(path: str) -> ValuationInput:
     """Parse YAML profile into ValuationInput."""
     with open(path, "r", encoding="utf-8") as f:
@@ -528,26 +571,25 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # PBV/PE segment equity value (constant in sensitivity — not multiple-varied)
     _pbv_pe_ev = sum(r.ev for r in sotp.values() if r.method in ("pbv", "pe"))
 
-    # Warn if all scenarios lack SOTP-specific drivers (will produce identical EV)
-    _all_undifferentiated = all(
-        not sc.segment_ebitda
-        and not sc.segment_multiples
-        and not sc.segment_revenue
-        and sc.growth_adj_pct == 0
-        and sc.market_sentiment_pct == 0
-        for sc in vi.scenarios.values()
-    )
-    if _all_undifferentiated and len(vi.scenarios) > 1:
+    # Pre-resolve news drivers so the differentiation check sees
+    # active_drivers contributions to growth_adj_pct / market_sentiment_pct.
+    resolved_scenarios = {
+        code: resolve_drivers(sc, vi.news_drivers)
+        for code, sc in vi.scenarios.items()
+    }
+    if _sotp_scenarios_undifferentiated(list(resolved_scenarios.values())):
         logger.warning(
-            "SOTP 시나리오에 segment_multiples/segment_ebitda/growth_adj_pct 미설정 "
-            "— 모든 시나리오 동일 EV. --auto로 재생성하거나 YAML에 드라이버를 추가하세요."
+            "SOTP 시나리오에 EV 드라이버(segment_multiples/segment_ebitda/"
+            "segment_method_override/growth_adj_pct/market_sentiment_pct) "
+            "및 equity bridge(irr/cps_irr/rcps_irr/dlom/cps_repay/rcps_repay/"
+            "buyback/shares) 모두 미차등 — 모든 시나리오 동일 가치. "
+            "--auto로 재생성하거나 YAML 보강."
         )
 
     # Scenarios -- apply per-scenario SOTP overrides + market_sentiment_pct
     scenario_results = {}
     total_weighted = 0
-    for code, sc in vi.scenarios.items():
-        sc = resolve_drivers(sc, vi.news_drivers)
+    for code, sc in resolved_scenarios.items():
 
         # Per-scenario SOTP: recalculate if drivers are set
         needs_recalc = (

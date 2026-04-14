@@ -29,6 +29,7 @@ from engine.nav import calc_nav
 from engine.rnpv import calc_rnpv, PHASE_POS
 from engine.growth import linear_fade, calc_ebitda_growth, generate_growth_rates
 from engine.distress import calc_distress_discount, apply_distress_discount
+from engine.holding_discount import build_holding_discount_bridge
 from engine.method_selector import classify_industry
 from engine.drivers import resolve_drivers
 from engine.gap_diagnostics import diagnose_gap
@@ -41,6 +42,7 @@ from engine.reverse_rnpv import (
 )
 from engine.sensitivity import sensitivity_rnpv, sensitivity_rnpv_tornado
 from schemas.models import NewsDriver
+from schemas.models import HoldingStructure, ListedSubsidiary, GovernanceDiscountConfig
 
 
 # ── SK Ecoplant reference data ──
@@ -3106,6 +3108,22 @@ class TestDiagnoseGap:
         assert result is not None
         assert len(result.suggestions) > 0
 
+    def test_holding_discount_gap_category(self):
+        result = diagnose_gap(
+            gap_ratio=-0.30,
+            market_price=80_000,
+            intrinsic_per_share=56_000,
+            market_ev=8_000_000,
+            ebitda_base=500_000,
+            da_base=100_000,
+            revenue_base=2_000_000,
+            wacc_pct=10.0,
+            params=self._default_params(),
+            holding_discount_applied=True,
+        )
+        assert result is not None
+        assert result.primary_reason == "holding_discount_gap"
+
 
 class TestFormatGapDiagnostic:
     def test_format_basic(self):
@@ -3199,6 +3217,48 @@ class TestP2EdgeCases:
             params=dcf_params,
         )
         assert result is None
+
+
+class TestHoldingDiscount:
+    def test_build_holding_discount_bridge_applies_access_and_governance(self):
+        holding = HoldingStructure(
+            enabled=True,
+            listed_subsidiaries=[
+                ListedSubsidiary(
+                    name="LG Energy Solution",
+                    ownership_pct=81.8,
+                    market_value=100,
+                    parent_access_discount=45,
+                    overhang_risk="medium",
+                    dividend_access="low",
+                )
+            ],
+            governance_discount=GovernanceDiscountConfig(
+                enabled=True,
+                base_discount_pct=10,
+                rationale=["double_listing"],
+            ),
+        )
+        bridge = build_holding_discount_bridge(
+            gross_sotp_value=1000,
+            gross_equity_value=800,
+            holding_structure=holding,
+        )
+        assert bridge is not None
+        assert bridge.listed_subsidiary_lookthrough_value == 82
+        assert bridge.parent_access_discount == 37
+        assert bridge.overhang_discount == 8
+        assert bridge.governance_discount == 76
+        assert bridge.net_equity_value == 679
+
+    def test_build_holding_discount_bridge_bypass_when_disabled(self):
+        holding = HoldingStructure(enabled=False)
+        bridge = build_holding_discount_bridge(
+            gross_sotp_value=1000,
+            gross_equity_value=800,
+            holding_structure=holding,
+        )
+        assert bridge is None
 
     def test_ddm_without_params_raises(self):
         """T3: DDM method without ddm_params should raise ValueError."""
@@ -4442,3 +4502,120 @@ class TestNumericalFixes:
             unit_multiplier=1,
         )
         assert rows == []
+
+
+# ═══════════════════════════════════════════════════════════
+# SOTP scenario differentiation predicate
+# ═══════════════════════════════════════════════════════════
+
+
+class TestSotpScenariosUndifferentiated:
+    """Regression lock for valuation_runner._sotp_scenarios_undifferentiated.
+
+    Two legitimate SOTP differentiation patterns must both suppress the
+    "undifferentiated" warning:
+      - EV-driver pattern (segment_multiples / segment_method_override /
+        growth_adj_pct / market_sentiment_pct — directly or via resolved
+        active_drivers)
+      - Equity-bridge pattern (irr / cps_irr / rcps_irr / dlom /
+        cps_repay / rcps_repay / buyback / shares)
+    """
+
+    def _base_scenario(self, code: str, **overrides):
+        defaults = dict(
+            code=code,
+            name=code,
+            prob=33.3,
+            ipo="N/A",
+            shares=1_000_000,
+        )
+        defaults.update(overrides)
+        return ScenarioParams(**defaults)
+
+    def test_equity_bridge_irr_variation_suppresses_warning(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [
+            self._base_scenario("A", irr=5.0),
+            self._base_scenario("B", irr=10.0),
+            self._base_scenario("C", irr=15.0),
+        ]
+        assert _sotp_scenarios_undifferentiated(scs) is False
+
+    def test_equity_bridge_cps_irr_variation_suppresses_warning(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [
+            self._base_scenario("A", cps_irr=5.0),
+            self._base_scenario("B", cps_irr=8.0),
+        ]
+        assert _sotp_scenarios_undifferentiated(scs) is False
+
+    def test_equity_bridge_rcps_irr_variation_suppresses_warning(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [
+            self._base_scenario("A", rcps_irr=6.0),
+            self._base_scenario("B", rcps_irr=12.0),
+        ]
+        assert _sotp_scenarios_undifferentiated(scs) is False
+
+    def test_segment_method_override_variation_suppresses_warning(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [
+            self._base_scenario("A"),
+            self._base_scenario("B", segment_method_override={"SEG1": "ev_revenue"}),
+        ]
+        assert _sotp_scenarios_undifferentiated(scs) is False
+
+    def test_resolved_active_drivers_suppress_warning(self):
+        """active_drivers resolved → growth_adj_pct populated → EV-differentiated."""
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        drivers = [
+            NewsDriver(
+                id="tariff",
+                name="tariff",
+                category="trade",
+                effects={"growth_adj_pct": -10},
+                rationale="stub",
+            ),
+        ]
+        raw = [
+            self._base_scenario("A", active_drivers={}),
+            self._base_scenario("B", active_drivers={"tariff": 1.0}),
+        ]
+        resolved = [resolve_drivers(sc, drivers) for sc in raw]
+        # Sanity: resolution actually changed scenario B's growth_adj_pct
+        assert resolved[1].growth_adj_pct == -10
+        assert _sotp_scenarios_undifferentiated(resolved) is False
+
+    def test_fully_undifferentiated_scenarios_warn(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [
+            self._base_scenario("A"),
+            self._base_scenario("B"),
+            self._base_scenario("C"),
+        ]
+        assert _sotp_scenarios_undifferentiated(scs) is True
+
+    def test_single_scenario_never_warns(self):
+        from valuation_runner import _sotp_scenarios_undifferentiated
+        scs = [self._base_scenario("A")]
+        assert _sotp_scenarios_undifferentiated(scs) is False
+
+    def test_sotp_sk_ecoplant_profile_emits_no_driver_warning(self, caplog):
+        """Integration: SK Ecoplant (equity-bridge pattern) must not trigger warning."""
+        import logging
+        from valuation_runner import load_profile, run_valuation
+
+        profile_path = str(
+            Path(__file__).parent.parent / "profiles" / "sk_ecoplant.yaml"
+        )
+        vi = load_profile(profile_path)
+        with caplog.at_level(logging.WARNING, logger="valuation_runner"):
+            run_valuation(vi)
+        offenders = [
+            rec for rec in caplog.records
+            if "SOTP 시나리오" in rec.getMessage() and "미차등" in rec.getMessage()
+        ]
+        assert offenders == [], (
+            f"SK Ecoplant should not trigger SOTP undifferentiated warning, "
+            f"got: {[r.getMessage() for r in offenders]}"
+        )

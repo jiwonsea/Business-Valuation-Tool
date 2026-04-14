@@ -61,6 +61,9 @@ class _FakeQuery:
     def limit(self, *a, **kw):
         return self._record("limit", *a, **kw)
 
+    def range(self, *a, **kw):
+        return self._record("range", *a, **kw)
+
     def execute(self):
         return _FakeResponse(self._data)
 
@@ -68,6 +71,31 @@ class _FakeQuery:
 class _FakeClient:
     def __init__(self, data):
         self.query = _FakeQuery(data)
+
+    def table(self, _name):
+        return self.query
+
+
+class _FakePagedQuery(_FakeQuery):
+    """Serves distinct data slices per range() call to simulate paging."""
+
+    def __init__(self, pages):
+        super().__init__([])
+        self._pages = list(pages)
+        self._idx = 0
+
+    def execute(self):
+        if self._idx < len(self._pages):
+            data = self._pages[self._idx]
+            self._idx += 1
+        else:
+            data = []
+        return _FakeResponse(data)
+
+
+class _FakePagedClient:
+    def __init__(self, pages):
+        self.query = _FakePagedQuery(pages)
 
     def table(self, _name):
         return self.query
@@ -235,3 +263,81 @@ def test_market_signals_version_preserves_explicit_zero(attr, expected):
     upsert_call = next(c for c in client.query.calls if c[0] == "upsert")
     row = upsert_call[1][0]
     assert row["market_signals_version"] == expected
+
+
+# ── update_backtest_prices: zero-row detection ──
+
+
+def test_update_backtest_prices_returns_false_for_zero_rows(caplog):
+    client = _FakeClient([])  # empty data → 0 rows affected
+    with patch.object(repo, "get_client", return_value=client):
+        with caplog.at_level("WARNING"):
+            ok = repo.update_backtest_prices("missing-id", {"price_t3m": 42.0})
+    assert ok is False
+    assert any("0 rows" in rec.message for rec in caplog.records)
+
+
+def test_update_backtest_prices_returns_true_when_row_updated():
+    client = _FakeClient([{"id": "outcome-1"}])
+    with patch.object(repo, "get_client", return_value=client):
+        ok = repo.update_backtest_prices("outcome-1", {"price_t3m": 42.0})
+    assert ok is True
+
+
+def test_update_backtest_prices_uses_count_when_data_empty():
+    """Some Supabase clients return count separately from data."""
+    class _Resp:
+        def __init__(self):
+            self.data = []
+            self.count = 1
+
+    class _Q(_FakeQuery):
+        def execute(self):  # type: ignore[override]
+            return _Resp()
+
+    class _C:
+        def __init__(self):
+            self.query = _Q([])
+
+        def table(self, _):
+            return self.query
+
+    client = _C()
+    with patch.object(repo, "get_client", return_value=client):
+        ok = repo.update_backtest_prices("outcome-1", {"price_t3m": 42.0})
+    assert ok is True
+
+
+# ── list_outcomes_needing_refresh: pagination ──
+
+
+def test_pagination_fetches_subsequent_pages(today):
+    """First page full (200) must trigger a second fetch."""
+    first_page = [
+        _row(snap_date="2024-01-01", t12m=None) for _ in range(200)
+    ]
+    # Rewrite ids so results remain distinct
+    for i, r in enumerate(first_page):
+        r["id"] = f"outcome-p1-{i}"
+    second_page = [_row(snap_date="2024-01-01", t12m=None)]
+    second_page[0]["id"] = "outcome-p2-0"
+
+    client = _FakePagedClient([first_page, second_page])
+    with patch.object(repo, "get_client", return_value=client):
+        out = repo.list_outcomes_needing_refresh(today)
+
+    range_calls = [c for c in client.query.calls if c[0] == "range"]
+    assert len(range_calls) >= 2
+    assert range_calls[0][1] == (0, 199)
+    assert range_calls[1][1] == (200, 399)
+    assert len(out) == 201
+
+
+def test_pagination_stops_when_page_short(today):
+    """Partial first page → no second fetch."""
+    page = [_row(snap_date="2024-01-01", t12m=None)]
+    client = _FakePagedClient([page])
+    with patch.object(repo, "get_client", return_value=client):
+        repo.list_outcomes_needing_refresh(today)
+    range_calls = [c for c in client.query.calls if c[0] == "range"]
+    assert len(range_calls) == 1

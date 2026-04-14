@@ -162,7 +162,12 @@ def save_backtest_outcome(data: dict) -> Optional[str]:
 
 
 def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
-    """Partial update of prices for an existing outcome row."""
+    """Partial update of prices for an existing outcome row.
+
+    Returns ``True`` only when the update touched a row. A successful API
+    response with zero affected rows indicates a stale id (row removed or
+    filtered by RLS) and is reported as ``False`` so callers can surface it.
+    """
     client = get_client()
     if not client:
         return False
@@ -170,13 +175,27 @@ def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
     price_data["price_fetched_at"] = datetime.utcnow().isoformat()
 
     try:
-        client.table("backtest_outcomes").update(price_data).eq(
-            "id", outcome_id
-        ).execute()
-        return True
+        resp = (
+            client.table("backtest_outcomes")
+            .update(price_data)
+            .eq("id", outcome_id)
+            .execute()
+        )
     except Exception:
         logger.exception("Failed to update backtest prices for %s", outcome_id)
         return False
+
+    affected = len(resp.data) if getattr(resp, "data", None) else 0
+    if affected == 0:
+        count = getattr(resp, "count", None)
+        if isinstance(count, int):
+            affected = count
+    if affected == 0:
+        logger.warning(
+            "update_backtest_prices affected 0 rows for outcome %s", outcome_id
+        )
+        return False
+    return True
 
 
 def get_outcome_by_snapshot(snapshot_id: str) -> Optional[dict]:
@@ -203,27 +222,38 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
     """List outcomes with NULL prices for past-due horizons.
 
     Returns outcomes where at least one horizon has passed but price is NULL.
+    Pages through results to avoid the default PostgREST row cap.
     """
     client = get_client()
     if not client:
         return []
 
+    page_size = 200
+    max_rows = 5000
+    fetched: list[dict] = []
+
     try:
-        # Get all outcomes, filter in Python (Supabase doesn't support
-        # complex date arithmetic in PostgREST filters easily)
-        resp = (
-            client.table("backtest_outcomes")
-            .select("*, prediction_snapshots!inner(analysis_date)")
-            .or_(
-                "price_t3m.is.null,price_t6m.is.null,price_t12m.is.null"
+        offset = 0
+        while len(fetched) < max_rows:
+            end = offset + page_size - 1
+            page_resp = (
+                client.table("backtest_outcomes")
+                .select("*, prediction_snapshots!inner(analysis_date)")
+                .or_(
+                    "price_t3m.is.null,price_t6m.is.null,price_t12m.is.null"
+                )
+                .order("created_at", desc=False)
+                .range(offset, end)
+                .execute()
             )
-            .order("created_at", desc=False)
-            .limit(200)
-            .execute()
-        )
+            page = page_resp.data or []
+            fetched.extend(page)
+            if len(page) < page_size:
+                break
+            offset += page_size
 
         results = []
-        for row in resp.data:
+        for row in fetched:
             snap = row.get("prediction_snapshots") or {}
             # Supabase may return the embedded resource as a dict (to-one)
             # or list (to-many). `!inner` on a FK normally yields a dict,

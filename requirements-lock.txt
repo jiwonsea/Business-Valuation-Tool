@@ -197,7 +197,7 @@ pyparsing==3.3.2
     # via pyiceberg
 pyroaring==1.0.4
     # via pyiceberg
-pytest==8.4.2
+pytest==9.0.3
     # via business-valuation-tool (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via

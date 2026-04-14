@@ -355,6 +355,13 @@ class TestCalibrationCurve:
             assert "realized_freq" in b
             assert "count" in b
 
+    def test_invalid_n_bins_raises(self):
+        """n_bins < 1 is a configuration error, not silently degraded."""
+        with pytest.raises(ValueError):
+            calc_calibration_curve([], "t6m", n_bins=0)
+        with pytest.raises(ValueError):
+            calc_calibration_curve([], "t6m", n_bins=-1)
+
 
 # ═══ BacktestRecord Model ═══
 

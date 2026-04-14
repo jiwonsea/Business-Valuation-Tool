@@ -238,6 +238,9 @@ def calc_calibration_curve(
     Returns None if insufficient data. Otherwise list of dicts:
     [{bin_label, bin_lo, bin_hi, assigned_prob_mean, realized_freq, count}]
     """
+    if n_bins < 1:
+        raise ValueError(f"n_bins must be >= 1, got {n_bins}")
+
     valid = _get_valid_records(records, horizon)
 
     # Collect all (assigned_prob, realized_bool) pairs

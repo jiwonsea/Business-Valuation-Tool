@@ -234,6 +234,7 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
 
     try:
         offset = 0
+        truncated = False
         while len(fetched) < max_rows:
             end = offset + page_size - 1
             page_resp = (
@@ -251,6 +252,17 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
             if len(page) < page_size:
                 break
             offset += page_size
+        else:
+            # Loop exited via `len(fetched) >= max_rows` without a short page
+            # -- caller is seeing a silently truncated view.
+            truncated = True
+
+        if truncated:
+            logger.warning(
+                "list_outcomes_needing_refresh truncated at max_rows=%d; "
+                "raise the cap or add a continuation token if more rows exist",
+                max_rows,
+            )
 
         results = []
         for row in fetched:

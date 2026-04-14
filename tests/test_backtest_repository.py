@@ -341,3 +341,28 @@ def test_pagination_stops_when_page_short(today):
         repo.list_outcomes_needing_refresh(today)
     range_calls = [c for c in client.query.calls if c[0] == "range"]
     assert len(range_calls) == 1
+
+
+def test_pagination_warns_when_max_rows_reached(today, caplog, monkeypatch):
+    """Hitting max_rows without a short page must emit a truncation warning."""
+    # Shrink caps so the test runs fast.
+    monkeypatch.setattr(repo, "list_outcomes_needing_refresh", repo.list_outcomes_needing_refresh)
+    # Build pages that always fill page_size; loop will exit via max_rows.
+    page_size = 200
+    full_page = [
+        _row(snap_date="2024-01-01", t12m=None) for _ in range(page_size)
+    ]
+    # Enough full pages to blow past max_rows=5000 (25 full pages = 5000).
+    pages = [full_page] * 30
+    # Also provide a final never-reached page so .data access is safe.
+    pages.append([])
+
+    client = _FakePagedClient(pages)
+    with patch.object(repo, "get_client", return_value=client):
+        with caplog.at_level("WARNING"):
+            repo.list_outcomes_needing_refresh(today)
+
+    assert any(
+        "truncated" in rec.message and "max_rows" in rec.message
+        for rec in caplog.records
+    )

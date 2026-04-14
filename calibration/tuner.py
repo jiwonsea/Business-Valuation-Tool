@@ -137,19 +137,28 @@ def _bucket_loss(
 
 
 def _baseline_probs_from_records(records: Iterable[BacktestRecord]) -> dict[str, float]:
-    """Mean prob per role across the bucket's records (the 'current' state)."""
+    """Mean per-role probability MASS across the bucket's records.
+
+    Per record, each role's mass is the SUM of probs across all scenarios
+    assigned to that role (not the mean). This preserves the record-level
+    bull/base/bear total of 100 even when 4+ scenarios collapse multiple
+    entries into `base`. Averaging role masses across records is then a
+    proper bucket-level baseline whose role totals also sum to ~100.
+
+    Prior version averaged per-scenario instead of per-record, which
+    undercounted `base` whenever a profile had >1 base scenario
+    (e.g. probs 10/20/30/40 → base=25 instead of base=50, total 75).
+    """
     sums = {role: 0.0 for role in ROLES}
-    counts = {role: 0 for role in ROLES}
+    n_records = 0
     for r in records:
+        n_records += 1
         classified = classify_scenarios(r.scenarios)
         for role, members in classified.items():
-            for s in members:
-                sums[role] += s.prob
-                counts[role] += 1
-    out: dict[str, float] = {}
-    for role in ROLES:
-        out[role] = (sums[role] / counts[role]) if counts[role] else 0.0
-    return out
+            sums[role] += sum(s.prob for s in members)
+    if n_records == 0:
+        return {role: 0.0 for role in ROLES}
+    return {role: sums[role] / n_records for role in ROLES}
 
 
 def confidence_tier(n: int, horizon: str) -> str:

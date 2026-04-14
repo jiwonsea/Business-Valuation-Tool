@@ -244,6 +244,25 @@ def test_tune_walk_forward_empty_returns_notes():
     assert "insufficient data" in result.notes[0]
 
 
+def test_tune_walk_forward_same_date_collapse_distinct_note():
+    """When records meet the count threshold but share too few dates, the
+    diagnostic note must say so -- not falsely report 'insufficient data'."""
+    shared = date(2024, 1, 1)
+    records = []
+    for i in range(20):
+        r = _record(day_offset=0, actual_t6m=100.0)
+        r.analysis_date = shared
+        r.snapshot_id = f"snap-{i}"
+        records.append(r)
+
+    result = tune_walk_forward(records, horizon="t6m", n_splits=5, min_train_size=10)
+    assert result.folds == []
+    assert result.notes
+    note = result.notes[0]
+    assert "insufficient data" not in note
+    assert "same-date" in note
+
+
 # ── render_report / write_report ──
 
 
@@ -299,6 +318,43 @@ def test_cli_runs_per_market_sector_bucket(monkeypatch, tmp_path, capsys):
     assert "US/dcf_primary/t6m" in out
     assert any((tmp_path / "KR_sotp").glob("walk_forward_*.md"))
     assert any((tmp_path / "US_dcf_primary").glob("walk_forward_*.md"))
+    # Top-level index report at the legacy path keeps downstream tooling working.
+    index_files = list(tmp_path.glob("walk_forward_*.md"))
+    assert index_files, "top-level index report must be written"
+    index_text = index_files[0].read_text(encoding="utf-8")
+    assert "Walk-Forward CV Index" in index_text
+    assert "KR/sotp/t6m" in index_text
+    assert "US/dcf_primary/t6m" in index_text
+
+
+def test_render_index_report_links_buckets(tmp_path):
+    from calibration.walk_forward import render_index_report
+
+    result_a = WalkForwardResult(
+        market="US", sector="dcf_primary", horizon="t6m",
+        n_splits_requested=5, n_records=30, folds=[],
+        mean_train_mape=0.10, mean_test_mape=0.12,
+        std_test_mape=0.01, overfitting_gap=0.02, notes=[],
+    )
+    result_b = WalkForwardResult(
+        market="KR", sector="sotp", horizon="t6m",
+        n_splits_requested=5, n_records=15, folds=[],
+        mean_train_mape=None, mean_test_mape=None,
+        std_test_mape=None, overfitting_gap=None,
+        notes=["insufficient data: 15 records < min_train_size(10) + n_splits(5)"],
+    )
+    text = render_index_report(
+        [
+            (result_a, tmp_path / "US_dcf_primary" / "walk_forward_2026-04-15.md"),
+            (result_b, tmp_path / "KR_sotp" / "walk_forward_2026-04-15.md"),
+        ],
+        report_date=date(2026, 4, 15),
+    )
+    assert "Walk-Forward CV Index -- 2026-04-15" in text
+    assert "US/dcf_primary/t6m" in text
+    assert "KR/sotp/t6m" in text
+    assert "walk_forward_2026-04-15.md" in text
+    assert "insufficient data" in text
 
 
 def test_write_report_creates_file(tmp_path):

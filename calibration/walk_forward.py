@@ -165,6 +165,19 @@ def tune_walk_forward(
     splits = walk_forward_splits(records, n_splits=n_splits, min_train_size=min_train_size)
 
     if not splits:
+        # Distinguish the two zero-fold causes so the report doesn't lie:
+        # raw shortage vs. same-date collapse after the leakage guard.
+        if len(records) < min_train_size + n_splits:
+            note = (
+                f"insufficient data: {len(records)} records < "
+                f"min_train_size({min_train_size}) + n_splits({n_splits})"
+            )
+        else:
+            note = (
+                f"same-date blocks collapsed splits: {len(records)} records "
+                f"share too few distinct analysis_dates to form "
+                f"{n_splits} non-overlapping folds (leakage guard active)"
+            )
         return WalkForwardResult(
             market=market_label,
             sector=sector_label,
@@ -176,10 +189,7 @@ def tune_walk_forward(
             mean_test_mape=None,
             std_test_mape=None,
             overfitting_gap=None,
-            notes=[
-                f"insufficient data: {len(records)} records < "
-                f"min_train_size({min_train_size}) + n_splits({n_splits})"
-            ],
+            notes=[note],
         )
 
     fold_results: list[FoldResult] = []
@@ -377,6 +387,75 @@ def format_summary(result: WalkForwardResult) -> str:
     return " ".join(parts)
 
 
+def render_index_report(
+    bucket_results: list[tuple[WalkForwardResult, Path]],
+    *,
+    report_date: date | None = None,
+) -> str:
+    """Render a top-level index across per-bucket walk-forward runs.
+
+    Each entry pairs a :class:`WalkForwardResult` with the path of its
+    detailed bucket report. The index is the backwards-compatible single
+    entrypoint at ``output/calibration/walk_forward_<date>.md`` so existing
+    tooling that reads that fixed path keeps working after the per-bucket
+    split.
+    """
+    report_date = report_date or date.today()
+    lines: list[str] = []
+    lines.append(f"# Walk-Forward CV Index -- {report_date.isoformat()}")
+    lines.append("")
+    if not bucket_results:
+        lines.append("_No buckets produced._")
+        lines.append("")
+        return "\n".join(lines) + "\n"
+
+    lines.append(f"Buckets: **{len(bucket_results)}**")
+    lines.append("")
+    lines.append(
+        "| Bucket | Records | Folds | Mean Test MAPE | Overfit Gap | Report |"
+    )
+    lines.append("|---|---:|---:|---|---|---|")
+    for result, path in bucket_results:
+        bucket_label = f"{result.market}/{result.sector}/{result.horizon}"
+        try:
+            rel = path.relative_to(DEFAULT_REPORT_DIR.parent)
+        except ValueError:
+            rel = path
+        lines.append(
+            f"| {bucket_label} | {result.n_records} | {len(result.folds)} | "
+            f"{_fmt_pct(result.mean_test_mape)} | "
+            f"{_fmt_signed_pp(result.overfitting_gap)} | "
+            f"[{path.name}]({rel.as_posix()}) |"
+        )
+    lines.append("")
+    lines.append("## Notes")
+    lines.append("")
+    for result, _ in bucket_results:
+        if result.notes:
+            joined = "; ".join(result.notes)
+            lines.append(f"- `{result.market}/{result.sector}`: {joined}")
+    return "\n".join(lines) + "\n"
+
+
+def write_index_report(
+    bucket_results: list[tuple[WalkForwardResult, Path]],
+    *,
+    output_dir: Path | None = None,
+    report_date: date | None = None,
+) -> Path:
+    """Write the index report to the legacy single-file location."""
+    report_date = report_date or date.today()
+    output_dir = output_dir or DEFAULT_REPORT_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+    text = render_index_report(bucket_results, report_date=report_date)
+    out_path = output_dir / f"walk_forward_{report_date.isoformat()}.md"
+    out_path.write_text(text, encoding="utf-8")
+    logger.info(
+        "Wrote walk-forward index: %s (%d buckets)", out_path, len(bucket_results)
+    )
+    return out_path
+
+
 def main() -> None:
     """Entry point for ``python -m calibration.walk_forward``."""
     import argparse
@@ -429,6 +508,7 @@ def main() -> None:
         key = (r.market, r.primary_method or "unknown")
         buckets.setdefault(key, []).append(r)
 
+    bucket_results: list[tuple[WalkForwardResult, Path]] = []
     for (market_key, sector_key), bucket_records in sorted(buckets.items()):
         result = tune_walk_forward(
             bucket_records,
@@ -442,6 +522,7 @@ def main() -> None:
         if not args.no_report:
             bucket_dir = DEFAULT_REPORT_DIR / f"{market_key}_{sector_key}"
             out = write_report(result, output_dir=bucket_dir)
+            bucket_results.append((result, out))
             print(f"[WalkForward] Report -> {out}")
         for fold in result.folds:
             train_mape = (
@@ -455,6 +536,10 @@ def main() -> None:
                 f"test={fold.test_size} tier={fold.tier} "
                 f"train_mape={train_mape} test_mape={test_mape}"
             )
+
+    if not args.no_report and bucket_results:
+        index_path = write_index_report(bucket_results)
+        print(f"[WalkForward] Index -> {index_path}")
 
 
 if __name__ == "__main__":

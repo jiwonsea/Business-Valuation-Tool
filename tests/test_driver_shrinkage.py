@@ -156,6 +156,40 @@ def test_shrinkage_rejects_non_positive_tau() -> None:
         shrink_weights([], tau=0.0)
 
 
+def test_collect_observations_allows_unit_endpoints(tmp_path: Path) -> None:
+    """Exact boundary values 0.0 and 1.0 stay as-is (no skip, no warn)."""
+    _write_profile(
+        tmp_path / "edge.yaml",
+        valuation_method="sotp",
+        scenarios={"A": {"d_zero": 0.0, "d_one": 1.0, "d_mid": 0.5}},
+    )
+    obs = collect_driver_observations(tmp_path)
+    weights = {o.driver_id: o.weight for o in obs}
+    assert weights == {"d_zero": 0.0, "d_one": 1.0, "d_mid": 0.5}
+
+
+def test_collect_observations_skips_and_warns_on_out_of_range(
+    tmp_path: Path, caplog
+) -> None:
+    """Out-of-range weights (e.g. misconfigured 1.5 / -0.2) are skipped with
+    a warning instead of silently clamped into [0, 1]."""
+    _write_profile(
+        tmp_path / "bad.yaml",
+        valuation_method="sotp",
+        scenarios={
+            "A": {"d_ok": 0.5, "d_hi": 1.01, "d_lo": -0.01, "d_way_hi": 1.5},
+        },
+    )
+    with caplog.at_level("WARNING"):
+        obs = collect_driver_observations(tmp_path)
+    kept = {o.driver_id for o in obs}
+    assert kept == {"d_ok"}
+    warn_msgs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+    assert any("d_hi" in m for m in warn_msgs)
+    assert any("d_lo" in m for m in warn_msgs)
+    assert any("d_way_hi" in m for m in warn_msgs)
+
+
 def test_shrinkage_clips_to_unit_interval() -> None:
     # Feed an out-of-range weight; collect path clips at ingest but shrink
     # should stay in [0, 1] even if callers construct observations directly.

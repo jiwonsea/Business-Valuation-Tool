@@ -109,13 +109,24 @@ def collect_driver_observations(
             for driver_id, weight in active.items():
                 if not isinstance(weight, (int, float)):
                     continue
+                w = float(weight)
+                if w < 0.0 or w > 1.0:
+                    # Silently clamping out-of-range weights hid profile-
+                    # config bugs (1.5, -0.2) by coercing them into valid
+                    # observations. Skip + warn so the issue surfaces.
+                    logger.warning(
+                        "Skipping out-of-range weight in %s scenario=%s "
+                        "driver=%s weight=%s (allowed [0.0, 1.0])",
+                        path.name, sc_code, driver_id, weight,
+                    )
+                    continue
                 observations.append(
                     DriverWeightObservation(
                         profile=path.stem,
                         sector=sector,
                         scenario_code=str(sc_code),
                         driver_id=str(driver_id),
-                        weight=_clip01(weight),
+                        weight=w,
                     )
                 )
     return observations

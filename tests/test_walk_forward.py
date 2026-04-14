@@ -80,6 +80,34 @@ def test_walk_forward_splits_expanding():
     assert len(set(sizes)) > 1, "expanding window should grow over folds"
 
 
+def test_walk_forward_splits_no_same_date_leakage():
+    """Records sharing one analysis_date must not split across train/test.
+
+    Build a dataset where every "week" has 3 records on the same date. The
+    old index-based split would bisect such a group at the fold boundary,
+    leaking future same-day info into train. The fix pushes the boundary
+    past the shared-date block so train end-date is strictly before test
+    start-date.
+    """
+    records = []
+    for week in range(15):
+        shared_date = date(2024, 1, 1) + timedelta(days=week * 7)
+        for _ in range(3):
+            r = _record(day_offset=week * 7, actual_t6m=100.0)
+            r.analysis_date = shared_date
+            records.append(r)
+
+    splits = walk_forward_splits(records, n_splits=5, min_train_size=10)
+    assert splits, "dataset should still produce folds"
+    for train, test in splits:
+        train_dates = {r.analysis_date for r in train}
+        test_dates = {r.analysis_date for r in test}
+        assert not (train_dates & test_dates), (
+            f"same-date leakage: overlap={train_dates & test_dates}"
+        )
+        assert max(train_dates) < min(test_dates)
+
+
 def test_walk_forward_insufficient_data():
     """Datasets below the minimum produce an empty split list."""
     records = _build_dataset(5)
@@ -238,6 +266,39 @@ def test_render_report_empty_emits_placeholder():
     assert "No folds were produced" in text
     assert "## Aggregate" not in text
     assert "rerun" in text.lower() or "re-run" in text.lower()
+
+
+def test_cli_runs_per_market_sector_bucket(monkeypatch, tmp_path, capsys):
+    """CLI must bucket by (market, primary_method) and emit one summary per."""
+    import sys
+
+    import calibration.walk_forward as wf
+
+    us_records = _build_dataset(30)  # market=US, primary_method=dcf_primary
+    kr_records = [
+        _record(
+            day_offset=i * 7,
+            actual_t6m=100.0,
+            market="KR",
+            primary_method="sotp",
+        )
+        for i in range(30)
+    ]
+    dataset = us_records + kr_records
+
+    monkeypatch.setattr(wf, "DEFAULT_REPORT_DIR", tmp_path)
+
+    import backtest.dataset as bd
+    monkeypatch.setattr(bd, "build_backtest_dataset", lambda **kw: dataset)
+
+    monkeypatch.setattr(sys, "argv", ["walk_forward", "--n-splits", "5"])
+    wf.main()
+
+    out = capsys.readouterr().out
+    assert "KR/sotp/t6m" in out
+    assert "US/dcf_primary/t6m" in out
+    assert any((tmp_path / "KR_sotp").glob("walk_forward_*.md"))
+    assert any((tmp_path / "US_dcf_primary").glob("walk_forward_*.md"))
 
 
 def test_write_report_creates_file(tmp_path):

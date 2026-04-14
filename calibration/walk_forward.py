@@ -87,11 +87,28 @@ def walk_forward_splits(
     if fold_size < 1:
         return []
 
+    def _push_past_same_date(idx: int) -> int:
+        """Extend idx forward while it bisects a same-analysis_date block.
+
+        Prevents records sharing one analysis_date from being split across
+        the train/test boundary -- a silent temporal leak where "future" info
+        (same-day records already in train) leaks into the test slice.
+        """
+        while 0 < idx < n and ordered[idx - 1].analysis_date == ordered[idx].analysis_date:
+            idx += 1
+        return idx
+
     splits: list[tuple[list[BacktestRecord], list[BacktestRecord]]] = []
     for i in range(n_splits):
         train_end = n - (n_splits - i) * fold_size
         test_end = train_end + fold_size
+        train_end = _push_past_same_date(train_end)
+        test_end = _push_past_same_date(test_end)
         if train_end < min_train_size:
+            continue
+        if train_end >= n:
+            # Entire remaining tail shares a date with the last train record
+            # -- no clean test slice available for this fold.
             continue
         train = ordered[:train_end]
         test = ordered[train_end:test_end]
@@ -404,26 +421,40 @@ def main() -> None:
             print(f"[WalkForward] Placeholder report -> {out}")
         return
 
-    result = tune_walk_forward(
-        listed, horizon=args.horizon, n_splits=args.n_splits,
-        min_train_size=args.min_train_size,
-    )
-    print(format_summary(result))
-    if not args.no_report:
-        out = write_report(result)
-        print(f"[WalkForward] Report -> {out}")
-    for fold in result.folds:
-        train_mape = (
-            f"{fold.train_mape * 100:.2f}%" if fold.train_mape is not None else "n/a"
+    # Bucket by (market, primary_method) so mixed sectors/markets don't get
+    # collapsed into one pool: a recommendation pooled across dcf_primary and
+    # sotp records is ambiguous and the aggregated MAPE hides the split.
+    buckets: dict[tuple[str, str], list[BacktestRecord]] = {}
+    for r in listed:
+        key = (r.market, r.primary_method or "unknown")
+        buckets.setdefault(key, []).append(r)
+
+    for (market_key, sector_key), bucket_records in sorted(buckets.items()):
+        result = tune_walk_forward(
+            bucket_records,
+            horizon=args.horizon,
+            n_splits=args.n_splits,
+            min_train_size=args.min_train_size,
+            market=market_key,
+            sector=sector_key,
         )
-        test_mape = (
-            f"{fold.test_mape * 100:.2f}%" if fold.test_mape is not None else "n/a"
-        )
-        print(
-            f"  fold {fold.fold_index}: train={fold.train_size} "
-            f"test={fold.test_size} tier={fold.tier} "
-            f"train_mape={train_mape} test_mape={test_mape}"
-        )
+        print(format_summary(result))
+        if not args.no_report:
+            bucket_dir = DEFAULT_REPORT_DIR / f"{market_key}_{sector_key}"
+            out = write_report(result, output_dir=bucket_dir)
+            print(f"[WalkForward] Report -> {out}")
+        for fold in result.folds:
+            train_mape = (
+                f"{fold.train_mape * 100:.2f}%" if fold.train_mape is not None else "n/a"
+            )
+            test_mape = (
+                f"{fold.test_mape * 100:.2f}%" if fold.test_mape is not None else "n/a"
+            )
+            print(
+                f"  fold {fold.fold_index}: train={fold.train_size} "
+                f"test={fold.test_size} tier={fold.tier} "
+                f"train_mape={train_mape} test_mape={test_mape}"
+            )
 
 
 if __name__ == "__main__":

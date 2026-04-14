@@ -190,6 +190,31 @@ def test_collect_observations_skips_and_warns_on_out_of_range(
     assert any("d_way_hi" in m for m in warn_msgs)
 
 
+def test_collect_observations_skips_and_warns_on_non_finite(
+    tmp_path: Path, caplog
+) -> None:
+    _write_profile(
+        tmp_path / "bad_non_finite.yaml",
+        valuation_method="sotp",
+        scenarios={
+            "A": {
+                "d_ok": 0.5,
+                "d_nan": float("nan"),
+                "d_pos_inf": float("inf"),
+                "d_neg_inf": float("-inf"),
+            },
+        },
+    )
+    with caplog.at_level("WARNING"):
+        obs = collect_driver_observations(tmp_path)
+    kept = {o.driver_id for o in obs}
+    assert kept == {"d_ok"}
+    warn_msgs = [r.message for r in caplog.records if r.levelname == "WARNING"]
+    assert any("d_nan" in m for m in warn_msgs)
+    assert any("d_pos_inf" in m for m in warn_msgs)
+    assert any("d_neg_inf" in m for m in warn_msgs)
+
+
 def test_shrinkage_clips_to_unit_interval() -> None:
     # Feed an out-of-range weight; collect path clips at ingest but shrink
     # should stay in [0, 1] even if callers construct observations directly.

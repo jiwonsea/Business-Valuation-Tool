@@ -15,6 +15,7 @@ once each profile's method settles in the weekly pipeline.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -110,13 +111,14 @@ def collect_driver_observations(
                 if not isinstance(weight, (int, float)):
                     continue
                 w = float(weight)
-                if w < 0.0 or w > 1.0:
+                if not math.isfinite(w) or w < 0.0 or w > 1.0:
                     # Silently clamping out-of-range weights hid profile-
-                    # config bugs (1.5, -0.2) by coercing them into valid
-                    # observations. Skip + warn so the issue surfaces.
+                    # config bugs (1.5, -0.2, nan, inf) by coercing them
+                    # into valid observations. Skip + warn so the issue
+                    # surfaces.
                     logger.warning(
-                        "Skipping out-of-range weight in %s scenario=%s "
-                        "driver=%s weight=%s (allowed [0.0, 1.0])",
+                        "Skipping invalid weight in %s scenario=%s "
+                        "driver=%s weight=%s (allowed finite [0.0, 1.0])",
                         path.name, sc_code, driver_id, weight,
                     )
                     continue

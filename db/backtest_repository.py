@@ -42,6 +42,12 @@ def save_prediction_snapshot(
         }
 
     mc = result.market_comparison
+    # Preserve an explicit 0 (= pre-Phase-4 / no signals). Default to 1 only
+    # when the attribute is absent or None — falsy-coalescing with `or 1`
+    # would silently overwrite legitimate 0 values.
+    signals_ver = getattr(result, "market_signals_version", None)
+    if signals_ver is None:
+        signals_ver = 1
     row = {
         "valuation_id": valuation_id,
         "company_name": vi.company.name,
@@ -56,7 +62,7 @@ def save_prediction_snapshot(
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
         "primary_method": result.primary_method,
-        "market_signals_version": getattr(result, "market_signals_version", 0) or 1,
+        "market_signals_version": signals_ver,
         "scenario_values": scenario_values,
     }
 

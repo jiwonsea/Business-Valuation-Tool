@@ -7,6 +7,7 @@ analysis_date extraction from the prediction_snapshots inner-join.
 from __future__ import annotations
 
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -38,6 +39,18 @@ class _FakeQuery:
 
     def or_(self, *a, **kw):
         return self._record("or_", *a, **kw)
+
+    def upsert(self, *a, **kw):
+        return self._record("upsert", *a, **kw)
+
+    def insert(self, *a, **kw):
+        return self._record("insert", *a, **kw)
+
+    def update(self, *a, **kw):
+        return self._record("update", *a, **kw)
+
+    def eq(self, *a, **kw):
+        return self._record("eq", *a, **kw)
 
     def is_(self, *a, **kw):
         return self._record("is_", *a, **kw)
@@ -170,3 +183,55 @@ def test_invalid_date_skipped(today):
 def test_no_client_returns_empty(today):
     with patch.object(repo, "get_client", return_value=None):
         assert repo.list_outcomes_needing_refresh(today) == []
+
+
+# ── save_prediction_snapshot: market_signals_version semantics ──
+
+
+def _make_vi_result(signals_version_attr):
+    """Build minimal vi/result namespaces. `signals_version_attr` is either
+    a sentinel 'absent' meaning do not set the attribute at all, or the
+    value to assign (including None / 0 / ints)."""
+    vi = SimpleNamespace(
+        scenarios={},
+        company=SimpleNamespace(
+            name="Acme",
+            ticker="ACM",
+            market="US",
+            currency="USD",
+            unit_multiplier=1,
+            legal_status="listed",
+            analysis_date=date(2026, 1, 1),
+        ),
+    )
+    result_kwargs = dict(
+        scenarios={},
+        weighted_value=100.0,
+        market_comparison=None,
+        wacc=SimpleNamespace(wacc=0.09),
+        primary_method="sotp",
+    )
+    if signals_version_attr != "absent":
+        result_kwargs["market_signals_version"] = signals_version_attr
+    return vi, SimpleNamespace(**result_kwargs)
+
+
+@pytest.mark.parametrize(
+    "attr,expected",
+    [
+        ("absent", 1),  # no attribute → default 1
+        (None, 1),      # explicit None → default 1
+        (0, 0),         # explicit 0 → preserved (was the bug: coerced to 1)
+        (1, 1),
+        (2, 2),
+    ],
+)
+def test_market_signals_version_preserves_explicit_zero(attr, expected):
+    vi, result = _make_vi_result(attr)
+    client = _FakeClient([{"id": "snap-1"}])
+    with patch.object(repo, "get_client", return_value=client):
+        repo.save_prediction_snapshot(vi, result, valuation_id="val-1")
+
+    upsert_call = next(c for c in client.query.calls if c[0] == "upsert")
+    row = upsert_call[1][0]
+    assert row["market_signals_version"] == expected

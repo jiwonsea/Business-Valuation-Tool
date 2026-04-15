@@ -1,0 +1,36 @@
+method: sotp
+scenarios:
+  Bull:
+    growth_adj_pct: 18
+    wacc_adj: -0.4
+    market_sentiment_pct: 9
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 9.0
+    segment_ebitda:
+      SEG1: 52000
+      SEG2: 31000
+  Base:
+    growth_adj_pct: 6
+    wacc_adj: 0.1
+    market_sentiment_pct: 2
+    segment_multiples:
+      SEG1: 10.0
+      SEG2: 8.0
+    segment_ebitda:
+      SEG1: 47000
+      SEG2: 28000
+  Bear:
+    growth_adj_pct: -8
+    wacc_adj: 0.8
+    market_sentiment_pct: -6
+    segment_multiples:
+      SEG1: 8.0
+      SEG2: 6.5
+    segment_ebitda:
+      SEG1: 41000
+      SEG2: 22000
+ev_by_scenario:
+  Bull: 180
+  Base: 130
+  Bear: 110

@@ -33,6 +33,7 @@ from schemas.models import (
     RNPVDrugResult,
     NewsDriver,
     PipelineDrug,
+    ValidationReport,
 )
 from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
@@ -380,6 +381,9 @@ def load_profile(path: str) -> ValuationInput:
         news_drivers=news_drivers,
         news_key_issues=news_key_issues,
         market_signals=raw.get("market_signals"),
+        scenario_validation=ValidationReport(**raw["scenario_validation"])
+        if raw.get("scenario_validation")
+        else None,
     )
 
 

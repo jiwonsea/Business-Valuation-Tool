@@ -1,0 +1,18 @@
+method: dcf_primary
+scenarios:
+  Bull:
+    growth_adj_pct: 15
+    wacc_adj: -0.4
+    market_sentiment_pct: 6
+  Base:
+    growth_adj_pct: 4
+    wacc_adj: 0.0
+    market_sentiment_pct: 1
+  Bear:
+    growth_adj_pct: 3
+    wacc_adj: 0.1
+    market_sentiment_pct: 0
+ev_by_scenario:
+  Bull: 220
+  Base: 120
+  Bear: 100

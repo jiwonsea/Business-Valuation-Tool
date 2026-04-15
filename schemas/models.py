@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -394,6 +394,27 @@ class ScenarioResult(BaseModel):
     adjustments: list[
         AdjustmentItem
     ] = []  # Dynamic Equity Bridge (for Excel Waterfall)
+
+
+class ValidationError(BaseModel):
+    path: str
+    code: Literal[
+        "missing_required",
+        "type_mismatch",
+        "method_scope_violation",
+        "ev_spread_too_low",
+        "driver_diversity_low",
+        "direction_violation",
+        "asymmetry_major",
+    ]
+    message: str
+
+
+class ValidationReport(BaseModel):
+    status: Literal["ok", "fail", "warning", "skipped"]
+    errors: list[ValidationError] = Field(default_factory=list)
+    retryable: bool = False
+    retry_attempts: int = 0
 
 
 # ── DDM ──
@@ -832,6 +853,7 @@ class ValuationInput(BaseModel):
     market_signals: Optional[MarketSignals] = (
         None  # External market data signals (Phase 4)
     )
+    scenario_validation: Optional[ValidationReport] = None
 
     @field_validator("distress_max_discount")
     @classmethod

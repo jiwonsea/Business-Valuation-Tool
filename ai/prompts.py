@@ -347,6 +347,52 @@ _DRIVER_BOUNDS: dict[str, tuple[float, float]] = {
 }
 
 
+def _scenario_driver_example(
+    valuation_method: str,
+    segment_codes: list[str] | None = None,
+) -> str:
+    examples = {
+        "Bull": {
+            "growth_adj_pct": 12,
+            "terminal_growth_adj": 0.4,
+            "wacc_adj": -0.4,
+            "market_sentiment_pct": 8,
+        },
+        "Base": {
+            "growth_adj_pct": 4,
+            "terminal_growth_adj": 0.1,
+            "wacc_adj": 0.0,
+            "market_sentiment_pct": 2,
+        },
+        "Bear": {
+            "growth_adj_pct": -10,
+            "terminal_growth_adj": -0.3,
+            "wacc_adj": 0.6,
+            "market_sentiment_pct": -7,
+        },
+    }
+    drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
+    rendered = []
+    for scenario_code in ("Bull", "Base", "Bear"):
+        parts = []
+        for driver, value in examples[scenario_code].items():
+            if driver in drivers_info:
+                parts.append(f'"{driver}": {value}')
+        if valuation_method == "sotp" and segment_codes:
+            seg_mult_example = ", ".join(
+                f'"{c}": {12.0 - i:.1f}' for i, c in enumerate(segment_codes[:4])
+            )
+            if seg_mult_example:
+                parts.append(f'"segment_multiples": {{{seg_mult_example}}}')
+            seg_ebitda_example = ", ".join(
+                f'"{c}": {50000 - i * 20000}' for i, c in enumerate(segment_codes[:2])
+            )
+            if seg_ebitda_example:
+                parts.append(f'"segment_ebitda": {{{seg_ebitda_example}}}')
+        rendered.append(f"{scenario_code}: {{{', '.join(parts)}}}")
+    return "\n".join(rendered)
+
+
 def prompt_scenario_design(
     company_name: str,
     legal_status: str,
@@ -366,7 +412,19 @@ def prompt_scenario_design(
     scalar_drivers = {
         k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS
     }
-    driver_json = ", ".join(f'"{k}": 0' for k in scalar_drivers)
+    example_driver_defaults = {
+        "growth_adj_pct": 12,
+        "terminal_growth_adj": 0.4,
+        "wacc_adj": -0.4,
+        "market_sentiment_pct": 8,
+        "ddm_growth": 4.0,
+        "rim_roe_adj": 1.0,
+        "ev_multiple": 12.0,
+        "nav_discount": 20.0,
+    }
+    driver_json = ", ".join(
+        f'"{k}": {example_driver_defaults.get(k, 1)}' for k in scalar_drivers
+    )
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_drivers)
     # Add segment-level driver examples when segment_codes are available
     if segment_codes and valuation_method == "sotp":
@@ -375,6 +433,7 @@ def prompt_scenario_design(
         rationale_json += ', "segment_multiples": "rationale for per-segment multiple differentiation"'
     driver_table = _driver_range_table(drivers_info)
     signals_block = _format_market_signals(signals)
+    scenario_examples = _scenario_driver_example(valuation_method, segment_codes)
 
     if key_issues.strip():
         sanitized_issues = _sanitize_news(key_issues)
@@ -383,7 +442,10 @@ def prompt_scenario_design(
         scalar_effect_drivers = {
             k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS
         }
-        effect_json = ", ".join(f'"{k}": 0' for k in scalar_effect_drivers)
+        effect_json = ", ".join(
+            f'"{k}": {example_driver_defaults.get(k, 1)}'
+            for k in scalar_effect_drivers
+        )
         # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
         sotp_segment_block = ""
         sotp_seg_constraint = ""
@@ -418,6 +480,8 @@ All driver values MUST stay within these ranges. Values outside will be rejected
 Design 2-4 valuation scenarios for this company reflecting the news issues above.
 
 <instructions>
+Bull, Base, and Bear scenarios must differ materially in at least two drivers within the method's allowed driver set.
+Bull EV must exceed Bear EV by a factor of at least 1.3.
 Design using multi-variable news drivers (multiple regression approach):
 Step 1: Extract 2-5 independent news_drivers from the key news issues (title + description)
 Step 2: Quantify the partial effect of each driver on SCALAR financial variables within the allowed ranges above
@@ -442,7 +506,12 @@ by a correlation factor downstream — design scenarios assuming independent par
 
 Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.
 For listed (상장) companies, DLOM MUST be 0 for ALL scenarios. DLOM only applies to unlisted (비상장) companies.
+Do not leave scalar drivers at 0 unless you have an explicit economic reason. Each scenario must express differentiation through non-zero driver values.
 </instructions>
+
+<driver_examples>
+{scenario_examples}
+</driver_examples>
 
 <example>
 "50bp rate hike" driver → effects: {{wacc_adj: +0.5, growth_adj_pct: -10}}
@@ -465,8 +534,8 @@ Base scenario: rate hike only at weight 0.5 → half effect applied
     ],
     "scenarios": [
         {{
-            "code": "A",
-            "name": "Scenario name",
+            "code": "Bull",
+            "name": "Bull Case",
             "prob": 30,
             "probability_rationale": "Base rate: X%. Conditional decomposition: P(A)×P(B|A)×P(C|B) = Y%",
             "description": "2-3 sentence scenario narrative",
@@ -512,7 +581,9 @@ Include probability, key assumptions, and DLOM (liquidity discount) applicabilit
 
 <instructions>
 Set quantitative drivers for each scenario within the allowed ranges above.
-Base Case: all drivers at 0. Bull/Bear: adjust in appropriate direction.
+Bull, Base, and Bear scenarios must differ materially in at least two drivers within the method's allowed driver set.
+Bull EV must exceed Bear EV by a factor of at least 1.3.
+Do not leave scalar drivers at 0 unless you have an explicit economic reason. Each scenario must express differentiation through non-zero driver values.
 
 PROBABILITY ASSIGNMENT (mandatory reasoning chain):
 1. Anchor: Start from base rate — the historical frequency of similar macro/industry conditions
@@ -527,12 +598,16 @@ note this in driver_rationale. Correlated effects will be dampened downstream.
 Each scenario MUST include a "description" field (2-3 sentences) explaining the narrative.{generic_sotp_constraint}
 </instructions>
 
+<driver_examples>
+{scenario_examples}
+</driver_examples>
+
 <output_format>
 {{
     "scenarios": [
         {{
-            "code": "A",
-            "name": "Scenario name",
+            "code": "Bull",
+            "name": "Bull Case",
             "prob": 30,
             "probability_rationale": "Base rate: X%. Conditional: P(A)×P(B|A) = Y%",
             "description": "2-3 sentence scenario narrative",
@@ -741,9 +816,22 @@ def prompt_scenario_refine(
 
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
     scalar_only = {k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS}
-    driver_json = ", ".join(f'"{k}": 0' for k in scalar_only)
+    example_driver_defaults = {
+        "growth_adj_pct": 12,
+        "terminal_growth_adj": 0.4,
+        "wacc_adj": -0.4,
+        "market_sentiment_pct": 8,
+        "ddm_growth": 4.0,
+        "rim_roe_adj": 1.0,
+        "ev_multiple": 12.0,
+        "nav_discount": 20.0,
+    }
+    driver_json = ", ".join(
+        f'"{k}": {example_driver_defaults.get(k, 1)}' for k in scalar_only
+    )
     rationale_json = ", ".join(f'"{k}": "rationale"' for k in scalar_only)
     driver_table = _driver_range_table(drivers_info)
+    scenario_examples = _scenario_driver_example(valuation_method, segment_codes)
 
     draft_str = _json.dumps(draft, ensure_ascii=False, indent=2)
 
@@ -755,7 +843,9 @@ def prompt_scenario_refine(
 {sanitized_issues}
 </news_issues>
 """
-        effect_json = ", ".join(f'"{k}": 0' for k in scalar_only)
+        effect_json = ", ".join(
+            f'"{k}": {example_driver_defaults.get(k, 1)}' for k in scalar_only
+        )
         news_driver_format = f"""
     "news_drivers": [
         {{
@@ -805,6 +895,8 @@ Refine the scenario classification draft above into a FULL scenario design.
 You MUST use the exact scenario codes and structure from the draft.
 
 <instructions>
+Bull, Base, and Bear scenarios must differ materially in at least two drivers within the method's allowed driver set.
+Bull EV must exceed Bear EV by a factor of at least 1.3.
 For each scenario from the draft:
 1. Convert the probability RANGE into a single precise probability (pick within the range)
 2. Convert driver DIRECTIONS into precise numeric values within the allowed ranges
@@ -821,14 +913,19 @@ For SOTP: set "segment_multiples" directly on each scenario with differentiated 
 CORRELATION AWARENESS:
 When multiple drivers affect the same financial variable, note the interaction.
 Correlated drivers applied together will be dampened by a correlation factor downstream.
+Do not leave scalar drivers at 0 unless you have an explicit economic reason. Each scenario must express differentiation through non-zero driver values.
 </instructions>
+
+<driver_examples>
+{scenario_examples}
+</driver_examples>
 
 <output_format>
 {{{news_driver_format}
     "scenarios": [
         {{
-            "code": "A",
-            "name": "Scenario name",
+            "code": "Bull",
+            "name": "Bull Case",
             "prob": 30,
             "probability_rationale": "Base rate: X%. Conditional: P(A)×P(B|A) = Y%",
             "description": "2-3 sentence scenario narrative",

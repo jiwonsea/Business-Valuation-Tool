@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
+import tempfile
 
 logger = logging.getLogger(__name__)
 from dataclasses import dataclass
@@ -29,6 +31,82 @@ class AnalyzeResult:
 
 # Project root (relative to this file's parent directory, not cli.py)
 _PROJECT_ROOT = Path(__file__).parent.parent
+_DEFAULT_SCENARIO_VALIDATION_RETRIES = 1
+_SCENARIO_VALIDATION_RETRY_CAP = 2
+
+
+def _llm_quota_remaining() -> int:
+    from pipeline.api_guard import ApiGuard
+
+    usage = ApiGuard.get().get_usage_summary()
+    return max(usage.get("openrouter", {}).get("remaining", 0), usage.get("anthropic", {}).get("remaining", 0))
+
+
+def _compute_scenario_validation(raw: dict, method: str):
+    from engine.scenario_validator import validate_scenario_differentiation
+    from valuation_runner import load_profile, run_valuation
+
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            suffix=".yaml",
+            delete=False,
+        ) as tmp:
+            yaml.dump(raw, tmp, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            temp_path = tmp.name
+        vi = load_profile(temp_path)
+        result = run_valuation(vi)
+        ev_by_scenario = {
+            code: scenario.total_ev for code, scenario in result.scenarios.items()
+        }
+        report = validate_scenario_differentiation(raw.get("scenarios", {}), method, ev_by_scenario)
+        return report, ev_by_scenario
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def _repair_scenarios_with_llm(analyst, original: dict, errors: list, method: str) -> dict:
+    import json
+
+    from ai.prompts import SYSTEM_ANALYST, SYSTEM_ANALYST_DRIVERS
+    from ai.llm_client import MODEL_HEAVY
+
+    payload = json.dumps({"scenarios": original}, ensure_ascii=False, indent=2)
+    errors_json = json.dumps(
+        [error.model_dump() for error in errors],
+        ensure_ascii=False,
+        indent=2,
+    )
+    prompt = f"""Validation failed. Fix only the invalid fields and keep all valid fields unchanged.
+
+Rules:
+- Return valid JSON only.
+- Preserve scenario keys and all unchanged valid fields exactly.
+- Keep the same valuation method: {method}.
+- Do not add new assumptions unless required to satisfy validation.
+- Bull, Base, and Bear must differ materially in at least two allowed drivers.
+- Bull EV must exceed Bear EV by at least 1.3x.
+
+Errors:
+{errors_json}
+
+Current scenario payload:
+{payload}
+"""
+    repaired = analyst._ask_json(
+        prompt,
+        system=SYSTEM_ANALYST + "\n" + SYSTEM_ANALYST_DRIVERS,
+        max_tokens=4096,
+        model=MODEL_HEAVY,
+    )
+    if "scenarios" in repaired and isinstance(repaired["scenarios"], dict):
+        return repaired["scenarios"]
+    if isinstance(repaired, dict):
+        return repaired
+    raise ValueError("repair response did not contain a scenarios object")
 
 
 def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
@@ -930,6 +1008,70 @@ def auto_analyze(
             rates_str = "[" + ", ".join(f"{r:.2f}" for r in updated_rates) + "]"
             raw.setdefault("dcf_params", {})["ebitda_growth_rates"] = updated_rates
             print(f"  [Growth rates updated from segments: {rates_str}]")
+
+    validation_report = None
+    validation_retry_attempts = 0
+    if raw.get("scenarios"):
+        initial_report, _ = _compute_scenario_validation(raw, val_method)
+        validation_report = initial_report
+        repaired_scenarios = None
+        retry_limit = min(
+            _DEFAULT_SCENARIO_VALIDATION_RETRIES,
+            _SCENARIO_VALIDATION_RETRY_CAP,
+        )
+        if validation_report.status == "fail" and validation_report.retryable and retry_limit > 0:
+            if _llm_quota_remaining() < 1:
+                validation_report = validation_report.model_copy(
+                    update={
+                        "status": "skipped",
+                        "retryable": False,
+                    }
+                )
+                logger.info(
+                    "scenario_validation",
+                    extra={
+                        "status": validation_report.status,
+                        "retry_attempts": 0,
+                        "quota_skip_reason": "llm_quota_exhausted",
+                        "error_codes": [error.code for error in validation_report.errors],
+                    },
+                )
+            else:
+                repaired_scenarios = _repair_scenarios_with_llm(
+                    analyst=analyst,
+                    original=raw["scenarios"],
+                    errors=validation_report.errors,
+                    method=val_method,
+                )
+                validation_retry_attempts = 1
+                raw["scenarios"] = repaired_scenarios
+                validation_report, _ = _compute_scenario_validation(raw, val_method)
+                original_error_set = {
+                    (error.path, error.code) for error in initial_report.errors
+                }
+                repeated_error_set = {
+                    (error.path, error.code) for error in validation_report.errors
+                }
+                if (
+                    validation_report.status == "fail"
+                    and repeated_error_set == original_error_set
+                ):
+                    validation_report = validation_report.model_copy(
+                        update={"retryable": False}
+                    )
+        if validation_report is not None:
+            validation_report = validation_report.model_copy(
+                update={"retry_attempts": validation_retry_attempts}
+            )
+            raw["scenario_validation"] = validation_report.model_dump()
+            logger.info(
+                "scenario_validation",
+                extra={
+                    "status": validation_report.status,
+                    "retry_attempts": validation_retry_attempts,
+                    "error_codes": [error.code for error in validation_report.errors],
+                },
+            )
 
     # Enable Monte Carlo simulation
     raw["mc_enabled"] = True

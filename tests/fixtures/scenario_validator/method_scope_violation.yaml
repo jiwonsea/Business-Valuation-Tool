@@ -1,0 +1,17 @@
+method: dcf_primary
+scenarios:
+  Bull:
+    growth_adj_pct: 12
+    wacc_adj: -0.4
+  Base:
+    growth_adj_pct: 4
+    wacc_adj: 0.0
+    segment_ebitda:
+      SEG1: 50000
+  Bear:
+    growth_adj_pct: -10
+    wacc_adj: 0.6
+ev_by_scenario:
+  Bull: 160
+  Base: 120
+  Bear: 95

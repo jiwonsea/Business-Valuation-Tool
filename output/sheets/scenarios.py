@@ -73,13 +73,20 @@ def sheet_scenarios(ctx: Ctx):
         write_cell(ws, r, i, sr.total_ev, fmt=NUM_FMT)
 
     # Adjustments — Waterfall
-    first_sr = ctx.result.scenarios[sc_codes[0]]
-    for adj_idx, adj in enumerate(first_sr.adjustments):
+    all_names: list[str] = []
+    seen: set[str] = set()
+    for sc_code in sc_codes:
+        for adj in ctx.result.scenarios[sc_code].adjustments:
+            if adj.name not in seen:
+                seen.add(adj.name)
+                all_names.append(adj.name)
+
+    for name in all_names:
         r += 1
-        write_cell(ws, r, 1, f"(-) {adj.name}")
+        write_cell(ws, r, 1, f"(-) {name}")
         for i, sc_code in enumerate(sc_codes, 2):
             sr = ctx.result.scenarios[sc_code]
-            val = sr.adjustments[adj_idx].value if adj_idx < len(sr.adjustments) else 0
+            val = next((adj.value for adj in sr.adjustments if adj.name == name), 0)
             write_cell(ws, r, i, val, fmt=NUM_FMT)
 
     # Equity Value

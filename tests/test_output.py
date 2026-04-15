@@ -229,6 +229,128 @@ class TestScenariosDlomGuard:
         assert "not is_listed and has_dlom" in src, "DLOM row must be gated on has_dlom"
 
 
+class TestScenarioBridgeAlignment:
+    """Scenario waterfall rows must align by adjustment name, not list index."""
+
+    def test_sheet_aligns_adjustments_by_name(self):
+        from types import SimpleNamespace
+
+        from openpyxl import Workbook
+
+        from output.sheets.scenarios import sheet_scenarios
+        from schemas.models import AdjustmentItem
+
+        ctx = SimpleNamespace(
+            wb=Workbook(),
+            unit="KRW m",
+            sc_codes=["A", "B", "C"],
+            method="sotp",
+            currency_sym="KRW",
+            vi=SimpleNamespace(
+                company=SimpleNamespace(legal_status="unlisted"),
+                scenarios={
+                    "A": SimpleNamespace(
+                        name="Base",
+                        prob=20,
+                        dlom=0,
+                        irr=None,
+                        desc="",
+                        probability_rationale="",
+                        driver_rationale={},
+                        market_sentiment_pct=0,
+                        wacc_adj=0,
+                    ),
+                    "B": SimpleNamespace(
+                        name="Bull",
+                        prob=45,
+                        dlom=20,
+                        irr=5.0,
+                        desc="",
+                        probability_rationale="",
+                        driver_rationale={},
+                        market_sentiment_pct=0,
+                        wacc_adj=0,
+                    ),
+                    "C": SimpleNamespace(
+                        name="Bear",
+                        prob=35,
+                        dlom=25,
+                        irr=12.0,
+                        desc="",
+                        probability_rationale="",
+                        driver_rationale={},
+                        market_sentiment_pct=0,
+                        wacc_adj=0,
+                    ),
+                },
+            ),
+            result=SimpleNamespace(
+                weighted_value=34_745,
+                scenarios={
+                    "A": SimpleNamespace(
+                        total_ev=6_004_633,
+                        adjustments=[
+                            AdjustmentItem(name="Net Debt", value=2_295_568),
+                            AdjustmentItem(name="Eco Frontier", value=94_644),
+                        ],
+                        equity_value=3_614_421,
+                        shares=65_599_748,
+                        pre_dlom=55_098,
+                        post_dlom=55_098,
+                        weighted=11_020,
+                    ),
+                    "B": SimpleNamespace(
+                        total_ev=6_004_633,
+                        adjustments=[
+                            AdjustmentItem(name="Net Debt", value=2_295_568),
+                            AdjustmentItem(name="CPS Redeem", value=729_304),
+                            AdjustmentItem(name="RCPS Redeem", value=490_000),
+                            AdjustmentItem(name="Eco Frontier", value=94_644),
+                        ],
+                        equity_value=2_395_117,
+                        shares=54_278_993,
+                        pre_dlom=40_441,
+                        post_dlom=32_353,
+                        weighted=14_559,
+                    ),
+                    "C": SimpleNamespace(
+                        total_ev=6_004_633,
+                        adjustments=[
+                            AdjustmentItem(name="Net Debt", value=2_295_568),
+                            AdjustmentItem(name="CPS Redeem", value=944_112),
+                            AdjustmentItem(name="RCPS Redeem", value=575_000),
+                            AdjustmentItem(name="Eco Frontier", value=94_644),
+                        ],
+                        equity_value=2_095_309,
+                        shares=54_278_993,
+                        pre_dlom=34_917,
+                        post_dlom=26_188,
+                        weighted=9_166,
+                    ),
+                },
+            ),
+        )
+
+        sheet_scenarios(ctx)
+
+        ws = ctx.wb["Scenario Analysis"]
+        actual_rows = {
+            ws.cell(row, 1).value: (
+                ws.cell(row, 2).value,
+                ws.cell(row, 3).value,
+                ws.cell(row, 4).value,
+            )
+            for row in range(1, ws.max_row + 1)
+            if isinstance(ws.cell(row, 1).value, str)
+            and ws.cell(row, 1).value.startswith("(-) ")
+        }
+
+        assert actual_rows["(-) Net Debt"] == (2_295_568, 2_295_568, 2_295_568)
+        assert actual_rows["(-) CPS Redeem"] == (0, 729_304, 944_112)
+        assert actual_rows["(-) RCPS Redeem"] == (0, 490_000, 575_000)
+        assert actual_rows["(-) Eco Frontier"] == (94_644, 94_644, 94_644)
+
+
 # ── sensitivity.py: _get_ref_label_value SOTP fix ──
 
 

@@ -142,6 +142,11 @@ def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
             revenue_base=int(revenue_base),
             wacc_pct=result.wacc.wacc,
             params=vi.dcf_params,
+            holding_discount_applied=bool(
+                result.holding_discount and result.holding_discount.enabled
+            ),
+            de_ratio=cons.get("de_ratio", 0.0),
+            industry=vi.industry,
         )
         if diag:
             from schemas.models import GapDiagnostic as _GD
@@ -153,8 +158,11 @@ def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
                 implied_tgr=diag.implied_tgr,
                 implied_growth_mult=diag.implied_growth_mult,
                 category=diag.category,
+                primary_reason=diag.primary_reason,
+                secondary_reasons=diag.secondary_reasons,
                 explanation=diag.explanation,
                 suggestions=diag.suggestions,
+                actions=diag.actions,
                 reconcilable=diag.reconcilable,
             )
     except Exception as e:

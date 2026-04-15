@@ -7,6 +7,7 @@ from datetime import date, datetime
 
 from dateutil.relativedelta import relativedelta
 
+from .buckets import classify_bucket
 from .models import BacktestRecord, ScenarioSnapshot
 
 logger = logging.getLogger(__name__)
@@ -176,6 +177,10 @@ def build_backtest_dataset(min_age_days: int = 90) -> list[BacktestRecord]:
                 price_t12m=outcome.get("price_t12m"),
                 scenarios=scenarios,
                 primary_method=snap.get("primary_method"),
+                valuation_bucket=classify_bucket(
+                    primary_method=snap.get("primary_method"),
+                    valuation_bucket=snap.get("valuation_bucket"),
+                ),
                 market_signals_version=snap.get("market_signals_version", 0),
             )
             records.append(record)

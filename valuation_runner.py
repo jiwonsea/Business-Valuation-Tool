@@ -16,6 +16,7 @@ from schemas.models import (
     DCFParams,
     DDMParams,
     NAVParams,
+    HoldingStructure,
     RNPVParams,
     RIMParams,
     RIMProjectionResult,
@@ -57,8 +58,9 @@ from engine.peer_analysis import calc_peer_stats
 from engine.quality import calc_quality_score
 from engine.nav import calc_nav
 from engine.rnpv import calc_rnpv
+from engine.holding_discount import build_holding_discount_bridge
 from engine.units import detect_unit, per_share
-from engine.method_selector import suggest_method, is_financial
+from engine.method_selector import suggest_method, is_financial, infer_valuation_bucket
 
 
 # Minimum segment asset share (%) to qualify for healthy-segment half-discount.
@@ -203,6 +205,11 @@ def load_profile(path: str) -> ValuationInput:
     nav_params = None
     if "nav_params" in raw:
         nav_params = NAVParams(**raw["nav_params"])
+
+    holding_structure = None
+    if "holding_structure" in raw:
+        holding_structure = HoldingStructure(**raw["holding_structure"])
+        company = company.model_copy(update={"holding_structure": holding_structure})
 
     # rNPV (Optional — pharma pipeline)
     rnpv_params = None
@@ -436,11 +443,44 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
     }
     runner = dispatch.get(method, _run_dcf_valuation)
     result = runner(vi, wacc_result, um)
+    result.valuation_bucket = infer_valuation_bucket(
+        primary_method=result.primary_method,
+        industry=vi.industry,
+        has_holding_structure=bool(
+            vi.company.holding_structure and vi.company.holding_structure.enabled
+        ),
+        has_optionality_segments=any(
+            info.get("optionality") for info in vi.segments.values()
+        ),
+    )
 
     # Quality scoring (pure function, zero IO)
     result.quality = calc_quality_score(vi, result)
 
     return result
+
+
+def _apply_holding_discount_to_scenario(
+    scenario_result,
+    net_equity_value: int,
+    dlom_pct: float,
+    prob_pct: float,
+    unit_multiplier: int,
+):
+    """Replace scenario equity/per-share outputs with holding-discounted net equity."""
+    pre_dlom = per_share(net_equity_value, unit_multiplier, scenario_result.shares)
+    if net_equity_value > 0:
+        post_dlom = round(pre_dlom * (1 - dlom_pct / 100))
+    else:
+        post_dlom = pre_dlom
+    return scenario_result.model_copy(
+        update={
+            "equity_value": net_equity_value,
+            "pre_dlom": pre_dlom,
+            "post_dlom": post_dlom,
+            "weighted": round(post_dlom * prob_pct / 100),
+        }
+    )
 
 
 def _calc_effective_net_debt(vi: ValuationInput) -> int:
@@ -567,6 +607,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
     )
+    base_holding_bridge = None
 
     # PBV/PE segment equity value (constant in sensitivity — not multiple-varied)
     _pbv_pe_ev = sum(r.ev for r in sotp.values() if r.method in ("pbv", "pe"))
@@ -662,6 +703,22 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             vi.cps_dividend_rate,
             vi.rcps_dividend_rate,
         )
+        if vi.company.holding_structure and vi.company.holding_structure.enabled:
+            bridge = build_holding_discount_bridge(
+                gross_sotp_value=sc_ev,
+                gross_equity_value=r.equity_value,
+                holding_structure=vi.company.holding_structure,
+            )
+            if bridge is not None:
+                r = _apply_holding_discount_to_scenario(
+                    r,
+                    bridge.net_equity_value,
+                    sc.dlom,
+                    sc.prob,
+                    um,
+                )
+                if code == "Base" or base_holding_bridge is None:
+                    base_holding_bridge = bridge
         scenario_results[code] = r
         total_weighted += r.weighted
 
@@ -823,6 +880,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         sensitivity_multiples=sens_mult,
         sensitivity_irr_dlom=sens_irr,
         sensitivity_dcf=sens_dcf_rows,
+        holding_discount=base_holding_bridge,
     )
 
 

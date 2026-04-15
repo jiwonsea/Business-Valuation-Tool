@@ -62,6 +62,7 @@ def save_prediction_snapshot(
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
         "primary_method": result.primary_method,
+        "valuation_bucket": getattr(result, "valuation_bucket", "plain_operating"),
         "market_signals_version": signals_ver,
         "scenario_values": scenario_values,
     }

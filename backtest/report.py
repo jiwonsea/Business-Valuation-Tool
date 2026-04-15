@@ -182,6 +182,26 @@ def generate_report(records: list[BacktestRecord]) -> tuple[str, dict]:
         lines.append("")
 
     # ── Systematic Bias Warning ──
+    by_bucket: dict[str, list[BacktestRecord]] = defaultdict(list)
+    for record in listed:
+        by_bucket[getattr(record, "valuation_bucket", "plain_operating")].append(record)
+    if by_bucket:
+        report["bucket_breakdown"] = {}
+        lines.append("Bucket Breakdown (T+6m MAPE):")
+        lines.append(
+            f"  {'Bucket':<28} | {'MAPE':>6} | {'Median':>7} | {'Log Ratio':>10} | {'N':>4}"
+        )
+        lines.append(f"  {'-' * 28} | {'-' * 6} | {'-' * 7} | {'-' * 10} | {'-' * 4}")
+        for bucket, bucket_records in sorted(by_bucket.items()):
+            err = calc_forecast_price_error(bucket_records, "t6m")
+            report["bucket_breakdown"][bucket] = err
+            if err["n"] > 0 and err["mape"] is not None:
+                lines.append(
+                    f"  {bucket:<28} | {err['mape']:>5.0%} | {err['median_ape']:>6.0%} |"
+                    f" {err['log_ratio_mean']:>+9.2f} | {err['n']:>4}"
+                )
+        lines.append("")
+
     err_6m = report.get("forecast_error", {}).get("t6m", {})
     log_ratio = err_6m.get("log_ratio_mean")
     if log_ratio is not None and abs(log_ratio) > 0.05:

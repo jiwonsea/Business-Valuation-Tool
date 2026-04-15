@@ -33,6 +33,7 @@ class CompanyProfile(BaseModel):
     cps_conversion_shares: int = 0
     analysis_date: date = Field(default_factory=date.today)
     industry: Optional[str] = None
+    holding_structure: Optional[HoldingStructure] = None
 
     @property
     def shares_outstanding(self) -> int:
@@ -608,6 +609,57 @@ class NAVResult(BaseModel):
     per_share: int = 0
 
 
+class ListedSubsidiary(BaseModel):
+    """Listed subsidiary information for holding discount bridge."""
+
+    name: str
+    ownership_pct: float
+    market_value: int = 0
+    parent_access_discount: float = 0.0
+    overhang_risk: Optional[str] = None
+    dividend_access: Optional[str] = None
+
+
+class GovernanceDiscountConfig(BaseModel):
+    """Governance and double-listing discount configuration."""
+
+    enabled: bool = False
+    base_discount_pct: float = 0.0
+    rationale: list[str] = []
+
+
+class HoldingStructure(BaseModel):
+    """Holding-company structure inputs for post-SOTP discount bridge."""
+
+    enabled: bool = False
+    listed_subsidiaries: list[ListedSubsidiary] = []
+    governance_discount: GovernanceDiscountConfig = GovernanceDiscountConfig()
+
+
+class HoldingDiscountBridge(BaseModel):
+    """Post-SOTP bridge from gross value to parent-discounted net equity."""
+
+    enabled: bool = False
+    gross_sotp_value: int = 0
+    gross_equity_value: int = 0
+    listed_subsidiary_lookthrough_value: int = 0
+    parent_access_discount: int = 0
+    governance_discount: int = 0
+    overhang_discount: int = 0
+    total_discount: int = 0
+    net_equity_value: int = 0
+    warnings: list[str] = []
+
+
+class GapReasoningResult(BaseModel):
+    """Rule-based classification of market/model gap drivers."""
+
+    primary_reason: str = ""
+    secondary_reasons: list[str] = []
+    explanation: str = ""
+    actions: list[str] = []
+
+
 # ── Multiples Primary (Relative Valuation as primary method) ──
 
 
@@ -920,8 +972,11 @@ class GapDiagnostic(BaseModel):
     implied_tgr: Optional[float] = None  # TGR % that reconciles with market
     implied_growth_mult: Optional[float] = None  # Growth multiplier that reconciles
     category: str = ""  # "wacc_overestimated" | "growth_underestimated" | "optionality_premium" | "market_pessimism"
+    primary_reason: str = ""
+    secondary_reasons: list[str] = []
     explanation: str = ""
     suggestions: list[str] = []
+    actions: list[str] = []
     reconcilable: bool = True  # False = even extreme assumptions cannot bridge gap
 
 
@@ -940,6 +995,7 @@ class ValuationResult(BaseModel):
     rim: Optional[RIMValuationResult] = None
     nav: Optional[NAVResult] = None
     rnpv: Optional[RNPVValuationResult] = None
+    holding_discount: Optional[HoldingDiscountBridge] = None
     multiples_primary: Optional[MultiplesResult] = None
     cross_validations: list[CrossValidationItem] = []
     peer_stats: list[PeerSegmentStats] = []
@@ -956,7 +1012,9 @@ class ValuationResult(BaseModel):
     gap_diagnostic: Optional[GapDiagnostic] = (
         None  # Reverse-DCF gap analysis (when |gap| >= 20%)
     )
+    gap_reasoning: Optional[GapReasoningResult] = None
     reverse_rnpv: Optional[ReverseRNPVResult] = (
         None  # Reverse rNPV (when primary_method == "rnpv")
     )
     rnpv_tornado: list[RNPVTornadoItem] = []  # Per-drug peak sales tornado (rNPV only)
+    valuation_bucket: str = "plain_operating"

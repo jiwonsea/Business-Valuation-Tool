@@ -15,6 +15,7 @@ from backtest.metrics import (
     calc_calibration_curve,
     calc_forecast_error_by_method,
 )
+from backtest.report import generate_report
 
 
 # ── Helpers ──
@@ -518,3 +519,28 @@ class TestPriceTrackerHelpers:
         # If resolve_kr_ticker fails, should fallback to .KS
         result = _resolve_ticker("005930", "KR")
         assert result.endswith((".KS", ".KQ"))
+
+
+class TestBucketBreakdown:
+    def test_generate_report_includes_bucket_breakdown(self):
+        records = [
+            BacktestRecord(
+                snapshot_id=f"s-{i}",
+                valuation_id=f"v-{i}",
+                ticker="T",
+                market="US",
+                currency="USD",
+                unit_multiplier=1,
+                company_name="Co",
+                legal_status="listed",
+                analysis_date=date(2025, 1, 1),
+                predicted_value=100,
+                price_t6m=100.0,
+                primary_method="sotp",
+                valuation_bucket="holding_governance_sensitive",
+            )
+            for i in range(3)
+        ]
+        text, report = generate_report(records)
+        assert "Bucket Breakdown" in text
+        assert "holding_governance_sensitive" in report["bucket_breakdown"]

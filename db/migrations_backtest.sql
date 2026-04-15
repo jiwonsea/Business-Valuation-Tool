@@ -73,6 +73,10 @@ ALTER TABLE prediction_snapshots
 ALTER TABLE prediction_snapshots
     ADD COLUMN IF NOT EXISTS primary_method TEXT DEFAULT '';
 
+-- Add valuation_bucket to prediction_snapshots (Phase 1 bucketed backtest)
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS valuation_bucket TEXT DEFAULT 'plain_operating';
+
 -- Add unique constraints for upsert support
 CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
     ON valuations(company_name, analysis_date);

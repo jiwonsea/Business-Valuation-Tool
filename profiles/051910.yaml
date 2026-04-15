@@ -261,3 +261,19 @@ news_key_issues: '# LG화학 밸류에이션 영향 핵심 이슈
 
   - [긍정] CEO 김동춘의 ''불황 극복'' 선언 및 고부가사업 강화 전략 (4월 3일)'
 mc_enabled: true
+holding_structure:
+  enabled: true
+  listed_subsidiaries:
+  - name: LG Energy Solution
+    ownership_pct: 81.8
+    market_value: 72000000
+    parent_access_discount: 45
+    overhang_risk: medium
+    dividend_access: low
+  governance_discount:
+    enabled: true
+    base_discount_pct: 10
+    rationale:
+    - double_listing
+    - capital_allocation_uncertainty
+    - minority_shareholder_leakage

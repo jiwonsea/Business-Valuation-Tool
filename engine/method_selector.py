@@ -297,3 +297,23 @@ def _suggest_financial_method(
             return "rim"
 
     return "ddm"
+
+
+def infer_valuation_bucket(
+    primary_method: str,
+    industry: str = "",
+    has_holding_structure: bool = False,
+    has_optionality_segments: bool = False,
+) -> str:
+    """Infer backtest bucket for valuation diagnostics."""
+    industry_lower = (industry or "").lower()
+
+    if primary_method in ("ddm", "rim"):
+        return "financials"
+    if primary_method == "nav" or any(kw in industry_lower for kw in _REIT_KEYWORDS):
+        return "asset_heavy_reit_nav"
+    if has_holding_structure:
+        return "holding_governance_sensitive"
+    if has_optionality_segments:
+        return "optionality_heavy"
+    return "plain_operating"

@@ -46,8 +46,11 @@ class GapDiagnostic:
 
     # Diagnosis
     category: str = ""  # see _CATEGORIES below
+    primary_reason: str = ""
+    secondary_reasons: list[str] = field(default_factory=list)
     explanation: str = ""  # Korean explanation for console/email
     suggestions: list[str] = field(default_factory=list)  # actionable YAML edits
+    actions: list[str] = field(default_factory=list)
 
     # Feasibility flag
     reconcilable: bool = (
@@ -92,6 +95,25 @@ _CATEGORIES = {
     "minor_gap": {
         "label": "소폭 괴리",
         "explanation": "괴리율이 20% 미만으로 모델 정밀도 범위 내입니다.",
+    },
+    "holding_discount_gap": {
+        "label": "Holding Discount Gap",
+        "explanation": (
+            "자회사 상장 구조와 parent access discount가 반영되지 않아 "
+            "시장 프리미엄처럼 보일 수 있습니다."
+        ),
+    },
+    "governance_gap": {
+        "label": "Governance Gap",
+        "explanation": "double listing 및 minority leakage 우려가 구조적 괴리를 키울 수 있습니다.",
+    },
+    "leverage_gap": {
+        "label": "Leverage Gap",
+        "explanation": "높은 레버리지와 자본비용 민감도가 시장 할인의 핵심 원인으로 보입니다.",
+    },
+    "cyclical_trough_gap": {
+        "label": "Cyclical Trough Gap",
+        "explanation": "싸이클 저점 실적이 normalize되지 않아 시장이 추가 할인을 주는 상황일 수 있습니다.",
     },
 }
 
@@ -259,6 +281,10 @@ def diagnose_gap(
     revenue_base: int,
     wacc_pct: float,
     params: "DCFParams",
+    holding_discount_applied: bool = False,
+    de_ratio: float = 0.0,
+    industry: str = "",
+    distress_signal=None,
 ) -> GapDiagnostic | None:
     """Run reverse-DCF diagnostics and return GapDiagnostic.
 
@@ -283,6 +309,7 @@ def diagnose_gap(
     direction = "market_premium" if gap_ratio < 0 else "market_discount"
 
     diag = GapDiagnostic(gap_pct=gap_pct, direction=direction)
+    secondary_reasons: list[str] = []
 
     if direction == "market_premium":
         # Market > intrinsic: solve for parameters that bridge gap upward
@@ -319,7 +346,15 @@ def diagnose_gap(
         # Categorize
         wacc_delta = wacc_pct - (impl_wacc or wacc_pct)
 
-        if impl_wacc is None and impl_tgr is None and impl_gmult is None:
+        if holding_discount_applied:
+            diag.category = "holding_discount_gap"
+            diag.explanation = _CATEGORIES["holding_discount_gap"]["explanation"]
+            diag.suggestions = [
+                "Gross SOTP와 Net Parent Equity를 분리 표기하세요.",
+                "listed subsidiary look-through value와 access discount를 bridge로 보여주세요.",
+            ]
+            secondary_reasons.append("governance_gap")
+        elif impl_wacc is None and impl_tgr is None and impl_gmult is None:
             # Nothing in range can explain the gap
             diag.category = "optionality_premium"
             diag.reconcilable = False
@@ -388,10 +423,15 @@ def diagnose_gap(
 
     else:
         # direction == "market_discount": intrinsic > market
-        diag.category = "market_pessimism"
-        diag.explanation = _CATEGORIES["market_pessimism"]["explanation"].format(
-            gap_pct=abs(gap_pct)
-        )
+        if de_ratio >= 100:
+            diag.category = "leverage_gap"
+            diag.explanation = _CATEGORIES["leverage_gap"]["explanation"]
+            secondary_reasons.append("cyclical_trough_gap")
+        else:
+            diag.category = "market_pessimism"
+            diag.explanation = _CATEGORIES["market_pessimism"]["explanation"].format(
+                gap_pct=abs(gap_pct)
+            )
         # For market discount: find what WACC would explain market (higher WACC → lower EV)
         impl_wacc = solve_implied_wacc(
             target_ev=market_ev,
@@ -410,6 +450,9 @@ def diagnose_gap(
         ]
         diag.suggestions = [s for s in diag.suggestions if s]
 
+    diag.primary_reason = diag.category
+    diag.secondary_reasons = secondary_reasons
+    diag.actions = list(diag.suggestions)
     return diag
 
 

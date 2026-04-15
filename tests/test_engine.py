@@ -3260,6 +3260,62 @@ class TestHoldingDiscount:
         )
         assert bridge is None
 
+    def test_build_holding_discount_bridge_warns_on_negative_net_equity(self):
+        """When discounts push net equity below zero, warn explicitly."""
+        holding = HoldingStructure(
+            enabled=True,
+            listed_subsidiaries=[
+                ListedSubsidiary(
+                    name="BigSub",
+                    ownership_pct=90,
+                    market_value=1000,
+                    parent_access_discount=80,
+                    overhang_risk="high",
+                    dividend_access="low",
+                )
+            ],
+            governance_discount=GovernanceDiscountConfig(
+                enabled=True,
+                base_discount_pct=50,
+            ),
+        )
+        bridge = build_holding_discount_bridge(
+            gross_sotp_value=500,
+            gross_equity_value=300,
+            holding_structure=holding,
+        )
+        assert bridge is not None
+        assert bridge.net_equity_value < 0
+        assert any("음수" in w for w in bridge.warnings)
+
+    def test_apply_holding_discount_preserves_negative_pre_dlom(self):
+        """Negative net_equity pass-through: post_dlom == pre_dlom (no further DLOM)."""
+        from valuation_runner import _apply_holding_discount_to_scenario
+        from schemas.models import ScenarioResult
+
+        sc = ScenarioResult(
+            total_ev=1000,
+            net_debt=0,
+            cps_repay=0,
+            rcps_repay=0,
+            buyback=0,
+            eco_frontier=0,
+            equity_value=500,
+            shares=100,
+            pre_dlom=5,
+            post_dlom=4,
+            weighted=2,
+        )
+        out = _apply_holding_discount_to_scenario(
+            sc,
+            net_equity_value=-200,
+            dlom_pct=25.0,
+            prob_pct=50.0,
+            unit_multiplier=1,
+        )
+        assert out.equity_value == -200
+        assert out.pre_dlom == out.post_dlom
+
     def test_ddm_without_params_raises(self):
         """T3: DDM method without ddm_params should raise ValueError."""
         import pytest
@@ -4619,3 +4675,47 @@ class TestSotpScenariosUndifferentiated:
             f"SK Ecoplant should not trigger SOTP undifferentiated warning, "
             f"got: {[r.getMessage() for r in offenders]}"
         )
+
+
+class TestInferValuationBucket:
+    def test_holding_structure_wins_over_plain_operating(self):
+        from engine.method_selector import infer_valuation_bucket
+
+        assert infer_valuation_bucket(
+            primary_method="sotp",
+            industry="holdings",
+            has_holding_structure=True,
+            has_optionality_segments=False,
+        ) == "holding_governance_sensitive"
+
+    def test_ddm_and_rim_map_to_financials(self):
+        from engine.method_selector import infer_valuation_bucket
+
+        assert infer_valuation_bucket(primary_method="ddm") == "financials"
+        assert infer_valuation_bucket(primary_method="rim") == "financials"
+
+
+class TestDiagnoseGapLeverageBranch:
+    def test_high_de_ratio_routes_to_leverage_gap(self):
+        params = DCFParams(
+            growth_rates=[0.05] * 5,
+            terminal_growth=0.02,
+            capex_ratio=0.15,
+            nwc_ratio=0.05,
+            tax_rate=0.25,
+        )
+        result = diagnose_gap(
+            gap_ratio=0.30,
+            market_price=40_000,
+            intrinsic_per_share=56_000,
+            market_ev=4_000_000,
+            ebitda_base=500_000,
+            da_base=100_000,
+            revenue_base=2_000_000,
+            wacc_pct=10.0,
+            params=params,
+            de_ratio=150.0,
+        )
+        assert result is not None
+        assert result.category == "leverage_gap"
+        assert "cyclical_trough_gap" in result.secondary_reasons

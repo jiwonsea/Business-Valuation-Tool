@@ -152,6 +152,20 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                     f"시나리오별 가중치에 반영됨 (기본 SOTP 제외)"
                 )
 
+        if result.holding_discount and result.holding_discount.enabled:
+            hd = result.holding_discount
+            print("\n[Holding Discount Bridge]")
+            print(f"  Gross SOTP:                     {hd.gross_sotp_value:>14,}{unit}")
+            print(
+                f"  Listed Subsidiary Look-through: {hd.listed_subsidiary_lookthrough_value:>14,}{unit}"
+            )
+            print(f"  Parent Access Discount:        -{hd.parent_access_discount:>14,}{unit}")
+            print(f"  Governance Discount:           -{hd.governance_discount:>14,}{unit}")
+            print(f"  Overhang Discount:             -{hd.overhang_discount:>14,}{unit}")
+            print(f"  Net Parent Equity:              {hd.net_equity_value:>14,}{unit}")
+            for warning in hd.warnings:
+                print(f"  - {warning}")
+
     # Scenarios
     if result.scenarios:
         print("\n[시나리오 분석]")
@@ -297,6 +311,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         from engine.gap_diagnostics import format_gap_diagnostic
 
         print(format_gap_diagnostic(result.gap_diagnostic, is_listed=True))
+        if result.gap_diagnostic.primary_reason:
+            print(f"  Primary reason: {result.gap_diagnostic.primary_reason}")
+        if result.gap_diagnostic.secondary_reasons:
+            print(
+                f"  Secondary reasons: {', '.join(result.gap_diagnostic.secondary_reasons)}"
+            )
 
     # Monte Carlo
     if result.monte_carlo:

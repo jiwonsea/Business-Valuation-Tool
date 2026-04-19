@@ -27,7 +27,7 @@ publish = [
     "selenium>=4.20,<5",
 ]
 sentiment = ["transformers>=4.40,<5", "torch>=2.0,<3"]
-dev = ["pytest>=8.0,<9", "ruff>=0.4,<1"]
+dev = ["pytest>=9.0.3,<10", "ruff>=0.4,<1"]
 
 [tool.setuptools]
 packages = ["engine", "schemas", "pipeline", "ai", "db", "output", "discovery", "scheduler"]

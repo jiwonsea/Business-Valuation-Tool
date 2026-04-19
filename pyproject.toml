@@ -2,6 +2,8 @@
 name = "business-valuation-tool"
 version = "0.1.0"
 description = "AI-assisted Korean corporate valuation platform — SOTP, DCF, scenario analysis"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0,<3",

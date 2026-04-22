@@ -70,13 +70,18 @@ CREATE INDEX IF NOT EXISTS idx_profiles_company ON profiles(company_name);
 CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
 
 -- updated_at 자동 갱신 트리거
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
+-- search_path='' + fully-qualified pg_catalog.now() to satisfy Supabase linter
+-- rule 0011 (function_search_path_mutable).
+CREATE OR REPLACE FUNCTION public.update_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
-    NEW.updated_at = now();
+    NEW.updated_at = pg_catalog.now();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE TRIGGER valuations_updated_at
     BEFORE UPDATE ON valuations

@@ -82,3 +82,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
     ON valuations(company_name, analysis_date);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_company_file
     ON profiles(company_name, file_name);
+
+-- ============================================================
+-- Row Level Security (RLS)
+-- ============================================================
+-- Pattern matches migrations.sql: enable RLS, grant full access to service_role.
+-- service_role bypasses RLS automatically; anon/public access is blocked.
+
+ALTER TABLE prediction_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE backtest_outcomes    ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "service_role_all_prediction_snapshots" ON prediction_snapshots
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "service_role_all_backtest_outcomes" ON backtest_outcomes
+    FOR ALL TO service_role USING (true) WITH CHECK (true);

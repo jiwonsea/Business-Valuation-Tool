@@ -6,6 +6,15 @@
 
 KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML profiles + AI-assisted analysis. Python 3.11+.
 
+## Fast Navigation
+
+- Start with `README.md` for the module map, then read only the path relevant to the task.
+- Ignore generated outputs by default: root `*.xlsx`, `logs/`, `valuation-results/`, `test_output/`, `output/calibration/`, `.cache/`, `.claude-octopus/`.
+- For valuation math, stay inside `engine/` + `schemas/models.py`.
+- For data collection/API issues, stay inside `pipeline/` and avoid `app.py` unless the bug is UI-specific.
+- For LLM behavior, stay inside `ai/`, `pipeline/profile_generator.py`, and the prompt/validator pair.
+- For weekly automation, stay inside `scheduler/`, `discovery/`, and `db/`.
+
 ## Architecture
 
 ```
@@ -88,6 +97,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - IO contract: `ValuationInput` → `ValuationResult` (`schemas/models.py`).
 - New YAML profile fields must be Optional with defaults (backward compatibility).
 - Pydantic models are immutable inputs: never assign fields directly (`obj.field = x`). Use `obj.model_copy(update={...})` to create modified copies.
+- **Phase labels accumulate**: 새 "Phase N" 작업 시작 전 `git log` + memory로 실제 shipped 상태 확인. 사용자 프롬프트의 phase 번호가 실제 상태와 다를 수 있음 (예: "Phase 3" 요청 시 이미 Phase 1-3 완료 가능 → 새 축으로 재해석 필요).
 
 ## Testing
 

@@ -12,6 +12,21 @@ AI-powered corporate valuation platform supporting Korean (KOSPI/KOSDAQ) and US 
 - **Market data calibration**: FRED macro signals, analyst consensus, FinBERT sentiment, and options IV injected into scenario prompts to anchor LLM outputs against observable data
 - **Backtesting infrastructure**: Prediction snapshots at T0 → outcome tracking at T+3m/6m/12m → 6 calibration metrics with A/B comparison
 
+## Representative Case: SK Ecoplant
+
+`profiles/sk_ecoplant.yaml` — 1조 원 규모 CPS·RCPS 자본조달 구조의 시나리오별 가치 평가 사례. 자본구조 전제와 사업 전제를 한 모델 위에서 함께 다룬다.
+
+- **Capital structure**: CPS 6,000억 + RCPS 4,000억 (총 1조 원, FI 보유)
+- **Three scenarios** (probability-weighted):
+  - A. IPO 성공 — 전액 상환 경로 (prob 20%)
+  - B. IPO 실패 + FI 우호 — 부분 전환 협상 (prob 45%)
+  - C. IPO 실패 + FI 분쟁 — 전액 전환 강제 (prob 35%)
+- **Cross-validation**: Segment-level SOTP (HI 8.0× / GAS 10.0× / ALC 13.0× / SOL 5.0×) vs DCF
+- **Adjustments**: DLOM 20%/±5% (Monte Carlo), small-cap premium, holding-company discount
+- **Output**: Excel report with scenario tables, sensitivity, Monte Carlo (10K runs), reconciliation notes
+
+Reproduce: `python cli.py --profile profiles/sk_ecoplant.yaml --excel`
+
 ## Valuation Methods
 
 | Method | Use Case | Key Inputs |

@@ -47,8 +47,8 @@ consolidated:
     equity: 27000912
     dep: 900000
     amort: 580000
-    gross_borr: 2800000
-    net_borr: -8000000
+    gross_borr: 3205739
+    net_borr: -3849554
     de_ratio: 41.4
   2025:
     revenue: 12035007
@@ -60,7 +60,7 @@ consolidated:
     dep: 950000
     amort: 600000
     gross_borr: 2985696
-    net_borr: -27509754
+    net_borr: -5335251
     de_ratio: 38.9
 
 wacc_params:
@@ -120,7 +120,7 @@ pbv_multiple: 1.0
 
 cps_principal: 0
 cps_years: 0
-net_debt: -27509754
+net_debt: -5335251
 eco_frontier: 0
 base_year: 2025
 

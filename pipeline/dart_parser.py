@@ -162,6 +162,13 @@ def estimate_borrowings(items: list[dict]) -> dict[str, int]:
     cash = 0
 
     for item in items:
+        # Balance-sheet items only. Substring matching below would otherwise
+        # catch cash-flow line items like "단기금융상품의 감소/증가" and
+        # "사채의 발행/상환", massively overstating cash and borrowings.
+        sj = item.get("sj_div") or item.get("sj_nm", "")
+        if sj not in ("BS", "재무상태표"):
+            continue
+
         name = item.get("account_nm", "")
         amt = _to_millions(item.get("thstrm_amount", ""))
 

@@ -154,13 +154,18 @@ def get_quote_summary(ticker: str) -> dict | None:
 
     item = qr[0]
     stats = item.get("defaultKeyStatistics", {})
-    item.get("financialData", {})
+    fin = item.get("financialData", {})
+    detail = item.get("summaryDetail", {})
     price_data = item.get("price", {})
 
     def _raw(d: dict, key: str):
         v = d.get(key, {})
         return v.get("raw") if isinstance(v, dict) else v
 
+    # earningsGrowth is a fraction (0.25 == 25%); convert to percent for the
+    # relative-valuation layer, which expects growth in percent.
+    _eg = _raw(fin, "earningsGrowth")
+    _dy = _raw(detail, "dividendYield")
     return {
         "market_cap": _raw(price_data, "marketCap") or 0,
         "shares_outstanding": _raw(stats, "sharesOutstanding") or 0,
@@ -171,4 +176,10 @@ def get_quote_summary(ticker: str) -> dict | None:
         "forward_pe": _raw(stats, "forwardPE") or 0,
         "price": _raw(price_data, "regularMarketPrice") or 0,
         "currency": price_data.get("currency", "USD"),
+        # Relative-valuation diagnostics (Optional)
+        "trailing_eps": _raw(stats, "trailingEps"),
+        "forward_eps": _raw(stats, "forwardEps"),
+        "dividend_yield": (_dy * 100) if _dy is not None else None,  # fraction -> percent
+        "price_to_book": _raw(stats, "priceToBook"),
+        "earnings_growth": (_eg * 100) if _eg is not None else None,  # fraction -> percent
     }

@@ -797,8 +797,26 @@ class PeerSegmentStats(BaseModel):
 # ── Comprehensive Valuation I/O ──
 
 
+class RelativeInputs(BaseModel):
+    """Fetched market metrics feeding the diagnostic relative-valuation layer.
+
+    All Optional -- the relative layer degrades gracefully to model-derived
+    values (net_income-based EPS, model EBITDA CAGR) when these are absent.
+    Units: eps in per-share currency; dividend_yield and earnings_growth in
+    PERCENT (e.g. 12.5 == 12.5%).
+    """
+
+    trailing_eps: Optional[float] = None
+    forward_eps: Optional[float] = None
+    dividend_yield: Optional[float] = None  # percent
+    price_to_book: Optional[float] = None
+    earnings_growth: Optional[float] = None  # percent (analyst consensus)
+    growth_source: str = ""  # provenance of earnings_growth (e.g. "analyst consensus")
+
+
 class ValuationInput(BaseModel):
     company: CompanyProfile
+    draft: bool = False
     valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "rnpv" | "auto"
     industry: str = (
         ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
@@ -824,6 +842,10 @@ class ValuationInput(BaseModel):
     rcps_years: int = 0  # RCPS maturity (years from issuance)
     rcps_dividend_rate: float = 0.0  # RCPS annual dividend rate (%, e.g. 7.5)
     net_debt: int = 0  # In display units
+    market_price: Optional[float] = None  # Manual/live market price override (offline injection)
+    relative_inputs: Optional[RelativeInputs] = (
+        None  # Fetched EPS/growth/yield for diagnostic relative-valuation layer
+    )
     segment_net_debt: dict[
         str, int
     ] = {}  # {segment_code: net_debt} -- for financial subsidiary split SOTP
@@ -972,6 +994,7 @@ class QualityScore(BaseModel):
     max_score: int = 100  # 100 for listed, 75 for unlisted (before rescale)
     warnings: list[str] = []  # Korean deduction reasons
     grade: str = ""  # A/B/C/D/F
+    draft: bool = False  # True when profile still carries draft/stub markers
     # rNPV-specific sub-scores (non-zero only when primary_method == "rnpv")
     is_rnpv: bool = False  # True when primary_method == "rnpv"
     rnpv_weighted_cv: int = 0  # 0-10: CV among rNPV-appropriate methods (DCF excluded)
@@ -1002,8 +1025,38 @@ class GapDiagnostic(BaseModel):
     reconcilable: bool = True  # False = even extreme assumptions cannot bridge gap
 
 
+class RelMetric(BaseModel):
+    """A single relative-valuation diagnostic ratio (P/E, P/B, PEG, ...)."""
+
+    name: str
+    value: Optional[float] = None
+    status: str = "na"  # "ok" | "caution" | "na"
+    note: str = ""
+
+
+class RelVerdict(BaseModel):
+    """Actual multiple vs its fundamental-justified level."""
+
+    name: str  # "P/E" | "P/B"
+    actual: Optional[float] = None
+    justified: Optional[float] = None
+    gap_pct: Optional[float] = None
+    verdict: str = ""  # "저평가" | "적정" | "고평가" | "판단불가"
+    note: str = ""
+
+
+class RelativeValuation(BaseModel):
+    """Diagnostic relative-valuation layer (not a primary method)."""
+
+    ratios: list[RelMetric] = []
+    verdicts: list[RelVerdict] = []
+    growth_pct: Optional[float] = None  # Growth (%) used in PEG/PEGY/justified
+    growth_source: str = ""  # e.g. "model EBITDA CAGR"
+
+
 class ValuationResult(BaseModel):
     primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav"|"rnpv")
+    draft: bool = False
     wacc: WACCResult
     da_allocations: dict[
         int, dict[str, DAAllocation]
@@ -1019,6 +1072,7 @@ class ValuationResult(BaseModel):
     rnpv: Optional[RNPVValuationResult] = None
     holding_discount: Optional[HoldingDiscountBridge] = None
     multiples_primary: Optional[MultiplesResult] = None
+    relative_valuation: Optional[RelativeValuation] = None  # Diagnostic ratios (P/E, P/B, PEG, justified)
     cross_validations: list[CrossValidationItem] = []
     peer_stats: list[PeerSegmentStats] = []
     monte_carlo: Optional[MonteCarloResult] = None

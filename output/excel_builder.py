@@ -22,6 +22,7 @@ from .sheets.peers import sheet_peers
 from .sheets.scenarios import sheet_scenarios
 from .sheets.sensitivity import sheet_sensitivity
 from .sheets.dashboard import sheet_dashboard
+from .sheets.relative import sheet_relative
 
 
 def export(
@@ -47,6 +48,7 @@ def export(
     if ctx.result.scenarios:
         sheet_scenarios(ctx)
     sheet_sensitivity(ctx)
+    sheet_relative(ctx)
     sheet_dashboard(ctx)
 
     # Save

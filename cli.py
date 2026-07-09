@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
@@ -82,6 +83,11 @@ def _fetch_and_compare_market_price(
         except Exception as e:
             logger.debug("KRX fallback 실패 (%s): %s", vi.company.ticker, e)
 
+    # Manual/profile market price override -- used offline (sandbox) when the
+    # live fetch is unavailable. A live price, if fetched above, takes precedence.
+    if not price and getattr(vi, "market_price", None) and vi.market_price > 0:
+        price = float(vi.market_price)
+
     # Sanity check: reject invalid price values
     if price and not math.isnan(price) and price > 0:
         mc = compare_to_market(result.weighted_value, price)
@@ -91,6 +97,21 @@ def _fetch_and_compare_market_price(
             gap_ratio=mc.gap_ratio,
             flag=mc.flag,
         )
+
+        # Diagnostic relative-valuation layer needs a live price. When the profile
+        # carried no market_price, run_valuation() skipped it — recompute here now
+        # that a price is known (covers both --profile and --company entry paths).
+        if result.relative_valuation is None:
+            try:
+                from valuation_runner import _build_relative_valuation
+                from engine.wacc import calc_wacc
+
+                vi_priced = vi.model_copy(update={"market_price": float(price)})
+                result.relative_valuation = _build_relative_valuation(
+                    vi_priced, result, calc_wacc(vi_priced.wacc_params)
+                )
+            except Exception as e:  # pragma: no cover - defensive
+                logger.debug("relative valuation recompute skipped: %s", e)
 
         # ── Reverse-DCF gap diagnostics (|gap| >= 20%) ──
         _attach_gap_diagnostic(vi, result)
@@ -267,11 +288,12 @@ def main():
         "--auto", action="store_true", help="AI 자동 분석 (--company와 함께 사용)"
     )
     parser.add_argument("--excel", action="store_true", help="Excel 내보내기")
+    parser.add_argument("--json", action="store_true", help="Emit ValuationResult JSON")
     parser.add_argument("--output-dir", "-o", default=None, help="Excel 출력 디렉토리")
     parser.add_argument(
         "--market",
         default="KR",
-        choices=["KR", "US"],
+        choices=["KR", "US", "JP"],
         help="Discovery 모드 시장 선택 (기본: KR)",
     )
     parser.add_argument(
@@ -340,7 +362,8 @@ def main():
 
         if args.auto:
             return auto_analyze(args.company, args.output_dir)
-        return auto_fetch(args.company)
+        market_hint = args.market if args.market != "KR" else None
+        return auto_fetch(args.company, market_hint=market_hint)
 
     # Profile-based valuation mode
     profile_path = Path(args.profile).resolve()
@@ -359,6 +382,10 @@ def main():
         from engine.quality import calc_quality_score
 
         result.quality = calc_quality_score(vi, result)
+
+    if args.json:
+        print(json.dumps(result.model_dump(mode="json"), ensure_ascii=False, indent=2))
+        return result
 
     print_report(vi, result)
 

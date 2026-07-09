@@ -389,6 +389,46 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         if has_trading:
             print("  [T] Trading Multiple (시장가 역산)  [P] Peer/독립 추정")
 
+    # Relative valuation diagnostics (P/E, P/B, PEG/PEGY, justified multiples)
+    rv = result.relative_valuation
+    if rv and rv.ratios:
+        print("\n[상대가치 진단 배수]")
+        print(f"{'지표':<12} {'값':>10}  비고")
+        print("-" * 60)
+        for m in rv.ratios:
+            if m.value is None:
+                shown = "N/A"
+            elif m.name in ("Div Yield", "PEG", "PEGY"):
+                unit = "%" if m.name == "Div Yield" else ""
+                shown = f"{m.value:.2f}{unit}"
+            else:
+                shown = f"{m.value:.2f}x"
+            flag = "" if m.status == "ok" else f"  ⚠ {m.note}" if m.status == "caution" else f"  – {m.note}"
+            print(f"{m.name:<12} {shown:>10}{flag}")
+        if rv.verdicts:
+            print("\n  [정당배수 대비 판정]")
+            for v in rv.verdicts:
+                a = f"{v.actual:.2f}x" if v.actual is not None else "N/A"
+                j = f"{v.justified:.2f}x" if v.justified is not None else "N/A"
+                gap = f"{v.gap_pct:+.1f}%" if v.gap_pct is not None else "—"
+                print(f"  {v.name:<5} 실제 {a:>8} vs 정당 {j:>8} ({gap})  → {v.verdict}")
+        # Peer median comparison (aggregate EV/EBITDA across peer segments)
+        _peer_meds = [ps.ev_ebitda_median for ps in result.peer_stats if getattr(ps, "ev_ebitda_median", 0)]
+        _evb = next((m for m in rv.ratios if m.name == "EV/EBITDA" and m.value is not None), None)
+        if _peer_meds and _evb is not None:
+            from statistics import median as _median
+            _pm = _median(_peer_meds)
+            if _evb.value > _pm * 1.1:
+                _rel = "피어 대비 프리미엄"
+            elif _evb.value < _pm * 0.9:
+                _rel = "피어 대비 할인"
+            else:
+                _rel = "피어 수준"
+            print(f"\n  [피어 median 대비] EV/EBITDA 자사 {_evb.value:.1f}x vs 피어 {_pm:.1f}x → {_rel}")
+
+        if rv.growth_pct is not None:
+            print(f"\n  * PEG/정당배수 성장률: {rv.growth_pct:.1f}% ({rv.growth_source})")
+
     print("\n" + "=" * 60)
     print(
         f"완료! [{result.primary_method.upper()}] 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}"

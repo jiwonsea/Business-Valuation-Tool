@@ -185,6 +185,9 @@ def _resolve_ticker(ticker: str, market: str) -> str:
     """Convert to yfinance ticker format based on market."""
     if market == "KR":
         return resolve_kr_ticker(ticker)
+    if market == "JP":
+        raw = ticker.upper()
+        return raw if raw.endswith(".T") else f"{raw}.T"
     return ticker  # US: as-is
 
 
@@ -234,7 +237,7 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         try:
             t = _get_ticker_obj(resolved)
             info = _ticker_info_cache.get(resolved, {})
-            currency = info.get("currency", "USD" if market == "US" else "KRW")
+            currency = info.get("currency", "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"))
 
             inc = t.financials  # Income Statement
             bs = t.balance_sheet  # Balance Sheet
@@ -422,7 +425,19 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
 
             price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
             market_cap_raw = info.get("marketCap", 0)
-            currency = info.get("currency", "USD" if market == "US" else "KRW")
+
+            # Normalize relative-valuation growth/yield to PERCENT (RelativeInputs
+            # convention). yfinance `earningsGrowth` is a fraction (0.25 == 25%).
+            # `dividendYield` convention varies by yfinance version (fraction vs
+            # percent); use an abs<1 heuristic to coerce a fraction to percent.
+            _eg = info.get("earningsGrowth")
+            _eg_pct = round(_eg * 100, 4) if _eg is not None else None
+            _dy = info.get("dividendYield")
+            if _dy is None:
+                _dy_pct = None
+            else:
+                _dy_pct = round(_dy * 100, 4) if abs(_dy) < 1 else round(_dy, 4)
+            currency = info.get("currency", "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"))
             market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
 
             # KR: yfinance often returns price but omits marketCap/shares.
@@ -439,10 +454,17 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
                 "market_cap": market_cap,  # million KRW / $M
                 "beta": info.get("beta"),
                 "industry": info.get("industry", ""),
+                "name": info.get("longName") or info.get("shortName") or "",
                 "shares_outstanding": info.get("sharesOutstanding", 0),
                 "currency": currency,
                 "exchange": info.get("exchange", ""),
                 "exchange_code": info.get("exchangeTimezoneName", ""),
+                # Relative-valuation diagnostics (Optional; None when absent)
+                "trailing_eps": info.get("trailingEps"),
+                "forward_eps": info.get("forwardEps"),
+                "dividend_yield": _dy_pct,  # percent
+                "price_to_book": info.get("priceToBook"),
+                "earnings_growth": _eg_pct,  # percent (consensus)
             }
         except Exception as e:
             if _is_retryable(e) and attempt < _YF_MAX_RETRIES - 1:
@@ -484,6 +506,11 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
                     "currency": fallback.get("currency", "KRW"),
                     "exchange": "",
                     "exchange_code": "",
+                    "trailing_eps": fallback.get("trailing_eps"),
+                    "forward_eps": fallback.get("forward_eps"),
+                    "dividend_yield": fallback.get("dividend_yield"),
+                    "price_to_book": fallback.get("price_to_book"),
+                    "earnings_growth": fallback.get("earnings_growth"),
                 }
         except Exception as e:
             logger.warning("KRX fallback 실패 (%s): %s", resolved, e)

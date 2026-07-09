@@ -1,0 +1,78 @@
+# Test fixture for the relative-valuation diagnostic layer (engine/relative_metrics.py wiring).
+# A financial (은행) company so the PEG/PEGY guardrail returns CAUTION.
+# Carries market_price + relative_inputs (fetched trailing/forward EPS + analyst-consensus growth)
+# to exercise the full _build_relative_valuation path. Owned by tests/ (not profiles/, which
+# the weekly pipeline rewrites — see CLAUDE.md).
+
+company:
+  name: "테스트은행 (Relative Fixture)"
+  legal_status: "상장"
+  market: "KR"
+  currency: "KRW"
+  currency_unit: "백만원"
+  ticker: "900001"
+  shares_total: 400000000
+  shares_ordinary: 400000000
+  analysis_date: "2026-03-31"
+  industry: "은행"
+
+industry: "은행"
+valuation_method: "multiples"
+
+market_price: 80000
+
+relative_inputs:
+  trailing_eps: 9000.0
+  forward_eps: 10000.0
+  dividend_yield: 4.2
+  price_to_book: 0.85
+  earnings_growth: 5.5
+  growth_source: "analyst consensus"
+
+segments:
+  BANK:
+    name: "은행"
+    multiple: 6.0
+
+segment_data:
+  2025:
+    BANK: {revenue: 12000000, gross_profit: 0, op: 5000000, assets: 300000000}
+
+consolidated:
+  2024:
+    revenue: 11000000
+    op: 4600000
+    net_income: 3400000
+    assets: 285000000
+    liabilities: 250000000
+    equity: 35000000
+    dep: 200000
+    amort: 100000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 0.0
+  2025:
+    revenue: 12000000
+    op: 5000000
+    net_income: 3600000
+    assets: 300000000
+    liabilities: 262000000
+    equity: 38000000
+    dep: 220000
+    amort: 110000
+    gross_borr: 0
+    net_borr: 0
+    de_ratio: 0.0
+
+wacc_params:
+  rf: 3.5
+  erp: 7.0
+  bu: 0.90
+  de: 0.0
+  tax: 22.0
+  kd_pre: 4.5
+  eq_w: 100.0
+
+base_year: 2025
+
+scenarios: {}

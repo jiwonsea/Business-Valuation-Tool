@@ -34,6 +34,7 @@ from schemas.models import (
     NewsDriver,
     PipelineDrug,
     ValidationReport,
+    RelativeInputs,
 )
 from engine.drivers import resolve_drivers
 from engine.wacc import calc_wacc
@@ -62,6 +63,11 @@ from engine.rnpv import calc_rnpv
 from engine.holding_discount import build_holding_discount_bridge
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial, infer_valuation_bucket
+from engine.investability_gate import (
+    apply_gate_to_profile,
+    evaluate_investability,
+    gate_inputs_from_profile,
+)
 
 
 # Minimum segment asset share (%) to qualify for healthy-segment half-discount.
@@ -361,6 +367,10 @@ def load_profile(path: str) -> ValuationInput:
         rcps_years=raw.get("rcps_years", 0),
         rcps_dividend_rate=raw.get("rcps_dividend_rate", 0.0),
         net_debt=raw.get("net_debt", 0),
+        market_price=raw.get("market_price"),
+        relative_inputs=RelativeInputs(**raw["relative_inputs"])
+        if raw.get("relative_inputs")
+        else None,
         segment_net_debt=raw.get("segment_net_debt", {}),
         eco_frontier=raw.get("eco_frontier", 0),
         peers=peers,
@@ -460,8 +470,179 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
 
     # Quality scoring (pure function, zero IO)
     result.quality = calc_quality_score(vi, result)
+    result.draft = vi.draft
+    result = _apply_investability_gate(vi, result)
+
+    # Diagnostic relative-valuation layer (P/E, P/B, PEG/PEGY, justified multiples).
+    # Purely additive; never blocks a valuation if inputs are missing.
+    try:
+        result.relative_valuation = _build_relative_valuation(vi, result, wacc_result)
+    except Exception as e:  # pragma: no cover - defensive
+        logger.debug("relative valuation skipped: %s", e)
 
     return result
+
+
+def _dcf_per_share(vi: ValuationInput, result: ValuationResult) -> float | None:
+    if result.dcf is None or result.dcf.ev_dcf <= 0:
+        return None
+    equity_value = result.dcf.ev_dcf - vi.net_debt
+    if vi.company.shares_outstanding <= 0:
+        return None
+    return per_share(equity_value, vi.company.unit_multiplier, vi.company.shares_outstanding)
+
+
+def _peer_median_per_share(result: ValuationResult) -> float | None:
+    values = sorted(
+        float(item.per_share)
+        for item in result.cross_validations
+        if item.per_share and item.per_share > 0 and item.method.upper() != "DCF"
+    )
+    if not values:
+        return None
+    mid = len(values) // 2
+    if len(values) % 2:
+        return values[mid]
+    return (values[mid - 1] + values[mid]) / 2.0
+
+
+def _raw_profile_for_gate(vi: ValuationInput, result: ValuationResult) -> dict:
+    segments = {
+        code: {
+            **info,
+            "revenue": vi.segment_data.get(vi.base_year, {}).get(code, {}).get("revenue"),
+            "multiple": vi.multiples.get(code),
+        }
+        for code, info in vi.segments.items()
+    }
+    return {
+        "primary_method": result.primary_method,
+        "segments": segments,
+        "optionality_flag": any(info.get("optionality") for info in vi.segments.values()),
+    }
+
+
+def _apply_investability_gate(
+    vi: ValuationInput,
+    result: ValuationResult,
+) -> ValuationResult:
+    cons = vi.consolidated.get(vi.base_year, {})
+    raw = _raw_profile_for_gate(vi, result)
+    inputs = gate_inputs_from_profile(
+        raw,
+        dcf_value=_dcf_per_share(vi, result),
+        peer_median_value=_peer_median_per_share(result),
+        quality_grade=result.quality.grade if result.quality else None,
+        consolidated_revenue=cons.get("revenue"),
+        text="",
+    )
+    report = evaluate_investability(inputs)
+    # NOTE: tail reconstructed from gate-module contract (report.draft => mark draft).
+    #       Original observed up to evaluate_investability(); rest inferred.
+    if report.draft:
+        result.draft = True
+        if report.blockers:
+            logger.info(
+                "investability gate: not investable — %s",
+                "; ".join(report.blockers),
+            )
+    return result
+
+
+def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_result):
+    """Assemble diagnostic relative-valuation ratios from live inputs.
+
+    Returns None when market price or share count is unavailable (ratios are
+    undefined without a current price). Sector guardrails suppress PEG for
+    financials/cyclicals/low-growth names (see engine/relative_metrics.py).
+    """
+    from engine import relative_metrics as rm
+    from engine.growth import calc_ebitda_growth
+    from engine.distress import _CYCLICAL_KEYWORDS
+    from schemas.models import RelativeValuation, RelMetric, RelVerdict
+
+    price = vi.market_price
+    company = vi.company
+    shares = company.shares_outstanding
+    if not price or price <= 0 or shares <= 0:
+        return None
+
+    um = company.unit_multiplier
+    cons = vi.consolidated.get(vi.base_year, {})
+    net_income = cons.get("net_income", 0)
+    equity = cons.get("equity", 0)
+    revenue = cons.get("revenue", 0)
+    ebitda = cons.get("op", 0) + cons.get("dep", 0) + cons.get("amort", 0)
+    net_debt = vi.net_debt
+    ke = wacc_result.ke
+
+    market_cap = price * shares / um
+    ri = vi.relative_inputs
+    # Trailing EPS: prefer fetched (diluted, continuing-ops) over model-derived.
+    eps = ri.trailing_eps if (ri and ri.trailing_eps is not None) else per_share(net_income, um, shares)
+    bvps = per_share(equity, um, shares)
+
+    industry = (vi.industry or company.industry or "")
+    financial = result.primary_method in ("ddm", "rim") or is_financial(industry)
+    cyclical = any(kw in industry.lower() for kw in _CYCLICAL_KEYWORDS)
+
+    # Growth for PEG/PEGY/justified: prefer analyst consensus, fall back to model CAGR.
+    if ri and ri.earnings_growth is not None:
+        growth_pct = round(ri.earnings_growth, 2)
+        growth_source = ri.growth_source or "analyst consensus"
+    else:
+        g_dec = calc_ebitda_growth(vi.consolidated)
+        growth_pct = round(g_dec * 100, 2) if g_dec is not None else None
+        growth_source = "model EBITDA CAGR"
+
+    m_pe = rm.trailing_pe(price, eps)
+    m_pb = rm.price_to_book(price, bvps)
+    ratios = [
+        m_pe,
+        m_pb,
+        rm.ev_ebitda(market_cap, net_debt, ebitda),
+        rm.ev_sales(market_cap, net_debt, revenue),
+    ]
+    # Forward P/E when a forward EPS estimate is available.
+    fwd_eps = ri.forward_eps if ri else None
+    if fwd_eps is not None:
+        ratios.insert(1, rm.forward_pe(price, fwd_eps))
+
+    # Dividend yield: DPS-derived (reliable) preferred; else fetched yield.
+    dps = vi.ddm_params.dps if vi.ddm_params else None
+    m_dy = None
+    if dps is not None:
+        m_dy = rm.dividend_yield(dps, price)
+    elif ri and ri.dividend_yield is not None:
+        m_dy = rm.RelativeMetric("Div Yield", round(ri.dividend_yield, 2), rm.OK, "시장 데이터")
+    if m_dy is not None:
+        ratios.append(m_dy)
+
+    div_y = m_dy.value if (m_dy and m_dy.value is not None) else 0.0
+    ratios.append(rm.peg(m_pe.value, growth_pct, is_financial=financial, is_cyclical=cyclical, growth_source=growth_source))
+    ratios.append(rm.pegy(m_pe.value, growth_pct, div_y, is_financial=financial, is_cyclical=cyclical, growth_source=growth_source))
+
+    roe = (net_income / equity * 100) if equity > 0 else None
+    payout = vi.rim_params.payout_ratio if vi.rim_params else None
+    just_g = growth_pct if growth_pct is not None else 0.0
+    verdicts = []
+    if payout:
+        jpe = rm.justified_pe(payout, just_g, ke)
+        if jpe.is_meaningful:
+            v = rm.multiple_verdict("P/E", m_pe.value, jpe.value)
+            verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
+    if roe is not None:
+        jpb = rm.justified_pb(roe, just_g, ke)
+        if jpb.is_meaningful:
+            v = rm.multiple_verdict("P/B", m_pb.value, jpb.value)
+            verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
+
+    return RelativeValuation(
+        ratios=[RelMetric(name=m.name, value=m.value, status=m.status, note=m.note) for m in ratios],
+        verdicts=verdicts,
+        growth_pct=growth_pct,
+        growth_source=growth_source,
+    )
 
 
 def _apply_holding_discount_to_scenario(

@@ -12,7 +12,7 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from . import dart_client, dart_parser, edgar_client, edgar_parser, yahoo_finance
+from . import dart_client, dart_parser, edgar_client, edgar_parser, edinet_client, yahoo_finance
 
 try:
     from . import yfinance_fetcher
@@ -21,16 +21,36 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Relative-valuation diagnostic fields captured from market-data fetchers.
+_REL_METRIC_KEYS = (
+    "trailing_eps",
+    "forward_eps",
+    "dividend_yield",
+    "price_to_book",
+    "earnings_growth",
+)
+
+
+def _extract_rel_metrics(mkt: dict) -> dict:
+    """Pull relative-valuation diagnostics from a market-data dict (Optional keys).
+
+    Returns only present (non-None) values so the YAML profile stays terse and
+    absent fields fall back to model-derived values downstream.
+    """
+    out = {k: mkt.get(k) for k in _REL_METRIC_KEYS if mkt.get(k) is not None}
+    return out
+
 
 class CompanyIdentity:
     """Company identification result."""
 
     def __init__(self, name: str, market: str, **kwargs):
         self.name = name
-        self.market = market  # "KR" | "US"
+        self.market = market  # "KR" | "US" | "JP"
         self.ticker = kwargs.get("ticker")
         self.cik = kwargs.get("cik")
         self.corp_code = kwargs.get("corp_code")
+        self.edinet_code = kwargs.get("edinet_code")
         self.legal_status = kwargs.get(
             "legal_status", "상장" if market == "US" else "비상장"
         )
@@ -43,6 +63,8 @@ class CompanyIdentity:
             return (
                 f"<{self.name} | KR | {self.legal_status} | corp_code={self.corp_code}>"
             )
+        if self.market == "JP":
+            return f"<{self.name} | JP | ticker={self.ticker} | EDINET={self.edinet_code}>"
         status = " | OTC" if self.legal_status == "OTC" else ""
         return f"<{self.name} | US{status} | ticker={self.ticker} | CIK={self.cik}>"
 
@@ -55,6 +77,11 @@ def _is_korean(text: str) -> bool:
 def _is_likely_ticker(text: str) -> bool:
     """1-5 uppercase letters likely indicates a ticker symbol."""
     return bool(re.match(r"^[A-Z]{1,5}$", text.strip()))
+
+
+def _is_jp_ticker(text: str) -> bool:
+    raw = text.strip().upper()
+    return bool(re.match(r"^\d{4}(\.T)?$", raw))
 
 
 class DataFetcher:
@@ -121,8 +148,12 @@ class DataFetcher:
             result = self._identify_kr(query)
         elif market_hint == "US":
             result = self._identify_us(query)
+        elif market_hint == "JP":
+            result = self._identify_jp(query)
         elif _is_korean(query):
             result = self._identify_kr(query)
+        elif _is_jp_ticker(query):
+            result = self._identify_jp(query)
         elif _is_likely_ticker(query):
             result = self._identify_us(query) or self._identify_kr(query)
         else:
@@ -208,6 +239,37 @@ class DataFetcher:
             industry=industry,
         )
 
+    def _identify_jp(self, query: str) -> CompanyIdentity | None:
+        """Identify Japanese listed company by 4-digit securities code."""
+        sec_code = query.strip().upper().removesuffix(".T")
+        if not re.match(r"^\d{4}$", sec_code):
+            return None
+        edinet_code = None
+        try:
+            edinet_code = edinet_client.get_edinet_code(sec_code)
+        except Exception as e:
+            logger.debug("EDINET code lookup failed (%s): %s", sec_code, e)
+
+        name = f"{sec_code}.T"
+        industry = ""
+        if yfinance_fetcher:
+            try:
+                mkt = yfinance_fetcher.fetch_market_data(sec_code, "JP")
+                if mkt:
+                    name = mkt.get("name") or name
+                    industry = mkt.get("industry", "")
+            except Exception as e:
+                logger.debug("yfinance JP identify failed (%s): %s", sec_code, e)
+
+        return CompanyIdentity(
+            name=name,
+            market="JP",
+            ticker=f"{sec_code}.T",
+            edinet_code=edinet_code,
+            legal_status="listed",
+            industry=industry,
+        )
+
     def fetch_financials(
         self,
         identity: CompanyIdentity,
@@ -226,6 +288,8 @@ class DataFetcher:
 
         if identity.market == "US":
             result = self._fetch_us(identity, years)
+        elif identity.market == "JP":
+            result = self._fetch_jp(identity, years)
         else:
             result = self._fetch_kr(identity, years)
 
@@ -255,6 +319,28 @@ class DataFetcher:
         if not identity.cik:
             raise ValueError(f"CIK 없음: {identity.name}")
         return edgar_parser.parse_financials(identity.cik, years)
+
+    def _fetch_jp(
+        self,
+        identity: CompanyIdentity,
+        years: list[int] | None,
+    ) -> dict[int, dict]:
+        """Japanese company financials: EDINET primary, yfinance fallback."""
+        sec_code = (identity.ticker or "").upper().removesuffix(".T")
+        if sec_code:
+            try:
+                data = edinet_client.fetch_financials(sec_code, years)
+                if data:
+                    logger.info("EDINET financials fetched: %s (%d years)", identity.name, len(data))
+                    return data
+            except Exception as e:
+                logger.debug("EDINET financials failed, yfinance fallback: %s", e)
+
+        if identity.ticker and yfinance_fetcher:
+            yf_data = yfinance_fetcher.fetch_financials(identity.ticker, "JP")
+            if yf_data:
+                return yf_data
+        return {}
 
     def _fetch_kr(
         self,
@@ -314,6 +400,8 @@ class DataFetcher:
 
         if identity.market == "US":
             result = self._fetch_us_shares(identity)
+        elif identity.market == "JP":
+            result = self._fetch_jp_shares(identity)
         else:
             result = self._fetch_kr_shares(identity)
 
@@ -347,6 +435,7 @@ class DataFetcher:
                         if mkt.get("shares_outstanding") and not result["shares_total"]:
                             result["shares_total"] = mkt["shares_outstanding"]
                             result["shares_ordinary"] = mkt["shares_outstanding"]
+                        result["rel_metrics"] = _extract_rel_metrics(mkt)
                 except Exception:
                     pass
             if not result.get("price"):
@@ -358,6 +447,32 @@ class DataFetcher:
                         result["shares_total"] = summary["shares_outstanding"]
                         result["shares_ordinary"] = summary["shares_outstanding"]
 
+        return result
+
+    def _fetch_jp_shares(self, identity: CompanyIdentity) -> dict:
+        """JP listed shares and market data from yfinance."""
+        result = {
+            "shares_total": 0,
+            "shares_ordinary": 0,
+            "shares_preferred": 0,
+            "treasury_shares": 0,
+        }
+        if identity.ticker and yfinance_fetcher:
+            try:
+                mkt = yfinance_fetcher.fetch_market_data(identity.ticker, "JP")
+                if mkt:
+                    result["price"] = mkt.get("price", 0)
+                    result["currency"] = mkt.get("currency", "JPY")
+                    if mkt.get("beta") is not None:
+                        result["beta"] = mkt["beta"]
+                    if mkt.get("market_cap"):
+                        result["market_cap"] = mkt["market_cap"]
+                    shares = mkt.get("shares_outstanding", 0)
+                    result["shares_total"] = shares
+                    result["shares_ordinary"] = shares
+                    result["rel_metrics"] = _extract_rel_metrics(mkt)
+            except Exception as e:
+                logger.debug("yfinance JP market data failed (%s): %s", identity.ticker, e)
         return result
 
     def _fetch_kr_shares(self, identity: CompanyIdentity) -> dict:
@@ -385,6 +500,7 @@ class DataFetcher:
                             result["beta"] = mkt["beta"]
                         if mkt.get("market_cap"):
                             result["market_cap"] = mkt["market_cap"]
+                        result["rel_metrics"] = _extract_rel_metrics(mkt)
                 except Exception as e:
                     logger.debug("yfinance KR 조회 실패 (%s): %s", identity.ticker, e)
 
@@ -430,6 +546,8 @@ class DataFetcher:
                         if not result.get("price") and summary.get("price"):
                             result["price"] = summary["price"]
                             result["currency"] = "KRW"
+                        if "rel_metrics" not in result:
+                            result["rel_metrics"] = _extract_rel_metrics(summary)
                 except Exception as e:
                     logger.debug(
                         "Yahoo KR 주식수 조회 실패 (%s): %s", identity.ticker, e

@@ -59,7 +59,7 @@ def save_valuation(
         logger.info("Upserted valuation %s for %s", uid, vi.company.name)
         return uid
     except Exception:
-        logger.exception("Failed to save valuation for %s", vi.company.name)
+        logger.warning("Failed to save valuation for %s", vi.company.name)
         return None
 
 
@@ -91,7 +91,7 @@ def list_valuations(
     try:
         return query.execute().data
     except Exception:
-        logger.exception("Failed to list valuations")
+        logger.warning("Failed to list valuations")
         return []
 
 
@@ -111,7 +111,7 @@ def get_valuation(valuation_id: str) -> Optional[dict]:
         )
         return resp.data
     except Exception:
-        logger.exception("Failed to get valuation %s", valuation_id)
+        logger.warning("Failed to get valuation %s", valuation_id)
         return None
 
 
@@ -125,7 +125,7 @@ def delete_valuation(valuation_id: str) -> bool:
         client.table("valuations").delete().eq("id", valuation_id).execute()
         return True
     except Exception:
-        logger.exception("Failed to delete valuation %s", valuation_id)
+        logger.warning("Failed to delete valuation %s", valuation_id)
         return False
 
 
@@ -158,7 +158,7 @@ def save_ai_analysis(
         logger.info("Saved AI analysis [%s] %s for %s", step, uid, company_name)
         return uid
     except Exception:
-        logger.exception("Failed to save AI analysis [%s] for %s", step, company_name)
+        logger.warning("Failed to save AI analysis [%s] for %s", step, company_name)
         return None
 
 
@@ -186,7 +186,7 @@ def list_ai_analyses(
     try:
         return query.execute().data
     except Exception:
-        logger.exception("Failed to list AI analyses")
+        logger.warning("Failed to list AI analyses")
         return []
 
 
@@ -227,7 +227,7 @@ def save_profile(
             logger.info("Inserted profile %s for %s (fallback)", uid, company_name)
             return uid
         except Exception:
-            logger.exception("Failed to save profile for %s", company_name)
+            logger.warning("Failed to save profile for %s", company_name)
             return None
 
 
@@ -252,7 +252,7 @@ def list_profiles(
     try:
         return query.execute().data
     except Exception:
-        logger.exception("Failed to list profiles")
+        logger.warning("Failed to list profiles")
         return []
 
 
@@ -268,7 +268,7 @@ def get_profile(profile_id: str) -> Optional[dict]:
         )
         return resp.data
     except Exception:
-        logger.exception("Failed to get profile %s", profile_id)
+        logger.warning("Failed to get profile %s", profile_id)
         return None
 
 
@@ -287,7 +287,7 @@ def save_discovery_run(run_data: dict) -> Optional[str]:
         logger.info("Created discovery run %s", uid)
         return uid
     except Exception:
-        logger.exception("Failed to save discovery run")
+        logger.warning("Failed to save discovery run")
         return None
 
 
@@ -301,7 +301,7 @@ def update_discovery_run(run_id: str, updates: dict) -> bool:
         client.table("discovery_runs").update(updates).eq("id", run_id).execute()
         return True
     except Exception:
-        logger.exception("Failed to update discovery run %s", run_id)
+        logger.warning("Failed to update discovery run %s", run_id)
         return False
 
 
@@ -325,7 +325,7 @@ def list_discovery_runs(limit: int = 10) -> list[dict]:
         )
         return resp.data
     except Exception:
-        logger.exception("Failed to list discovery runs")
+        logger.warning("Failed to list discovery runs")
         return []
 
 
@@ -352,7 +352,7 @@ def save_delivery_log(log_data: dict) -> Optional[str]:
         logger.info("Saved delivery log %s for %s", uid, log_data.get("week_label"))
         return uid
     except Exception:
-        logger.exception("Failed to save delivery log")
+        logger.warning("Failed to save delivery log")
         return None
 
 
@@ -373,5 +373,5 @@ def get_latest_delivery(week_label: str) -> Optional[dict]:
         )
         return resp.data[0] if resp.data else None
     except Exception:
-        logger.exception("Failed to get delivery log for %s", week_label)
+        logger.warning("Failed to get delivery log for %s", week_label)
         return None

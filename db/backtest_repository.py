@@ -118,7 +118,7 @@ def list_prediction_snapshots(
     try:
         return query.execute().data
     except Exception:
-        logger.exception("Failed to list prediction snapshots")
+        logger.warning("Failed to list prediction snapshots")
         return []
 
 
@@ -138,7 +138,7 @@ def get_snapshot_by_valuation(valuation_id: str) -> Optional[dict]:
         )
         return resp.data[0] if resp.data else None
     except Exception:
-        logger.exception("Failed to get snapshot for valuation %s", valuation_id)
+        logger.warning("Failed to get snapshot for valuation %s", valuation_id)
         return None
 
 
@@ -161,7 +161,7 @@ def save_backtest_outcome(data: dict) -> Optional[str]:
         logger.info("Upserted backtest outcome %s", uid)
         return uid
     except Exception:
-        logger.exception("Failed to save backtest outcome")
+        logger.warning("Failed to save backtest outcome")
         return None
 
 
@@ -186,7 +186,7 @@ def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
             .execute()
         )
     except Exception:
-        logger.exception("Failed to update backtest prices for %s", outcome_id)
+        logger.warning("Failed to update backtest prices for %s", outcome_id)
         return False
 
     affected = len(resp.data) if getattr(resp, "data", None) else 0
@@ -218,7 +218,7 @@ def get_outcome_by_snapshot(snapshot_id: str) -> Optional[dict]:
         )
         return resp.data[0] if resp.data else None
     except Exception:
-        logger.exception("Failed to get outcome for snapshot %s", snapshot_id)
+        logger.warning("Failed to get outcome for snapshot %s", snapshot_id)
         return None
 
 
@@ -301,5 +301,5 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
 
         return results
     except Exception:
-        logger.exception("Failed to list outcomes needing refresh")
+        logger.warning("Failed to list outcomes needing refresh")
         return []

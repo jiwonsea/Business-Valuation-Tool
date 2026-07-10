@@ -239,11 +239,6 @@ peers:
   notes: Direct competitor in consumer GPU market. Similar gaming hardware focus.
     AMD consolidated multiple ~18x, gaming division estimated at 14-15x due to lower
     margins.
-- name: Intel Arc Graphics
-  segment_code: SEG2
-  ev_ebitda: 11.3
-  notes: Emerging consumer GPU competitor. Lower multiple reflects market share and
-    profitability challenges. Integrated into Intel's broader semiconductor valuation.
 - name: Qualcomm Inc. (Gaming SoC)
   segment_code: SEG2
   ev_ebitda: 13.8
@@ -282,18 +277,7 @@ peers:
   ev_ebitda: 26.8
   notes: EDA software for chip design. Similar professional visualization/design tool
     focus. Premium multiple reflects software business model and high margins.
-- name: SK텔레콤 (SK Telecom) / 현대모비스 (Hyundai Mobis)
-  segment_code: SEG3
-  ev_ebitda: 7.3
-  notes: Korean automotive electronics exposure. Hyundai Mobis involved in automotive
-    systems. Lower multiple reflects broader automotive/electronics diversification
-    vs. pure semiconductor focus.
-- name: Xilinx (now AMD subsidiary)
-  segment_code: SEG3
-  ev_ebitda: 16.9
-  notes: FPGA & adaptive computing for automotive/industrial. Professional visualization
-    & embedded systems focus. Pre-acquisition multiple ~17x reflected specialized
-    semiconductor premium.
+
 news_key_issues: '- [기회] NVIDIA, Microsoft, AWS가 군사용 AI 기술 확장에 관한 계약 체결 (2026-05-01)
 
   - [기회] NVIDIA의 Nemotron 3 Nano Omni 모델 출시로 효율적인 AI 에이전트 개발 가능 (2026-04-28)

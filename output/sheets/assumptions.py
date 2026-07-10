@@ -69,22 +69,22 @@ def sheet_assumptions(ctx: Ctx):
         r += 1
         # Market-specific descriptions
         mkt = ctx.vi.company.market
-        rf_note = "한국 국고채 10Y" if mkt == "KR" else "US Treasury 10Y"
-        erp_note = "한국 시장 6~8% 중간값" if mkt == "KR" else "US ERP (Damodaran)"
-        # Peer description from profile peers
-        peer_segments = set()
-        for p in ctx.vi.peers:
-            peer_segments.add(p.segment_code)
-        bu_note = (
-            f"{'+'.join(sorted(peer_segments))} Peer 평균"
-            if peer_segments
-            else "Peer 평균"
+        # Neutral provenance labels: these are profile INPUTS, not values the
+        # engine derived/verified. Do not assert an unverified source
+        # (CODEX backlog review P7, 2026-07-11). Structured provenance
+        # (assumption_sources map) is a separate backlog item.
+        rf_note = (
+            "기준일 시장 입력 (국고채 10Y)"
+            if mkt == "KR"
+            else "기준일 시장 입력 (UST 10Y)"
         )
+        erp_note = "입력 가정"
+        bu_note = "입력 가정"
         wacc_params = [
             ("무위험이자율 (Rf)", f"{wp.rf:.2f}%", rf_note),
             ("주식위험프리미엄 (ERP)", f"{wp.erp:.2f}%", erp_note),
             ("Unlevered Beta (βu)", f"{wp.bu:.3f}", bu_note),
-            ("D/E Ratio", f"{wp.de:.1f}%", f"{ctx.by}년말 실적"),
+            ("D/E Ratio", f"{wp.de:.1f}%", "최근 보고 기준"),
             (
                 "법인세율",
                 f"{wp.tax:.1f}%",
@@ -97,9 +97,9 @@ def sheet_assumptions(ctx: Ctx):
                 "Rf + βL × ERP"
                 + (f" + SP {wp.size_premium:.1f}%" if wp.size_premium > 0 else ""),
             ),
-            ("세전 타인자본비용 (Kd)", f"{wp.kd_pre:.2f}%", "신용등급 기반"),
+            ("세전 타인자본비용 (Kd)", f"{wp.kd_pre:.2f}%", "입력 가정"),
             ("세후 타인자본비용", f"{w.kd_at:.2f}%", "Kd × (1-t)"),
-            ("자기자본 비중", f"{wp.eq_w:.1f}%", f"{ctx.by}년말"),
+            ("자기자본 비중", f"{wp.eq_w:.1f}%", "최근 보고 기준"),
             ("WACC", f"{w.wacc:.2f}%", "Ke×E% + Kd(세후)×D%"),
         ]
         # Insert size premium row after Ke if applicable

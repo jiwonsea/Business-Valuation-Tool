@@ -111,3 +111,42 @@ P1은 데이터 신뢰성(전 종목 오염 개연성), P2는 이미 배포된 q
 
 engine/ 순수함수 유지 · Pydantic 불변(model_copy) · 신규 YAML 필드는 Optional+default(하위호환) ·
 LLM 쿼터 회사당 ≤4콜 · 기존 프로파일 수치 완전 불변 가드(P2/P4/P5) · tests/fixtures 분리 원칙.
+
+---
+
+## 개정 1 (2026-07-11) — CODEX 설계 평가 결과 확정
+
+판정: P1·P2·P6 착수 승인 / P4 baseline audit 조건부 승인 / P3 공통 driver builder 설계 후 승인 /
+**P5 현 스케치 반려**(재설계) / P7 중립 문구 즉시 수정. 권장 순서: P1 → P2 → P6(차기 10-Q 전 시한) → P4 → P3 → P5.
+
+**설계 확정 사항 (원 스케치 대비 변경).**
+- P1: "티커 미확인 즉시 거부" 폐기 → 검증 등급제(verified/unresolved/rejected/stale). ticker cache는 전역
+  registry가 아니므로 캐시 미적중은 unresolved 경고 유지. '/' 패턴 무조건 거부 금지(Berkshire / Class B 오탐).
+  M&A 블랙리스트는 일회성 정리용, 영구 계약은 listing_status/acquired_by/status_as_of 로컬 registry.
+  PeerCompany에 ticker/as_of/listing_status/validation_status Optional 4필드. LLM 추가 호출 0건 제약.
+- P2: 방법별 개별 `*_source` 필드 폐기 → `cross_validation_sources: dict[str, Literal["trading","peer","manual"]]`
+  단일 맵. CrossValidationItem.source는 Optional[Literal]. 명시 source > 휴리스틱 폴백(None일 때만).
+  quality/콘솔/Excel이 동일 helper 사용. 잘못된 source 문자열은 로딩 실패.
+- P3: draw별 엔진 호출 금지 → multinomial(n, probs)로 시나리오별 표본 수 배분 후 벡터 3회 실행·concat.
+  선행 조건: `_build_scenario_mc_input()` 공통 helper로 runtime scenario와 MC scenario의 driver 적용 계약
+  통일(현재 wacc_adj·market_sentiment_pct·segment_method_override 등이 시나리오 MC에 미반영 의심 — 별도 확인).
+  결과 슬롯 분리: monte_carlo_base(기존 유지) + monte_carlo_mixture. 수용: mixture mean=시나리오 가중 ±1%,
+  seed 재현, NVDA TTM ~164/FY27E ~196 재현.
+- P4: 소비처 중앙화 `_effective_net_income(cons)` helper (`is not None` 필수 — or는 명시적 0 오처리).
+  normalized 우선: P/E·상대가치 EPS·normalized ROE/justified P/B·RIM forecast. 정책 결정 필요: auto method
+  selection·금융주 진단·backtest feature. 구현 전 전 종목 method/가중치 baseline audit + 금융 fixture로
+  method 전환 의도 테스트. DB에는 GAAP·normalized 병행 저장 + 사용값 표시.
+- P5 (반려 사유): EBITDA 단일 override는 revenue 경로·ΔNWC·margin·할인기간(9개월 stub에 1년 DF)과 불일치.
+  재설계: `explicit_forecasts: list[DCFExplicitForecast]` (period_fraction/revenue/ebitda) + fractional
+  discount factor. "기존 45% 방식 ±3%" 수용기준 폐기 — 더 엄밀한 방식은 달라지는 게 정상, bridge로 설명.
+- P6: SEG1~3 의미 재사용 금지 → 신규 코드 SEG_HYPERSCALE/SEG_ACIE/SEG_EDGE/SEG_OPT_*. 구조화
+  `segment_taxonomy`(version/effective_from/predecessor_mapping) 추가. 구·신 taxonomy revenue tie-out 제공.
+- P7: 문구 중립화만 즉시, 구조화 provenance(`assumption_sources`)는 별도 백로그.
+
+**즉시 조치 완료 (2026-07-11, 커밋 3ec2118).** P7 반영: `output/sheets/assumptions.py` — βu "Peer 평균"→
+"입력 가정", D/E·자기자본비중 "{연도}년말"→"최근 보고 기준", ERP "US ERP (Damodaran)"→"입력 가정",
+Kd "신용등급 기반"→"입력 가정", rf→"기준일 시장 입력 (UST/국고채 10Y)". 모델 xlsx 재생성·동결 사본 갱신 확인.
+
+**구현 Phase (CODEX 권장).** Phase 1: P1+P7(P7 완료). Phase 2: P2. Phase 3: P6(시한: 차기 10-Q).
+Phase 4: P4(+금융주 method-selection 테스트). Phase 5: P3. 보류: P5 재설계.
+

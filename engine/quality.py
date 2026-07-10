@@ -45,6 +45,14 @@ _WACC_RANGES = {
         "erp": (4.0, 7.0),
         "beta": (0.3, 2.0),
         "kd_pre": (2.0, 8.0),
+        "wacc": (4.0, 18.0),
+    },
+    "JP": {
+        "rf": (0.0, 2.0),
+        "erp": (4.0, 7.0),
+        "beta": (0.3, 2.0),
+        "kd_pre": (0.5, 6.0),
+        "wacc": (2.5, 12.0),
     },
 }
 
@@ -57,6 +65,21 @@ def calc_quality_score(
 ) -> "QualityScore":
     """Compute composite quality score (0-100) from valuation I/O."""
     from schemas.models import QualityScore
+
+    if getattr(vi, "draft", False):
+        return QualityScore(
+            total=0,
+            cv_convergence=0,
+            wacc_plausibility=0,
+            scenario_consistency=0,
+            market_alignment=0,
+            max_score=100,
+            warnings=[
+                "Draft profile: TODO/stub assumptions remain; not investable until curated."
+            ],
+            grade="F",
+            draft=True,
+        )
 
     is_listed = vi.company.legal_status in ("상장", "listed")
     market = vi.company.market
@@ -72,7 +95,20 @@ def calc_quality_score(
         cv_warns = wcv_warns + pd_warns + pg_warns + sc_cov_warns
     else:
         wcv_score = pd_score = pg_score = sc_cov_score = 0
-        cv_score, cv_warns = _cv_convergence_score(result.cross_validations)
+        _cv_exclude = (
+            _OPTIONALITY_EXCLUDED_CV_METHODS
+            if _has_optionality_segments(result)
+            else None
+        )
+        _mkt = getattr(result, "market_comparison", None)
+        _trading = _trading_anchored_methods(
+            result.cross_validations, _mkt.market_price if _mkt else 0.0
+        )
+        cv_score, cv_warns = _cv_convergence_score(
+            result.cross_validations,
+            exclude_methods=_cv_exclude,
+            trading_methods=_trading or None,
+        )
 
     wacc_score, wacc_warns = _wacc_plausibility_score(
         result.wacc, vi.wacc_params, market
@@ -122,17 +158,138 @@ def calc_quality_score(
     )
 
 
+def _has_optionality_segments(result: "ValuationResult") -> bool:
+    """True when any SOTP segment is valued by ev_revenue (pre-profit optionality).
+
+    Mirrors ``infer_valuation_bucket(has_optionality_segments=...)``. For these
+    names DCF/EBITDA cross-checks understate value (growth optionality the market
+    prices via high P/E is invisible to discounted normalized cash flow), so they
+    are excluded from the convergence metric -- the same treatment rNPV already
+    gives DCF via ``_RNPV_EXCLUDED_CV_METHODS``.
+    """
+    return any(
+        getattr(seg, "method", "") == "ev_revenue" for seg in result.sotp.values()
+    )
+
+
+# Cross-check methods that structurally miss growth-option value for optionality
+# names (parallel to _RNPV_EXCLUDED_CV_METHODS for pharma pipelines).
+_OPTIONALITY_EXCLUDED_CV_METHODS = {"DCF (FCFF)"}
+
+# Multiple-based cross-checks that may be loaded as trading multiples (시장가
+# 역산). A market-derived multiple reproduces the market price by construction,
+# so its "agreement" with the price -- and with other trading multiples -- is
+# circular, not independent evidence.
+_TRADING_MULT_METHODS = {"P/E", "EV/Revenue", "P/BV", "P/S", "P/FFO"}
+
+
+def _trading_anchored_methods(
+    cross_vals: list["CrossValidationItem"],
+    market_price: float,
+    tol: float = 0.05,
+) -> set[str]:
+    """Methods whose per-share value re-derives the observed market price.
+
+    Counting trading-multiple agreement as convergence double-rewards the market
+    price already scored by ``_market_alignment_score`` (CODEX finding (d),
+    2026-07-10). Mirrors the ±5% [T]-tag heuristic in
+    ``output/console_report.py`` so display and scoring stay consistent.
+    Returns an empty set when no market price is available (unlisted/offline
+    profiles keep their previous scores unchanged).
+    """
+    if not market_price or market_price <= 0:
+        return set()
+    return {
+        cv.method
+        for cv in cross_vals
+        if cv.method in _TRADING_MULT_METHODS
+        and cv.per_share > 0
+        and abs(cv.per_share - market_price) / market_price < tol
+    }
+
+
 def _cv_convergence_score(
     cross_vals: list["CrossValidationItem"],
+    exclude_methods: "frozenset[str] | set[str] | None" = None,
+    trading_methods: "frozenset[str] | set[str] | None" = None,
 ) -> tuple[int, list[str]]:
     """Score cross-validation convergence (0-25).
 
     Measures coefficient of variation across per-share values from different methods.
     Tighter convergence = higher confidence that the valuation is internally consistent.
+
+    ``exclude_methods`` drops named methods (e.g. ``{"DCF (FCFF)"}`` for
+    optionality-heavy names) from the convergence set before scoring, so a method
+    known to misprice growth optionality does not spuriously tank convergence.
+
+    ``trading_methods`` drops market-anchored trading multiples (see
+    ``_trading_anchored_methods``). When set, the DCF-vs-market-multiple
+    auto-exclusion is skipped: with the trading cluster removed, DCF is a
+    legitimate independent method and its divergence from that cluster is no
+    longer the quantity being scored.
     """
     warnings: list[str] = []
 
-    values = [cv.per_share for cv in cross_vals if cv.per_share > 0]
+    trading = set(trading_methods or ())
+    exclude = set(exclude_methods or ()) | trading
+
+    # Economically-grounded auto-exclusion: DCF (FCFF) systematically understates
+    # growth/optionality names -- the market prices the growth premium via high
+    # earnings/revenue multiples that discounted normalized cash flow cannot
+    # reproduce. When the market-multiple methods (P/E, EV/Revenue, P/BV) cluster
+    # and DCF sits far below their median, drop DCF from the internal-consistency
+    # check (same treatment rNPV gives DCF for pipeline option value). NOT limited
+    # to ev_revenue-segment names -- fires for any high-growth issuer whose DCF
+    # diverges low (Apple, Microsoft, Amazon, ...), answering "optionality != NVDA-only".
+    _MARKET_MULT_METHODS = {"P/E", "EV/Revenue", "P/BV"}
+    _dcf_ratio = None
+    if not trading:
+        _dcf = next((c for c in cross_vals if c.method == "DCF (FCFF)" and c.per_share > 0), None)
+        _mult_vals = [c.per_share for c in cross_vals if c.method in _MARKET_MULT_METHODS and c.per_share > 0]
+        if _dcf is not None and len(_mult_vals) >= 2:
+            _dcf_ratio = _dcf.per_share / statistics.median(_mult_vals)
+            if _dcf_ratio < 0.7:
+                exclude = exclude | {"DCF (FCFF)"}
+
+    considered = [cv for cv in cross_vals if cv.method not in exclude]
+    if exclude and len(considered) >= 2:
+        _dropped = sorted({cv.method for cv in cross_vals if cv.method in exclude and cv.method not in trading})
+        if trading:
+            warnings.append(
+                "시장가 역산(trading) 배수 제외: "
+                f"{', '.join(sorted(trading))} — 시장가격 정합 점수와의 이중반영(순환성) 방지"
+            )
+        if _dropped and _dcf_ratio is not None and _dcf_ratio < 0.7:
+            warnings.append(
+                f"성장/옵셔널리티 괴리: DCF가 시장배수 중앙값의 {_dcf_ratio * 100:.0f}%에 불과 "
+                f"→ 수렴도 계산에서 제외 ({', '.join(_dropped)})"
+            )
+        elif _dropped:
+            warnings.append(
+                f"옵셔널리티 종목: 수렴도 계산에서 제외 ({', '.join(_dropped)})"
+            )
+    else:
+        # Not enough non-excluded methods to score. Fallback hierarchy: first
+        # relax non-trading exclusions (e.g. optionality DCF drop) while STILL
+        # keeping trading multiples out -- re-admitting them would restore the
+        # circularity this exclusion exists to remove. Only if independent
+        # methods are fundamentally <2 do we fall back to the full set.
+        non_trading = [cv for cv in cross_vals if cv.method not in trading]
+        if trading and len([c for c in non_trading if c.per_share > 0]) >= 2:
+            considered = non_trading
+            warnings.append(
+                "시장가 역산(trading) 배수 제외: "
+                f"{', '.join(sorted(trading))} — 순환성 방지 "
+                f"(독립 방법 {len(non_trading)}개로 수렴도 산정, 기타 제외 완화)"
+            )
+        else:
+            considered = list(cross_vals)
+            if trading:
+                warnings.append(
+                    "독립 교차검증 방법 2개 미만 → 전체 집합 폴백 (수렴도에 순환성 포함, 해석 주의)"
+                )
+
+    values = [cv.per_share for cv in considered if cv.per_share > 0]
     if len(values) < 2:
         warnings.append("교차검증 방법이 2개 미만입니다")
         return 0, warnings
@@ -149,7 +306,7 @@ def _cv_convergence_score(
     if n_excluded > 0:
         excluded_methods = [
             cv.method
-            for cv in cross_vals
+            for cv in considered
             if cv.per_share > 0 and not (median / 3 <= cv.per_share <= median * 3)
         ]
         warnings.append(f"극단값 {n_excluded}개 제외 ({', '.join(excluded_methods)})")
@@ -417,9 +574,12 @@ def _wacc_plausibility_score(
         )
 
     # Overall WACC sanity (final check)
-    if wacc_result.wacc < 4.0 or wacc_result.wacc > 18.0:
+    wacc_lo, wacc_hi = ranges.get("wacc", (4.0, 18.0))
+    if wacc_result.wacc < wacc_lo or wacc_result.wacc > wacc_hi:
         deductions += 5
-        warnings.append(f"WACC 극단값 ({wacc_result.wacc:.1f}%, 일반적 범위 4-18%)")
+        warnings.append(
+            f"WACC 극단값 ({wacc_result.wacc:.1f}%, 일반적 범위 {wacc_lo:g}-{wacc_hi:g}%)"
+        )
 
     return max(25 - deductions, 0), warnings
 
@@ -601,6 +761,8 @@ def format_quality_report(quality: "QualityScore", is_listed: bool) -> str:
         suffix = ""
 
     lines.append(f"품질 점수: {quality.total}/100 ({quality.grade}){suffix}")
+    if quality.draft:
+        lines.append("draft: true")
 
     if quality.is_rnpv:
         lines.append(f"  - 교차검증 (rNPV 기준): {quality.cv_convergence}/25")

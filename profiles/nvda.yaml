@@ -28,7 +28,7 @@ segments:
     optionality: true
     method: ev_revenue
   SEG_OPT2:
-    name: 군사용 AI 시스템
+    name: 소버린·국방 AI (옵셔널리티)
     multiple: 20.0
     optionality: true
     method: ev_revenue
@@ -255,11 +255,6 @@ peers:
   ev_ebitda: 9.5
   notes: Gaming platform hardware manufacturer. Lower multiple reflects hardware commodity
     nature and lower margins vs. GPU design. 2024 Sony consolidated multiple ~9-10x.
-- name: 롯데칩스 (Lotte Chips) / 한국반도체산업협회 peers
-  segment_code: SEG2
-  ev_ebitda: 7.8
-  notes: Korean gaming semiconductor exposure limited. Included for domestic market
-    context. Lower multiple reflects smaller scale and diversification.
 - name: Corsair Gaming Inc.
   segment_code: SEG2
   ev_ebitda: 8.1

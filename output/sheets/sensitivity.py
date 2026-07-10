@@ -43,8 +43,8 @@ def sheet_sensitivity(ctx: Ctx):
             f"① 멀티플 민감도 → 주당가치 ({ctx.currency_sym})",
             ctx.result.sensitivity_multiples,
             f"{row_name} \\ {col_name}",
-            lambda v: f"{v:.0f}x",
-            lambda v: f"{v:.0f}x",
+            lambda v: f"{v:.1f}x",
+            lambda v: f"{v:.1f}x",
         )
         r += 2
 

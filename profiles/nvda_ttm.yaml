@@ -87,11 +87,11 @@ consolidated:
   2026:
     revenue: 253491
     op: 162285
-    net_income: 143224
+    net_income: 143451
     assets: 259474
     liabilities: 64000
     equity: 195474
-    dep: 3586
+    dep: 3229
     amort: 0
     gross_borr: 8470
     net_borr: -41865
@@ -190,12 +190,12 @@ dcf_params:
   - 0.1
   - 0.05
   tax_rate: 16.6
-  capex_to_da: 1.83
+  capex_to_da: 2.03
   nwc_to_rev_delta: 0.05
   terminal_growth: 3.0
   actual_capex: 6553
   capex_fade_to: null
-  da_to_ebitda_override: 0.0216
+  da_to_ebitda_override: 0.0195
 pe_multiple: 34.5
 ev_revenue_multiple: 19.3
 pbv_multiple: 25.2

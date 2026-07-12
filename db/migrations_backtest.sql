@@ -77,6 +77,19 @@ ALTER TABLE prediction_snapshots
 ALTER TABLE prediction_snapshots
     ADD COLUMN IF NOT EXISTS valuation_bucket TEXT DEFAULT 'plain_operating';
 
+-- P0-0: normalization provenance (PLAN_deep_research.md §3)
+-- NOTE: do NOT backfill existing rows. DEFAULT 'legacy' IS the information —
+-- it records that the row was computed under the pre-P0 net-debt definition.
+-- Retroactive rewriting would corrupt look-ahead integrity of the backtest.
+-- The write path (db/backtest_repository.save_prediction_snapshot) is NOT wired yet;
+-- these columns stay at their defaults until P0-1.
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS normalization_version TEXT DEFAULT 'legacy';
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS net_debt_components JSONB DEFAULT '{}';
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS segment_disclosure_level TEXT DEFAULT 'none';
+
 -- Add unique constraints for upsert support
 CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
     ON valuations(company_name, analysis_date);

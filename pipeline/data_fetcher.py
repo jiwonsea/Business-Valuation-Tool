@@ -312,6 +312,10 @@ class DataFetcher:
                         identity.name,
                         len(yf_data),
                     )
+                    # yfinance에는 §2.1 구성요소·독립 합계 태그가 없다. 순차입금 정규화 원장은
+                    # 1차 공시(XBRL)에서만 나오므로 EDGAR로 보강한다 (P0-1). 실패해도 치명적이지
+                    # 않다 — 구성요소가 없으면 게이트가 legacy 정의를 유지할 뿐이다.
+                    self._attach_edgar_net_debt_components(identity, yf_data)
                     return yf_data
             except Exception as e:
                 logger.debug("yfinance 재무제표 실패, EDGAR fallback: %s", e)
@@ -319,6 +323,33 @@ class DataFetcher:
         if not identity.cik:
             raise ValueError(f"CIK 없음: {identity.name}")
         return edgar_parser.parse_financials(identity.cik, years)
+
+    def _attach_edgar_net_debt_components(
+        self,
+        identity: CompanyIdentity,
+        rows: dict[int, dict],
+    ) -> None:
+        """yfinance 행에 EDGAR XBRL 기반 §2.1 순차입금 원장을 얹는다 (P0-1, best-effort).
+
+        legacy `net_borr`는 건드리지 않는다. 실패 시 구성요소가 없을 뿐이고,
+        게이트(engine/normalize.py)가 legacy 정의를 그대로 쓴다.
+        """
+        if not identity.cik:
+            return
+        try:
+            facts = edgar_client.get_company_facts(identity.cik)
+        except Exception as e:
+            logger.debug("EDGAR 순차입금 원장 보강 실패 (%s): %s", identity.name, e)
+            return
+        for year, row in rows.items():
+            try:
+                row["net_debt_components"] = edgar_parser.extract_net_debt_components(
+                    facts, year
+                )
+            except Exception as e:
+                logger.debug(
+                    "EDGAR 순차입금 원장 추출 실패 (%s %d): %s", identity.name, year, e
+                )
 
     def _fetch_jp(
         self,

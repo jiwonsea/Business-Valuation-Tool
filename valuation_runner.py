@@ -37,6 +37,12 @@ from schemas.models import (
     RelativeInputs,
 )
 from engine.drivers import resolve_drivers
+from engine.normalize import NetDebtResolution, resolve_net_debt
+from schemas.provenance import (
+    LEGACY_VERSION,
+    NORMALIZATION_VERSION,
+    NetDebtComponents,
+)
 from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
 from engine.distress import calc_distress_discount, apply_distress_discount
@@ -345,7 +351,7 @@ def load_profile(path: str) -> ValuationInput:
                     clamped,
                 )
 
-    return ValuationInput(
+    vi = ValuationInput(
         company=company,
         valuation_method=raw.get("valuation_method", "auto"),
         industry=raw.get("industry", "") or co_raw.get("industry", ""),
@@ -367,6 +373,8 @@ def load_profile(path: str) -> ValuationInput:
         rcps_years=raw.get("rcps_years", 0),
         rcps_dividend_rate=raw.get("rcps_dividend_rate", 0.0),
         net_debt=raw.get("net_debt", 0),
+        net_debt_components=_parse_net_debt_components(raw),
+        normalization_version=raw.get("normalization_version", LEGACY_VERSION),
         market_price=raw.get("market_price"),
         relative_inputs=RelativeInputs(**raw["relative_inputs"])
         if raw.get("relative_inputs")
@@ -396,9 +404,122 @@ def load_profile(path: str) -> ValuationInput:
         else None,
     )
 
+    return apply_net_debt_gate(vi)
+
+
+def _parse_net_debt_components(raw: dict) -> NetDebtComponents | None:
+    """YAML dict -> NetDebtComponents. `reconciled`는 computed라 payload로 위조되지 않는다."""
+    payload = raw.get("net_debt_components")
+    if not payload:
+        return None
+    if isinstance(payload, NetDebtComponents):
+        return payload
+    return NetDebtComponents.model_validate(payload)
+
+
+def _already_gated(vi: ValuationInput, res: NetDebtResolution) -> bool:
+    """이미 게이트를 통과한 입력인가? (멱등성 — CODEX 재작업 판정 1)
+
+    두 번 적용하면 `net_debt_legacy`에 legacy가 아니라 **정규화 값**이 들어가 감사 축이 파괴된다.
+    (`vi.net_debt`가 이미 교체돼 있으므로 두 번째 호출의 legacy_value는 정규화 값이다.)
+    소비 상태의 표지는 세 가지가 동시에 참인 것이다:
+      - normalization_version == NORMALIZATION_VERSION
+      - net_debt_legacy is not None (교체 전 값이 보존돼 있다)
+      - 지금 다시 대조해도 여전히 reconciled (components를 갈아끼운 입력은 재게이트 대상)
+    """
+    return (
+        res.status == "consumed"
+        and vi.normalization_version == NORMALIZATION_VERSION
+        and vi.net_debt_legacy is not None
+        and vi.net_debt == res.value
+    )
+
+
+def _demote_orphaned_normalization(vi: ValuationInput) -> ValuationInput:
+    """원장(net_debt_components) 없이 정규화를 주장하는 입력을 legacy로 되돌린다.
+
+    두 경로를 막는다 (CODEX 재작업 판정):
+      1. 소비 후 원장만 제거된 입력 — 검증 축이 사라졌는데 정규화 값을 계속 소비하게 된다.
+         `net_debt`를 `net_debt_legacy`로 롤백한다.
+      2. 원장 없이 YAML이 `normalization_version`만 최신으로 적어 넣은 입력 — 대조할 원장이
+         없으면 정규화를 주장할 수 없다. legacy로 강등한다.
+    원장도 없고 소비 흔적도 없으면 P0 이전 프로필이다 — 손대지 않는다 (R10 무변화).
+    """
+    if vi.net_debt_legacy is None and vi.normalization_version == LEGACY_VERSION:
+        return vi
+
+    rollback: dict = {"normalization_version": LEGACY_VERSION}
+    if vi.net_debt_legacy is not None:
+        rollback["net_debt"] = vi.net_debt_legacy
+        rollback["net_debt_legacy"] = None
+    logger.warning(
+        "[%s] 순차입금 원장(net_debt_components)이 없는데 정규화(%s)를 주장한다 — "
+        "legacy로 강등. 검증 원장 없이는 정규화 값을 소비할 수 없다.",
+        vi.company.name,
+        vi.normalization_version,
+    )
+    return vi.model_copy(update=rollback)
+
+
+def apply_net_debt_gate(vi: ValuationInput) -> ValuationInput:
+    """§2.1 순차입금 게이트 (P0-1). reconciled is True일 때만 정규화 값을 소비한다.
+
+    **멱등**이다 — `load_profile()`과 `run_valuation()` 양쪽에서 호출해도 안전하다.
+    엔진·콘솔·Excel은 모두 `vi.net_debt`를 읽으므로, 소비 지점을 이 함수 하나로 모으면
+    경로가 갈라지지 않는다.
+    차단(False=불일치 / None=대조 불가) 시 legacy 스칼라를 그대로 두고
+    normalization_version도 legacy로 남긴다 — 없는 정상화를 주장하지 않는다.
+    """
+    res: NetDebtResolution = resolve_net_debt(vi.net_debt_components, vi.net_debt)
+
+    if res.status == "absent":
+        return _demote_orphaned_normalization(vi)
+
+    if _already_gated(vi, res):
+        return vi  # 이미 소비됨 — 재적용하면 net_debt_legacy가 덮어써진다
+
+    if res.blocked:
+        logger.warning(
+            "[%s] 순차입금 정규화 차단 (%s): %s — legacy 값 %s 유지",
+            vi.company.name,
+            res.status,
+            res.reason,
+            f"{res.legacy_value:,}",
+        )
+        if vi.normalization_version == LEGACY_VERSION:
+            return vi
+        # 한 번 소비된 뒤 원장이 교체돼 차단으로 뒤집힌 경우: 정규화 값을 되돌린다.
+        # (그대로 두면 "차단"이라 말하면서 정규화 값을 계속 소비하게 된다.)
+        rollback = {"normalization_version": LEGACY_VERSION}
+        if vi.net_debt_legacy is not None:
+            rollback["net_debt"] = vi.net_debt_legacy
+            rollback["net_debt_legacy"] = None
+        return vi.model_copy(update=rollback)
+
+    logger.info(
+        "[%s] 순차입금 정규화 소비: legacy %s -> normalized %s (독립 합계 %s, 차이 %s)",
+        vi.company.name,
+        f"{res.legacy_value:,}",
+        f"{res.value:,}",
+        f"{res.independent_total:,}",
+        res.delta,
+    )
+    return vi.model_copy(
+        update={
+            "net_debt": res.value,
+            "net_debt_legacy": res.legacy_value,
+            "normalization_version": res.normalization_version,
+        }
+    )
+
 
 def run_valuation(vi: ValuationInput) -> ValuationResult:
     """Execute full valuation pipeline -- dispatch by methodology."""
+    # P0-1 §2.1: 엔진의 공개 진입점은 load_profile()을 거치지 않은 ValuationInput도 받는다
+    # (app.py, 테스트, 스크립트). 게이트를 load_profile()에만 두면 그 경로로 우회된다.
+    # 멱등이므로 load_profile()에서 이미 통과한 입력은 그대로 통과한다.
+    vi = apply_net_debt_gate(vi)
+
     # Auto-detect financial sector -> skip Hamada (copy to avoid mutating input)
     if is_financial(vi.industry):
         vi = vi.model_copy(

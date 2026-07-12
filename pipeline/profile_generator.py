@@ -581,6 +581,29 @@ peers: []
   # TODO: Add peer companies
   # - {{name: "Peer Co", segment_code: "MAIN", ev_ebitda: 10.0, notes: ""}}
 """
+    # ── 순차입금 정규화 원장 (PLAN §2.1 / P0-1) ──
+    # `net_debt:` 스칼라는 legacy 정의(gross − cash)로 남는다. 엔진은 reconciled is True일
+    # 때만 아래 구성요소의 정의값을 소비한다 (engine/normalize.py).
+    nd_components = cons.get("net_debt_components")
+    if nd_components is not None:
+        from engine.normalize import resolve_net_debt
+
+        nd_res = resolve_net_debt(nd_components, net_debt)
+        nd_payload = nd_components.model_dump(
+            exclude={"reconciled", "reconciliation_delta"}
+        )
+        content += (
+            "\n# 순차입금 정규화 원장 (PLAN §2.1 / P0-1)\n"
+            f"# 게이트: {nd_res.status} — {nd_res.reason}\n"
+            f"normalization_version: {nd_res.normalization_version}\n"
+            + yaml.dump(
+                {"net_debt_components": nd_payload},
+                allow_unicode=True,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+        )
+
     # Persist reconciliation results (audit trail; survives --auto enrichment
     # because auto_analyze round-trips the full YAML dict).
     recon_yaml = yaml.dump(

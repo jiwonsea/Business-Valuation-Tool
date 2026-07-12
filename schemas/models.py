@@ -888,10 +888,14 @@ class ValuationInput(BaseModel):
 
     # ── P0-0: normalization provenance (PLAN_deep_research.md §3) ──
     # All optional/defaulted: existing YAML profiles must load unchanged.
-    # Nothing writes these yet (P0-1 owns the write path) — defaults are correct for now.
+    # P0-1: 파서가 net_debt_components를 채우고, 게이트(engine/normalize.py)가
+    # reconciled is True일 때만 net_debt를 정규화 값으로 교체한다. 그 외엔 legacy 유지.
     normalization_version: str = LEGACY_VERSION
     net_debt_components: Optional[NetDebtComponents] = (
         None  # §2.1 taxonomy. `net_debt` above stays as the legacy scalar.
+    )
+    net_debt_legacy: Optional[int] = (
+        None  # 게이트가 정규화 값을 소비했을 때 교체 전 legacy 스칼라를 보존한다 (감사용)
     )
     assumption_sources: dict[str, Source] = {}  # P1 범주 ① 관측치 전용
     declared_assumptions: dict[str, DeclaredAssumption] = {}  # P1 범주 ② 가정 전용

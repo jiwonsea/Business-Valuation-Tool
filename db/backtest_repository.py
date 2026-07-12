@@ -6,9 +6,18 @@ import logging
 from datetime import date, datetime
 from typing import Optional
 
+from schemas.provenance import LEGACY_VERSION
+
 from .client import get_client
 
 logger = logging.getLogger(__name__)
+
+# P0-0 마이그레이션으로 추가된 컬럼. 미적용 DB에서는 이 컬럼들만 빼고 저장한다.
+_P0_NORMALIZATION_COLUMNS = (
+    "normalization_version",
+    "net_debt_components",
+    "segment_disclosure_level",
+)
 
 
 # ── Prediction Snapshots ──
@@ -48,6 +57,7 @@ def save_prediction_snapshot(
     signals_ver = getattr(result, "market_signals_version", None)
     if signals_ver is None:
         signals_ver = 1
+    nd_components = getattr(vi, "net_debt_components", None)
     row = {
         "valuation_id": valuation_id,
         "company_name": vi.company.name,
@@ -65,6 +75,16 @@ def save_prediction_snapshot(
         "valuation_bucket": getattr(result, "valuation_bucket", "plain_operating"),
         "market_signals_version": signals_ver,
         "scenario_values": scenario_values,
+        # P0-0 컬럼의 쓰기 경로 (P0-1 범위). 과거 행은 소급 재작성하지 않는다 —
+        # 기본값 'legacy'가 곧 "P0 이전 정의로 계산됨"이라는 정보다.
+        # getattr 기본값: P0 이전에 만들어진 ValuationInput / 테스트 스텁도 통과시킨다.
+        "normalization_version": getattr(vi, "normalization_version", LEGACY_VERSION),
+        "net_debt_components": (
+            nd_components.model_dump(mode="json")
+            if nd_components is not None
+            else {}
+        ),
+        "segment_disclosure_level": getattr(vi, "segment_disclosure_level", "none"),
     }
 
     try:
@@ -87,6 +107,33 @@ def save_prediction_snapshot(
             )
             return uid
         except Exception as exc:
+            # 마이그레이션(db/migrations_backtest.sql) 미적용 환경에서는 P0 컬럼이 없어
+            # PostgREST가 42703/PGRST204로 거절한다. 그때는 스냅샷 저장 자체를 잃는 대신
+            # P0 컬럼만 빼고 다시 시도한다 (정규화 정보만 손실, 백테스트 행은 보존).
+            msg = str(exc)
+            if any(col in msg for col in _P0_NORMALIZATION_COLUMNS) or (
+                "42703" in msg or "PGRST204" in msg
+            ):
+                legacy_row = {
+                    k: v
+                    for k, v in row.items()
+                    if k not in _P0_NORMALIZATION_COLUMNS
+                }
+                try:
+                    resp = (
+                        client.table("prediction_snapshots")
+                        .upsert(legacy_row, on_conflict="valuation_id")
+                        .execute()
+                    )
+                    uid = resp.data[0]["id"]
+                    logger.warning(
+                        "prediction_snapshots에 P0 정규화 컬럼이 없습니다 "
+                        "(db/migrations_backtest.sql 미적용) — 해당 컬럼 없이 저장: %s",
+                        vi.company.name,
+                    )
+                    return uid
+                except Exception as exc2:
+                    exc = exc2
             logger.warning(
                 "prediction snapshot save failed for %s: %s: %s",
                 vi.company.name,

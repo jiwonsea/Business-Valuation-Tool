@@ -210,6 +210,18 @@ def assert_observed_only(
 
 _CASH_FIELDS = ("cash", "marketable_debt_securities", "short_term_investments")
 
+# 대조 허용오차 (display unit). 반올림 노이즈만 흡수한다 — 정의 오류는 흡수하지 않는다.
+#
+# 유도 (CODEX 재작업 판정 2 반영. 실제 태그 구조 기준):
+#   Path A 현금성   : cash + (시장성 채무증권 | 단기투자)        -> 최대 2회 반올림
+#   Path A 차입     : 개별 차입 태그 5종의 합                    -> 최대 5회
+#   Path B 독립 합계: 결합 차입 태그 + 결합 현금 태그            -> 최대 2회
+#   합 9회 x 0.5단위 = 4.5 -> 보수적으로 **5단위**.
+# (P0-0의 엄격 등호는 원장부(raw)에서 정의가 일치해도 단위 반올림만으로 False를 내서
+#  게이트가 전 종목을 오차단한다 — 그건 대조가 아니라 잡음이다.)
+# 5단위 = NVDA 순현금 $41,865M의 0.012%. 이보다 큰 차이는 반올림으로 설명되지 않는다.
+NET_DEBT_RECONCILE_TOLERANCE = 5
+
 
 class NetDebtComponents(BaseModel):
     """§2.1. 합계만 저장하면 정의 오류를 영원히 못 잡는다.
@@ -261,9 +273,22 @@ class NetDebtComponents(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def reconciled(self) -> Optional[bool]:
-        """3-state. Computed, never stored — so it cannot be round-tripped into a lie."""
+    def reconciliation_delta(self) -> Optional[int]:
+        """독립 합계 − 구성요소 정의값. None이면 대조 불가. 감사용 — 차이를 숨기지 않는다."""
         expected = self.expected_net_debt()
         if expected is None or self.net_debt is None:
             return None
-        return self.net_debt == expected
+        return self.net_debt - expected
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def reconciled(self) -> Optional[bool]:
+        """3-state. Computed, never stored — so it cannot be round-tripped into a lie.
+
+        허용오차는 단위 반올림 노이즈 폭(NET_DEBT_RECONCILE_TOLERANCE = 5단위)뿐이다.
+        그보다 큰 차이는 반올림으로 설명되지 않는다 = 정의 오류이므로 False다.
+        """
+        delta = self.reconciliation_delta
+        if delta is None:
+            return None
+        return abs(delta) <= NET_DEBT_RECONCILE_TOLERANCE

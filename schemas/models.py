@@ -7,6 +7,15 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from schemas.provenance import (
+    LEGACY_VERSION,
+    DeclaredAssumption,
+    NetDebtComponents,
+    SegmentDisclosureLevel,
+    Source,
+    assert_observed_only,
+)
+
 
 # ── Company Basic Info ──
 
@@ -876,6 +885,25 @@ class ValuationInput(BaseModel):
         None  # External market data signals (Phase 4)
     )
     scenario_validation: Optional[ValidationReport] = None
+
+    # ── P0-0: normalization provenance (PLAN_deep_research.md §3) ──
+    # All optional/defaulted: existing YAML profiles must load unchanged.
+    # Nothing writes these yet (P0-1 owns the write path) — defaults are correct for now.
+    normalization_version: str = LEGACY_VERSION
+    net_debt_components: Optional[NetDebtComponents] = (
+        None  # §2.1 taxonomy. `net_debt` above stays as the legacy scalar.
+    )
+    assumption_sources: dict[str, Source] = {}  # P1 범주 ① 관측치 전용
+    declared_assumptions: dict[str, DeclaredAssumption] = {}  # P1 범주 ② 가정 전용
+    segment_disclosure_level: SegmentDisclosureLevel = "none"  # §2.2 L1/L2/L3
+
+    @field_validator("assumption_sources")
+    @classmethod
+    def assumption_sources_observed_only(
+        cls, v: dict[str, Source]
+    ) -> dict[str, Source]:
+        """P1: an assumption may not masquerade as an observation."""
+        return assert_observed_only(v, "assumption_sources")
 
     @field_validator("distress_max_discount")
     @classmethod

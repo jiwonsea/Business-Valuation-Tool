@@ -12,7 +12,7 @@
 | 1 | `method="declared_assumption"`인 산업 beta가 관측치로 소비 | `IndustryBetaEntry` validator에 **`source.method in OBSERVED_METHODS`** 추가. Damodaran 출처를 달아도 가정은 관측치가 아니다 → 생성 거부 |
 | 2 | target(S&P 500)과 peer(KOSPI)의 다른 데이터셋을 직접 비교 | `BetaObservation.dataset_mismatches()` 신설. 게이트가 교차검증 **전에** target 관측과 peer 스냅샷의 관측창·빈도·벤치마크·계산법·기준일을 대조하고, 불일치하면 **stale peer와 동일하게 peer 근거에서 제외 + 경고**한다(상장사의 primary는 raw beta이므로 차단하지 않음). 같은 데이터셋이면 교차검증은 그대로 작동 |
 
-**문서**: `PLAN_deep_research.md:134` 마지막 bullet의 **§2.6 → §2.5** 정정 + "다른 데이터셋 peer는 교차검증에서 제외" 명시.
+**문서**: `PLAN_deep_research.md:134`의 §2.6 참조와 데이터셋 조항을 작업 트리에서 손봤으나, PLAN은 **untracked라 커밋 이력에 없다** (§5).
 
 **재현**
 ```
@@ -35,8 +35,8 @@ S&P500 target vs KOSPI peer(median 0.5) -> consumed_raw, peer_median=None, peer_
 | 4 | D/E·세율 Source의 관측 자격·기준일 미검증 | `method in OBSERVED_METHODS` 강제(가정을 Source로 위장 불가). unlevered basis의 included 구성원은 D/E·세율 Source가 **둘 다 필수**이며, 각 Source의 `as_of`가 **스냅샷 기준일과 일치**해야 한다 |
 | 5 | 산업 테이블 수집일 look-ahead | 생성 시 `source.as_of <= collected_at`(존재하지 않는 자료를 수집할 수 없다), 소비 시 `collected_at <= evaluation_date`(미래에 수집한 테이블은 look-ahead) → `blocked_invalid_industry_table` |
 
-**문서**: `PLAN_deep_research.md` §2.3 비상장 행의 peer 참조를 **§2.6 → §2.5**로 정정하고 "고유 법인 N ≥ 4"를 명시했다.
-(추가로 스냅샷 `as_of == window_end`도 강제 — 스냅샷 기준일이 관측창의 끝이 아니면 시간축이 무너진다.)
+**문서**: PLAN §2.3 비상장 행의 peer 참조(§2.6 → §2.5)와 "고유 법인 N ≥ 4"도 작업 트리에서만 반영됐다 (§5).
+(코드 쪽에서는 스냅샷 `as_of == window_end`를 강제한다 — 스냅샷 기준일이 관측창의 끝이 아니면 시간축이 무너진다.)
 
 ## 2. 적대적 입력 재현 (3차 지적 그대로)
 
@@ -76,4 +76,29 @@ declared_assumption D/E Source       -> ValidationError (관측치 아님)
            D/E·세율 결측               -> blocked_no_capital_structure
            언레버 βU > median×1.5      -> blocked_reference_conflict  (고유 peer ≥ 4)
            그 외                      -> consumed_raw / consumed_raw_equity(금융업)
-비상장   :
+비상장   : 고유 peer >= 4            -> consumed_peer_median
+           산업 테이블 fresh            -> consumed_industry_table
+           근거 없음                   -> blocked_no_reference
+```
+범위 이탈([0.3, 2.0])은 어느 경로에서도 차단하지 않는다 — `sensitivity_required=True` + 경고만.
+
+## 5. 문서 취급 (PLAN_deep_research.md)
+
+`PLAN_deep_research.md`는 **untracked이며 이 리포지토리에서 버전 관리되지 않는다.**
+따라서 P0-2a에서 "정정"이라고 적은 항목들 — §2.3의 same-basis 비교, 비상장 peer 참조 §2.6 → §2.5,
+"다른 데이터셋 peer는 교차검증에서 제외" — 은 **작업 트리의 PLAN 파일과 이 핸드오프에만 남아 있고
+커밋 이력에는 없다.** PLAN을 버전 관리하기로 하면 단독 docs 커밋으로 추가해야 한다 (별도 판단 사안).
+
+계약의 단일 진실 원천은 **코드와 프로즌 테스트**다 (`schemas/provenance.py`, `engine/normalize.py`,
+`tests/test_beta.py`). PLAN과 코드가 어긋나면 코드가 맞다.
+
+## 6. 다음 단계
+
+- **P0-4**: 멀티플과 분리된 peer beta 관측 스냅샷 수집 → `BetaPeerSnapshot`을 실제로 채운다.
+  계약이 요구하는 것: 고유 `legal_entity_id`, 동일 관측창·빈도·벤치마크·계산법·기준일,
+  D/E·세율 **관측** Source(`method in OBSERVED_METHODS`, `as_of == 스냅샷 as_of`),
+  7일 이내 스냅샷, `as_of == window_end`, 멀티플 필드 금지.
+  주의: yfinance `info["beta"]`는 계약상 관측치가 아니다 → **가격 시계열에서 직접 회귀**해야 한다.
+- **P0-2b**: 소비 배선 + V1~V4 제거(`profile_generator._estimate_wacc_params`)
+  + `ai/validators.py::validate_wacc` 클램프 제거. `publishable=False` → investability gate blocker.
+- `engine/wacc.py::_HAMADA_DE_CAP`(200%)는 **미변경** — 리레버 시점의 별도 방법론 정책이며 별도 판정 대상.

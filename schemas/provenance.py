@@ -15,6 +15,9 @@ This module MUST NOT import schemas.models (one-way dependency: models -> proven
 
 from __future__ import annotations
 
+import math
+import re
+import statistics
 from datetime import date
 from typing import Literal, Optional, Union
 
@@ -39,6 +42,7 @@ SourceKind = Literal[
     "yfinance",
     "FRED",
     "ECOS",
+    "Damodaran",  # 산업 beta 연간 테이블 (정적 스냅샷). yfinance로 위장 금지
 ]
 
 Method = Literal["observed", "derived", "declared_assumption"]
@@ -204,6 +208,455 @@ def assert_observed_only(
                 "가정은 declared_assumptions(DeclaredAssumption)에 저장하십시오."
             )
     return mapping
+
+
+# ── 베타 정책 (PLAN §2.3 / §2.5) — P0-2a 계약 ──
+#
+# 금칙 (§2.3): "범위 이탈은 차단 사유도, 자동 대체 사유도 아니다. 자동 클램프/대체 금지."
+# 아래 상수는 **경고·차단 판정에만** 쓴다. 값을 깎거나 갈아끼우는 데 쓰지 않는다.
+#
+# 단, **유효하지 않은 숫자(NaN/Inf)나 경제적 정의역 밖의 자본구조를 차단하는 것은 클램프가 아니다.**
+# 클램프는 유효한 관측치를 몰래 왜곡하는 행위이고, 이쪽은 애초에 관측치가 아닌 것을 걸러내는 행위다.
+
+BETA_PLAUSIBLE_RANGE: tuple[float, float] = (0.3, 2.0)
+
+# raw beta가 peer median의 이 배수를 넘으면 중대 불일치 (§2.3). **같은 basis끼리 비교한다.**
+BETA_REFERENCE_CONFLICT_MULTIPLE = 1.5
+
+# §2.5 peer 최소 수. beta만 별도 기준을 두지 않는다.
+BETA_MIN_PEER_COUNT = 4
+
+# beta 관측/peer 스냅샷 허용 시차 (§2.5). 시장 데이터이므로 짧다.
+# 대상 회사 beta에도 동일하게 적용한다 — peer만 검사하면 target의 look-ahead가 열린다.
+BETA_OBSERVATION_MAX_AGE_DAYS = 7
+BETA_PEER_SNAPSHOT_MAX_AGE_DAYS = 7
+
+# 산업 beta 테이블(연 1회) 허용 시차.
+INDUSTRY_BETA_MAX_AGE_DAYS = 400
+
+BetaFrequency = Literal["daily", "weekly", "monthly"]
+
+# 베타의 기준(basis). 일반 기업은 unlevered, 금융업은 equity beta를 그대로 쓴다
+# (engine/wacc.py: is_financial이면 Hamada를 건너뛰고 bu를 βL로 사용).
+BetaBasis = Literal["unlevered", "equity"]
+
+Freshness = Literal["fresh", "stale", "future", "unknown_as_of"]
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def require_finite(value: Optional[float], field: str) -> Optional[float]:
+    """NaN/Inf 차단. None은 통과시킨다 (결측은 별도로 판정한다)."""
+    if value is None:
+        return None
+    v = float(value)
+    if not math.isfinite(v):
+        raise ValueError(f"{field}: 유효하지 않은 숫자입니다 ({value!r}). NaN/Inf는 관측치가 아닙니다.")
+    return v
+
+
+def require_sha256(value: str, field: str) -> str:
+    """재현성 해시는 형식이 맞아야 의미가 있다 — 'x'는 해시가 아니다."""
+    v = value.strip().lower()
+    if not _SHA256_RE.match(v):
+        raise ValueError(f"{field}: SHA-256 형식이 아닙니다 (64자리 hex): {value!r}")
+    return v
+
+
+def _numeric_source_value(src: Optional[Source], field: str) -> Optional[float]:
+    """Source가 숫자 관측치를 담고 있으면 그 값을, 아니면 None."""
+    if src is None:
+        return None
+    v = src.value
+    if not isinstance(v, (int, float)):
+        return None
+    return require_finite(float(v), field)
+
+
+def _freshness(as_of: Optional[date], evaluation_date: date, max_age_days: int) -> Freshness:
+    """공통 신선도 판정. 미래 기준일은 look-ahead이므로 fresh가 아니다."""
+    if as_of is None:
+        return "unknown_as_of"
+    if as_of > evaluation_date:
+        return "future"
+    if (evaluation_date - as_of).days > max_age_days:
+        return "stale"
+    return "fresh"
+
+
+def hamada_unlever(levered_beta: float, de_ratio_pct: float, tax_rate_pct: float) -> Optional[float]:
+    """Hamada 언레버. 경제적 정의역 밖이면 None (클램프하지 않는다).
+
+    - D/E는 gross debt 기반이므로 음수일 수 없다.
+    - 세율은 [0, 100] 밖일 수 없다.
+    - 분모 <= 0이면 언레버가 정의되지 않는다.
+    """
+    for v in (levered_beta, de_ratio_pct, tax_rate_pct):
+        if not math.isfinite(v):
+            return None
+    if de_ratio_pct < 0 or not (0.0 <= tax_rate_pct <= 100.0):
+        return None
+    denom = 1 + (1 - tax_rate_pct / 100) * de_ratio_pct / 100
+    if denom <= 0:
+        return None
+    return levered_beta / denom
+
+
+class BetaObservation(BaseModel):
+    """상장사의 raw equity beta 관측 (§2.3).
+
+    관측창·빈도·벤치마크는 beta 전용 의미라 범용 `Source`에 넣지 않는다.
+    **관측창과 빈도를 알 수 없는 값은 §2.3 관측치가 아니다** — yfinance `info["beta"]`는
+    이 타입을 만들 수 없고, 게이트가 `blocked_no_provenance`로 차단한다.
+    """
+
+    equity_beta: Source
+    window_start: date
+    window_end: date
+    frequency: BetaFrequency
+    benchmark: str
+    observation_count: int
+    calculation_method: str
+
+    @field_validator("benchmark", "calculation_method")
+    @classmethod
+    def non_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError(
+                "BetaObservation.benchmark / calculation_method는 필수입니다. "
+                "관측창·빈도·벤치마크 없는 beta는 §2.3의 관측치가 아닙니다."
+            )
+        return v
+
+    @field_validator("observation_count")
+    @classmethod
+    def observation_count_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError(f"BetaObservation.observation_count는 양수여야 합니다: {v}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_observation(self):
+        if self.window_end <= self.window_start:
+            raise ValueError(
+                f"BetaObservation 관측창이 뒤집혔습니다: {self.window_start} ~ {self.window_end}"
+            )
+        if self.equity_beta.method not in OBSERVED_METHODS:
+            raise ValueError(
+                f"BetaObservation.equity_beta.method='{self.equity_beta.method}'는 관측치가 아닙니다."
+            )
+        v = self.equity_beta.value
+        if not isinstance(v, (int, float)):
+            raise ValueError(f"BetaObservation.equity_beta.value는 숫자여야 합니다: {v!r}")
+        require_finite(float(v), "BetaObservation.equity_beta.value")
+
+        # 관측 기준일은 관측창의 끝이다. 2020년에 끝난 관측창을 오늘 날짜로 포장할 수 없다.
+        if self.equity_beta.as_of != self.window_end:
+            raise ValueError(
+                f"BetaObservation: equity_beta.as_of({self.equity_beta.as_of})가 "
+                f"window_end({self.window_end})와 다릅니다. 관측 기준일은 관측창의 끝이어야 합니다 — "
+                "오래된 관측창을 최신 기준일로 포장할 수 없습니다."
+            )
+        return self
+
+    def freshness(self, evaluation_date: date) -> Freshness:
+        """대상 회사 beta에도 시간축을 강제한다 (§2.5 허용 시차 7일, 미래는 look-ahead)."""
+        if self.window_end > evaluation_date:
+            return "future"
+        return _freshness(self.equity_beta.as_of, evaluation_date, BETA_OBSERVATION_MAX_AGE_DAYS)
+
+    @property
+    def raw_levered_beta(self) -> float:
+        return float(self.equity_beta.value)  # type: ignore[arg-type]
+
+    @property
+    def as_of(self) -> Optional[date]:
+        return self.equity_beta.as_of
+
+    def blume(self) -> float:
+        """Blume 조정 (0.67 × raw + 0.33). **병기용이며 raw를 대체하지 않는다.**"""
+        return round(0.67 * self.raw_levered_beta + 0.33, 4)
+
+    def dataset_mismatches(self, other: "BetaObservation") -> list[str]:
+        """동일 시점·동일 방법 데이터셋인가 (§2.3 '멀티플과 분리된 동일 시점 데이터셋').
+
+        다른 벤치마크·관측창·빈도·계산법·기준일에서 나온 beta는 서로를 반증할 수 없다.
+        """
+        return [
+            name
+            for name, a, b in (
+                ("window_start", self.window_start, other.window_start),
+                ("window_end", self.window_end, other.window_end),
+                ("frequency", self.frequency, other.frequency),
+                ("benchmark", self.benchmark, other.benchmark),
+                ("calculation_method", self.calculation_method, other.calculation_method),
+                ("as_of", self.as_of, other.as_of),
+            )
+            if a != b
+        ]
+
+    def matches_dataset(self, other: "BetaObservation") -> bool:
+        return not self.dataset_mismatches(other)
+
+
+class IndustryBetaEntry(BaseModel):
+    """산업 beta 테이블 항목. **FallbackConstant가 아니라 버전 고정 관측 데이터다.**
+
+    `source.value`가 단일 진실 원천이고, 출처는 Damodaran으로 강제된다 (yfinance 위장 금지).
+    테이블은 unlevered basis다.
+    """
+
+    source: Source
+    table_version: str
+    table_sha256: str
+    industry_key: str
+    mapping_version: str
+    collected_at: date
+    basis: Literal["unlevered"] = "unlevered"
+
+    @field_validator("table_version", "industry_key", "mapping_version")
+    @classmethod
+    def non_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("IndustryBetaEntry의 버전/키 필드는 필수입니다 (재현성).")
+        return v
+
+    @field_validator("table_sha256")
+    @classmethod
+    def sha_format(cls, v: str) -> str:
+        return require_sha256(v, "IndustryBetaEntry.table_sha256")
+
+    @model_validator(mode="after")
+    def validate_entry(self):
+        if self.source.source != "Damodaran":
+            raise ValueError(
+                f"IndustryBetaEntry.source.source='{self.source.source}' — 산업 beta 테이블의 "
+                "출처는 'Damodaran'이어야 합니다. 다른 출처로 위장할 수 없습니다."
+            )
+        if self.source.method not in OBSERVED_METHODS:
+            raise ValueError(
+                f"IndustryBetaEntry.source.method='{self.source.method}'는 관측치가 아닙니다 "
+                f"(허용: {sorted(OBSERVED_METHODS)}). 산업 beta는 버전 고정 '관측 데이터'이며, "
+                "가정(DeclaredAssumption)을 Damodaran 출처로 포장해 소비할 수 없습니다."
+            )
+        v = self.source.value
+        if not isinstance(v, (int, float)):
+            raise ValueError(f"IndustryBetaEntry.source.value는 숫자여야 합니다: {v!r}")
+        require_finite(float(v), "IndustryBetaEntry.source.value")
+
+        if self.source.as_of is not None and self.source.as_of > self.collected_at:
+            raise ValueError(
+                f"IndustryBetaEntry: 데이터 기준일({self.source.as_of})이 수집일"
+                f"({self.collected_at})보다 미래입니다 — 존재하지 않는 자료를 수집할 수는 없습니다."
+            )
+        return self
+
+    @property
+    def unlevered_beta(self) -> float:
+        """단일 진실 원천은 source.value다 — 별도 필드로 중복 저장하지 않는다."""
+        return float(self.source.value)  # type: ignore[arg-type]
+
+    def freshness(self, evaluation_date: date) -> Freshness:
+        """수집일도 평가일 이전이어야 한다 — 미래에 수집한 테이블은 look-ahead다."""
+        if self.collected_at > evaluation_date:
+            return "future"
+        return _freshness(self.source.as_of, evaluation_date, INDUSTRY_BETA_MAX_AGE_DAYS)
+
+
+class BetaPeerMember(BaseModel):
+    """peer beta 스냅샷의 구성원. **멀티플 필드는 없다** (§2.3 순환 의존 구조적 차단).
+
+    파생 unlevered beta는 **저장하지 않는다.** raw 관측 + 숫자형 D/E·세율 Source에서
+    결정론적으로 계산한다 — 저장형 필드였다면 `unlevered_beta=99.0`을 그냥 써넣을 수 있다.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    legal_entity_id: str  # 법인 식별자 (티커 리네이밍/중복 상장으로 같은 법인을 두 번 세지 않도록)
+    ticker: str
+    observation: Optional[BetaObservation] = None  # 조회 실패로 제외된 후보는 None
+    de_ratio_pct: Optional[Source] = None  # 언레버 입력도 관측치다
+    tax_rate_pct: Optional[Source] = None
+    derived_from: list[str] = []
+    included: bool = True
+    exclusion_reason: str = ""
+
+    @field_validator("legal_entity_id", "ticker")
+    @classmethod
+    def non_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("BetaPeerMember.legal_entity_id / ticker는 필수입니다.")
+        return v
+
+    @model_validator(mode="after")
+    def validate_member(self):
+        if not self.included:
+            if not self.exclusion_reason.strip():
+                raise ValueError(
+                    f"BetaPeerMember[{self.ticker}]: 제외한 peer는 사유가 필요합니다 (감사)."
+                )
+            return self
+        if self.observation is None:
+            raise ValueError(
+                f"BetaPeerMember[{self.ticker}]: 유효(included) peer에는 beta 관측이 필요합니다. "
+                "관측이 없으면 included=False + exclusion_reason으로 남기십시오."
+            )
+        # 언레버 입력도 관측치다 — 가정을 Source로 위장해 넣을 수 없다.
+        for name, src in (("de_ratio_pct", self.de_ratio_pct), ("tax_rate_pct", self.tax_rate_pct)):
+            if src is not None and src.method not in OBSERVED_METHODS:
+                raise ValueError(
+                    f"BetaPeerMember[{self.ticker}].{name}.method='{src.method}'는 관측치가 아닙니다. "
+                    "가정은 DeclaredAssumption으로 표현하고, peer 파생값의 입력으로 쓰지 마십시오."
+                )
+        return self
+
+    @property
+    def unlevered_beta(self) -> Optional[float]:
+        """raw βL + D/E + 세율에서 **결정론적으로 계산**한다. 임의 입력 불가."""
+        if self.observation is None:
+            return None
+        de = _numeric_source_value(self.de_ratio_pct, f"BetaPeerMember[{self.ticker}].de_ratio_pct")
+        tax = _numeric_source_value(self.tax_rate_pct, f"BetaPeerMember[{self.ticker}].tax_rate_pct")
+        if de is None or tax is None:
+            return None
+        return hamada_unlever(self.observation.raw_levered_beta, de, tax)
+
+
+class BetaPeerSnapshot(BaseModel):
+    """§2.3 순환 의존 차단 — **멀티플 선정과 분리된** 동일 시점 beta 데이터셋.
+
+    - 멀티플 필드를 아예 두지 않는다 (`extra="forbid"`).
+    - 구성원 관측은 스냅샷의 관측창·빈도·벤치마크·계산법·기준일과 **전부 일치해야** 한다.
+      서로 다른 시장·관측창의 beta를 섞어 하나의 median으로 인정하지 않는다.
+    - median/peer_count는 유효 구성원에서 결정론적으로 계산되는 **일반 property**다.
+      computed_field로 두면 model_dump -> model_validate 왕복이 extra="forbid"와 충돌한다.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    snapshot_id: str
+    snapshot_version: str
+    as_of: date
+    content_sha256: str
+    window_start: date
+    window_end: date
+    frequency: BetaFrequency
+    benchmark: str
+    calculation_method: str
+    beta_basis: BetaBasis
+    members: list[BetaPeerMember] = []
+
+    @field_validator("snapshot_id", "snapshot_version", "benchmark", "calculation_method")
+    @classmethod
+    def non_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("BetaPeerSnapshot의 식별/벤치마크/계산법 필드는 필수입니다.")
+        return v
+
+    @field_validator("content_sha256")
+    @classmethod
+    def sha_format(cls, v: str) -> str:
+        return require_sha256(v, "BetaPeerSnapshot.content_sha256")
+
+    @model_validator(mode="after")
+    def validate_dataset_is_homogeneous(self):
+        if self.window_end <= self.window_start:
+            raise ValueError("BetaPeerSnapshot 관측창이 뒤집혔습니다.")
+        if self.window_end != self.as_of:
+            raise ValueError(
+                f"BetaPeerSnapshot: as_of({self.as_of})가 window_end({self.window_end})와 "
+                "다릅니다. 스냅샷 기준일은 관측창의 끝이어야 합니다."
+            )
+
+        # 같은 법인을 복제해 N을 채울 수 없다 (peer_count는 '고유 법인 수'여야 의미가 있다).
+        seen_entities: set[str] = set()
+        seen_tickers: set[str] = set()
+        for m in self.members:
+            if not m.included:
+                continue
+            entity = m.legal_entity_id.strip().lower()
+            ticker = m.ticker.strip().lower()
+            if entity in seen_entities or ticker in seen_tickers:
+                raise ValueError(
+                    f"BetaPeerSnapshot: peer가 중복됩니다 (legal_entity_id={m.legal_entity_id!r}, "
+                    f"ticker={m.ticker!r}). 같은 법인을 여러 번 세어 최소 peer 수를 채울 수 없습니다."
+                )
+            seen_entities.add(entity)
+            seen_tickers.add(ticker)
+
+        for m in self.members:
+            if not m.included or m.observation is None:
+                continue
+            obs = m.observation
+            mismatched = [
+                name
+                for name, a, b in (
+                    ("window_start", obs.window_start, self.window_start),
+                    ("window_end", obs.window_end, self.window_end),
+                    ("frequency", obs.frequency, self.frequency),
+                    ("benchmark", obs.benchmark, self.benchmark),
+                    ("calculation_method", obs.calculation_method, self.calculation_method),
+                    ("as_of", obs.as_of, self.as_of),
+                )
+                if a != b
+            ]
+            if mismatched:
+                raise ValueError(
+                    f"BetaPeerSnapshot[{m.ticker}]: 스냅샷과 {mismatched}가 다릅니다. "
+                    "서로 다른 시장·관측창의 beta를 하나의 median으로 섞을 수 없습니다 (§2.3 동일 시점 데이터셋)."
+                )
+            if self.beta_basis == "unlevered":
+                if m.de_ratio_pct is None or m.tax_rate_pct is None:
+                    raise ValueError(
+                        f"BetaPeerSnapshot[{m.ticker}]: unlevered basis의 유효 peer에는 "
+                        "D/E·세율 Source가 **둘 다** 필요합니다 (파생 unlevered beta의 입력)."
+                    )
+                for name, src in (
+                    ("de_ratio_pct", m.de_ratio_pct),
+                    ("tax_rate_pct", m.tax_rate_pct),
+                ):
+                    if src.as_of != self.as_of:
+                        raise ValueError(
+                            f"BetaPeerSnapshot[{m.ticker}].{name}.as_of({src.as_of})가 스냅샷 "
+                            f"기준일({self.as_of})과 다릅니다 — 동일 시점 데이터셋이 아닙니다."
+                        )
+                if m.unlevered_beta is None:
+                    raise ValueError(
+                        f"BetaPeerSnapshot[{m.ticker}]: D/E·세율이 경제적 정의역 밖이라 파생 "
+                        "unlevered beta를 계산할 수 없습니다. included=False + 사유로 남기십시오."
+                    )
+        return self
+
+    def _member_beta(self, m: BetaPeerMember) -> Optional[float]:
+        if self.beta_basis == "unlevered":
+            return m.unlevered_beta
+        return m.observation.raw_levered_beta if m.observation else None
+
+    @property
+    def valid_betas(self) -> list[float]:
+        out = []
+        for m in self.members:
+            if not m.included:
+                continue
+            b = self._member_beta(m)
+            if b is not None and math.isfinite(b):
+                out.append(float(b))
+        return sorted(out)  # 정렬 = 결정론
+
+    @property
+    def peer_count(self) -> int:
+        return len(self.valid_betas)
+
+    @property
+    def median_beta(self) -> Optional[float]:
+        betas = self.valid_betas
+        if not betas:
+            return None
+        return float(statistics.median(betas))
+
+    def freshness(self, evaluation_date: date) -> Freshness:
+        """시장 데이터이므로 허용 시차가 짧다 (§2.5: 7일). 미래 기준일은 look-ahead."""
+        return _freshness(self.as_of, evaluation_date, BETA_PEER_SNAPSHOT_MAX_AGE_DAYS)
 
 
 # ── 순차입금 taxonomy (PLAN §2.1) ──

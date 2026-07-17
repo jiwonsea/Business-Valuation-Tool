@@ -42,7 +42,37 @@ _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 # Model tiers for mixed strategy (Haiku for routine, Sonnet for reasoning)
 MODEL_LIGHT = "claude-haiku-4-5-20251001"  # classify, peers, wacc
-MODEL_HEAVY = "claude-sonnet-4-20250514"  # scenarios, research notes
+MODEL_HEAVY = "claude-sonnet-4-6"  # scenarios, research notes
+
+_OPENROUTER_MODEL_MAP = {
+    MODEL_LIGHT: "anthropic/claude-haiku-4.5",
+    MODEL_HEAVY: "anthropic/claude-sonnet-4.6",
+}
+
+
+def _resolve_anthropic_model(model: str) -> str:
+    """Resolve a logical model tier to a direct Anthropic model ID."""
+    resolved = (
+        os.getenv("BVT_ANTHROPIC_MODEL_HEAVY", MODEL_HEAVY)
+        if model == MODEL_HEAVY
+        else model
+    )
+    if "/" in resolved:
+        raise ValueError(f"Anthropic model ID must not contain '/': {resolved}")
+    return resolved
+
+
+def _resolve_openrouter_model(model: str) -> str:
+    """Resolve a logical model tier to an OpenRouter provider/model slug."""
+    if model == MODEL_HEAVY:
+        resolved = os.getenv(
+            "BVT_OPENROUTER_MODEL_HEAVY", _OPENROUTER_MODEL_MAP[MODEL_HEAVY]
+        )
+    else:
+        resolved = _OPENROUTER_MODEL_MAP.get(model, model)
+    if "/" not in resolved:
+        raise ValueError(f"OpenRouter model slug must contain '/': {resolved}")
+    return resolved
 
 
 def _get_provider() -> str:
@@ -93,6 +123,7 @@ def _ask_anthropic(
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
 
+    model = _resolve_anthropic_model(model)
     client = _get_anthropic_client(key)
     messages = [{"role": "user", "content": prompt}]
 
@@ -183,20 +214,9 @@ def _ask_openrouter(
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    # Map Anthropic model IDs to OpenRouter equivalents
-    # OpenRouter uses dot notation (claude-haiku-4.5), not date suffixes (claude-haiku-4-5-20251001)
-    _ANTHROPIC_TO_OPENROUTER = {
-        MODEL_LIGHT: "anthropic/claude-haiku-4.5",
-        MODEL_HEAVY: "anthropic/claude-sonnet-4",
-    }
     if not model:
         model = os.getenv("OPENROUTER_MODEL", _OPENROUTER_DEFAULT_MODEL)
-    elif model.startswith("claude-"):
-        model = _ANTHROPIC_TO_OPENROUTER.get(model, f"anthropic/{model}")
-        # Strip date suffixes (e.g. anthropic/claude-sonnet-4-20250514 -> anthropic/claude-sonnet-4)
-        import re
-
-        model = re.sub(r"-\d{8}$", "", model)
+    model = _resolve_openrouter_model(model)
 
     messages = []
     if system:

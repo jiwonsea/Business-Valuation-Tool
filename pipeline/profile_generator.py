@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import tempfile
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 from dataclasses import dataclass
@@ -119,6 +120,98 @@ def _atomic_write_yaml(path: str, raw: dict) -> None:
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+def _write_enrichment_checkpoint(path: str, raw: dict) -> None:
+    """Persist enriched inputs as an overwriteable, non-publishable draft."""
+    checkpoint = deepcopy(raw)
+    checkpoint["draft"] = True
+    checkpoint["generated"] = "auto"
+    checkpoint["curated"] = False
+    if checkpoint.get("scenarios"):
+        checkpoint["scenario_validation"] = {"status": "pending"}
+    _atomic_write_yaml(path, checkpoint)
+
+
+def _repair_scenarios_safely(
+    analyst,
+    raw: dict,
+    validation_report,
+    method: str,
+):
+    """Attempt one LLM repair without allowing provider failure to abort persistence."""
+    initial_report = validation_report
+    original_scenarios = deepcopy(raw["scenarios"])
+    try:
+        repaired_scenarios = _repair_scenarios_with_llm(
+            analyst=analyst,
+            original=raw["scenarios"],
+            errors=validation_report.errors,
+            method=method,
+        )
+        raw["scenarios"] = repaired_scenarios
+        validation_report, _ = _compute_scenario_validation(raw, method)
+        original_error_set = {
+            (error.path, error.code) for error in initial_report.errors
+        }
+        repeated_error_set = {
+            (error.path, error.code) for error in validation_report.errors
+        }
+        if (
+            validation_report.status == "fail"
+            and repeated_error_set == original_error_set
+        ):
+            validation_report = validation_report.model_copy(
+                update={"retryable": False}
+            )
+    except Exception as exc:
+        raw["scenarios"] = original_scenarios
+        validation_report = initial_report.model_copy(
+            update={
+                "status": "fail",
+                "retryable": False,
+                "retry_attempts": 1,
+            }
+        )
+        logger.warning(
+            "scenario repair failed",
+            extra={
+                "exception_type": type(exc).__name__,
+                "error_codes": [error.code for error in validation_report.errors],
+                "retry_attempts": 1,
+            },
+        )
+    return validation_report
+
+
+def _is_enrichment_draft(segments, peers, scenarios, validation_report) -> bool:
+    """Keep incomplete or non-passing scenario enrichment non-publishable."""
+    inputs_complete = bool(segments and peers and scenarios)
+    validation_ok = validation_report is None or validation_report.status == "ok"
+    return not (inputs_complete and validation_ok)
+
+
+def _emit_peers_batch_coverage(
+    company: str,
+    requested_codes: list[str],
+    returned_codes: set[str],
+    parse_failed: bool,
+    fallback_calls: int,
+) -> None:
+    """Emit batch coverage without changing the peer recommendation contract."""
+    from ai.telemetry import call_context, emit
+
+    with call_context(company, "peers_batch"):
+        emit(
+            "peers_batch_coverage",
+            requested_segments=len(requested_codes),
+            returned_segments=len(returned_codes),
+            missing_codes=[
+                code for code in requested_codes if code not in returned_codes
+            ],
+            parse_failed=parse_failed,
+            fallback_calls=fallback_calls,
+        )
 
 
 def _compute_scenario_validation(raw: dict, method: str):
@@ -923,6 +1016,9 @@ def auto_analyze(
     if segments:
         print("[AI 3/6] Peer 기업 추천 중...")
         batch_ok = False
+        batch_parse_failed = False
+        batch_returned_codes = set()
+        fallback_calls = 0
         try:
             batch_result = analyst.recommend_peers_batch(
                 identity.name, segments, market=identity.market
@@ -932,6 +1028,7 @@ def auto_analyze(
                 seg_data = batch_result.get(code, {})
                 if not seg_data or "peers" not in seg_data:
                     continue
+                batch_returned_codes.add(code)
                 for p in seg_data.get("peers", []):
                     peers_all.append(
                         {
@@ -948,6 +1045,7 @@ def auto_analyze(
                 )
             batch_ok = len(multiples_ai) == len(segments)
         except Exception as e:
+            batch_parse_failed = True
             logger.warning(
                 "Batch peer recommendation failed: %s — falling back to per-segment", e
             )
@@ -958,6 +1056,7 @@ def auto_analyze(
                 code = seg.get("code", "MAIN")
                 if code in multiples_ai:
                     continue
+                fallback_calls += 1
                 name = seg.get("name", "Main")
                 try:
                     peer_result = analyst.recommend_peers(
@@ -983,6 +1082,15 @@ def auto_analyze(
                 except Exception as e:
                     print(f"  [WARN] {code} Peer 추천 실패: {e}")
                     multiples_ai[code] = 10.0
+
+        requested_codes = [seg.get("code", "MAIN") for seg in segments]
+        _emit_peers_batch_coverage(
+            identity.name,
+            requested_codes,
+            batch_returned_codes,
+            batch_parse_failed,
+            fallback_calls,
+        )
 
     # AI Step 4: WACC recommendation
     print("[AI 4/6] WACC 추정 중...")
@@ -1284,12 +1392,13 @@ def auto_analyze(
             raw.setdefault("dcf_params", {})["ebitda_growth_rates"] = updated_rates
             print(f"  [Growth rates updated from segments: {rates_str}]")
 
+    _write_enrichment_checkpoint(yaml_path, raw)
+
     validation_report = None
     validation_retry_attempts = 0
     if raw.get("scenarios"):
         initial_report, _ = _compute_scenario_validation(raw, val_method)
         validation_report = initial_report
-        repaired_scenarios = None
         retry_limit = min(
             _DEFAULT_SCENARIO_VALIDATION_RETRIES,
             _SCENARIO_VALIDATION_RETRY_CAP,
@@ -1312,28 +1421,10 @@ def auto_analyze(
                     },
                 )
             else:
-                repaired_scenarios = _repair_scenarios_with_llm(
-                    analyst=analyst,
-                    original=raw["scenarios"],
-                    errors=validation_report.errors,
-                    method=val_method,
-                )
                 validation_retry_attempts = 1
-                raw["scenarios"] = repaired_scenarios
-                validation_report, _ = _compute_scenario_validation(raw, val_method)
-                original_error_set = {
-                    (error.path, error.code) for error in initial_report.errors
-                }
-                repeated_error_set = {
-                    (error.path, error.code) for error in validation_report.errors
-                }
-                if (
-                    validation_report.status == "fail"
-                    and repeated_error_set == original_error_set
-                ):
-                    validation_report = validation_report.model_copy(
-                        update={"retryable": False}
-                    )
+                validation_report = _repair_scenarios_safely(
+                    analyst, raw, validation_report, val_method
+                )
         if validation_report is not None:
             validation_report = validation_report.model_copy(
                 update={"retry_attempts": validation_retry_attempts}
@@ -1366,7 +1457,12 @@ def auto_analyze(
     # The initial file is always a draft. Clear that explicit marker only when
     # the enrichment produced the minimum curation inputs; the investability
     # gate performs the stricter value/reconciliation checks afterwards.
-    raw["draft"] = not bool(segments and peers_all and raw.get("scenarios"))
+    raw["draft"] = _is_enrichment_draft(
+        segments,
+        peers_all,
+        raw.get("scenarios"),
+        validation_report,
+    )
     raw["generated"] = "auto"
     raw.setdefault("curated", False)
 

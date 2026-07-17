@@ -409,6 +409,159 @@ ttm_provenance:
       prior_ytd: 19094
       current_ytd: 45548
     source: NVIDIA earnings releases furnished with Form 8-K
+forward_anchor:
+  provider: yfinance
+  basis: consensus_estimate
+  as_of: '2026-07-17'
+  retrieved_at: '2026-07-17T11:55:33.809849Z'
+  relative_period: 0y
+  fiscal_period: FY27
+  fiscal_period_end: '2027-01-25'
+  source_hash: 90e96f0d0b34084c6ff6f2ab243e9debe54266b9b3f109ff70942fabcb45c7b5
+  revenue:
+    value: 392965.11375
+    unit: $M
+    n_analysts: 51
+    estimate_type: mean
+  eps:
+    value: 8.98214
+    unit: USD/share
+    n_analysts: 50
+    estimate_type: mean
+peer_beta_snapshot:
+  as_of: '2026-07-11'
+  candidates:
+  - name: Advanced Micro Devices
+    ticker: AMD
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: data-center GPU and accelerator competitor
+    exclusion_reason: null
+    raw_levered_beta: 2.047461038245245
+    blume_adjusted: 1.7018
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: 7ac538d75e3680255541b5fe73e5862ccec8f89e74c9408039f07928ce65d6c0
+  - name: Broadcom
+    ticker: AVGO
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: AI networking and custom accelerator semiconductor peer
+    exclusion_reason: null
+    raw_levered_beta: 2.396960852460291
+    blume_adjusted: 1.936
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: 62a235bad6f517755c056014a4164dca73d5df396e12a45a1eab0064989392bc
+  - name: Marvell Technology
+    ticker: MRVL
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: data-center networking and custom compute semiconductor
+      peer
+    exclusion_reason: null
+    raw_levered_beta: 2.193461107175522
+    blume_adjusted: 1.7996
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: 77412546eb13202f7bd4e3b004572da1bff89e502108ba1aa57eba5413b0fdcb
+  - name: Intel
+    ticker: INTC
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: data-center compute and accelerator competitor
+    exclusion_reason: null
+    raw_levered_beta: 2.0959295650361045
+    blume_adjusted: 1.7343
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: abf836c30fc3f5a81c7b8c4a832623017047adf3119ad525cefcaac280f7e3a1
+  - name: Arm Holdings
+    ticker: ARM
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: listed compute-architecture supplier exposed to data-center
+      AI
+    exclusion_reason: null
+    raw_levered_beta: 2.5854462906524973
+    blume_adjusted: 2.0622
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: 8ae96aaa7e018c6088f1266b699b3a001328cc902b1d1d4d1295e566ab772aa0
+  - name: Qualcomm
+    ticker: QCOM
+    segment_code: MAIN
+    qualified: true
+    qualification_reason: listed fabless compute semiconductor peer
+    exclusion_reason: null
+    raw_levered_beta: 1.7404392841335998
+    blume_adjusted: 1.4961
+    window_start: '2024-07-05'
+    window_end: '2026-07-10'
+    frequency: weekly
+    benchmark: ^GSPC
+    observation_count: 106
+    calculation_method: ols_weekly_log_returns_adjusted_close
+    source_hash: c25ae5b1162815c08d9764273eabeaac065c912103dcff5cd8418d77d1b8a92a
+  - name: SK hynix
+    ticker: 000660.KS
+    segment_code: MAIN
+    qualified: false
+    qualification_reason: null
+    exclusion_reason: benchmark_mismatch
+    raw_levered_beta: null
+    blume_adjusted: null
+    window_start: null
+    window_end: null
+    frequency: null
+    benchmark: null
+    observation_count: null
+    calculation_method: null
+    source_hash: null
+  - name: Samsung Electronics
+    ticker: 005930.KS
+    segment_code: MAIN
+    qualified: false
+    qualification_reason: null
+    exclusion_reason: benchmark_mismatch
+    raw_levered_beta: null
+    blume_adjusted: null
+    window_start: null
+    window_end: null
+    frequency: null
+    benchmark: null
+    observation_count: null
+    calculation_method: null
+    source_hash: null
+  judgement:
+    status: validated
+    company_raw_bl: 2.04
+    n_qualified: 6
+    median_raw: 2.144695336105813
+    q1_raw: 2.05957816994296
+    q3_raw: 2.3460859161390983
+    lower_fence: 1.629816550648752
+    upper_fence: 2.7758475354333063
 news_key_issues: '- [기회] NVIDIA, Microsoft, AWS가 군사용 AI 기술 확장에 관한 계약 체결 (2026-05-01)
 
   - [기회] NVIDIA의 Nemotron 3 Nano Omni 모델 출시로 효율적인 AI 에이전트 개발 가능 (2026-04-28)

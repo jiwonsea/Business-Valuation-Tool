@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -18,6 +18,98 @@ from schemas.provenance import (
 
 
 # ── Company Basic Info ──
+
+
+class ForwardEstimateMetric(BaseModel):
+    """One analyst-consensus metric; provenance is metric-specific."""
+
+    value: float
+    unit: str
+    n_analysts: int
+    estimate_type: Literal["mean"] = "mean"
+
+    @field_validator("n_analysts")
+    @classmethod
+    def analysts_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("forward estimate requires a positive analyst count")
+        return v
+
+
+class ForwardAnchor(BaseModel):
+    """Display-only consensus snapshot. Never merged into reported financials."""
+
+    provider: str
+    basis: Literal["consensus_estimate"] = "consensus_estimate"
+    as_of: date
+    retrieved_at: datetime
+    relative_period: Literal["0y", "+1y"]
+    fiscal_period: Optional[str] = None
+    fiscal_period_end: Optional[date] = None
+    source_hash: str
+    revenue: Optional[ForwardEstimateMetric] = None
+    eps: Optional[ForwardEstimateMetric] = None
+
+    @model_validator(mode="after")
+    def has_metric(self):
+        if self.revenue is None and self.eps is None:
+            raise ValueError("forward anchor requires revenue or EPS consensus")
+        return self
+
+
+class PeerBetaEntry(BaseModel):
+    name: str
+    ticker: Optional[str] = None
+    segment_code: Optional[str] = None
+    qualified: bool
+    qualification_reason: Optional[str] = None
+    exclusion_reason: Optional[str] = None
+    raw_levered_beta: Optional[float] = None
+    blume_adjusted: Optional[float] = None
+    window_start: Optional[date] = None
+    window_end: Optional[date] = None
+    frequency: Optional[str] = None
+    benchmark: Optional[str] = None
+    observation_count: Optional[int] = None
+    calculation_method: Optional[str] = None
+    source_hash: Optional[str] = None
+
+    @model_validator(mode="after")
+    def qualification_contract(self):
+        observed = (
+            "ticker", "raw_levered_beta", "blume_adjusted", "window_start",
+            "window_end", "frequency", "benchmark", "observation_count",
+            "calculation_method", "source_hash",
+        )
+        if self.qualified and any(getattr(self, field) is None for field in observed):
+            raise ValueError("qualified peer beta entry has incomplete provenance")
+        if self.qualified and not self.qualification_reason:
+            raise ValueError("qualified peer requires qualification_reason")
+        if not self.qualified and not self.exclusion_reason:
+            raise ValueError("unqualified peer requires exclusion_reason")
+        return self
+
+
+class PeerBetaJudgement(BaseModel):
+    status: Literal[
+        "validated", "outlier_high", "outlier_low",
+        "insufficient_peers", "method_mismatch",
+        "degenerate_distribution",
+    ]
+    company_raw_bl: float
+    n_qualified: int
+    median_raw: Optional[float] = None
+    q1_raw: Optional[float] = None
+    q3_raw: Optional[float] = None
+    lower_fence: Optional[float] = None
+    upper_fence: Optional[float] = None
+
+
+class PeerBetaSnapshot(BaseModel):
+    as_of: date
+    candidates: list[PeerBetaEntry]
+    judgement: PeerBetaJudgement
+
 
 
 class CompanyProfile(BaseModel):
@@ -929,6 +1021,9 @@ class ValuationInput(BaseModel):
         default=None, exclude=True
     )
     financial_anchor_fallback_reason: Optional[str] = None
+    # Display/audit only. These fields must never feed consolidated or segment_data.
+    forward_anchor: Optional[ForwardAnchor] = None
+    peer_beta_snapshot: Optional[PeerBetaSnapshot] = None
     # Cross-validation multiples (0 means skip that method)
     ev_revenue_multiple: float = 0.0
     pe_multiple: float = 0.0

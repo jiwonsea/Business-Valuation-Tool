@@ -466,6 +466,10 @@ def load_profile(path: str) -> ValuationInput:
         ttm_provenance=raw.get("ttm_provenance"),
         fy_base_financials=fy_base_financials,
         financial_anchor_fallback_reason=anchor_fallback_reason,
+        # Consensus and peer snapshots are audit/display metadata only. Deliberately
+        # do not merge either block into consolidated, segment_data, or WACC inputs.
+        forward_anchor=raw.get("forward_anchor"),
+        peer_beta_snapshot=raw.get("peer_beta_snapshot"),
         ev_revenue_multiple=raw.get("ev_revenue_multiple", 0.0),
         pe_multiple=raw.get("pe_multiple", 0.0),
         pbv_multiple=raw.get("pbv_multiple", 0.0),
@@ -731,6 +735,8 @@ def _raw_profile_for_gate(vi: ValuationInput, result: ValuationResult) -> dict:
         "curated": vi.curated,
         "segments": segments,
         "optionality_flag": any(info.get("optionality") for info in vi.segments.values()),
+        "peer_beta_snapshot": vi.peer_beta_snapshot.model_dump(mode="json")
+        if vi.peer_beta_snapshot else None,
     }
 
 

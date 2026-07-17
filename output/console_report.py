@@ -34,6 +34,30 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             )
     elif vi.financial_anchor_fallback_reason:
         print(f"TTM fallback: {vi.financial_anchor_fallback_reason}")
+    if vi.forward_anchor:
+        forward = vi.forward_anchor
+        metrics = []
+        if forward.revenue:
+            metrics.append(
+                f"매출 {forward.revenue.value:,.0f}{forward.revenue.unit} "
+                f"(n={forward.revenue.n_analysts})"
+            )
+        if forward.eps:
+            metrics.append(
+                f"EPS {forward.eps.value:,.2f} {forward.eps.unit} "
+                f"(n={forward.eps.n_analysts})"
+            )
+        period_label = forward.fiscal_period or f"컨센서스 {forward.relative_period}"
+        print(
+            f"{period_label} 컨센서스 (예측치, {forward.provider}): "
+            + " | ".join(metrics)
+        )
+    if vi.peer_beta_snapshot:
+        judgement = vi.peer_beta_snapshot.judgement
+        print(
+            f"Peer beta 판정: {judgement.status} "
+            f"(raw βL={judgement.company_raw_bl:.3f}, n={judgement.n_qualified})"
+        )
     for warning in vi.scenario_spread_warnings:
         print(f"⚠ {warning}")
     for warning in vi.share_count_warnings:

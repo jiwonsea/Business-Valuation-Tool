@@ -21,10 +21,9 @@ Blocking checks (all must pass):
   3. segments_reconcile — when segment revenues are present they must sum to the
                         consolidated revenue within tolerance (default 5%). A
                         SOTP method with no segments is a block.
-  4. no_placeholder_multiples — no multiple left at its auto-generated placeholder
-                        (e.g. the 10.0 "TODO: Set appropriate multiple" default).
-  5. no_todo_markers  — no TODO / "auto-generated draft profile" markers remain in
-                        the profile text.
+  4. profile_status    — explicit draft/generated metadata is authoritative.
+  5. no_placeholder_multiples — no explicit/null or generated TODO multiple remains.
+  6. no_todo_markers  — legacy # TODO / # FIXME comments remain blocking.
 """
 
 from __future__ import annotations
@@ -37,7 +36,7 @@ DCF_PEER_HIGH = 1.5
 MIN_GRADE = "C"
 SEGMENT_RECONCILE_TOL = 0.05  # |sum(segments) - consolidated| / consolidated
 _GRADE_ORDER = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
-_TODO_PATTERNS = ("todo", "auto-generated draft profile", "fixme", "placeholder")
+_TODO_PATTERNS = ("todo", "fixme")
 
 
 @dataclass(frozen=True)
@@ -75,6 +74,10 @@ class GateInputs:
     placeholder_multiples: list[str] = field(default_factory=list)
     text: str = ""
     optionality_flag: bool = False
+    declared_draft: bool = False
+    generated: str = ""
+    curated: bool = False
+    peer_beta_status: str | None = None
 
 
 def _check_dcf_vs_peer(
@@ -146,14 +149,39 @@ def _check_no_placeholder_multiples(placeholders: list[str]) -> GateFinding:
     )
 
 
-def _check_no_todo_markers(text: str) -> GateFinding:
-    lowered = (text or "").lower()
-    hits = [pat for pat in _TODO_PATTERNS if pat in lowered]
-    ok = not hits
-    return GateFinding(
-        "no_todo_markers", ok, "block",
-        "draft/TODO markers present: " + ", ".join(hits) if hits else "no TODO markers",
+def _check_no_todo_markers(text: str, curated: bool = False) -> GateFinding:
+    comment_lines = [
+        line.lstrip()[1:].strip().lower()
+        for line in (text or "").splitlines()
+        if line.lstrip().startswith("#")
+    ]
+    hits = sorted(
+        {pat for pat in _TODO_PATTERNS if any(pat in line for line in comment_lines)}
     )
+    ok = not hits or curated
+    return GateFinding(
+        "no_todo_markers", ok, "warn" if curated and hits else "block",
+        "legacy TODO markers present: " + ", ".join(hits) if hits else "no TODO markers",
+    )
+
+
+def _check_profile_status(inputs: GateInputs) -> GateFinding:
+    ok = not inputs.declared_draft
+    detail = (
+        f"profile status draft={inputs.declared_draft}, generated={inputs.generated!r}, "
+        f"curated={inputs.curated}"
+    )
+    return GateFinding("profile_status", ok, "block", detail)
+
+
+def _check_peer_beta_range(status: str | None) -> GateFinding:
+    if status is None:
+        return GateFinding("peer_beta_range", True, "warn", "peer beta snapshot not provided")
+    if status == "validated":
+        return GateFinding("peer_beta_range", True, "block", "company raw beta is within peer range")
+    if status in ("outlier_high", "outlier_low"):
+        return GateFinding("peer_beta_range", False, "block", f"company raw beta is {status}")
+    return GateFinding("peer_beta_range", False, "warn", f"peer beta judgement unavailable: {status}")
 
 
 def evaluate_investability(inputs: GateInputs) -> InvestabilityReport:
@@ -168,8 +196,10 @@ def evaluate_investability(inputs: GateInputs) -> InvestabilityReport:
         _check_segments_reconcile(
             inputs.method, inputs.segment_revenues, inputs.consolidated_revenue
         ),
+        _check_profile_status(inputs),
         _check_no_placeholder_multiples(inputs.placeholder_multiples),
-        _check_no_todo_markers(inputs.text),
+        _check_no_todo_markers(inputs.text, inputs.curated),
+        _check_peer_beta_range(inputs.peer_beta_status),
     ]
     investable = all(f.passed for f in findings if f.severity == "block")
     return InvestabilityReport(investable=investable, draft=not investable, findings=findings)
@@ -224,7 +254,14 @@ def gate_inputs_from_profile(
         mult = s.get("multiple")
         if mult is None:
             placeholders.append(f"{s.get('id', s.get('name', '?'))}.multiple=null")
-        elif mult == 10.0 and "todo" in (text or "").lower():
+        elif mult == 10.0 and (
+            str(raw.get("generated", "")).lower() == "auto"
+            or any(
+                "todo" in line.lower()
+                for line in (text or "").splitlines()
+                if line.lstrip().startswith("#")
+            )
+        ):
             placeholders.append(f"{s.get('id', s.get('name', '?'))}.multiple=10.0(default)")
     method = str(raw.get("primary_method") or raw.get("method") or "dcf")
     optionality_flag = bool(
@@ -242,4 +279,8 @@ def gate_inputs_from_profile(
         placeholder_multiples=placeholders,
         text=text,
         optionality_flag=optionality_flag,
+        declared_draft=bool(raw.get("draft", False)),
+        generated=str(raw.get("generated", "")),
+        curated=bool(raw.get("curated", False)),
+        peer_beta_status=(raw.get("peer_beta_snapshot") or {}).get("judgement", {}).get("status"),
     )

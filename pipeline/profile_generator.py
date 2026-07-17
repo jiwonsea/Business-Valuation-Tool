@@ -882,14 +882,14 @@ def auto_analyze(
         print_report(vi, result)
         from output.excel_builder import export
 
-        path = export(vi, result, output_dir)
-        print(f"\n[Excel] 저장 완료: {path}")
         try:
             from orchestrator import _save_to_db
 
             _save_to_db(vi, result, yaml_path)
         except Exception:
             logger.debug("auto_analyze DB save skipped")
+        path = export(vi, result, output_dir)
+        print(f"\n[Excel] 저장 완료: {path}")
         from orchestrator import format_summary
 
         return AnalyzeResult(
@@ -1391,15 +1391,14 @@ def auto_analyze(
 
     from output.excel_builder import export
 
-    path = export(vi, result, output_dir)
-    print(f"\n[Excel] 저장 완료: {path}")
-
     try:
         from orchestrator import _save_to_db
 
         _save_to_db(vi, result, yaml_path)
     except Exception:
         logger.debug("auto_analyze DB save skipped")
+    path = export(vi, result, output_dir)
+    print(f"\n[Excel] 저장 완료: {path}")
 
     from orchestrator import format_summary
 

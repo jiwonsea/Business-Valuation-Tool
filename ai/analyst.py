@@ -11,6 +11,7 @@
 import hashlib
 import json
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -83,9 +84,15 @@ def _cache_key(company: str, step: str, extra: str = "") -> str:
     return f"{safe_name}_{step}_{h}.json"
 
 
+def _cache_dir() -> Path:
+    """Return an isolated cache directory only when explicitly requested."""
+    namespace = os.getenv("BVT_CACHE_NS", "").strip()
+    return _LLM_CACHE_DIR / namespace if namespace else _LLM_CACHE_DIR
+
+
 def _get_cached(company: str, step: str, extra: str = "") -> dict | None:
     """Load LLM response from cache. Returns None if TTL expired."""
-    path = _LLM_CACHE_DIR / _cache_key(company, step, extra)
+    path = _cache_dir() / _cache_key(company, step, extra)
     if not path.exists():
         return None
     if time.time() - path.stat().st_mtime > _LLM_CACHE_TTL:
@@ -101,8 +108,9 @@ def _get_cached(company: str, step: str, extra: str = "") -> dict | None:
 
 def _set_cached(company: str, step: str, data: dict, extra: str = ""):
     """Save LLM response to cache."""
-    _LLM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    path = _LLM_CACHE_DIR / _cache_key(company, step, extra)
+    cache_dir = _cache_dir()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    path = cache_dir / _cache_key(company, step, extra)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
@@ -166,12 +174,15 @@ class AIAnalyst:
     ) -> dict:
         """Request structured JSON response + retry once on parse failure."""
         use_model = model or self.model
-        response = ask_structured(
-            prompt,
-            system=system,
-            model=use_model,
-            max_tokens=max_tokens,
-        )
+        from .telemetry import operation
+
+        with operation("primary"):
+            response = ask_structured(
+                prompt,
+                system=system,
+                model=use_model,
+                max_tokens=max_tokens,
+            )
         try:
             return _parse_json(response)
         except (json.JSONDecodeError, ValueError):
@@ -180,12 +191,13 @@ class AIAnalyst:
                 prompt
                 + "\n\n순수 JSON 객체만 출력하세요. 설명 텍스트 없이 JSON만 응답하세요."
             )
-            response = ask_structured(
-                retry_prompt,
-                system=system,
-                model=use_model,
-                max_tokens=max_tokens,
-            )
+            with operation("parse_repair"):
+                response = ask_structured(
+                    retry_prompt,
+                    system=system,
+                    model=use_model,
+                    max_tokens=max_tokens,
+                )
             return _parse_json(response)
 
     def _cached_json_step(
@@ -209,16 +221,27 @@ class AIAnalyst:
             extra: Additional cache key discriminator
             model: Model override for this step (empty = self.model)
         """
-        cached = _get_cached(company, step, extra)
-        if cached:
-            return cached
-        use_model = model or self.model
-        result = self._ask_json(
-            prompt_fn(), system=system, max_tokens=max_tokens, model=use_model
-        )
-        _set_cached(company, step, result, extra)
-        _save_analysis(company, step, result, use_model)
-        return result
+        from .telemetry import call_context, emit
+
+        with call_context(company, step):
+            emit("step_start")
+            cached = _get_cached(company, step, extra)
+            emit("cache_hit" if cached else "cache_miss")
+            if cached:
+                emit("step_end", outcome="cache_hit")
+                return cached
+            use_model = model or self.model
+            try:
+                result = self._ask_json(
+                    prompt_fn(), system=system, max_tokens=max_tokens, model=use_model
+                )
+                _set_cached(company, step, result, extra)
+                _save_analysis(company, step, result, use_model)
+                emit("step_end", outcome="success")
+                return result
+            except Exception:
+                emit("step_end", outcome="error")
+                raise
 
     def identify_company(self, user_input: str) -> dict:
         """Step 1: Natural language -> company identification."""
@@ -331,6 +354,8 @@ class AIAnalyst:
                 Sonnet for precision refinement (Pass 2). Logs token cost comparison.
             signals: MarketSignals for prompt context injection (Phase 4).
         """
+        # No production caller currently enables two_pass. Retained as an
+        # experimental path; it is excluded from the weekly budget estimate.
         if two_pass:
             return self._design_scenarios_two_pass(
                 company_name,
@@ -533,11 +558,24 @@ class AIAnalyst:
         valuation_summary: str,
     ) -> str:
         """Step 6: Research note generation (returns markdown text, not JSON)."""
-        cached = _get_cached(company_name, "research_note")
-        if cached:
-            return cached.get("note", "")
-        prompt = prompt_research_note(company_name, valuation_summary)
-        note = ask(prompt, system=SYSTEM_ANALYST, model=MODEL_HEAVY, max_tokens=4096)
-        _set_cached(company_name, "research_note", {"note": note})
-        _save_analysis(company_name, "research_note", {"note": note}, self.model)
-        return note
+        from .telemetry import call_context, emit
+
+        with call_context(company_name, "research_note"):
+            emit("step_start")
+            cached = _get_cached(company_name, "research_note")
+            emit("cache_hit" if cached else "cache_miss")
+            if cached:
+                emit("step_end", outcome="cache_hit")
+                return cached.get("note", "")
+            try:
+                prompt = prompt_research_note(company_name, valuation_summary)
+                note = ask(
+                    prompt, system=SYSTEM_ANALYST, model=MODEL_HEAVY, max_tokens=4096
+                )
+                _set_cached(company_name, "research_note", {"note": note})
+                _save_analysis(company_name, "research_note", {"note": note}, self.model)
+                emit("step_end", outcome="success")
+                return note
+            except Exception:
+                emit("step_end", outcome="error")
+                raise

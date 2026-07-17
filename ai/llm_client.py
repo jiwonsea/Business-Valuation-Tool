@@ -10,6 +10,7 @@ import atexit
 import logging
 import os
 import threading
+import time
 
 import httpx
 
@@ -56,7 +57,26 @@ def _get_provider() -> str:
     )
 
 
-from pipeline.api_guard import ApiGuardError, api_guard
+from pipeline.api_guard import (
+    ApiGuardError,
+    CircuitOpenError,
+    QuotaExceededError,
+    api_guard,
+)
+from .telemetry import emit, emit_blocked, fallback, is_fallback, next_attempt_no
+
+
+def _error_outcome(exc: Exception) -> str:
+    return "timeout" if isinstance(exc, httpx.TimeoutException) else "http_error"
+
+
+def _blocked_outcome(exc: ApiGuardError) -> str:
+    if isinstance(exc, CircuitOpenError):
+        return "circuit_open"
+    if isinstance(exc, QuotaExceededError):
+        return "quota_exceeded"
+    logger.warning("Unknown ApiGuardError subtype: %s", type(exc).__name__)
+    return "unknown"
 
 
 @api_guard("anthropic")
@@ -92,7 +112,25 @@ def _ask_anthropic(
             }
         ]
 
-    response = client.messages.create(**kwargs)
+    attempt_no = next_attempt_no()
+    started = time.perf_counter()
+    try:
+        response = client.messages.create(**kwargs)
+    except Exception as exc:
+        emit(
+            "attempt",
+            provider="anthropic",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome=_error_outcome(exc),
+            est_cost_usd=None,
+        )
+        raise
 
     # Usage logging -- token usage + cache hit tracking
     usage = response.usage
@@ -105,6 +143,26 @@ def _ask_anthropic(
         cache_read,
         cache_create,
         usage.output_tokens,
+    )
+    emit(
+        "attempt",
+        provider="anthropic",
+        model=model,
+        attempt_no=attempt_no,
+        is_fallback=is_fallback(),
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cache_read_tokens=cache_read,
+        latency_ms=round((time.perf_counter() - started) * 1000),
+        outcome="success",
+        est_cost_usd=None,
+    )
+    emit(
+        "llm_response_meta",
+        provider="anthropic",
+        model=model,
+        completion_tokens=usage.output_tokens,
+        stop_reason=getattr(response, "stop_reason", None),
     )
 
     return response.content[0].text
@@ -158,23 +216,108 @@ def _ask_openrouter(
         "Content-Type": "application/json",
     }
 
-    resp = _openrouter_client.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        json=payload,
-    )
+    attempt_no = next_attempt_no()
+    started = time.perf_counter()
+    try:
+        resp = _openrouter_client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+        )
+    except Exception as exc:
+        emit(
+            "attempt",
+            provider="openrouter",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome=_error_outcome(exc),
+            est_cost_usd=None,
+        )
+        raise
     if resp.status_code >= 400:
         logger.error("OpenRouter %d [%s]: %s", resp.status_code, model, resp.text[:500])
-    resp.raise_for_status()
-    data = resp.json()
+    try:
+        resp.raise_for_status()
+    except Exception as exc:
+        emit(
+            "attempt",
+            provider="openrouter",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome=_error_outcome(exc),
+            est_cost_usd=None,
+        )
+        raise
+    try:
+        data = resp.json()
+    except Exception:
+        emit(
+            "attempt",
+            provider="openrouter",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome="parse_error",
+            est_cost_usd=None,
+        )
+        raise
 
     if "error" in data:
+        emit(
+            "attempt", provider="openrouter", model=model, attempt_no=attempt_no,
+            is_fallback=is_fallback(), input_tokens=None, output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome="http_error", est_cost_usd=None,
+        )
         raise RuntimeError(f"OpenRouter error: {data['error']}")
 
     choices = data.get("choices")
     if not choices:
+        emit(
+            "attempt", provider="openrouter", model=model, attempt_no=attempt_no,
+            is_fallback=is_fallback(), input_tokens=None, output_tokens=None,
+            cache_read_tokens=None,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            outcome="parse_error", est_cost_usd=None,
+        )
         raise RuntimeError(f"OpenRouter returned empty choices: {data}")
 
+    usage = data.get("usage", {})
+    emit(
+        "attempt",
+        provider="openrouter",
+        model=model,
+        attempt_no=attempt_no,
+        is_fallback=is_fallback(),
+        input_tokens=usage.get("prompt_tokens"),
+        output_tokens=usage.get("completion_tokens"),
+        cache_read_tokens=None,
+        latency_ms=round((time.perf_counter() - started) * 1000),
+        outcome="success",
+        est_cost_usd=None,
+    )
+    emit(
+        "llm_response_meta",
+        provider="openrouter",
+        model=model,
+        completion_tokens=usage.get("completion_tokens"),
+        stop_reason=choices[0].get("finish_reason"),
+    )
     return choices[0]["message"]["content"]
 
 
@@ -208,20 +351,30 @@ def ask(
             RuntimeError,
             ApiGuardError,
         ) as e:
+            if isinstance(e, ApiGuardError):
+                emit_blocked("openrouter", model or _OPENROUTER_DEFAULT_MODEL, _blocked_outcome(e))
             # Fallback to Anthropic when OpenRouter fails or circuit is open
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
                 try:
-                    return _ask_anthropic(
-                        prompt, system, anthropic_model, max_tokens, temperature
-                    )
+                    with fallback():
+                        return _ask_anthropic(
+                            prompt, system, anthropic_model, max_tokens, temperature
+                        )
+                except ApiGuardError as fallback_err:
+                    emit_blocked("anthropic", anthropic_model, _blocked_outcome(fallback_err))
+                    raise fallback_err from e
                 except Exception as fallback_err:
                     raise fallback_err from e
             raise
     else:
         anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
-        return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+        try:
+            return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+        except ApiGuardError as exc:
+            emit_blocked("anthropic", anthropic_model, _blocked_outcome(exc))
+            raise
 
 
 def ask_structured(
@@ -242,10 +395,23 @@ def ask_structured(
                 prompt, system, model, max_tokens, temperature=0, json_mode=True
             )
         except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ApiGuardError) as e:
+            if isinstance(e, ApiGuardError):
+                emit_blocked("openrouter", model or _OPENROUTER_DEFAULT_MODEL, _blocked_outcome(e))
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
-                return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)
+                try:
+                    with fallback():
+                        return _ask_anthropic(
+                            prompt, system, anthropic_model, max_tokens, temperature=0
+                        )
+                except ApiGuardError as fallback_err:
+                    emit_blocked("anthropic", anthropic_model, _blocked_outcome(fallback_err))
+                    raise fallback_err from e
             raise
     anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
-    return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)
+    try:
+        return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)
+    except ApiGuardError as exc:
+        emit_blocked("anthropic", anthropic_model, _blocked_outcome(exc))
+        raise

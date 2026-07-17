@@ -15,6 +15,15 @@ from ..excel_styles import (
 )
 
 
+def _fmt_multiple(value: float) -> str:
+    text = f"{value:.5f}".rstrip("0").rstrip(".")
+    if "." not in text:
+        text += ".00"
+    elif len(text.rsplit(".", 1)[1]) == 1:
+        text += "0"
+    return f"{text}x"
+
+
 def sheet_assumptions(ctx: Ctx):
     ws = ctx.wb.active or ctx.wb.create_sheet("Assumptions")
     ws.title = "Assumptions"
@@ -34,7 +43,8 @@ def sheet_assumptions(ctx: Ctx):
         ws,
         2,
         1,
-        f"분석일: {ctx.vi.company.analysis_date}  |  방법론: {method_label}",
+        f"분석일: {ctx.vi.company.analysis_date}  |  방법론: {method_label}  |  "
+        f"재무 앵커: {ctx.vi.financial_anchor.upper()}",
         font=NOTE_FONT,
     )
 
@@ -138,7 +148,7 @@ def sheet_assumptions(ctx: Ctx):
                 "ev_revenue": "EV/Revenue",
             }.get(method, method)
             write_cell(ws, r, 1, f"{ctx.seg_names[code]} ({method_label})")
-            write_cell(ws, r, 2, f"{ctx.vi.multiples[code]:.1f}x", fill=BLUE_FILL)
+            write_cell(ws, r, 2, _fmt_multiple(ctx.vi.multiples[code]), fill=BLUE_FILL)
             r += 1
 
     elif ctx.method == "dcf_primary":
@@ -392,7 +402,7 @@ def sheet_assumptions(ctx: Ctx):
             ws, r, 2, ctx.vi.company.treasury_shares, fmt=NUM_FMT, fill=BLUE_FILL
         )
         r += 1
-        write_cell(ws, r, 1, "유통보통주식수 (주당가치 기준)")
+        write_cell(ws, r, 1, "유통보통주식수 (보통주 − 자사주)")
         write_cell(
             ws,
             r,
@@ -403,6 +413,17 @@ def sheet_assumptions(ctx: Ctx):
             bold=True,
         )
         r += 1
+    write_cell(ws, r, 1, "적용 주식수 (주당가치 분모)")
+    write_cell(
+        ws,
+        r,
+        2,
+        ctx.vi.valuation_shares,
+        fmt=NUM_FMT,
+        fill=BLUE_FILL,
+        bold=True,
+    )
+    r += 1
 
 
 def _write_assumption_drivers(ws, r: int, ctx: Ctx):

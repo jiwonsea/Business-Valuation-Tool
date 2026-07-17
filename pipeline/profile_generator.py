@@ -36,11 +36,89 @@ _DEFAULT_SCENARIO_VALIDATION_RETRIES = 1
 _SCENARIO_VALIDATION_RETRY_CAP = 2
 
 
+def _load_erp_snapshot(market: str, analysis_date: date) -> dict | None:
+    """Load the newest dated ERP snapshot available at the analysis date."""
+    directory = _PROJECT_ROOT / "references" / "market_assumptions"
+    candidates: list[tuple[date, dict]] = []
+    for path in directory.glob(f"{market.lower()}_erp_*.yaml"):
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        as_of = date.fromisoformat(str(payload["as_of"]))
+        if as_of <= analysis_date:
+            candidates.append((as_of, payload))
+    return max(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def _load_tax_snapshot(ticker: str, analysis_date: date) -> dict | None:
+    directory = _PROJECT_ROOT / "references" / "company_assumptions"
+    candidates: list[tuple[date, dict]] = []
+    for path in directory.glob(f"{ticker.lower()}_tax_*.yaml"):
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        as_of = date.fromisoformat(str(payload["as_of"]))
+        if as_of <= analysis_date:
+            candidates.append((as_of, payload))
+    return max(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def _profile_is_protected(path: Path) -> bool:
+    """Return True when an existing profile must not be auto-overwritten."""
+    if not path.exists():
+        return False
+    text = path.read_text(encoding="utf-8")
+    try:
+        raw = yaml.safe_load(text) or {}
+    except yaml.YAMLError:
+        return True
+    if raw.get("curated") is True:
+        return True
+    if raw.get("draft") is True or str(raw.get("generated", "")).lower() == "auto":
+        return False
+    legacy_stub = "auto-generated draft profile" in text.lower() and any(
+        "todo" in line.lower()
+        for line in text.splitlines()
+        if line.lstrip().startswith("#")
+    )
+    return not legacy_stub
+
+
 def _llm_quota_remaining() -> int:
     from pipeline.api_guard import ApiGuard
 
     usage = ApiGuard.get().get_usage_summary()
     return max(usage.get("openrouter", {}).get("remaining", 0), usage.get("anthropic", {}).get("remaining", 0))
+
+
+def _atomic_write_yaml(path: str, raw: dict) -> None:
+    """Replace a YAML file atomically so shorter rewrites cannot leave stale bytes."""
+    destination = os.path.abspath(path)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            suffix=".tmp",
+            dir=os.path.dirname(destination),
+            delete=False,
+        ) as tmp:
+            yaml.dump(
+                raw,
+                tmp,
+                allow_unicode=True,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+            tmp.flush()
+            os.fsync(tmp.fileno())
+            temp_path = tmp.name
+        os.replace(temp_path, destination)
+        temp_path = None
+        delivered = Path(destination).read_text(encoding="utf-8")
+        if not delivered.strip():
+            raise RuntimeError(f"Atomic YAML write produced an empty file: {destination}")
+        if yaml.safe_load(delivered) != raw:
+            raise RuntimeError(f"Atomic YAML write verification failed: {destination}")
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def _compute_scenario_validation(raw: dict, method: str):
@@ -232,7 +310,14 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
     from pipeline.macro_data import calc_effective_tax_rate
 
     effective_tax = calc_effective_tax_rate({0: cons})  # dummy year key
-    if effective_tax is not None:
+    analysis_date = getattr(identity, "analysis_date", None) or date.today()
+    tax_snapshot = _load_tax_snapshot(identity.ticker, analysis_date) if identity.ticker else None
+    forward_tax = shares_info.get("forward_tax_rate")
+    if forward_tax is None and tax_snapshot:
+        forward_tax = tax_snapshot["value_pct"]
+    if forward_tax is not None:
+        tax = float(forward_tax)
+    elif effective_tax is not None:
         tax = min(max(effective_tax, 0.0), statutory_tax)
     else:
         tax = statutory_tax * 0.85  # Conservative default
@@ -258,11 +343,64 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
     else:
         eq_w = round(100 / (1 + de_ratio / 100), 1)
 
-    # --- Unlevered beta via Hamada equation ---
-    if levered_beta and levered_beta > 0 and market_cap > 0:
-        hamada_de = gross_borr / market_cap if market_cap > 0 else 0
-        bu = round(levered_beta / (1 + (1 - tax / 100) * hamada_de), 3)
-        bu = max(bu, 0.1)  # Prevent unrealistic values
+    erp_snapshot = _load_erp_snapshot(market, analysis_date)
+    erp_provenance = None
+    if erp_snapshot:
+        erp = float(erp_snapshot["value_pct"])
+        rf = float(erp_snapshot.get("risk_free_rate_pct", rf))
+        source = erp_snapshot["source"]
+        erp_provenance = {
+            "status": "consumed_snapshot",
+            "as_of": str(erp_snapshot["as_of"]),
+            "method": erp_snapshot["method"],
+            "provider": source["provider"],
+            "url": source["url"],
+        }
+
+    beta_provenance = None
+    if identity.ticker and market_cap > 0:
+        try:
+            from engine.normalize import resolve_beta
+            from pipeline.beta_observation import collect_beta_observation
+
+            observation, digest, _ = collect_beta_observation(
+                identity.ticker, market, analysis_date
+            )
+            resolution = resolve_beta(
+                evaluation_date=analysis_date,
+                is_listed=True,
+                observation=observation,
+                de_ratio_pct=de_ratio,
+                tax_rate_pct=tax,
+                use_blume=True,
+            )
+            if not resolution.consumed:
+                raise ValueError(resolution.reason)
+            bu = round(float(resolution.normalized_value), 3)
+            beta_provenance = {
+                "status": resolution.status,
+                "as_of": observation.window_end.isoformat(),
+                "method": observation.calculation_method,
+                "provider": observation.equity_beta.source,
+                "url": observation.equity_beta.url,
+                "source_hash": digest,
+                "observation_count": observation.observation_count,
+                "benchmark": observation.benchmark,
+                "raw_levered_beta": resolution.raw_levered_beta,
+                "blume_adjusted": resolution.blume_adjusted,
+                "normalized_bu": resolution.normalized_value,
+                "window_start": observation.window_start.isoformat(),
+                "window_end": observation.window_end.isoformat(),
+                "frequency": observation.frequency,
+                "calculation_method": observation.calculation_method,
+            }
+        except Exception as exc:
+            logger.warning("Beta observation unavailable; profile remains draft: %s", exc)
+            bu = default_bu
+            beta_provenance = {
+                "status": "blocked_no_provenance",
+                "method": "ols_weekly_log_returns_adjusted_close",
+            }
     else:
         bu = default_bu
 
@@ -282,6 +420,15 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
         "tax": round(tax, 1),
         "kd_pre": kd_pre,
         "eq_w": eq_w,
+        "beta_provenance": beta_provenance,
+        "erp_provenance": erp_provenance,
+        "tax_provenance": ({
+            "status": "consumed_guidance",
+            "as_of": str(tax_snapshot["as_of"]),
+            "method": tax_snapshot["method"],
+            "provider": tax_snapshot["source"]["provider"],
+            "url": tax_snapshot["source"]["url"],
+        } if tax_snapshot else None),
     }
 
 
@@ -339,12 +486,67 @@ def _generate_draft_profile(
     kd_pre = wacc_est["kd_pre"]
     de_ratio = wacc_est["de"]
     eq_w = wacc_est["eq_w"]
+    beta_provenance_block = yaml.safe_dump(
+        {"beta_provenance": wacc_est.get("beta_provenance")},
+        sort_keys=False,
+        allow_unicode=True,
+    ).rstrip()
+    erp_provenance_block = yaml.safe_dump(
+        {"erp_provenance": wacc_est.get("erp_provenance")},
+        sort_keys=False,
+        allow_unicode=True,
+    ).rstrip()
+    tax_provenance_block = yaml.safe_dump(
+        {"tax_provenance": wacc_est.get("tax_provenance")},
+        sort_keys=False,
+        allow_unicode=True,
+    ).rstrip()
+
+    financial_anchor = "fy"
+    ttm_blocks = ""
+    if is_us and identity.cik:
+        try:
+            from pipeline.edgar_parser import parse_ttm_financials
+
+            analysis_as_of = identity.analysis_date
+            if isinstance(analysis_as_of, str):
+                analysis_as_of = date.fromisoformat(analysis_as_of)
+            ttm_result = parse_ttm_financials(
+                identity.cik,
+                latest,
+                computed_as_of=analysis_as_of,
+            )
+            if ttm_result:
+                ttm_anchor, ttm_provenance = ttm_result
+                financial_anchor = "ttm"
+                ttm_blocks = yaml.safe_dump(
+                    {
+                        "ttm_anchor": ttm_anchor,
+                        "ttm_provenance": ttm_provenance,
+                    },
+                    sort_keys=False,
+                    allow_unicode=True,
+                ).rstrip()
+        except Exception as exc:
+            logger.warning("TTM anchor unavailable; FY fallback: %s", exc)
 
     # Generate filename
     safe_name = re.sub(r"[^\w\-]", "_", identity.name.lower().replace(" ", "_"))
     if identity.ticker:
         safe_name = re.sub(r"[^\w\-]", "_", identity.ticker.lower())
     yaml_filename = f"profiles/{safe_name}.yaml"
+    destination = _PROJECT_ROOT / yaml_filename
+    if _profile_is_protected(destination):
+        yaml_filename = f"profiles/staging/{safe_name}.yaml"
+        logger.warning(
+            "Protected profile not overwritten: %s; generated draft staged at %s",
+            destination,
+            _PROJECT_ROOT / yaml_filename,
+        )
+        print(
+            f"  [WARN] 기존 큐레이션 프로필 보호: {destination.name} — "
+            f"자동 초안은 {yaml_filename}에 저장합니다."
+        )
     yaml_path = str(_PROJECT_ROOT / yaml_filename)
 
     # Consolidated financials YAML block (via yaml.dump for safe serialization)
@@ -475,6 +677,10 @@ def _generate_draft_profile(
 # Source: {source_name} | Generated by valuation-tool
 # TODO: Add segment data, multiples, and scenario parameters{fin_subsidiary_warn}
 
+draft: true
+generated: auto
+curated: false
+
 company:
   name: "{identity.name}"
   legal_status: "{"상장" if is_us or identity.legal_status in ("상장", "listed") else "비상장"}"
@@ -512,6 +718,10 @@ wacc_params:
   tax: {tax}
   kd_pre: {kd_pre}
   eq_w: {eq_w}
+
+{beta_provenance_block}
+{erp_provenance_block}
+{tax_provenance_block}
 
 # TODO: Design scenarios appropriate for this company
 scenarios:
@@ -576,6 +786,8 @@ cps_years: 0
 net_debt: {net_debt}
 eco_frontier: 0
 base_year: {latest}
+financial_anchor: {financial_anchor}
+{ttm_blocks}
 
 peers: []
   # TODO: Add peer companies
@@ -617,6 +829,7 @@ peers: []
         + recon_yaml
     )
 
+    Path(yaml_path).parent.mkdir(parents=True, exist_ok=True)
     with open(yaml_path, "w", encoding="utf-8") as f:
         f.write(content)
 
@@ -1150,8 +1363,14 @@ def auto_analyze(
             _rel_metrics.setdefault("growth_source", "analyst consensus")
         raw["relative_inputs"] = _rel_metrics
 
-    with open(yaml_path, "w", encoding="utf-8") as f:
-        yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    # The initial file is always a draft. Clear that explicit marker only when
+    # the enrichment produced the minimum curation inputs; the investability
+    # gate performs the stricter value/reconciliation checks afterwards.
+    raw["draft"] = not bool(segments and peers_all and raw.get("scenarios"))
+    raw["generated"] = "auto"
+    raw.setdefault("curated", False)
+
+    _atomic_write_yaml(yaml_path, raw)
 
     print("  → YAML 저장 완료")
 

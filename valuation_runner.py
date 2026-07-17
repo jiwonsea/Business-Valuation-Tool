@@ -35,6 +35,7 @@ from schemas.models import (
     PipelineDrug,
     ValidationReport,
     RelativeInputs,
+    GapDiagnostic,
 )
 from engine.drivers import resolve_drivers
 from engine.normalize import NetDebtResolution, resolve_net_debt
@@ -70,7 +71,6 @@ from engine.holding_discount import build_holding_discount_bridge
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial, infer_valuation_bucket
 from engine.investability_gate import (
-    apply_gate_to_profile,
     evaluate_investability,
     gate_inputs_from_profile,
 )
@@ -152,8 +152,10 @@ def _sotp_scenarios_undifferentiated(resolved_scenarios) -> bool:
 
 def load_profile(path: str) -> ValuationInput:
     """Parse YAML profile into ValuationInput."""
-    with open(path, "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+    from pathlib import Path
+
+    profile_text = Path(path).read_text(encoding="utf-8")
+    raw = yaml.safe_load(profile_text)
 
     # Company
     co_raw = raw["company"]
@@ -175,6 +177,33 @@ def load_profile(path: str) -> ValuationInput:
     for yr_str, data in raw["consolidated"].items():
         yr = int(yr_str)
         consolidated[yr] = data
+
+    base_year = int(raw.get("base_year", 2025))
+    financial_anchor = raw.get("financial_anchor", "fy")
+    ttm_anchor = raw.get("ttm_anchor")
+    fy_base_financials = dict(consolidated.get(base_year, {}))
+    anchor_fallback_reason = raw.get("financial_anchor_fallback_reason")
+    if financial_anchor == "ttm":
+        required_ttm = {"revenue", "op", "net_income", "dep", "amort", "capex"}
+        if not isinstance(ttm_anchor, dict):
+            raise ValueError("financial_anchor=ttm requires ttm_anchor")
+        missing_ttm = sorted(required_ttm - set(ttm_anchor))
+        if missing_ttm:
+            raise ValueError(
+                f"financial_anchor=ttm is incomplete: missing {missing_ttm}"
+            )
+        consolidated[base_year] = {
+            **fy_base_financials,
+            **ttm_anchor,
+        }
+        if len(segments) == 1 and base_year in segment_data:
+            only_code = next(iter(segments))
+            if only_code in segment_data[base_year]:
+                segment_data[base_year][only_code] = {
+                    **segment_data[base_year][only_code],
+                    "revenue": ttm_anchor["revenue"],
+                    "op": ttm_anchor["op"],
+                }
 
     # WACC
     wacc_params = WACCParams(**raw["wacc_params"])
@@ -260,8 +289,9 @@ def load_profile(path: str) -> ValuationInput:
         latest_yr = max(consolidated.keys())
         revenue = consolidated[latest_yr].get("revenue", 0)
         label, multiplier = detect_unit(revenue, company.market)
-        company.currency_unit = label
-        company.unit_multiplier = multiplier
+        company = company.model_copy(
+            update={"currency_unit": label, "unit_multiplier": multiplier}
+        )
 
     # Validate scenario override keys against known segment codes.
     # Build a name→code reverse map so AI-generated real names (e.g. "DS", "MEMORY")
@@ -314,6 +344,12 @@ def load_profile(path: str) -> ValuationInput:
     # Finds the per-segment minimum multiple across all scenarios (Bear reference), then
     # caps any multiple exceeding min × 2.0.
     _SOTP_MAX_RATIO = 2.0
+    _allow_wide_spread = bool(
+        raw.get("curated", False)
+        and raw.get("allow_wide_scenario_spread", False)
+    )
+    _scenario_spread_warnings: list[str] = []
+    _scenario_multiples_clamped = False
     _sc_mults_map: dict[str, dict[str, float]] = {
         code: dict(sc.segment_multiples)
         for code, sc in scenarios.items()
@@ -334,31 +370,72 @@ def load_profile(path: str) -> ValuationInput:
                 floor = _seg_min.get(seg, 0)
                 cap = floor * _SOTP_MAX_RATIO if floor > 0 else float("inf")
                 if val > cap:
-                    clamped[seg] = round(cap, 2)
-                    changed = True
+                    original_ratio = val / floor
+                    if _allow_wide_spread:
+                        clamped[seg] = val
+                        warning = (
+                            f"[{company.name}] curated wide spread 허용: 시나리오 "
+                            f"'{sc_code}', 세그먼트 '{seg}' {val:.2f}x "
+                            f"(최저 시나리오 대비 {original_ratio:.2f}x, "
+                            f"기본 한도 {_SOTP_MAX_RATIO:.2f}x)"
+                        )
+                    else:
+                        applied = round(cap, 2)
+                        clamped[seg] = applied
+                        changed = True
+                        _scenario_multiples_clamped = True
+                        warning = (
+                            f"[{company.name}] 시나리오 클램프: '{sc_code}' / "
+                            f"'{seg}' multiple {val:.2f}x → {applied:.2f}x "
+                            f"(최저 시나리오 대비 {original_ratio:.2f}x → "
+                            f"{_SOTP_MAX_RATIO:.2f}x)"
+                        )
+                    _scenario_spread_warnings.append(warning)
+                    logger.warning(warning)
                 else:
                     clamped[seg] = val
             if changed:
                 scenarios[sc_code] = scenarios[sc_code].model_copy(
                     update={"segment_multiples": clamped}
                 )
-                logger.info(
-                    "[%s] scenario '%s' segment_multiples clamped (Bull/Bear ratio > %.1fx): %s → %s",
-                    company.name,
-                    sc_code,
-                    _SOTP_MAX_RATIO,
-                    mults,
-                    clamped,
-                )
+
+    _share_count_warnings: list[str] = []
+    if scenarios:
+        reference = max(scenarios.values(), key=lambda scenario: scenario.prob)
+        outstanding = company.shares_outstanding
+        if reference.shares > 0 and reference.shares != outstanding:
+            difference = reference.shares - outstanding
+            treasury_note = (
+                f" (자기주식 {company.treasury_shares:,} 포함)"
+                if difference == company.treasury_shares and difference > 0
+                else ""
+            )
+            warning = (
+                f"적용 주식수 {reference.shares:,} ≠ 유통주식수 {outstanding:,}"
+                f"{treasury_note} — 시나리오 shares가 의도적 설정인지 확인"
+            )
+            _share_count_warnings.append(warning)
+            logger.warning(warning)
 
     vi = ValuationInput(
         company=company,
+        draft=raw.get("draft", False),
+        generated=raw.get("generated", ""),
+        curated=raw.get("curated", False),
+        allow_wide_scenario_spread=raw.get("allow_wide_scenario_spread", False),
+        profile_text=profile_text,
+        scenario_spread_warnings=_scenario_spread_warnings,
+        share_count_warnings=_share_count_warnings,
+        scenario_multiples_clamped=_scenario_multiples_clamped,
         valuation_method=raw.get("valuation_method", "auto"),
         industry=raw.get("industry", "") or co_raw.get("industry", ""),
         segments=segments,
         segment_data=segment_data,
         consolidated=consolidated,
         wacc_params=wacc_params,
+        beta_provenance=raw.get("beta_provenance"),
+        erp_provenance=raw.get("erp_provenance"),
+        tax_provenance=raw.get("tax_provenance"),
         multiples=multiples,
         scenarios=scenarios,
         dcf_params=dcf_params,
@@ -376,13 +453,19 @@ def load_profile(path: str) -> ValuationInput:
         net_debt_components=_parse_net_debt_components(raw),
         normalization_version=raw.get("normalization_version", LEGACY_VERSION),
         market_price=raw.get("market_price"),
+        price_as_of=raw.get("price_as_of"),
         relative_inputs=RelativeInputs(**raw["relative_inputs"])
         if raw.get("relative_inputs")
         else None,
         segment_net_debt=raw.get("segment_net_debt", {}),
         eco_frontier=raw.get("eco_frontier", 0),
         peers=peers,
-        base_year=raw.get("base_year", 2025),
+        base_year=base_year,
+        financial_anchor=financial_anchor,
+        ttm_anchor=ttm_anchor,
+        ttm_provenance=raw.get("ttm_provenance"),
+        fy_base_financials=fy_base_financials,
+        financial_anchor_fallback_reason=anchor_fallback_reason,
         ev_revenue_multiple=raw.get("ev_revenue_multiple", 0.0),
         pe_multiple=raw.get("pe_multiple", 0.0),
         pbv_multiple=raw.get("pbv_multiple", 0.0),
@@ -588,6 +671,11 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
             info.get("optionality") for info in vi.segments.values()
         ),
     )
+    result.scenario_multiples_clamped = vi.scenario_multiples_clamped
+    result.wide_scenario_spread_allowed = bool(
+        vi.curated and vi.allow_wide_scenario_spread
+    )
+    result.scenario_spread_warnings = list(vi.scenario_spread_warnings)
 
     # Quality scoring (pure function, zero IO)
     result.quality = calc_quality_score(vi, result)
@@ -608,9 +696,9 @@ def _dcf_per_share(vi: ValuationInput, result: ValuationResult) -> float | None:
     if result.dcf is None or result.dcf.ev_dcf <= 0:
         return None
     equity_value = result.dcf.ev_dcf - vi.net_debt
-    if vi.company.shares_outstanding <= 0:
+    if vi.valuation_shares <= 0:
         return None
-    return per_share(equity_value, vi.company.unit_multiplier, vi.company.shares_outstanding)
+    return per_share(equity_value, vi.company.unit_multiplier, vi.valuation_shares)
 
 
 def _peer_median_per_share(result: ValuationResult) -> float | None:
@@ -638,6 +726,9 @@ def _raw_profile_for_gate(vi: ValuationInput, result: ValuationResult) -> dict:
     }
     return {
         "primary_method": result.primary_method,
+        "draft": vi.draft,
+        "generated": vi.generated,
+        "curated": vi.curated,
         "segments": segments,
         "optionality_flag": any(info.get("optionality") for info in vi.segments.values()),
     }
@@ -655,18 +746,198 @@ def _apply_investability_gate(
         peer_median_value=_peer_median_per_share(result),
         quality_grade=result.quality.grade if result.quality else None,
         consolidated_revenue=cons.get("revenue"),
-        text="",
+        text=vi.profile_text,
     )
     report = evaluate_investability(inputs)
-    # NOTE: tail reconstructed from gate-module contract (report.draft => mark draft).
-    #       Original observed up to evaluate_investability(); rest inferred.
+    result.investability_blockers = report.blockers
+    # The gate is one-way: it may mark a result draft, but never clears vi.draft.
     if report.draft:
         result.draft = True
+        if result.quality is not None and not result.quality.draft:
+            draft_vi = vi.model_copy(update={"draft": True})
+            result.quality = calc_quality_score(draft_vi, result)
         if report.blockers:
             logger.info(
                 "investability gate: not investable — %s",
                 "; ".join(report.blockers),
             )
+    return result
+
+
+def _check_financial_basis_alignment(vi: ValuationInput) -> tuple[bool, str]:
+    """Check whether base-year earnings and the applied capital structure align."""
+    cons = vi.consolidated.get(vi.base_year, {})
+    ri = vi.relative_inputs
+    explicit_alignment = ri.basis_aligned if ri else None
+    basis_note = ri.basis_note if ri else ""
+    if explicit_alignment is False:
+        return False, basis_note or "실적과 현재 자본구조의 기준일이 일치하지 않음"
+
+    if explicit_alignment is None and "net_borr" in cons:
+        base_net_debt = cons.get("net_borr", 0)
+        current_net_debt = vi.net_debt
+        net_debt_gap = abs(current_net_debt - base_net_debt)
+        scale = max(abs(current_net_debt), abs(base_net_debt), 1)
+        equity_scale = max(abs(cons.get("equity", 0)) * 0.10, 1)
+        if net_debt_gap >= scale * 0.25 and net_debt_gap >= equity_scale:
+            return False, (
+                f"base-year 순차입금 {base_net_debt:,}과 현재 적용 순차입금 "
+                f"{current_net_debt:,}의 차이 {net_debt_gap:,}이 중요성 기준을 초과 — "
+                "거래 전 실적과 거래 후 자본구조 혼용 가능성"
+            )
+
+    return True, ""
+
+
+def attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
+    """Attach reverse-DCF diagnostics only when the engine produced a valid primary DCF."""
+    from engine.gap_diagnostics import GAP_THRESHOLD, diagnose_gap
+
+    mc = result.market_comparison
+    if mc is None or mc.market_price <= 0 or abs(mc.gap_ratio) < GAP_THRESHOLD:
+        return
+
+    if result.dcf is None:
+        logger.warning("Reverse DCF diagnostic skipped: engine DCF result is unavailable")
+        return
+    if any(
+        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
+    ):
+        logger.warning("Reverse DCF diagnostic skipped: equity-based SOTP segment")
+        return
+
+    basis_aligned, basis_note = _check_financial_basis_alignment(vi)
+    if not basis_aligned:
+        logger.warning("Reverse DCF diagnostic skipped: %s", basis_note)
+        return
+
+    cons = vi.consolidated.get(vi.base_year, {})
+    da_base = cons.get("dep", 0) + cons.get("amort", 0)
+    ebitda_base = cons.get("op", 0) + da_base
+    revenue_base = cons.get("revenue", 0)
+    if ebitda_base <= 0:
+        logger.warning("Reverse DCF diagnostic skipped: base EBITDA is not positive")
+        return
+
+    shares = vi.valuation_shares
+    market_cap_display = mc.market_price * shares / vi.company.unit_multiplier
+    market_ev = market_cap_display + max(vi.net_debt, 0)
+
+    try:
+        diag = diagnose_gap(
+            gap_ratio=mc.gap_ratio,
+            market_price=mc.market_price,
+            intrinsic_per_share=mc.intrinsic_value,
+            market_ev=market_ev,
+            ebitda_base=int(ebitda_base),
+            da_base=int(da_base),
+            revenue_base=int(revenue_base),
+            wacc_pct=result.wacc.wacc,
+            params=vi.dcf_params,
+            holding_discount_applied=bool(
+                result.holding_discount and result.holding_discount.enabled
+            ),
+            de_ratio=cons.get("de_ratio", 0.0),
+            industry=vi.industry,
+        )
+        if diag:
+            result.gap_diagnostic = GapDiagnostic(**diag.__dict__)
+    except Exception as exc:
+        logger.debug("Gap diagnostics failed: %s", exc)
+
+
+def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
+    """Attach reverse-rNPV diagnostics after a market price is available."""
+    if result.primary_method != "rnpv" or not vi.rnpv_params:
+        return
+
+    market = result.market_comparison
+    if market is None or market.market_price <= 0:
+        return
+
+    from engine.reverse_rnpv import reverse_rnpv
+    from schemas.models import (
+        ReverseRNPVDrugImplied,
+        ReverseRNPVDrugSolo,
+        ReverseRNPVResult,
+    )
+
+    market_cap = (
+        market.market_price * vi.company.shares_outstanding
+        / vi.company.unit_multiplier
+    )
+    market_ev = market_cap + max(vi.net_debt, 0)
+    model_ev = float(result.rnpv.enterprise_value) if result.rnpv else 0
+
+    try:
+        raw = reverse_rnpv(
+            target_ev=market_ev,
+            model_ev=model_ev,
+            pipeline=[drug.model_dump() for drug in vi.rnpv_params.pipeline],
+            discount_rate=vi.rnpv_params.discount_rate or result.wacc.wacc,
+            r_and_d_cost=vi.rnpv_params.r_and_d_cost,
+            decline_rate=vi.rnpv_params.decline_rate,
+            default_margin=vi.rnpv_params.default_margin,
+            tax_rate=vi.rnpv_params.tax_rate,
+        )
+        result.reverse_rnpv = ReverseRNPVResult(
+            target_ev=raw.target_ev,
+            model_ev=raw.model_ev,
+            gap_pct=raw.gap_pct,
+            implied_pos_scale=raw.implied_pos_scale,
+            implied_peak_scale=raw.implied_peak_scale,
+            implied_discount_rate=raw.implied_discount_rate,
+            implied_pos_per_drug=[
+                ReverseRNPVDrugImplied(
+                    name=item["name"],
+                    base_value=item["base_pos"],
+                    implied_value=item["implied_pos"],
+                )
+                for item in raw.implied_pos_per_drug
+            ],
+            implied_peak_per_drug=[
+                ReverseRNPVDrugImplied(
+                    name=item["name"],
+                    base_value=item["base_peak"],
+                    implied_value=item["implied_peak"],
+                )
+                for item in raw.implied_peak_per_drug
+            ],
+            implied_pos_solo=[
+                ReverseRNPVDrugSolo(
+                    name=item["name"],
+                    phase=item["phase"],
+                    base_pos=item["base_pos"],
+                    implied_pos=item["implied_pos"],
+                    solvable=item["solvable"],
+                    max_ev_contribution=item["max_ev_contribution"],
+                    skipped=item["skipped"],
+                )
+                for item in raw.implied_pos_solo
+            ],
+        )
+    except Exception as exc:
+        logger.debug("Reverse rNPV failed: %s", exc)
+
+
+def enrich_market_dependent_result(
+    vi: ValuationInput, result: ValuationResult
+) -> ValuationResult:
+    """Attach all diagnostics that require a selected market price."""
+    market = result.market_comparison
+    if market is None or market.market_price <= 0:
+        return result
+
+    if result.relative_valuation is None:
+        try:
+            vi_priced = vi.model_copy(update={"market_price": market.market_price})
+            result.relative_valuation = _build_relative_valuation(
+                vi_priced, result, result.wacc
+            )
+        except Exception as exc:
+            logger.debug("Relative valuation enrichment skipped: %s", exc)
+    attach_gap_diagnostic(vi, result)
+    _attach_reverse_rnpv(vi, result)
     return result
 
 
@@ -682,14 +953,35 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
     from engine.distress import _CYCLICAL_KEYWORDS
     from schemas.models import RelativeValuation, RelMetric, RelVerdict
 
+    diagnostics_enabled = any(
+        multiple > 0
+        for multiple in (
+            vi.pe_multiple,
+            vi.ev_revenue_multiple,
+            vi.pbv_multiple,
+            vi.ps_multiple,
+            vi.pffo_multiple,
+        )
+    )
+    if not diagnostics_enabled:
+        return None
+
     price = vi.market_price
     company = vi.company
-    shares = company.shares_outstanding
+    shares = vi.valuation_shares
     if not price or price <= 0 or shares <= 0:
         return None
 
     um = company.unit_multiplier
     cons = vi.consolidated.get(vi.base_year, {})
+    ri = vi.relative_inputs
+    basis_aligned, basis_note = _check_financial_basis_alignment(vi)
+    if not basis_aligned:
+        return RelativeValuation(
+            basis_aligned=False,
+            basis_note=basis_note,
+        )
+
     net_income = cons.get("net_income", 0)
     equity = cons.get("equity", 0)
     revenue = cons.get("revenue", 0)
@@ -698,7 +990,6 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
     ke = wacc_result.ke
 
     market_cap = price * shares / um
-    ri = vi.relative_inputs
     # Trailing EPS: prefer fetched (diluted, continuing-ops) over model-derived.
     eps = ri.trailing_eps if (ri and ri.trailing_eps is not None) else per_share(net_income, um, shares)
     bvps = per_share(equity, um, shares)
@@ -749,12 +1040,12 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
     verdicts = []
     if payout:
         jpe = rm.justified_pe(payout, just_g, ke)
-        if jpe.is_meaningful:
+        if jpe.is_meaningful and jpe.value > 0:
             v = rm.multiple_verdict("P/E", m_pe.value, jpe.value)
             verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
     if roe is not None:
         jpb = rm.justified_pb(roe, just_g, ke)
-        if jpb.is_meaningful:
+        if jpb.is_meaningful and jpb.value > 0:
             v = rm.multiple_verdict("P/B", m_pb.value, jpb.value)
             verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
 
@@ -833,6 +1124,9 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     cons = vi.consolidated[by]
 
     # Financial subsidiary split SOTP check
+    has_equity_segments = any(
+        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
+    )
     is_mixed = _has_mixed_sotp(vi)
     needs_dispatch = is_mixed or _needs_method_dispatch(vi)
     effective_net_debt = _calc_effective_net_debt(vi) if is_mixed else vi.net_debt
@@ -914,9 +1208,6 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         revenue_by_seg=seg_revenue if needs_dispatch else None,
     )
     base_holding_bridge = None
-
-    # PBV/PE segment equity value (constant in sensitivity — not multiple-varied)
-    _pbv_pe_ev = sum(r.ev for r in sotp.values() if r.method in ("pbv", "pe"))
 
     # Pre-resolve news drivers so the differentiation check sees
     # active_drivers contributions to growth_adj_pct / market_sentiment_pct.
@@ -1074,7 +1365,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         effective_multiples,
         effective_net_debt,
         vi.eco_frontier,
-        vi.company.shares_outstanding,
+        vi.valuation_shares,
         unit_multiplier=um,
         segments_info=vi.segments if needs_dispatch else None,
         revenue_by_seg=seg_revenue if needs_dispatch else None,
@@ -1099,8 +1390,12 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         else 0,
         rcps_repay=_derive_rcps_repay(ref_sc, vi),
         buyback=ref_sc.buyback if ref_sc else 0,
-        pbv_pe_ev=_pbv_pe_ev,
     )
+    if not sens_mult:
+        logger.warning(
+            "SOTP multiple sensitivity skipped: two segments with positive "
+            "multiples and usable valuation metrics are required"
+        )
     if vi.cps_principal > 0 or vi.rcps_principal > 0:
         sens_irr, _, _ = sensitivity_irr_dlom(
             total_ev,
@@ -1110,7 +1405,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             vi.cps_years,
             _derive_rcps_repay(ref_sc, vi),
             ref_sc.buyback if ref_sc else 0,
-            vi.company.shares_outstanding,
+            vi.valuation_shares,
             unit_multiplier=um,
             cps_dividend_rate=vi.cps_dividend_rate,
             rcps_principal=vi.rcps_principal,
@@ -1129,7 +1424,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                 vi.dcf_params,
                 vi.base_year,
                 wacc_base=wacc_result.wacc,
-                shares=vi.company.shares_outstanding,
+                shares=vi.valuation_shares,
                 net_debt=vi.net_debt,
                 unit_multiplier=um,
             )
@@ -1146,9 +1441,18 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         total_ev,
         dcf_result.ev_dcf if dcf_result else 0,
         um,
-        net_debt_override=effective_net_debt if is_mixed else None,
+        net_debt_override=effective_net_debt if has_equity_segments else None,
         sotp_ev_ebitda_only=sotp_ev_ev_only,
     )
+    if any(method != "ev_ebitda" for method in seg_methods.values()):
+        cv_items = [
+            item.model_copy(
+                update={"method": "SOTP (Mixed)", "metric_value": 0, "multiple": 0}
+            )
+            if item.method == "SOTP (EV/EBITDA)"
+            else item
+            for item in cv_items
+        ]
 
     # Monte Carlo
     sotp_seg_ebitdas = {code: base_alloc[code].ebitda for code in vi.segments}
@@ -1161,12 +1465,17 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         effective_multiples=effective_multiples,
         seg_revenues=seg_revenue,
         segment_methods=seg_methods,
-        net_debt_override=effective_net_debt if is_mixed else None,
+        net_debt_override=effective_net_debt if has_equity_segments else None,
     )
 
     # Peer statistics
     seg_names = _seg_names(vi)
-    peer_stats = calc_peer_stats(vi.peers, vi.multiples, seg_names)
+    peer_stats = calc_peer_stats(
+        vi.peers,
+        vi.multiples,
+        seg_names,
+        segment_methods=seg_methods,
+    )
 
     return ValuationResult(
         primary_method="sotp",
@@ -1306,7 +1615,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             vi.dcf_params,
             vi.base_year,
             wacc_base=wacc_result.wacc,
-            shares=vi.company.shares_outstanding,
+            shares=vi.valuation_shares,
             net_debt=vi.net_debt,
             unit_multiplier=um,
         )
@@ -1426,13 +1735,13 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                 buyback_per_share=buyback_ps,
             )
             # DDM yields equity directly; add net_debt to get EV for calc_scenario bridge
-            sc_eq = sc_ddm.equity_per_share * vi.company.shares_outstanding // (um or 1)
+            sc_eq = sc_ddm.equity_per_share * vi.valuation_shares // (um or 1)
         except ValueError:
             logger.warning(
                 "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
             sc_eq = (
-                ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+                ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
             )
 
         # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
@@ -1452,7 +1761,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # DDM base EV (for cross-validation): DDM equity + net_debt = EV
     total_ev = (
-        ddm_raw.equity_per_share * vi.company.shares_outstanding // (um or 1)
+        ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
         + vi.net_debt
     )
 
@@ -1502,7 +1811,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     by = vi.base_year
     cons = vi.consolidated[by]
     equity_bv = cons.get("equity", 0)
-    shares = vi.company.shares_outstanding
+    shares = vi.valuation_shares
     ke = wacc_result.ke
 
     # RIM parameters: explicit rim_params or auto-generated from financial statements
@@ -1647,7 +1956,7 @@ def _run_multiples_valuation(
     ebitda_base = cons["op"] + total_da_base
     net_income = cons.get("net_income", 0)
     book_value = cons.get("equity", 0)
-    shares = vi.company.shares_outstanding
+    shares = vi.valuation_shares
 
     # Primary method selection: EV/EBITDA -> P/E -> P/BV priority
     # Use peer-based multiples or multiples specified in YAML
@@ -1799,7 +2108,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     total_assets = cons.get("assets", 0)
     total_liabilities = cons.get("liabilities", 0)
     revaluation = vi.nav_params.revaluation if vi.nav_params else 0
-    shares = vi.company.shares_outstanding
+    shares = vi.valuation_shares
 
     nav_raw = calc_nav(
         total_assets=total_assets,
@@ -1930,7 +2239,7 @@ def _derive_rcps_repay(ref_sc: ScenarioParams | None, vi) -> int:
 def _cross_validate_financial(vi, cons, um):
     """Financial stock cross-validation -- P/E, P/BV only (EBITDA-based DCF/SOTP meaningless)."""
     items = []
-    shares = vi.company.shares_outstanding
+    shares = vi.valuation_shares
     net_income = cons.get("net_income", 0)
     book_value = cons.get("equity", 0)
 
@@ -1979,7 +2288,7 @@ def _cross_validate_common(
         net_income=cons.get("net_income", 0),
         book_value=cons.get("equity", 0),
         net_debt=net_debt,
-        shares=vi.company.shares_outstanding,
+        shares=vi.valuation_shares,
         sotp_ev=sotp_ev,
         dcf_ev=dcf_ev,
         ev_revenue_multiple=vi.ev_revenue_multiple,
@@ -2004,22 +2313,33 @@ def _cross_validate_common(
     ]
 
 
-def _mc_raw_to_result(mc_raw, mc_input=None):
+def _mc_raw_to_result(mc_raw, mc_input=None, include_dcf_tv: bool = False):
     """Convert MCResult to MonteCarloResult."""
     assumptions = {}
     if mc_input is not None:
-        for seg, (m, s) in mc_input.multiple_params.items():
-            assumptions[f"Multiple({seg})"] = f"Normal(mean={m:.1f}x, std={s:.2f}x)"
-        assumptions["WACC"] = (
-            f"Normal(mean={mc_input.wacc_mean:.1f}%, std={mc_input.wacc_std:.1f}%p)"
-        )
+        for seg in sorted(mc_input.multiple_params):
+            m, s = mc_input.multiple_params[seg]
+            distribution = "Lognormal" if m > 0 and s > 0 else "Normal (floored at 0)"
+            mean_text = f"{m:.5f}".rstrip("0").rstrip(".")
+            std_text = f"{s:.5f}".rstrip("0").rstrip(".")
+            assumptions[f"Multiple({seg})"] = (
+                f"{distribution}(mean={mean_text}x, std={std_text}x)"
+            )
+        if include_dcf_tv:
+            assumptions["WACC"] = (
+                f"Normal(mean={mc_input.wacc_mean:.1f}%, "
+                f"std={mc_input.wacc_std:.1f}%p)"
+            )
         assumptions["DLOM"] = (
             f"Normal(mean={mc_input.dlom_mean:.0f}%, std={mc_input.dlom_std:.0f}%), clipped 0-50%"
         )
-        assumptions["Terminal Growth"] = (
-            f"Normal(mean={mc_input.tg_mean:.1f}%, std={mc_input.tg_std:.1f}%p), clipped 0~WACC-0.5%"
-        )
-        for seg, (r, rs) in mc_input.revenue_params.items():
+        if include_dcf_tv:
+            assumptions["Terminal Growth"] = (
+                f"Normal(mean={mc_input.tg_mean:.1f}%, "
+                f"std={mc_input.tg_std:.1f}%p), clipped 0~WACC-0.5%"
+            )
+        for seg in sorted(mc_input.revenue_params):
+            r, rs = mc_input.revenue_params[seg]
             assumptions[f"Revenue({seg})"] = f"Normal(mean={r:,.0f}, std={rs:,.0f})"
     return MonteCarloResult(
         n_sims=mc_raw.n_sims,
@@ -2063,15 +2383,44 @@ def _run_monte_carlo(
 
     from engine.monte_carlo import MCInput, run_monte_carlo
 
+    equity_codes = {
+        code
+        for code, method in (segment_methods or {}).items()
+        if method in ("pbv", "pe")
+    }
+    if equity_codes:
+        expected_net_debt = _calc_effective_net_debt(vi)
+        if net_debt_override != expected_net_debt:
+            raise AssertionError(
+                "PBV/PE Monte Carlo requires effective_net_debt; "
+                f"expected {expected_net_debt}, received {net_debt_override}"
+            )
+
+    ordered_equity_codes = sorted(equity_codes)
+    seg_book_equity = {
+        code: int(vi.segments.get(code, {}).get("book_equity", 0))
+        for code in ordered_equity_codes
+    }
+    seg_net_income = {
+        code: int(vi.segments.get(code, {}).get("net_income_segment", 0))
+        for code in ordered_equity_codes
+    }
     mults = effective_multiples or vi.multiples
-    # Include ev_revenue segments in MC even if their EBITDA is 0
+    # Include non-EBITDA segments in MC even if their EBITDA is 0.
     mc_mult_codes = set(seg_ebitdas.keys())
     if segment_methods:
-        mc_mult_codes |= {c for c, m in segment_methods.items() if m == "ev_revenue"}
+        mc_mult_codes |= {
+            code
+            for code, method in segment_methods.items()
+            if method in ("ev_revenue", "pbv", "pe")
+        }
     # Revenue uncertainty for ev_revenue segments (std = mc_revenue_std_pct of base revenue)
     rev_params: dict[str, tuple[float, float]] = {}
-    if segment_methods and seg_revenues:
-        for c, m in segment_methods.items():
+    ordered_methods = {
+        code: method for code, method in sorted((segment_methods or {}).items())
+    }
+    if ordered_methods and seg_revenues:
+        for c, m in ordered_methods.items():
             if m == "ev_revenue":
                 rev = seg_revenues.get(c, 0)
                 if rev > 0:
@@ -2079,10 +2428,10 @@ def _run_monte_carlo(
     mc_params = MCInput(
         multiple_params={
             c: (mults[c], mults[c] * vi.mc_multiple_std_pct / 100)
-            for c in mc_mult_codes
+            for c in sorted(mc_mult_codes)
             if mults.get(c, 0) > 0
         },
-        segment_methods=segment_methods or {},
+        segment_methods=ordered_methods,
         revenue_params=rev_params,
         wacc_mean=wacc_result.wacc,
         wacc_std=1.0,
@@ -2119,7 +2468,7 @@ def _run_monte_carlo(
         vi.cps_years,
         _derive_rcps_repay(ref_sc, vi),
         ref_sc.buyback if ref_sc else 0,
-        ref_sc.shares if ref_sc else vi.company.shares_outstanding,
+        ref_sc.shares if ref_sc else vi.valuation_shares,
         irr=(
             ref_sc.cps_irr
             if ref_sc and ref_sc.cps_irr is not None
@@ -2127,10 +2476,17 @@ def _run_monte_carlo(
         ),
         unit_multiplier=um,
         seg_revenues=seg_revenues,
+        seg_book_equity=seg_book_equity,
+        seg_net_income=seg_net_income,
         cps_dividend_rate=vi.cps_dividend_rate,
+        receivable_recovery_value=(
+            ref_sc.receivable_recovery_value or 0 if ref_sc else 0
+        ),
         **dcf_kwargs,
     )
-    result = _mc_raw_to_result(mc_raw, mc_input=mc_params)
+    result = _mc_raw_to_result(
+        mc_raw, mc_input=mc_params, include_dcf_tv=bool(dcf_kwargs)
+    )
 
     # Per-scenario MC (lightweight: fewer sims, no histogram stored)
     from schemas.models import MCScenarioSummary
@@ -2159,8 +2515,8 @@ def _run_monte_carlo(
             sc_ebitdas.update(sc.segment_ebitda)
 
         sc_rev_params: dict[str, tuple[float, float]] = {}
-        if segment_methods and sc_revs:
-            for c, m in (segment_methods or {}).items():
+        if ordered_methods and sc_revs:
+            for c, m in ordered_methods.items():
                 if m == "ev_revenue":
                     rev = sc_revs.get(c, 0)
                     if rev > 0:
@@ -2172,10 +2528,10 @@ def _run_monte_carlo(
         sc_params = MCInput(
             multiple_params={
                 c: (sc_mults[c], sc_mults[c] * vi.mc_multiple_std_pct / 100)
-                for c in mc_mult_codes
+                for c in sorted(mc_mult_codes)
                 if sc_mults.get(c, 0) > 0
             },
-            segment_methods=segment_methods or {},
+            segment_methods=ordered_methods,
             revenue_params=sc_rev_params,
             wacc_mean=wacc_result.wacc,
             wacc_std=1.0,
@@ -2199,7 +2555,10 @@ def _run_monte_carlo(
             irr=(sc.cps_irr if sc.cps_irr is not None else (sc.irr if sc.irr else 5.0)),
             unit_multiplier=um,
             seg_revenues=sc_revs,
+            seg_book_equity=seg_book_equity,
+            seg_net_income=seg_net_income,
             cps_dividend_rate=vi.cps_dividend_rate,
+            receivable_recovery_value=sc.receivable_recovery_value or 0,
             **dcf_kwargs,
         )
         sc_mc[sc_code] = MCScenarioSummary(
@@ -2273,7 +2632,7 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         for dr in rnpv_raw.drug_results
     ]
 
-    shares = vi.company.shares_outstanding
+    shares = vi.valuation_shares
     ev = rnpv_raw.enterprise_value
     equity_value = ev - vi.net_debt
     per_share = round(equity_value * um / shares) if shares > 0 else 0

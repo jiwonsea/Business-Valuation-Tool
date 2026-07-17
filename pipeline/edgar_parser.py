@@ -5,6 +5,8 @@ and converts them into a consolidated financial statement dict.
 Amount unit: USD millions ($M)
 """
 
+from datetime import date
+
 from schemas.provenance import NetDebtComponents
 
 from .edgar_client import get_company_facts
@@ -131,6 +133,175 @@ def _to_millions(val: float | int) -> int:
     return round(val / 1_000_000)
 
 
+def _duration_days(entry: dict) -> int | None:
+    if not entry.get("start") or not entry.get("end"):
+        return None
+    return (date.fromisoformat(entry["end"]) - date.fromisoformat(entry["start"])).days + 1
+
+
+def _dedupe_duration_entries(
+    entries: list[dict], computed_as_of: date | None = None
+) -> list[dict]:
+    """Select the latest as-of filing for each SEC duration fact."""
+    eligible = [
+        e
+        for e in entries
+        if e.get("start")
+        and e.get("end")
+        and (
+            computed_as_of is None
+            or not e.get("filed")
+            or date.fromisoformat(e["filed"]) <= computed_as_of
+        )
+    ]
+    grouped: dict[tuple, list[dict]] = {}
+    for entry in eligible:
+        key = (
+            entry.get("_concept"),
+            entry.get("_unit"),
+            entry["start"],
+            entry["end"],
+            entry.get("form"),
+        )
+        grouped.setdefault(key, []).append(entry)
+
+    selected = []
+    for group in grouped.values():
+        ordered = sorted(
+            group,
+            key=lambda e: (
+                e.get("filed", ""),
+                e.get("form", "").endswith("/A"),
+                e.get("accn", ""),
+            ),
+            reverse=True,
+        )
+        best = ordered[0]
+        same_rank = [
+            e
+            for e in ordered
+            if (e.get("filed"), e.get("form")) == (best.get("filed"), best.get("form"))
+        ]
+        if len({e.get("val") for e in same_rank}) > 1:
+            raise ValueError(
+                f"ambiguous SEC facts for {best.get('_concept')} "
+                f"{best['start']}..{best['end']}"
+            )
+        selected.append(best)
+    return selected
+
+
+def extract_quarterly_facts(
+    facts: dict,
+    concepts: list[str],
+    fiscal_year: int,
+    fiscal_period: str,
+    computed_as_of: date | None = None,
+) -> dict:
+    """Extract a discrete 10-Q duration fact, deriving it from YTD if needed."""
+    if fiscal_period not in {"Q1", "Q2", "Q3"}:
+        raise ValueError(f"unsupported fiscal period: {fiscal_period}")
+
+    us_gaap = facts.get("facts", {}).get("us-gaap", {})
+    for concept in concepts:
+        raw_entries = us_gaap.get(concept, {}).get("units", {}).get("USD", [])
+        entries = []
+        for raw in raw_entries:
+            if (
+                raw.get("fy") == fiscal_year
+                and raw.get("fp") == fiscal_period
+                and raw.get("form") in ("10-Q", "10-Q/A")
+                and raw.get("start")
+            ):
+                entry = dict(raw)
+                entry["_concept"] = concept
+                entry["_unit"] = "USD"
+                entries.append(entry)
+        entries = _dedupe_duration_entries(entries, computed_as_of)
+        if not entries:
+            continue
+        latest_end = max(e["end"] for e in entries)
+        entries = [e for e in entries if e["end"] == latest_end]
+
+        discrete = [e for e in entries if 77 <= (_duration_days(e) or 0) <= 105]
+        if discrete:
+            if len({(e["start"], e["end"], e["val"]) for e in discrete}) != 1:
+                raise ValueError(f"ambiguous discrete facts for {concept} {fiscal_year} {fiscal_period}")
+            return _quarter_fact_payload(discrete[0], "reported_discrete")
+
+        if fiscal_period == "Q1":
+            raise ValueError(f"Q1 duration is not a supported 13/14-week period: {concept}")
+
+        current = max(entries, key=lambda e: _duration_days(e) or 0)
+        previous_fp = f"Q{int(fiscal_period[1]) - 1}"
+        previous = _find_ytd_entry(
+            facts, concept, fiscal_year, previous_fp, current["start"], computed_as_of
+        )
+        if previous["end"] >= current["end"]:
+            raise ValueError(f"non-contiguous YTD periods for {concept}")
+        value = current["val"] - previous["val"]
+        if value < 0:
+            raise ValueError(f"negative YTD difference for {concept}")
+        payload = _quarter_fact_payload(current, "derived_from_ytd")
+        payload["value"] = _to_millions(value)
+        payload["derived_from"] = {
+            "current_ytd": _quarter_fact_payload(current, "reported_ytd"),
+            "prior_ytd": _quarter_fact_payload(previous, "reported_ytd"),
+        }
+        return payload
+    raise ValueError(f"no quarterly fact found for {fiscal_year} {fiscal_period}")
+
+
+def _find_ytd_entry(
+    facts: dict,
+    concept: str,
+    fiscal_year: int,
+    fiscal_period: str,
+    period_start: str,
+    computed_as_of: date | None,
+) -> dict:
+    entries = []
+    raw_entries = (
+        facts.get("facts", {})
+        .get("us-gaap", {})
+        .get(concept, {})
+        .get("units", {})
+        .get("USD", [])
+    )
+    for raw in raw_entries:
+        if (
+            raw.get("fy") == fiscal_year
+            and raw.get("fp") == fiscal_period
+            and raw.get("form") in ("10-Q", "10-Q/A")
+            and raw.get("start") == period_start
+        ):
+            entry = dict(raw)
+            entry["_concept"] = concept
+            entry["_unit"] = "USD"
+            entries.append(entry)
+    selected = _dedupe_duration_entries(entries, computed_as_of)
+    if len(selected) != 1:
+        raise ValueError(f"missing or ambiguous prior YTD for {concept} {fiscal_period}")
+    return selected[0]
+
+
+def _quarter_fact_payload(entry: dict, kind: str) -> dict:
+    return {
+        "value": _to_millions(entry["val"]),
+        "concept": entry["_concept"],
+        "unit": entry["_unit"],
+        "fy": entry.get("fy"),
+        "fp": entry.get("fp"),
+        "form": entry.get("form"),
+        "accn": entry.get("accn"),
+        "filed": entry.get("filed"),
+        "period_start": entry.get("start"),
+        "period_end": entry.get("end"),
+        "kind": kind,
+        "raw_value": entry["val"],
+    }
+
+
 def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
     """Extract the annual (10-K) value for a specific year from XBRL facts.
 
@@ -173,6 +344,112 @@ def _extract_annual(facts: dict, concepts: list[str], year: int) -> int | None:
             return _to_millions(best["val"])
 
     return None
+
+
+def _extract_duration_fact(
+    facts: dict,
+    concepts: list[str],
+    fiscal_year: int,
+    fiscal_period: str,
+    computed_as_of: date | None,
+) -> dict | None:
+    us_gaap = facts.get("facts", {}).get("us-gaap", {})
+    expected_forms = ("10-K", "10-K/A") if fiscal_period == "FY" else ("10-Q", "10-Q/A")
+    for concept in concepts:
+        entries = []
+        for raw in us_gaap.get(concept, {}).get("units", {}).get("USD", []):
+            if (
+                raw.get("fy") == fiscal_year
+                and raw.get("fp") == fiscal_period
+                and raw.get("form") in expected_forms
+                and raw.get("start")
+            ):
+                entry = dict(raw)
+                entry["_concept"] = concept
+                entry["_unit"] = "USD"
+                entries.append(entry)
+        selected = _dedupe_duration_entries(entries, computed_as_of)
+        if selected:
+            return max(
+                selected,
+                key=lambda e: (e.get("end", ""), _duration_days(e) or 0),
+            )
+    return None
+
+
+def parse_ttm_financials(
+    cik: str,
+    annual_year: int,
+    computed_as_of: date | None = None,
+) -> tuple[dict, dict] | None:
+    """Build a verified TTM anchor from SEC annual and comparable YTD facts."""
+    facts = get_company_facts(cik)
+    field_concepts = {
+        "revenue": CONCEPT_MAP["revenue"],
+        "op": CONCEPT_MAP["op"],
+        "net_income": CONCEPT_MAP["net_income"],
+        "dep": CONCEPT_MAP["dep"],
+        "capex": CONCEPT_MAP["capex"],
+    }
+    current_year = annual_year + 1
+    available_periods = []
+    for fp in ("Q1", "Q2", "Q3"):
+        if _extract_duration_fact(
+            facts, field_concepts["revenue"], current_year, fp, computed_as_of
+        ):
+            available_periods.append(fp)
+    if not available_periods:
+        return None
+    latest_period = available_periods[-1]
+
+    values: dict[str, int] = {}
+    provenance_fields: dict[str, dict] = {}
+    for field, concepts in field_concepts.items():
+        annual = prior = current = None
+        for concept in concepts:
+            annual_candidate = _extract_duration_fact(
+                facts, [concept], annual_year, "FY", computed_as_of
+            )
+            prior_candidate = _extract_duration_fact(
+                facts, [concept], annual_year, latest_period, computed_as_of
+            )
+            current_candidate = _extract_duration_fact(
+                facts, [concept], current_year, latest_period, computed_as_of
+            )
+            if annual_candidate and prior_candidate and current_candidate:
+                annual, prior, current = (
+                    annual_candidate,
+                    prior_candidate,
+                    current_candidate,
+                )
+                break
+        if not annual or not prior or not current:
+            return None
+        if annual["start"] != prior["start"] or current["start"] == prior["start"]:
+            raise ValueError(f"{field}: incomparable SEC YTD boundaries")
+        result = annual["val"] - prior["val"] + current["val"]
+        if result < 0:
+            raise ValueError(f"{field}: negative TTM result")
+        values[field] = _to_millions(result)
+        provenance_fields[field] = {
+            "concept": annual["_concept"],
+            "unit": "USD",
+            "annual": _quarter_fact_payload(annual, "reported_annual"),
+            "prior_ytd": _quarter_fact_payload(prior, "reported_ytd"),
+            "current_ytd": _quarter_fact_payload(current, "reported_ytd"),
+            "result": values[field],
+        }
+
+    values["amort"] = 0
+    provenance = {
+        "formula": "fy_minus_prior_ytd_plus_current_ytd",
+        "computed_as_of": str(computed_as_of or date.today()),
+        "source": "sec_companyfacts",
+        "company_cik": str(cik).zfill(10),
+        "fields": provenance_fields,
+        "adjustments": [],
+    }
+    return values, provenance
 
 
 def extract_net_debt_components(facts: dict, year: int) -> NetDebtComponents | None:

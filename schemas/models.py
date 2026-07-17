@@ -74,6 +74,21 @@ class CompanyProfile(BaseModel):
             raise ValueError(
                 f"보통주({self.shares_ordinary:,})가 총주식수({self.shares_total:,})를 초과합니다"
             )
+        expected_multiplier = {
+            "원": 1,
+            "천원": 1_000,
+            "백만원": 1_000_000,
+            "억원": 100_000_000,
+            "$K": 1_000,
+            "$M": 1_000_000,
+            "$B": 1_000_000_000,
+            "百万円": 1_000_000,
+        }.get(self.currency_unit)
+        if expected_multiplier is not None and self.unit_multiplier != expected_multiplier:
+            raise ValueError(
+                f"currency_unit={self.currency_unit!r} requires "
+                f"unit_multiplier={expected_multiplier:,}, got {self.unit_multiplier:,}"
+            )
         return self
 
 
@@ -276,6 +291,7 @@ class ScenarioParams(BaseModel):
     cps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
     rcps_repay: Optional[int] = None  # In display units (None=calculated from IRR)
     buyback: int = 0
+    receivable_recovery_value: Optional[int] = Field(default=None, ge=0)
     shares: int  # Applicable share count
     desc: str = ""
     probability_rationale: str = ""  # Probability allocation rationale (AI-generated)
@@ -395,6 +411,7 @@ class ScenarioResult(BaseModel):
     rcps_repay: int
     buyback: int
     eco_frontier: int
+    receivable_recovery_value: int = 0
     equity_value: int
     shares: int
     pre_dlom: int
@@ -775,7 +792,7 @@ class DCFResult(BaseModel):
 class PeerCompany(BaseModel):
     name: str
     segment_code: str
-    ev_ebitda: float
+    ev_ebitda: Optional[float] = None
     notes: str = ""
     ticker: Optional[str] = None  # Yahoo Finance ticker (for auto-fetch)
     market_cap: Optional[float] = None  # Market cap (in display units or $M)
@@ -794,6 +811,15 @@ class PeerSegmentStats(BaseModel):
     segment_code: str
     segment_name: str = ""
     count: int = 0
+    multiple_method: str = "ev_ebitda"
+    multiple_label: str = "EV/EBITDA"
+    multiple_median: Optional[float] = None
+    multiple_mean: Optional[float] = None
+    multiple_q1: Optional[float] = None
+    multiple_q3: Optional[float] = None
+    multiple_min: Optional[float] = None
+    multiple_max: Optional[float] = None
+    warning: str = ""
     ev_ebitda_median: float = 0.0
     ev_ebitda_mean: float = 0.0
     ev_ebitda_q1: float = 0.0
@@ -801,6 +827,10 @@ class PeerSegmentStats(BaseModel):
     ev_ebitda_min: float = 0.0
     ev_ebitda_max: float = 0.0
     applied_multiple: float = 0.0  # Actually applied multiple
+    # ── Applied-multiple provenance (why THIS multiple) ──
+    premium_pct: float = 0.0  # applied vs median, % (+premium / -discount)
+    band_position: str = ""  # "Q1 미만" | "Q1~중앙값" | "중앙값~Q3" | "Q3 초과" | "레인지 밖"
+    rationale: str = ""  # Rule-based justification; AI rationale overrides when present
 
 
 # ── Comprehensive Valuation I/O ──
@@ -821,11 +851,38 @@ class RelativeInputs(BaseModel):
     price_to_book: Optional[float] = None
     earnings_growth: Optional[float] = None  # percent (analyst consensus)
     growth_source: str = ""  # provenance of earnings_growth (e.g. "analyst consensus")
+    basis_aligned: Optional[bool] = None
+    basis_note: str = ""
+
+
+class MarketAssumptionProvenance(BaseModel):
+    status: str = ""
+    as_of: Optional[date] = None
+    method: str = ""
+    provider: str = ""
+    url: str = ""
+    source_hash: str = ""
+    observation_count: Optional[int] = None
+    benchmark: str = ""
+    raw_levered_beta: Optional[float] = None
+    blume_adjusted: Optional[float] = None
+    normalized_bu: Optional[float] = None
+    window_start: Optional[str] = None
+    window_end: Optional[str] = None
+    frequency: Optional[str] = None
+    calculation_method: Optional[str] = None
 
 
 class ValuationInput(BaseModel):
     company: CompanyProfile
     draft: bool = False
+    generated: str = ""
+    curated: bool = False
+    allow_wide_scenario_spread: bool = False
+    profile_text: str = Field(default="", exclude=True, repr=False)
+    scenario_spread_warnings: list[str] = Field(default_factory=list, exclude=True)
+    share_count_warnings: list[str] = Field(default_factory=list, exclude=True)
+    scenario_multiples_clamped: bool = Field(default=False, exclude=True)
     valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "rnpv" | "auto"
     industry: str = (
         ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
@@ -836,6 +893,9 @@ class ValuationInput(BaseModel):
     ]  # year -> code -> {"revenue", "op", "assets", ...}
     consolidated: dict[int, dict]  # year -> {"revenue", "op", "dep", "amort", ...}
     wacc_params: WACCParams
+    beta_provenance: Optional[MarketAssumptionProvenance] = None
+    erp_provenance: Optional[MarketAssumptionProvenance] = None
+    tax_provenance: Optional[MarketAssumptionProvenance] = None
     multiples: dict[str, float]  # segment code -> EV/EBITDA
     scenarios: dict[str, ScenarioParams]  # scenario code -> params
     news_drivers: list[NewsDriver] = []  # News-based independent driver catalog
@@ -851,7 +911,8 @@ class ValuationInput(BaseModel):
     rcps_years: int = 0  # RCPS maturity (years from issuance)
     rcps_dividend_rate: float = 0.0  # RCPS annual dividend rate (%, e.g. 7.5)
     net_debt: int = 0  # In display units
-    market_price: Optional[float] = None  # Manual/live market price override (offline injection)
+    market_price: Optional[float] = None  # Profile-declared as-of price
+    price_as_of: Optional[date] = None  # Explicit authority signal for market_price
     relative_inputs: Optional[RelativeInputs] = (
         None  # Fetched EPS/growth/yield for diagnostic relative-valuation layer
     )
@@ -861,6 +922,13 @@ class ValuationInput(BaseModel):
     eco_frontier: int = 0  # In display units
     peers: list[PeerCompany] = []
     base_year: int = 2025
+    financial_anchor: Literal["fy", "ttm"] = "fy"
+    ttm_anchor: Optional[dict[str, int | float]] = None
+    ttm_provenance: Optional[dict] = None
+    fy_base_financials: Optional[dict[str, int | float]] = Field(
+        default=None, exclude=True
+    )
+    financial_anchor_fallback_reason: Optional[str] = None
     # Cross-validation multiples (0 means skip that method)
     ev_revenue_multiple: float = 0.0
     pe_multiple: float = 0.0
@@ -941,6 +1009,15 @@ class ValuationInput(BaseModel):
 
         return self
 
+    @property
+    def valuation_shares(self) -> int:
+        """Canonical share denominator for single-basis valuation panels."""
+        if self.scenarios:
+            reference = max(self.scenarios.values(), key=lambda scenario: scenario.prob)
+            if reference.shares > 0:
+                return reference.shares
+        return self.company.shares_outstanding
+
 
 class SOTPSegmentResult(BaseModel):
     ebitda: int
@@ -1002,6 +1079,8 @@ class MarketComparisonResult(BaseModel):
 
     intrinsic_value: int = 0  # Intrinsic value (per share)
     market_price: float = 0.0  # Current market price
+    price_source: str = ""  # "profile_as_of" | "live"
+    price_as_of: Optional[date] = None
     gap_ratio: float = 0.0  # (intrinsic - market) / market
     flag: str = ""  # Warning message (when gap exceeds +/-50%)
 
@@ -1084,11 +1163,17 @@ class RelativeValuation(BaseModel):
     verdicts: list[RelVerdict] = []
     growth_pct: Optional[float] = None  # Growth (%) used in PEG/PEGY/justified
     growth_source: str = ""  # e.g. "model EBITDA CAGR"
+    basis_aligned: bool = True
+    basis_note: str = ""
 
 
 class ValuationResult(BaseModel):
     primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav"|"rnpv")
     draft: bool = False
+    investability_blockers: list[str] = []
+    scenario_multiples_clamped: bool = False
+    wide_scenario_spread_allowed: bool = False
+    scenario_spread_warnings: list[str] = Field(default_factory=list)
     wacc: WACCResult
     da_allocations: dict[
         int, dict[str, DAAllocation]

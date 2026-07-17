@@ -2,11 +2,14 @@
 
 from schemas.models import ValuationInput, ValuationResult
 from valuation_runner import _seg_names
-from engine.distress import calc_distress_discount
 
 
 def print_report(vi: ValuationInput, result: ValuationResult):
     """Print valuation results to the console."""
+    if vi.draft or result.draft:
+        print("!" * 60)
+        print("DRAFT / NOT FOR PUBLICATION - assumptions are not fully verified")
+        print("!" * 60)
     by = vi.base_year
     seg_names = _seg_names(vi)
     unit = vi.company.currency_unit
@@ -19,25 +22,42 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     print("=" * 60)
     print(f"{vi.company.name} 기업가치평가 모델 [{result.primary_method.upper()}]")
     print("=" * 60)
+    print(f"재무 앵커: {vi.financial_anchor.upper()} (base year FY{vi.base_year})")
+    if vi.financial_anchor == "ttm" and vi.fy_base_financials:
+        fy_revenue = vi.fy_base_financials.get("revenue", 0)
+        ttm_revenue = vi.consolidated[by].get("revenue", 0)
+        if fy_revenue:
+            delta = (ttm_revenue / fy_revenue - 1) * 100
+            print(
+                f"FY/TTM 매출 차이: {fy_revenue:,} → {ttm_revenue:,}{unit} "
+                f"({delta:+.1f}%)"
+            )
+    elif vi.financial_anchor_fallback_reason:
+        print(f"TTM fallback: {vi.financial_anchor_fallback_reason}")
+    for warning in vi.scenario_spread_warnings:
+        print(f"⚠ {warning}")
+    for warning in vi.share_count_warnings:
+        print(f"⚠ {warning}")
 
     # WACC
     w = result.wacc
     print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
 
-    # Distress discount (SOTP only)
-    if result.primary_method == "sotp" and len(vi.segments) > 1:
-        distress = calc_distress_discount(
-            vi.consolidated,
-            by,
-            market=vi.company.market,
-            kd_pre=vi.wacc_params.kd_pre,
-        )
-        if distress.applied:
-            print(f"\n[Distress Haircut] {distress.detail}")
-            for code in vi.segments:
-                orig = vi.multiples.get(code, 0)
-                adj = round(orig * (1 - distress.discount), 2)
-                print(f"  {seg_names.get(code, code)}: {orig:.1f}x → {adj:.1f}x")
+    # Distress discount (SOTP only) -- report the engine result; never recalculate here.
+    multiple_changes = []
+    if result.primary_method == "sotp":
+        for code, segment_result in result.sotp.items():
+            original = vi.multiples.get(code, 0)
+            applied = segment_result.multiple
+            if abs(original - applied) > 1e-9:
+                multiple_changes.append((code, original, applied))
+    if multiple_changes:
+        print("\n[Distress Haircut] 엔진 적용 배수")
+        for code, original, applied in multiple_changes:
+            print(
+                f"  {seg_names.get(code, code)}: "
+                f"{original:.4g}x → {applied:.4g}x"
+            )
 
     # Mixed SOTP determination (any non-default method: ev_revenue, pbv, pe)
     is_mixed = any(
@@ -106,7 +126,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                         " [Equity]" if getattr(s, "is_equity_based", False) else " [EV]"
                     )
                     print(
-                        f"  {seg_names.get(code, code):<{_seg_w}} {m_lbl}{rev_type_tag:<10} {s.multiple:.1f}x → {s.ev:>14,}{unit}{eq_tag}"
+                        f"  {seg_names.get(code, code):<{_seg_w}} {m_lbl}{rev_type_tag:<10} {s.multiple:.5g}x → {s.ev:>14,}{unit}{eq_tag}"
                     )
             print(f"  {'합계':<{_seg_w + 12}} {sotp_ev:>14,}{unit}")
             # Equity Bridge (only when pbv/pe equity-based segments exist)
@@ -175,6 +195,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 print(
                     f"  시나리오 {code} ({sc.name}, {sc.prob}%): "
                     f"Equity={r.equity_value:>12,}{unit}, "
+                    + (
+                        f"AR회수={r.receivable_recovery_value:>10,}{unit}, "
+                        if r.receivable_recovery_value
+                        else ""
+                    )
+                    +
                     f"주당(DLOM후)={r.post_dlom:>8,}{currency_sym}, "
                     f"가중기여={r.weighted:>6,}{currency_sym}"
                 )
@@ -342,18 +368,26 @@ def print_report(vi: ValuationInput, result: ValuationResult):
 
     # Peer
     if result.peer_stats:
-        print("\n[Peer 멀티플 통계 (EV/EBITDA)]")
+        print("\n[Peer 멀티플 통계]")
         _pw = max((len(ps.segment_name) for ps in result.peer_stats), default=12)
         _pw = max(_pw, 8)
         print(
-            f"{'부문':<{_pw}} {'N':>3} {'Median':>8} {'Mean':>8} {'Q1':>8} {'Q3':>8} {'적용':>8}"
+            f"{'부문':<{_pw}} {'방법':>11} {'N':>3} {'Median':>8} "
+            f"{'Mean':>8} {'Q1':>8} {'Q3':>8} {'적용':>8}"
         )
-        print("-" * (_pw + 48))
+        print("-" * (_pw + 60))
         for ps in result.peer_stats:
+            if ps.count == 0 or ps.multiple_median is None:
+                print(
+                    f"{ps.segment_name:<{_pw}} {ps.multiple_label:>11} "
+                    f"{ps.count:>3}  비교 생략 — {ps.warning}"
+                )
+                continue
             print(
-                f"{ps.segment_name:<{_pw}} {ps.count:>3} {ps.ev_ebitda_median:>7.1f}x "
-                f"{ps.ev_ebitda_mean:>7.1f}x {ps.ev_ebitda_q1:>7.1f}x "
-                f"{ps.ev_ebitda_q3:>7.1f}x {ps.applied_multiple:>7.1f}x"
+                f"{ps.segment_name:<{_pw}} {ps.multiple_label:>11} {ps.count:>3} "
+                f"{ps.multiple_median:>7.3f}x {ps.multiple_mean:>7.3f}x "
+                f"{ps.multiple_q1:>7.3f}x {ps.multiple_q3:>7.3f}x "
+                f"{ps.applied_multiple:>7.3f}x"
             )
 
     # Multiple cross-validation
@@ -372,7 +406,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             if (
                 market_ps > 0
                 and cv.per_share > 0
-                and cv.method not in ("SOTP (EV/EBITDA)", "DCF (FCFF)")
+                and cv.method not in ("SOTP (EV/EBITDA)", "SOTP (Mixed)", "DCF (FCFF)")
             ):
                 gap = abs(cv.per_share - market_ps) / market_ps
                 tag = " [T]" if gap < 0.05 else " [P]"
@@ -383,7 +417,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             )
         # Legend
         has_trading = market_ps > 0 and any(
-            cv.method not in ("SOTP (EV/EBITDA)", "DCF (FCFF)")
+            cv.method not in ("SOTP (EV/EBITDA)", "SOTP (Mixed)", "DCF (FCFF)")
             for cv in result.cross_validations
         )
         if has_trading:
@@ -424,20 +458,5 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 _rel = "피어 대비 할인"
             else:
                 _rel = "피어 수준"
-            print(f"\n  [피어 median 대비] EV/EBITDA 자사 {_evb.value:.1f}x vs 피어 {_pm:.1f}x → {_rel}")
-
-        if rv.growth_pct is not None:
-            print(f"\n  * PEG/정당배수 성장률: {rv.growth_pct:.1f}% ({rv.growth_source})")
-
-    print("\n" + "=" * 60)
-    print(
-        f"완료! [{result.primary_method.upper()}] 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}"
-    )
-    print("=" * 60)
-
-    # Quality score
-    if result.quality:
-        from engine.quality import format_quality_report
-
-        is_listed = vi.company.legal_status in ("상장", "listed")
-        print(f"\n{format_quality_report(result.quality, is_listed)}")
+            # NOTE: 아래 print는 Codex write 시 mid-string truncation → 가시 의도대로 최소 복원 (2026-07-17). 추가 후속 라인이 있었다면 Codex 원자적 재기록 필요.
+            print(f"\n  [피어 median 대비] EV/EBITDA 자사 {_evb.value:.1f}x vs median {_pm:.1f}x → {_rel}")

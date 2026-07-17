@@ -1,0 +1,42 @@
+annual:
+  fiscal_year: 2026
+  period_start: 2025-01-27
+  period_end: 2026-01-25
+  values:
+    revenue: 215938
+    op: 130387
+    gaap_net_income: 120067
+    adjusted_net_income: 116997
+    dep: 2843
+    capex: 6042
+prior_ytd:
+  fiscal_year: 2026
+  fiscal_period: Q1
+  period_start: 2025-01-27
+  period_end: 2025-04-27
+  values:
+    revenue: 44062
+    op: 21638
+    gaap_net_income: 18800
+    adjusted_net_income: 19094
+    dep: 611
+    capex: 1279
+current_ytd:
+  fiscal_year: 2027
+  fiscal_period: Q1
+  period_start: 2026-01-26
+  period_end: 2026-04-26
+  values:
+    revenue: 81615
+    op: 53536
+    gaap_net_income: 58346
+    adjusted_net_income: 45548
+    dep: 997
+    capex: 1790
+expected:
+  revenue: 253491
+  op: 162285
+  gaap_net_income: 159613
+  adjusted_net_income: 143451
+  dep: 3229
+  capex: 6553

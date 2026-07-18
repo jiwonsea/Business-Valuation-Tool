@@ -113,6 +113,7 @@ def build_weekly_summary_gamma_text(summary: dict) -> str:
 - 대상 시장: {", ".join(markets)}
 - 분석 기업: {status.get("success", 0)}개 성공 / {status.get("total", 0)}개 대상
 - 실패: {status.get("failed", 0)}개
+- 게시 차단(draft): {status.get("draft_blocked", 0)}개
 
 ## 발굴 요약
 {discovery_text}
@@ -321,6 +322,7 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     <p style="margin:0;font-size:14px;color:#333;">
       분석 완료: <strong>{status.get("success", 0)}</strong>개 기업
       {f" · 실패: {status.get('failed', 0)}개" if status.get("failed", 0) else ""}
+      {f' · <span style="color:#c62828;">게시 차단(draft): {status.get("draft_blocked", 0)}개</span>' if status.get("draft_blocked", 0) else ""}
     </p>
     {f'<p style="margin:12px 0 0;text-align:center;">{summary_link}</p>' if summary_gamma else ""}
   </div>

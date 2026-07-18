@@ -447,7 +447,13 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
     header_lines = [
         f"■ 주간 밸류에이션 리포트 — {label}\n",
         f"대상 시장: {', '.join(markets)} | "
-        f"분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상\n",
+        f"분석 기업: {status.get('success', 0)}개 성공 / {status.get('total', 0)}개 대상"
+        + (
+            f" | 게시 차단(draft): {status.get('draft_blocked', 0)}개"
+            if status.get("draft_blocked", 0)
+            else ""
+        )
+        + "\n",
     ]
     if discoveries:
         header_lines.append("\n■ 이번 주 발굴 기업\n")

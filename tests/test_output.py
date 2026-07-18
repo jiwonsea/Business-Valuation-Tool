@@ -463,3 +463,53 @@ class TestRnpvSheetFixes:
             "Peak Revenue summary still uses drugs_with_curves — "
             "drugs without revenue_curve are excluded from summary"
         )
+
+
+# ── draft_blocked count rendering (R16 완결: 운영자 가시성) ──
+
+
+class TestDraftBlockedRendering:
+    def _make_summary(self, blocked=0):
+        return {
+            "label": "Jul 3rd week (7/18)",
+            "markets": ["KR", "US"],
+            "valuations": [],
+            "discoveries": [],
+            "status_summary": {
+                "total": 3,
+                "success": 3 - blocked,
+                "failed": 0,
+                "draft_blocked": blocked,
+            },
+        }
+
+    def test_gamma_summary_text_renders_draft_blocked(self):
+        from scheduler.delivery import build_weekly_summary_gamma_text
+
+        text = build_weekly_summary_gamma_text(self._make_summary(blocked=2))
+        assert "게시 차단(draft): 2개" in text
+
+    def test_gmail_html_renders_draft_blocked_when_nonzero(self):
+        from scheduler.delivery import build_gmail_html
+
+        html = build_gmail_html(self._make_summary(blocked=2))
+        assert "게시 차단(draft): 2개" in html
+
+    def test_gmail_html_omits_draft_blocked_when_zero(self):
+        from scheduler.delivery import build_gmail_html
+
+        html = build_gmail_html(self._make_summary(blocked=0))
+        assert "게시 차단" not in html
+
+    def test_naver_header_renders_draft_blocked_when_nonzero(self):
+        from scheduler.naver_poster import build_blog_sections
+
+        _, sections = build_blog_sections(self._make_summary(blocked=1))
+        header = sections[0]["content"]
+        assert "게시 차단(draft): 1개" in header
+
+    def test_naver_header_omits_draft_blocked_when_zero(self):
+        from scheduler.naver_poster import build_blog_sections
+
+        _, sections = build_blog_sections(self._make_summary(blocked=0))
+        assert "게시 차단" not in sections[0]["content"]

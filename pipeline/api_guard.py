@@ -142,6 +142,14 @@ PROVIDER_DEFAULTS: dict[str, ProviderConfig] = {
         max_retries=2,
         base_delay=1.0,
     ),
+    "saveticker": ProviderConfig(
+        "saveticker",
+        daily_limit=100,
+        failure_threshold=3,
+        cooldown_seconds=60,
+        max_retries=2,
+        base_delay=0.5,
+    ),
     "openrouter": ProviderConfig(
         "openrouter",
         daily_limit=200,
@@ -431,6 +439,13 @@ class ApiGuard:
                 }
             return summary
 
+    def estimate_remaining(self) -> dict[str, int]:
+        """Return remaining daily quota by provider."""
+        return {
+            provider: info["remaining"]
+            for provider, info in self.get_usage_summary().items()
+        }
+
     def _reset(self) -> None:
         """Reset all state (test-only)."""
         with self._lock:
@@ -577,23 +592,22 @@ def estimate_weekly_cost(
     """
     guard = ApiGuard.get()
 
-    n_markets = len(markets)
     has_kr = "KR" in markets
     has_us = "US" in markets
 
-    # Discovery phase: 4 queries per market
+    # Discovery phase: KR uses Naver queries; US uses SaveTicker ticker-tagged news.
     news_naver = 4 if has_kr else 0
-    news_google = 4 if has_us else 0
+    news_saveticker = 2 if has_us else 0
 
     # Scoring phase: ~1 yahoo call per discovered company (estimate ~5 unique)
     scoring_yahoo = max_companies * 2
 
-    # Discovery LLM: 1 call per market
-    discovery_llm = n_markets
+    # Discovery LLM: KR keeps AI discovery; US SaveTicker path is LLM-free.
+    discovery_llm = 1 if has_kr else 0
 
     estimates: dict[str, int] = {
         "naver": news_naver,
-        "google_rss": news_google,
+        "saveticker": news_saveticker,
         "yahoo": scoring_yahoo,
     }
 

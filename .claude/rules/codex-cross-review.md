@@ -54,7 +54,7 @@ Claude 구축
 - 파일 수정 직후 `ast.parse` + 줄 수 확인 (Windows 마운트에서 무언의 truncation 이력)
 - CRLF 유지
 - `engine/`은 순수 함수 (IO 금지) · Pydantic 입력 직접 mutate 금지 → `model_copy(update=...)`
-- 완료 후: `verify_partB_round2.py` · `verify_partB_excel.py` · `pytest tests/ --deselect tests/test_engine.py::TestScenarioDriverRoundTrip`
+- 완료 후: `pytest tests/ --deselect tests/test_engine.py::TestScenarioDriverRoundTrip` (verify_partB 스크립트 2종은 2026-07-18 폐기 — 기대값 stale)
 
 ## 리포트/엔진 경계
 `.claude/rules/reporting-boundary.md` 참조 — CLI·`output/`이 엔진 계산을 **복제**하는 안티패턴이 3회 반복됐다(console distress · 역방향 DCF · reverse-rNPV). 새 계산을 추가하기 전에 **`ValuationResult`에 이미 있는지 먼저 확인**하라.

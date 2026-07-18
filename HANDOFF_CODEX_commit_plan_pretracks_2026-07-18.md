@@ -242,3 +242,59 @@ T4 → T5 → T6 → T7 → T8 → T9 → T10(docs) → T11(profiles chore).
 2. T4 커밋 전 동일 절차.
 3. T11·§4 잔재물은 기존대로 사용자 확인 대기.
 4. 회신은 §7.3 회귀표 빈칸 전부 + 트랙별 커밋 해시 표, 1번부터 번호.
+
+---
+## 9. Codex 2라운드(커밋 실행) → Claude 대조 — **T1~T10 승인 · 잔여 3건 사용자 대기**
+
+2026-07-18. Codex: T1~T10 커밋 완료(커밋별 pytest 1088 · 최종 1093 passed · NUL clean) ·
+회귀표 7행 중 6 PASS · #7 조건부 FAIL(references/ 미귀속). Claude 독립 대조:
+
+### 9.1 대조 결과
+1. **커밋 사슬 실증**: `git log` 재현 — 2693260 위에 3bb6d67(T1)→f7befe0(T2)→
+   b71c3d4(T3)→4a86f5a(T4)→58484f0(T5)→f055552(T6)→1443eca(T7)→43e9087(T8)→
+   065b9c7(T9)→29dc981(T10). 순서·해시 Codex 보고와 일치.
+2. **T1/T4 분리 실증**: `git show --stat` — T1에 `tests/test_engine.py` 0건,
+   T4에 `tests/test_engine.py +296` 포함. §8.2 권고 (a) 정확 이행 확인.
+3. **references/ 정체 규명 (Codex #7 지적 해소)**: `references/company_assumptions/
+   nvda_tax_2026-05-20.yaml` · `references/market_assumptions/us_erp_2026-06-01.yaml` —
+   출처 명기(SEC url·as_of·range) assumption 근거 YAML. **커밋된
+   `pipeline/profile_generator.py:42,53`이 이 디렉터리를 런타임 소비** → 잔재물 아님,
+   fresh clone 동작을 위해 커밋 대상. → **T12 신설**: `data(references): seed sourced
+   assumption references` (2파일).
+4. verify_partB 스크립트 실패 2건: 코드 수정 금지 준수 판단 타당. 원인은 스크립트의
+   고정 기대값 stale(Nexus 프로필 drift · 0.45x 반올림) — pytest 본체와 무관.
+   → 백로그: 스크립트 기대값 갱신 또는 폐기 결정(§4-4와 함께).
+
+### 9.2 잔여 결정 3건 (사용자 몫)
+1. **T11 profiles**: 수정 12 + 신규 13 YAML — chore 커밋 1개 vs 커밋 제외.
+2. **§4 잔재물**: 따옴표 한글 파일·png·tmp/·graphify-out/ 등 삭제 승인 여부 +
+   `.gitignore` 추가 목록 · verify 스크립트 처리.
+3. **T12 references/**: §9.1-3 근거로 커밋 권고 — 승인 시 Codex가 즉시 실행.
+
+### 9.3 상태
+- 미커밋 대량 작업 리스크 **사실상 해소**: 잔여 dirty = T11·T12·§4 잔재물뿐.
+- 차기 세션 시작 검증 기준 HEAD = **29dc981** (T12/T11 커밋 시 갱신).
+- CLAUDE.md의 "~50 files M + untracked feature files" 경고 문구는 이제 stale —
+  T11/T12 처리 후 CLAUDE.md Session Safety 절 갱신 권고 (호스트 편집).
+
+### 9.4 사용자 결정 (2026-07-18)
+- **T12 references/ 커밋: 승인** → Codex 실행 요청: `git add
+  references/company_assumptions/nvda_tax_2026-05-20.yaml
+  references/market_assumptions/us_erp_2026-06-01.yaml` → 커밋 메시지
+  `data(references): seed sourced assumption references` → pytest 1회 + 커밋 해시 회신.
+- T11 profiles · §4 잔재물 삭제: **보류 유지** (차기 결정, 백로그 잔존).
+- T12 커밋 후 차기 세션 기준 HEAD = T12 해시로 갱신.
+
+---
+## 10. 종결 — T12 확정 · 선행 트랙 커밋 정리 완료 (2026-07-18)
+
+1. **T12 대조 확인** (Claude 독립 재현): `a60f5b8` = HEAD, 파일 2개 +19줄, 메시지
+   §9.4 지시와 일치. Codex 보고 pytest **1093 passed** (호스트).
+2. **최종 상태**: T1~T10 (3bb6d67~29dc981) + T12 (a60f5b8) 커밋 완료.
+   **차기 세션 시작 검증 기준 HEAD = a60f5b8.**
+3. 잔여 dirty = T11 profiles(보류) · §4 잔재물(보류) · 본 문서(§10 추가 상태 —
+   Phase 2 문서 §12.5 선례와 동일하게 문서 자체만 커밋 이후 재수정, 차후 docs 커밋에
+   동반 가능).
+4. **백로그**: T11/잔재물 결정 · verify_partB 스크립트 기대값 stale(§9.1-4) ·
+   CLAUDE.md Session Safety 절의 "미커밋 작업 다수" 문구 갱신(이제 stale) ·
+   DB 마이그레이션 적용(불변) · Phase 2b 후보(Phase 2 문서 §12.4).

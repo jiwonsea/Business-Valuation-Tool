@@ -1,0 +1,428 @@
+{
+ "_meta": {
+  "source": "research/pilot_v2/raw_payloads.json (DART snapshot 2026-07-18)",
+  "note": "Mapped-account rows only, all statements preserved (incl. SCE hazard rows). 0 new DART calls.",
+  "unit": "KRW raw strings; parser converts to MKRW"
+ },
+ "sk_hynix_fy2019": [
+  {
+   "account_nm": "자산총계",
+   "sj_div": "BS",
+   "thstrm_amount": "64789494000000",
+   "frmtrm_amount": "63658335000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "부채총계",
+   "sj_div": "BS",
+   "thstrm_amount": "16846299000000",
+   "frmtrm_amount": "16806004000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "자본총계",
+   "sj_div": "BS",
+   "thstrm_amount": "47943195000000",
+   "frmtrm_amount": "46852331000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "매출액",
+   "sj_div": "CIS",
+   "thstrm_amount": "26990733000000",
+   "frmtrm_amount": "40445066000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "영업이익",
+   "sj_div": "CIS",
+   "thstrm_amount": "2712718000000",
+   "frmtrm_amount": "20843750000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "금융비용",
+   "sj_div": "CIS",
+   "thstrm_amount": "1514869000000",
+   "frmtrm_amount": "1142134000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "CIS",
+   "thstrm_amount": "2016391000000",
+   "frmtrm_amount": "15539984000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "유형자산의 취득",
+   "sj_div": "CF",
+   "thstrm_amount": "13920244000000",
+   "frmtrm_amount": "16036146000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "2013288000000",
+   "frmtrm_amount": "15540111000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "2016391000000",
+   "frmtrm_amount": "15539984000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "3103000000",
+   "frmtrm_amount": "-127000000",
+   "rcept_no": "20200330004441"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "2013288000000",
+   "frmtrm_amount": "15540111000000",
+   "rcept_no": "20200330004441"
+  }
+ ],
+ "sk_hynix_fy2020": [
+  {
+   "account_nm": "자산총계",
+   "sj_div": "BS",
+   "thstrm_amount": "71173853000000",
+   "frmtrm_amount": "65248350000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "부채총계",
+   "sj_div": "BS",
+   "thstrm_amount": "19264756000000",
+   "frmtrm_amount": "17312468000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "자본총계",
+   "sj_div": "BS",
+   "thstrm_amount": "51909097000000",
+   "frmtrm_amount": "47935882000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "매출액",
+   "sj_div": "CIS",
+   "thstrm_amount": "31900418000000",
+   "frmtrm_amount": "26990733000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "영업이익",
+   "sj_div": "CIS",
+   "thstrm_amount": "5012624000000",
+   "frmtrm_amount": "2719179000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "금융비용",
+   "sj_div": "CIS",
+   "thstrm_amount": "1980411000000",
+   "frmtrm_amount": "1531417000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "CIS",
+   "thstrm_amount": "4758914000000",
+   "frmtrm_amount": "2009078000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "유형자산의 취득",
+   "sj_div": "CF",
+   "thstrm_amount": "10068662000000",
+   "frmtrm_amount": "13920244000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "4755102000000",
+   "frmtrm_amount": "2005975000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "4755102000000",
+   "frmtrm_amount": "2005975000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "3812000000",
+   "frmtrm_amount": "3103000000",
+   "rcept_no": "20210330000776"
+  },
+  {
+   "account_nm": "당기순이익",
+   "sj_div": "SCE",
+   "thstrm_amount": "4758914000000",
+   "frmtrm_amount": "2009078000000",
+   "rcept_no": "20210330000776"
+  }
+ ],
+ "lg_fy2020": [
+  {
+   "account_nm": "자산총계",
+   "sj_div": "BS",
+   "thstrm_amount": "48204227000000",
+   "frmtrm_amount": "44859875000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "부채총계",
+   "sj_div": "BS",
+   "thstrm_amount": "30662102000000",
+   "frmtrm_amount": "28434737000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "자본총계",
+   "sj_div": "BS",
+   "thstrm_amount": "17542125000000",
+   "frmtrm_amount": "16425138000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "매출액",
+   "sj_div": "IS",
+   "thstrm_amount": "63262046000000",
+   "frmtrm_amount": "62306175000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "영업이익",
+   "sj_div": "IS",
+   "thstrm_amount": "3194987000000",
+   "frmtrm_amount": "2436139000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "금융비용",
+   "sj_div": "IS",
+   "thstrm_amount": "1116043000000",
+   "frmtrm_amount": "714001000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "IS",
+   "thstrm_amount": "2063790000000",
+   "frmtrm_amount": "179948000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "CIS",
+   "thstrm_amount": "2063790000000",
+   "frmtrm_amount": "179948000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "유형자산의 취득",
+   "sj_div": "CF",
+   "thstrm_amount": "2281865000000",
+   "frmtrm_amount": "2072127000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "2063790000000",
+   "frmtrm_amount": "179948000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "95458000000",
+   "frmtrm_amount": "148663000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "1968332000000",
+   "frmtrm_amount": "31285000000",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20210316000661"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "1968332000000",
+   "frmtrm_amount": "31285000000",
+   "rcept_no": "20210316000661"
+  }
+ ],
+ "lg_fy2021": [
+  {
+   "account_nm": "자산총계",
+   "sj_div": "BS",
+   "thstrm_amount": "53481478000000",
+   "frmtrm_amount": "48204227000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "부채총계",
+   "sj_div": "BS",
+   "thstrm_amount": "33383445000000",
+   "frmtrm_amount": "30662102000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "자본총계",
+   "sj_div": "BS",
+   "thstrm_amount": "20098033000000",
+   "frmtrm_amount": "17542125000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "매출액",
+   "sj_div": "IS",
+   "thstrm_amount": "74721629000000",
+   "frmtrm_amount": "58057908000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "영업이익(손실)",
+   "sj_div": "IS",
+   "thstrm_amount": "3863774000000",
+   "frmtrm_amount": "3905108000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "금융비용",
+   "sj_div": "IS",
+   "thstrm_amount": "690401000000",
+   "frmtrm_amount": "892751000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "IS",
+   "thstrm_amount": "1414972000000",
+   "frmtrm_amount": "2063790000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "CIS",
+   "thstrm_amount": "1414972000000",
+   "frmtrm_amount": "2063790000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "유형자산의 취득",
+   "sj_div": "CF",
+   "thstrm_amount": "2648065000000",
+   "frmtrm_amount": "2281865000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "1031710000000",
+   "frmtrm_amount": "1968332000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "0",
+   "frmtrm_amount": "0",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "1031710000000",
+   "frmtrm_amount": "1968332000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "383262000000",
+   "frmtrm_amount": "95458000000",
+   "rcept_no": "20220316000886"
+  },
+  {
+   "account_nm": "당기순이익(손실)",
+   "sj_div": "SCE",
+   "thstrm_amount": "1414972000000",
+   "frmtrm_amount": "2063790000000",
+   "rcept_no": "20220316000886"
+  }
+ ]
+}

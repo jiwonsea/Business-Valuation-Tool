@@ -1,49 +1,136 @@
 """DART API response -> structured financial data conversion.
 
 KRW -> million KRW unit conversion, with account mapping.
+
+Data contract (Phase 2 gate, HANDOFF_CODEX_c_gate_research_2026-07-18 §7.2 — no relaxation):
+
+1. Per-account allowed statements are FIXED (`STATEMENT_CONTRACT`):
+   revenue / op / interest_expense / net_income -> IS·CIS,
+   assets / liabilities / equity -> BS, capex -> CF.
+   Rows from any other statement (notably SCE, which carries its own `당기순이익`
+   rows including a non-controlling-interest-only line) are never mapping
+   candidates. Before this contract, row order (CIS preceding SCE) protected the
+   result only by accident.
+2. Duplicate-candidate selection within the allowed statements is explicit:
+   (a) statements are tried in the order they appear in `STATEMENT_CONTRACT`
+       (IS before CIS: a dedicated income statement outranks the comprehensive
+       statement that republishes the same line);
+   (b) within the first statement that has candidates, if all candidate values
+       are identical the first row in payload order wins (payload order is the
+       filing's own presentation order);
+   (c) if candidate values DIFFER within that statement, the account is
+       ambiguous -> `AmbiguousAccountError` (fail-closed; silent selection is
+       forbidden — same design as `dart_client._parse_dart_number`).
+3. Account-name aliases live in `ACCOUNT_ALIASES` / `CAPEX_ALIASES` (the formal
+   registry; `ACCOUNT_MAP` / `CAPEX_MAP` are derived views kept for backward
+   compatibility). Alias drift across years (e.g. `영업이익` <-> `영업이익(손실)`)
+   is a registry concern, not a parser special case.
+4. Original filing values and later restated comparatives are preserved
+   SEPARATELY (`extract_reported_values`): the original (`thstrm_amount`,
+   basis="original") is what point-in-time computation may consume; the
+   following-year comparative (`frmtrm_amount`, basis="restated_comparative")
+   is retained for audit and never overwrites the original.
 """
 
 import logging
 import re
 
+from schemas.point_in_time import ReportedFinancialValue, available_at_from_rcept_no
 from schemas.provenance import NetDebtComponents
 
 logger = logging.getLogger(__name__)
 
-# DART account names -> internal key mapping
-ACCOUNT_MAP = {
-    # IS (Income Statement) -- Revenue (top-line)
-    "매출액": "revenue",  # Traditional format: Sales -> COGS -> Gross Profit
-    "수익(매출액)": "revenue",  # Variant notation
-    "영업수익": "revenue",  # IFRS by-function format: Operating Revenue - Operating Expense = Operating Income
-    # IS -- Operating Income (Revenue - Costs)
-    "영업이익": "op",
-    "영업이익(손실)": "op",
-    # IS -- Interest expense (for distress ICR calculation)
-    "이자비용": "interest_expense",
-    "금융비용": "interest_expense",
-    "금융원가": "interest_expense",
-    # IS -- Net Income
-    "당기순이익": "net_income",
-    "당기순이익(손실)": "net_income",
-    # BS (Balance Sheet)
-    "자산총계": "assets",
-    "부채총계": "liabilities",
-    "자본총계": "equity",
+
+class AmbiguousAccountError(ValueError):
+    """Same-statement mapping candidates disagree — refuse to pick silently.
+
+    Fail-closed by design (contract §7.2-2, following the
+    `dart_client._parse_dart_number` precedent): a silently chosen wrong line
+    would flow an unflagged wrong number into every downstream valuation.
+    Callers treat the year as missing (data_fetcher already catches per-year
+    exceptions and logs a warning).
+    """
+
+
+# ── Formal alias registry (contract §7.2-3) ──
+# Internal key -> every DART account_nm spelling observed for that concept.
+# Add new aliases HERE (with a comment citing the filing that introduced the
+# spelling), never inline in parsing code.
+
+ACCOUNT_ALIASES: dict[str, tuple[str, ...]] = {
+    "revenue": (
+        "매출액",  # Traditional format: Sales -> COGS -> Gross Profit
+        "수익(매출액)",  # Variant notation
+        "영업수익",  # IFRS by-function format
+    ),
+    "op": (
+        "영업이익",
+        "영업이익(손실)",  # Alias drift observed LG FY2020->FY2021 (pilot v2)
+    ),
+    "interest_expense": (
+        "이자비용",
+        "금융비용",
+        "금융원가",
+    ),
+    "net_income": (
+        "당기순이익",
+        "당기순이익(손실)",
+    ),
+    "assets": ("자산총계",),
+    "liabilities": ("부채총계",),
+    "equity": ("자본총계",),
 }
+
+CAPEX_ALIASES: tuple[str, ...] = (
+    "유형자산의 취득",  # PP&E acquisition = investing outflow
+    "유형자산취득",
+    "유형자산의취득",
+)
+
+# Derived views — same name/content as the historical dicts so existing
+# consumers (pilot scripts, tests) keep working unchanged.
+ACCOUNT_MAP: dict[str, str] = {
+    alias: key for key, aliases in ACCOUNT_ALIASES.items() for alias in aliases
+}
+CAPEX_MAP: dict[str, str] = {alias: "capex" for alias in CAPEX_ALIASES}
+
+# ── Per-account allowed statements (contract §7.2-1) ──
+# Tuple order IS the selection priority (§7.2-2a).
+STATEMENT_CONTRACT: dict[str, tuple[str, ...]] = {
+    "revenue": ("IS", "CIS"),
+    "op": ("IS", "CIS"),
+    "interest_expense": ("IS", "CIS"),
+    "net_income": ("IS", "CIS"),
+    "assets": ("BS",),
+    "liabilities": ("BS",),
+    "equity": ("BS",),
+    "capex": ("CF",),
+}
+
+# fnlttSinglAcntAll rows carry sj_div; fall back to sj_nm for payloads that
+# only carry the Korean statement name (same convention as estimate_borrowings).
+_SJ_NM_TO_DIV = {
+    "재무상태표": "BS",
+    "손익계산서": "IS",
+    "포괄손익계산서": "CIS",
+    "현금흐름표": "CF",
+    "자본변동표": "SCE",
+}
+
+
+def _statement_of(item: dict) -> str:
+    """Normalized statement code of a row ('' when undeclared -> never a candidate)."""
+    sj = item.get("sj_div") or ""
+    if sj:
+        return sj
+    return _SJ_NM_TO_DIV.get(item.get("sj_nm", ""), "")
+
 
 # Cash flow statement non-cash items
 NONCASH_MAP = {
     "감가상각비": "dep",
     "유형자산감가상각비": "dep",
     "무형자산상각비": "amort",
-}
-
-# Cash flow statement capital expenditures (PP&E acquisition = investing outflow)
-CAPEX_MAP = {
-    "유형자산의 취득": "capex",
-    "유형자산취득": "capex",
-    "유형자산의취득": "capex",
 }
 
 
@@ -65,8 +152,60 @@ def _to_millions(value_str: str) -> int:
     return round(won / 1_000_000)
 
 
+def _map_internal_key(acct_name: str) -> str | None:
+    """account_nm -> internal key via the alias registry (None = unmapped)."""
+    key = ACCOUNT_MAP.get(acct_name)
+    if key is None and acct_name in CAPEX_MAP:
+        key = "capex"
+    return key
+
+
+def _select_by_contract(
+    items: list[dict], amount_field: str, year: int
+) -> dict[str, int]:
+    """Contract-governed account selection (§7.2-1/2).
+
+    Only rows whose statement is in `STATEMENT_CONTRACT[key]` are candidates.
+    Statements are tried in contract order; within the first statement that has
+    candidates, identical values -> first row wins (payload order), differing
+    values -> AmbiguousAccountError (fail-closed, no silent pick).
+    """
+    candidates: dict[str, dict[str, list[int]]] = {}  # key -> statement -> values
+    for item in items:
+        key = _map_internal_key(item.get("account_nm", ""))
+        if key is None:
+            continue
+        statement = _statement_of(item)
+        if statement not in STATEMENT_CONTRACT[key]:
+            continue  # §7.2-1: e.g. SCE `당기순이익` rows are never candidates
+        candidates.setdefault(key, {}).setdefault(statement, []).append(
+            _to_millions(item.get(amount_field, ""))
+        )
+
+    selected: dict[str, int] = {}
+    for key, per_statement in candidates.items():
+        for statement in STATEMENT_CONTRACT[key]:  # §7.2-2a: priority = contract order
+            values = per_statement.get(statement)
+            if not values:
+                continue
+            if len(set(values)) > 1:  # §7.2-2c: fail-closed
+                raise AmbiguousAccountError(
+                    f"DART {amount_field} FY{year}: '{key}' has "
+                    f"{len(values)} conflicting candidates in statement "
+                    f"{statement}: {values} — refusing to pick silently "
+                    "(contract §7.2-2)."
+                )
+            selected[key] = values[0]  # §7.2-2b: identical -> first in payload order
+            break
+    return selected
+
+
 def parse_financial_statements(items: list[dict], year: int) -> dict:
     """fnlttSinglAcntAll response -> consolidated financial statement dict.
+
+    Selection follows the module data contract (STATEMENT_CONTRACT + alias
+    registry + fail-closed ambiguity). Raises AmbiguousAccountError when
+    same-statement candidates disagree.
 
     Args:
         items: DART API raw items
@@ -76,25 +215,11 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
         {"revenue": int, "op": int, ..., "dep": int, "amort": int,
          "capex": int, "gross_borr": int, "net_borr": int} (million KRW)
     """
-    result = {}
-    capex_raw = None  # None = not found; track separately to take abs()
-
-    for item in items:
-        acct_name = item.get("account_nm", "")
-        amount_str = item.get("thstrm_amount", "")
-
-        # IS / BS account mapping
-        internal_key = ACCOUNT_MAP.get(acct_name)
-        if internal_key and internal_key not in result:
-            result[internal_key] = _to_millions(amount_str)
-
-        # Capex: first matching CF item wins (CF outflows are reported as negative)
-        if capex_raw is None and acct_name in CAPEX_MAP:
-            capex_raw = _to_millions(amount_str)
+    result = _select_by_contract(items, "thstrm_amount", year)
 
     # Capex: DART reports investing outflows as negative; store absolute value
-    if capex_raw is not None:
-        result["capex"] = abs(capex_raw)
+    if "capex" in result:
+        result["capex"] = abs(result["capex"])
     else:
         logger.debug(
             "parse_financial_statements: capex 항목 미발견 (year=%d) — profile_generator가 capex_to_da fallback 사용",
@@ -109,6 +234,89 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
     result["net_debt_components"] = extract_net_debt_components(items)
 
     return result
+
+
+def extract_reported_values(items: list[dict], year: int) -> list[ReportedFinancialValue]:
+    """Preserve original filing values and restated comparatives SEPARATELY (§7.2-4).
+
+    From one FY`year` annual-report payload this yields, per contract account:
+      - basis="original"              : thstrm_amount, fiscal_year=year — the
+        value that was available at this filing's receipt date. This is the ONLY
+        basis point-in-time computation may consume (§7.2-5).
+      - basis="restated_comparative"  : frmtrm_amount, fiscal_year=year-1 — the
+        comparative the later filing republished for the prior year. Audit
+        record; it never overwrites the prior year's original.
+
+    Selection rules are identical to parse_financial_statements (statement
+    contract + priority + fail-closed ambiguity). Unlike the legacy dict path,
+    blank/'-' amounts are treated as missing (not coerced to 0) — a new API has
+    no legacy-parity obligation, and a fabricated 0 is worse than a gap.
+
+    Raises AmbiguousAccountError on same-statement conflicting candidates and
+    ValueError when the payload carries no rcept_no (no available_at -> the
+    value cannot participate in point-in-time selection).
+    """
+    rcept_no = ""
+    for item in items:
+        if item.get("rcept_no"):
+            rcept_no = item["rcept_no"]
+            break
+    if not rcept_no:
+        raise ValueError(
+            f"extract_reported_values FY{year}: payload has no rcept_no — "
+            "without a receipt date the values have no available_at (§7.2-5)."
+        )
+    available_at = available_at_from_rcept_no(rcept_no)
+
+    out: list[ReportedFinancialValue] = []
+    for amount_field, basis, fiscal_year in (
+        ("thstrm_amount", "original", year),
+        ("frmtrm_amount", "restated_comparative", year - 1),
+    ):
+        # Strict candidate collection: keep row provenance, skip blank amounts.
+        candidates: dict[str, dict[str, list[tuple[int, str]]]] = {}
+        for item in items:
+            key = _map_internal_key(item.get("account_nm", ""))
+            if key is None:
+                continue
+            statement = _statement_of(item)
+            if statement not in STATEMENT_CONTRACT[key]:
+                continue
+            raw = (item.get(amount_field) or "").strip()
+            if raw in ("", "-"):
+                continue  # missing stays missing — no interpolation (§7.2-5)
+            candidates.setdefault(key, {}).setdefault(statement, []).append(
+                (_to_millions(raw), item.get("account_nm", ""))
+            )
+
+        for key, per_statement in candidates.items():
+            for statement in STATEMENT_CONTRACT[key]:
+                rows = per_statement.get(statement)
+                if not rows:
+                    continue
+                values = [v for v, _ in rows]
+                if len(set(values)) > 1:
+                    raise AmbiguousAccountError(
+                        f"DART {amount_field} FY{fiscal_year}: '{key}' has "
+                        f"conflicting candidates in statement {statement}: "
+                        f"{values} — refusing to pick silently (contract §7.2-2)."
+                    )
+                value, account_nm = rows[0]
+                out.append(
+                    ReportedFinancialValue(
+                        account=key,
+                        fiscal_year=fiscal_year,
+                        value_mkrw=abs(value) if key == "capex" else value,
+                        basis=basis,
+                        statement=statement,
+                        account_nm=account_nm,
+                        rcept_no=rcept_no,
+                        available_at=available_at,
+                    )
+                )
+                break
+
+    return out
 
 
 def parse_noncash_from_xml(xml_text: str) -> dict[str, int]:

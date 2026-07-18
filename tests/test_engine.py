@@ -99,8 +99,8 @@ class TestUnits:
 
     def test_detect_unit_kr_medium(self):
         label, mult = detect_unit(50_000, "KR")
-        assert label == "억원"
-        assert mult == 100_000_000
+        assert label == "백만원"
+        assert mult == 1_000_000
 
     def test_detect_unit_kr_large(self):
         """Revenue > 1T KRW: returns 백만원/1_000_000 (per_share formula compatibility).
@@ -110,13 +110,18 @@ class TestUnits:
         assert mult == 1_000_000
 
     def test_detect_unit_kr_boundary_1t(self):
-        """1T KRW falls in the 억원 band (<=1,000,000); 1T+1 falls in 백만원 band (>1,000,000)"""
+        """Revenue scale never changes the KR arithmetic storage unit."""
         label_at, mult_at = detect_unit(1_000_000, "KR")
-        assert label_at == "억원"
-        assert mult_at == 100_000_000
+        assert label_at == "백만원"
+        assert mult_at == 1_000_000
         label_over, mult_over = detect_unit(1_000_001, "KR")
         assert label_over == "백만원"
         assert mult_over == 1_000_000
+
+    def test_kr_mid_band_million_storage_does_not_inflate_per_share(self):
+        """KOSDAQ-scale KR profiles remain in DART-native KRW millions."""
+        _, mult = detect_unit(36_700, "KR")
+        assert per_share(106_500, mult, 100_000_000) == 1_065
 
     def test_detect_unit_us(self):
         label, mult = detect_unit(100_000, "US")
@@ -277,6 +282,21 @@ class TestMarketComparison:
     def test_zero_price(self):
         mc = compare_to_market(10000, 0)
         assert "데이터 없음" in mc.flag
+
+    def test_extreme_value_ratio_warns_about_unit_contamination(self):
+        high = compare_to_market(106_526, 1_718)
+        low = compare_to_market(100, 2_000)
+
+        assert "단위 오염 또는 극단적 밸류에이션 괴리 의심" in high.flag
+        assert "62.01배" in high.flag
+        assert "단위 오염 또는 극단적 밸류에이션 괴리 의심" in low.flag
+        assert "0.05배" in low.flag
+
+    def test_negative_intrinsic_value_is_not_labeled_unit_contamination(self):
+        mc = compare_to_market(-5_000, 15_000)
+
+        assert "단위 오염 또는 극단적 밸류에이션 괴리 의심" not in mc.flag
+        assert "심각한 괴리" in mc.flag
 
 
 # ═══════════════════════════════════════════════════════════
@@ -550,6 +570,29 @@ class TestScenario:
         # 10B KRW equity / 10M shares = 1,000 KRW/share
         assert r.pre_dlom == 1_000
 
+    def test_company_profile_rejects_currency_unit_multiplier_mismatch(self):
+        import pytest
+
+        from schemas.models import CompanyProfile
+
+        with pytest.raises(ValueError, match="currency_unit.*requires"):
+            CompanyProfile(
+                name="Unit mismatch",
+                shares_total=1,
+                shares_ordinary=1,
+                currency_unit="억원",
+                unit_multiplier=1_000_000,
+            )
+
+        company = CompanyProfile(
+            name="Valid 100M unit",
+            shares_total=1,
+            shares_ordinary=1,
+            currency_unit="억원",
+            unit_multiplier=100_000_000,
+        )
+        assert company.unit_multiplier == 100_000_000
+
     def test_negative_equity(self):
         sc = ScenarioParams(
             code="A",
@@ -563,6 +606,25 @@ class TestScenario:
         assert r.equity_value < 0
         assert r.pre_dlom < 0  # Negative equity propagates for distress scenarios
         assert r.post_dlom < 0  # DLOM not applied to negative equity
+
+    def test_receivable_recovery_value_is_added_once(self):
+        sc = ScenarioParams(
+            code="Base",
+            name="Base",
+            prob=100,
+            ipo="N/A",
+            shares=1_000_000,
+            receivable_recovery_value=10,
+        )
+
+        r = calc_scenario(sc, 100, 60, 0, 0, 0)
+
+        assert r.equity_value == 50
+        assert r.receivable_recovery_value == 10
+        assert [(a.name, a.value) for a in r.adjustments] == [
+            ("순차입금", 60),
+            ("매출채권 회수가치", -10),
+        ]
 
     def test_cps_dividend_rate_reduces_repay(self):
         """W-9: CPS dividend rate reduces effective compound rate."""
@@ -716,6 +778,72 @@ class TestSensitivity:
             SK_SHARES_TOTAL,
         )
         assert len(rows) > 0
+
+    def test_mixed_ev_revenue_pbv_sensitivity_varies_both_axes(self):
+        alloc = {
+            "GAME": DAAllocation(asset_share=50, da_allocated=0, ebitda=100),
+            "STORE": DAAllocation(asset_share=50, da_allocated=0, ebitda=0),
+        }
+        multiples = {"GAME": 0.45, "STORE": 0.70563}
+        segments = {
+            "GAME": {"method": "ev_revenue"},
+            "STORE": {"method": "pbv", "book_equity": 88_762},
+        }
+
+        rows, row_range, col_range = sensitivity_multiples(
+            alloc,
+            multiples,
+            net_debt=51_687,
+            eco_frontier=0,
+            shares=81_385_045,
+            segments_info=segments,
+            revenue_by_seg={"GAME": 41_500},
+        )
+
+        assert 0.45 in row_range
+        assert 0.70563 in col_range
+        assert all(value > 0 for value in row_range + col_range)
+        base_row_values = {
+            row.value for row in rows if row.row_val == 0.45
+        }
+        assert len(base_row_values) == len(col_range)
+
+    def test_pbv_axis_rejects_legacy_pbv_pe_constant(self):
+        import pytest
+
+        alloc = {
+            "GAME": DAAllocation(asset_share=50, da_allocated=0, ebitda=100),
+            "STORE": DAAllocation(asset_share=50, da_allocated=0, ebitda=0),
+        }
+        with pytest.raises(ValueError, match="pbv_pe_ev"):
+            sensitivity_multiples(
+                alloc,
+                {"GAME": 0.45, "STORE": 0.7},
+                net_debt=0,
+                eco_frontier=0,
+                shares=100,
+                segments_info={
+                    "GAME": {"method": "ev_revenue"},
+                    "STORE": {"method": "pbv", "book_equity": 100},
+                },
+                revenue_by_seg={"GAME": 100},
+                pbv_pe_ev=70,
+            )
+
+    def test_multiples_sensitivity_requires_two_usable_axes(self):
+        alloc = {
+            "ONLY": DAAllocation(asset_share=100, da_allocated=0, ebitda=100)
+        }
+        rows, row_range, col_range = sensitivity_multiples(
+            alloc,
+            {"ONLY": 5.0},
+            net_debt=0,
+            eco_frontier=0,
+            shares=100,
+        )
+        assert rows == []
+        assert row_range == []
+        assert col_range == []
 
     def test_irr_dlom_grid_size(self):
         alloc = allocate_da(SK_SEG_DATA_2025, SK_DA_2025)
@@ -916,6 +1044,43 @@ class TestPeerAnalysis:
         stats = calc_peer_stats([], {})
         assert stats == []
 
+    def test_peer_stats_use_segment_method_and_exclude_missing_values(self):
+        from schemas.models import PeerCompany
+
+        peers = [
+            PeerCompany(
+                name="A", segment_code="GAME", ev_ebitda=8.0, ev_revenue=0.7
+            ),
+            PeerCompany(
+                name="B", segment_code="GAME", ev_ebitda=10.0, ev_revenue=0.5
+            ),
+            PeerCompany(name="Missing", segment_code="GAME", ev_ebitda=12.0),
+        ]
+        stats = calc_peer_stats(
+            peers,
+            {"GAME": 0.55},
+            segment_methods={"GAME": "ev_revenue"},
+        )
+
+        assert len(stats) == 1
+        assert stats[0].multiple_label == "EV/Sales"
+        assert stats[0].count == 2
+        assert stats[0].multiple_median == 0.6
+        assert stats[0].ev_ebitda_median == 0
+
+    def test_peer_stats_warn_when_matching_method_is_missing(self):
+        from schemas.models import PeerCompany
+
+        stats = calc_peer_stats(
+            [PeerCompany(name="A", segment_code="GAME", ev_ebitda=8.0)],
+            {"GAME": 0.55},
+            segment_methods={"GAME": "ev_revenue"},
+        )
+
+        assert stats[0].count == 0
+        assert stats[0].multiple_median is None
+        assert "비교 생략" in stats[0].warning
+
 
 # ═══════════════════════════════════════════════════════════
 # Monte Carlo Tests
@@ -923,6 +1088,42 @@ class TestPeerAnalysis:
 
 
 class TestMonteCarlo:
+    def test_multiple_assumption_label_matches_lognormal_sampling(self):
+        from types import SimpleNamespace
+
+        from valuation_runner import _mc_raw_to_result
+
+        raw = SimpleNamespace(
+            n_sims=10,
+            mean=100,
+            median=99,
+            std=10,
+            p5=80,
+            p25=90,
+            p75=110,
+            p95=120,
+            min_val=70,
+            max_val=130,
+            histogram_bins=[],
+            histogram_counts=[],
+            pct_negative=0.0,
+        )
+        mc_input = MCInput(
+            multiple_params={"GAME": (0.55, 0.22)},
+            wacc_mean=8.0,
+            wacc_std=1.0,
+            dlom_mean=0.0,
+            dlom_std=0.0,
+            tg_mean=2.0,
+            tg_std=0.5,
+        )
+
+        result = _mc_raw_to_result(raw, mc_input)
+
+        assert result.input_assumptions["Multiple(GAME)"] == (
+            "Lognormal(mean=0.55x, std=0.22x)"
+        )
+
     def test_basic_mc(self):
         mc_input = MCInput(
             multiple_params={"HI": (8.0, 1.2), "ALC": (13.0, 2.0)},
@@ -970,6 +1171,25 @@ class TestMonteCarlo:
             mc_input, {"A": 100_000}, 50_000, 0, 0, 0, 0, 0, 10_000_000
         )
         assert r1.mean == r2.mean
+
+    def test_mc_receivable_recovery_value_shifts_distribution_once(self):
+        mc_input = MCInput(
+            multiple_params={"A": (1.0, 0.0)},
+            wacc_mean=8.0,
+            wacc_std=0.0,
+            dlom_mean=0.0,
+            dlom_std=0.0,
+            tg_mean=2.0,
+            tg_std=0.0,
+            n_sims=10,
+            seed=1,
+        )
+        args = (mc_input, {"A": 100}, 60, 0, 0, 0, 0, 0, 1_000_000)
+
+        without_recovery = run_monte_carlo(*args)
+        with_recovery = run_monte_carlo(*args, receivable_recovery_value=10)
+
+        assert with_recovery.mean - without_recovery.mean == 10
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1034,8 +1254,8 @@ class TestFullPipeline:
         # Structural verification (instead of fixed values)
         assert result.primary_method == "sotp"
         assert (
-            result.wacc.wacc == 9.02
-        )  # 8.50 + size_premium 1.5% → Ke 18.11% → WACC 9.02%
+            result.wacc.wacc == 8.79
+        )  # de=176.0 + size_premium 1.5% -> Ke 17.46% -> WACC 8.79%
         assert (
             4_800_000 < result.total_ev < 6_400_000
         )  # SOTP EV (distress discount may reduce)
@@ -1459,6 +1679,68 @@ class TestMonteCarloEvRevenue:
         # per-share ≈ 155000*1M/50M = 3100
         expected_ps = 155_000 * 1_000_000 / 50_000_000
         assert abs(r_mixed.mean - expected_ps) / expected_ps < 0.05
+
+    def test_mc_mixed_ev_revenue_pbv_includes_equity_segment(self):
+        mc_params = MCInput(
+            multiple_params={"GAME": (0.45, 0.001), "STORE": (0.70563, 0.001)},
+            wacc_mean=9.0,
+            wacc_std=0.01,
+            dlom_mean=0,
+            dlom_std=0,
+            tg_mean=2.5,
+            tg_std=0.01,
+            n_sims=5_000,
+            seed=42,
+            segment_methods={"GAME": "ev_revenue", "STORE": "pbv"},
+        )
+        result = run_monte_carlo(
+            mc_params,
+            {"GAME": 0, "STORE": 0},
+            net_debt=51_687,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=81_385_045,
+            unit_multiplier=1_000_000,
+            seg_revenues={"GAME": 41_500},
+            seg_book_equity={"STORE": 88_762},
+        )
+
+        expected = (41_500 * 0.45 + 88_762 * 0.70563 - 51_687) * 1_000_000
+        expected /= 81_385_045
+        assert abs(result.median - expected) / expected < 0.05
+        assert result.pct_negative < 100
+
+    def test_mc_pe_uses_segment_net_income(self):
+        mc_params = MCInput(
+            multiple_params={"FIN": (10.0, 0.001)},
+            wacc_mean=9.0,
+            wacc_std=0.01,
+            dlom_mean=0,
+            dlom_std=0,
+            tg_mean=2.5,
+            tg_std=0.01,
+            n_sims=2_000,
+            seed=42,
+            segment_methods={"FIN": "pe"},
+        )
+        result = run_monte_carlo(
+            mc_params,
+            {"FIN": 0},
+            net_debt=0,
+            eco_frontier=0,
+            cps_principal=0,
+            cps_years=0,
+            rcps_repay=0,
+            buyback=0,
+            shares=1_000_000,
+            unit_multiplier=1_000_000,
+            seg_net_income={"FIN": 100},
+        )
+
+        assert abs(result.median - 1_000) < 5
 
     def test_mc_ev_revenue_zero_revenue(self):
         """ev_revenue segment with revenue=0 contributes 0 EV (no crash)."""

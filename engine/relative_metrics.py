@@ -218,6 +218,8 @@ def justified_pb(
     if ke - g < _MIN_KE_G_SPREAD:
         return RelativeMetric("Justified P/B", None, NA, "ke-g 스프레드 과소(<0.5%)")
     value = round((roe - g) / (ke - g), 2)
+    if value <= 0:
+        return RelativeMetric("Justified P/B", None, NA, "정당 P/B 0 이하 — 해석 불가")
     return RelativeMetric("Justified P/B", value, OK)
 
 

@@ -84,6 +84,56 @@ def test_no_market_price_skips_layer():
     assert _build(vi) is None
 
 
+def test_zero_multiple_switches_disable_relative_layer():
+    vi = load_profile(_FIXTURE).model_copy(
+        update={
+            "pe_multiple": 0.0,
+            "ev_revenue_multiple": 0.0,
+            "pbv_multiple": 0.0,
+            "ps_multiple": 0.0,
+            "pffo_multiple": 0.0,
+        }
+    )
+    assert _build(vi) is None
+
+
+def test_explicit_basis_mismatch_suppresses_all_ratios():
+    vi = load_profile(_FIXTURE)
+    vi = vi.model_copy(
+        update={
+            "relative_inputs": vi.relative_inputs.model_copy(
+                update={
+                    "basis_aligned": False,
+                    "basis_note": "post-transaction capital structure",
+                }
+            )
+        }
+    )
+    rv = _build(vi)
+
+    assert rv is not None
+    assert rv.basis_aligned is False
+    assert rv.ratios == []
+    assert "post-transaction" in rv.basis_note
+
+
+def test_material_net_debt_mismatch_triggers_basis_guard():
+    vi = load_profile(_FIXTURE)
+    vi = vi.model_copy(
+        update={
+            "net_debt": 20_000_000,
+            "relative_inputs": vi.relative_inputs.model_copy(
+                update={"basis_aligned": None}
+            ),
+        }
+    )
+    rv = _build(vi)
+
+    assert rv is not None
+    assert rv.basis_aligned is False
+    assert "순차입금" in rv.basis_note
+
+
 def test_justified_verdicts_present():
     vi = load_profile(_FIXTURE)
     rv = _build(vi)

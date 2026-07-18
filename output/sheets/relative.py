@@ -40,7 +40,7 @@ def _peer_ev_ebitda_median(ctx: Ctx):
 
 def sheet_relative(ctx: Ctx):
     rv = ctx.result.relative_valuation
-    if not rv or not rv.ratios:
+    if not rv:
         return
 
     ws = ctx.wb.create_sheet("Relative Valuation")
@@ -49,6 +49,14 @@ def sheet_relative(ctx: Ctx):
         ws.column_dimensions[get_column_letter(c)].width = w
 
     write_cell(ws, 1, 1, "상대가치 진단 (Relative Valuation Diagnostics)", font=TITLE_FONT)
+
+    if not rv.basis_aligned:
+        write_cell(ws, 3, 1, "⚠ 기준일 불일치 — 진단 배수 미출력", font=SECTION_FONT)
+        write_cell(ws, 4, 1, rv.basis_note or "실적과 자본구조 기준일을 확인하십시오.")
+        return
+
+    if not rv.ratios:
+        return
 
     # ── Section 1: diagnostic ratios ──
     r = 3

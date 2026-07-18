@@ -113,6 +113,13 @@ def test_justified_pb_below_one_when_roe_below_ke():
     assert m.value < 1.0  # value destroyer trades below book
 
 
+def test_justified_pb_non_positive_is_not_reported():
+    m = justified_pb(roe_pct=-2.0, growth_pct=2.0, ke_pct=9.0)
+    assert m.status == NA
+    assert m.value is None
+    assert "0 이하" in m.note
+
+
 # ── verdict ───────────────────────────────────────────────────────────────
 
 def test_verdict_undervalued():

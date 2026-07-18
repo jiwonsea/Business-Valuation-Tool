@@ -1,6 +1,48 @@
 """output package tests — dashboard + wp_poster + Excel sheet fixes."""
 
 
+def test_peer_implied_multiple_panel_skips_mixed_sotp():
+    from types import SimpleNamespace
+
+    from openpyxl import Workbook
+
+    from output.sheets.peers import _implied_multiple_check
+
+    ws = Workbook().active
+    ctx = SimpleNamespace(
+        vi=SimpleNamespace(
+            segments={
+                "GAME": {"method": "ev_revenue"},
+                "STORE": {"method": "pbv"},
+            }
+        )
+    )
+
+    _implied_multiple_check(ws, 1, ctx)
+
+    assert "혼합 SOTP" in ws["A2"].value
+    assert "생략" in ws["A2"].value
+
+
+def test_console_peer_stats_uses_method_specific_multiple(capsys):
+    from pathlib import Path
+
+    from output.console_report import print_report
+    from valuation_runner import load_profile, run_valuation
+
+    profile = Path(__file__).parent.parent / "profiles" / "nexus.yaml"
+    vi = load_profile(str(profile))
+    result = run_valuation(vi)
+
+    print_report(vi, result)
+
+    stdout = capsys.readouterr().out
+    assert "EV/Sales" in stdout
+    assert "0.543x" in stdout
+    assert "Peer 멀티플 통계 (EV/EBITDA)" not in stdout
+    assert "SOTP (Mixed)" in stdout
+
+
 # ── dashboard._get_primary_value & _write_football_field ──
 
 
@@ -307,6 +349,7 @@ class TestScenarioBridgeAlignment:
                         adjustments=[
                             AdjustmentItem(name="Net Debt", value=2_295_568),
                             AdjustmentItem(name="Eco Frontier", value=94_644),
+                            AdjustmentItem(name="Receivable Recovery", value=-10_000),
                         ],
                         equity_value=3_614_421,
                         shares=65_599_748,
@@ -364,6 +407,14 @@ class TestScenarioBridgeAlignment:
         assert actual_rows["(-) CPS Redeem"] == (0, 729_304, 944_112)
         assert actual_rows["(-) RCPS Redeem"] == (0, 490_000, 575_000)
         assert actual_rows["(-) Eco Frontier"] == (94_644, 94_644, 94_644)
+        assert ws.cell(
+            row=next(
+                row
+                for row in range(1, ws.max_row + 1)
+                if ws.cell(row, 1).value == "(+) Receivable Recovery"
+            ),
+            column=2,
+        ).value == 10_000
 
 
 # ── sensitivity.py: _get_ref_label_value SOTP fix ──

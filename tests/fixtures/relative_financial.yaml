@@ -18,6 +18,7 @@ company:
 
 industry: "은행"
 valuation_method: "multiples"
+pe_multiple: 6.0
 
 market_price: 80000
 
@@ -28,6 +29,7 @@ relative_inputs:
   price_to_book: 0.85
   earnings_growth: 5.5
   growth_source: "analyst consensus"
+  basis_aligned: true
 
 segments:
   BANK:

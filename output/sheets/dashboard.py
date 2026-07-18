@@ -20,6 +20,15 @@ from ..excel_styles import (
     write_cell,
 )
 
+
+def _fmt_multiple(value: float) -> str:
+    text = f"{value:.5f}".rstrip("0").rstrip(".")
+    if "." not in text:
+        text += ".00"
+    elif len(text.rsplit(".", 1)[1]) == 1:
+        text += "0"
+    return f"{text}x"
+
 CHART_ROWS = 18
 CHART_GAP = 3
 
@@ -264,7 +273,7 @@ def sheet_dashboard(ctx: Ctx):
                     "ev_revenue": "EV/Revenue",
                 }.get(method, "")
                 write_cell(
-                    ws, r, 1, f"{ctx.seg_names[code]} ({m_label} {s.multiple:.1f}x)"
+                    ws, r, 1, f"{ctx.seg_names[code]} ({m_label} {_fmt_multiple(s.multiple)})"
                 )
                 write_cell(ws, r, 2, s.ev, fmt=NUM_FMT)
                 r += 1
@@ -298,14 +307,18 @@ def sheet_dashboard(ctx: Ctx):
             if info.get("method") in ("pbv", "pe") and c in ctx.vi.segment_net_debt
         )
         eff_nd_d = ctx.vi.net_debt - fin_debt_d
-        kpis.append(("순차입금 (연결)", ctx.vi.net_debt))
-        kpis.append(("유효 순차입금 (제조)", eff_nd_d))
+        kpis.append(("순차입금 (본체·인수금융)", ctx.vi.net_debt))
+        kpis.append(("유효 순차입금 (EV-based 부문)", eff_nd_d))
     else:
         kpis.append(("순차입금", ctx.vi.net_debt))
     kpis.append(("부채비율", f"{cons_by['de_ratio']:.1f}%"))
     if ctx.result.dcf:
         kpis.append(("DCF EV", ctx.result.dcf.ev_dcf))
-    if ebitda > 0 and ctx.result.total_ev > 0:
+    all_ev_ebitda = all(
+        info.get("method", "ev_ebitda") == "ev_ebitda"
+        for info in ctx.vi.segments.values()
+    )
+    if ebitda > 0 and ctx.result.total_ev > 0 and all_ev_ebitda:
         kpis.append(("EV/EBITDA (implied)", f"{ctx.result.total_ev / ebitda:.1f}x"))
 
     for label, val in kpis:
@@ -637,7 +650,7 @@ def sheet_dashboard(ctx: Ctx):
 def _get_primary_value(ctx: Ctx) -> tuple[int, str]:
     """Return the primary result value by valuation method."""
     if ctx.result.weighted_value > 0 and ctx.result.scenarios:
-        return ctx.result.weighted_value, "확률가중 적정 주당 가치"
+        return ctx.result.weighted_value, "확률가중 주당 가치"
 
     if ctx.method == "ddm" and ctx.result.ddm:
         return ctx.result.ddm.equity_per_share, "DDM 적정 주당 가치"

@@ -288,6 +288,11 @@ def main():
         "--auto", action="store_true", help="AI 자동 분석 (--company와 함께 사용)"
     )
     parser.add_argument("--excel", action="store_true", help="Excel 내보내기")
+    parser.add_argument(
+        "--band",
+        action="store_true",
+        help="역사적 LTM P/B·P/S 밴드 출력 (1단계: 파일럿 3사 스냅샷, --profile 전용, 참고용)",
+    )
     parser.add_argument("--json", action="store_true", help="Emit ValuationResult JSON")
     parser.add_argument("--output-dir", "-o", default=None, help="Excel 출력 디렉토리")
     parser.add_argument(
@@ -360,6 +365,8 @@ def main():
     if args.company:
         from pipeline.profile_generator import auto_fetch, auto_analyze
 
+        if args.band:
+            print("[band] --band는 1단계에서 --profile 경로 전용입니다 — 생략.")
         if args.auto:
             return auto_analyze(args.company, args.output_dir)
         market_hint = args.market if args.market != "KR" else None
@@ -389,6 +396,26 @@ def main():
 
     print_report(vi, result)
 
+    # Historical band (--band, reporting-only — not a valuation input)
+    bands = None
+    band_current = None
+    if args.band:
+        from pipeline.timeseries import build_band_reports
+
+        bands = build_band_reports(
+            company_name=vi.company.name, ticker=vi.company.ticker
+        )
+        if bands:
+            rv = result.relative_valuation
+            band_current = {
+                m.name: m.value
+                for m in (rv.ratios if rv else [])
+                if m.name in ("P/B", "P/S") and m.value is not None
+            }
+            from output.band_report import print_band_reports
+
+            print_band_reports(bands, band_current)
+
     # Save to DB (when Supabase is configured)
     val_id = _save_to_db(vi, result, args.profile)
     if val_id:
@@ -397,7 +424,10 @@ def main():
     if args.excel:
         from output.excel_builder import export
 
-        path = export(vi, result, args.output_dir)
+        path = export(
+            vi, result, args.output_dir,
+            band_reports=bands, band_current=band_current,
+        )
         print(f"\n[Excel] 저장 완료: {path}")
 
     return result

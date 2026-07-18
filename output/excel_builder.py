@@ -26,9 +26,18 @@ from .sheets.relative import sheet_relative
 
 
 def export(
-    vi: ValuationInput, result: ValuationResult, output_dir: str | None = None
+    vi: ValuationInput,
+    result: ValuationResult,
+    output_dir: str | None = None,
+    band_reports: list | None = None,
+    band_current: dict | None = None,
 ) -> str:
-    """Create and save Excel workbook."""
+    """Create and save Excel workbook.
+
+    band_reports (opt-in, --band --excel only): historical LTM multiple bands
+    (schemas.point_in_time.HistoricalBand). Default None keeps the workbook
+    unchanged (Phase 2 §7.1 #8 — reporting-only, not a valuation input).
+    """
     wb = Workbook()
     # Remove default empty sheet (Assumptions becomes the first sheet)
     if "Sheet" in wb.sheetnames:
@@ -49,6 +58,10 @@ def export(
         sheet_scenarios(ctx)
     sheet_sensitivity(ctx)
     sheet_relative(ctx)
+    if band_reports:
+        from .sheets.band import sheet_historical_band
+
+        sheet_historical_band(ctx, band_reports, band_current)
     sheet_dashboard(ctx)
 
     # Save

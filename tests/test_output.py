@@ -105,6 +105,21 @@ class TestWpPosterBuildContent:
         result = _build_post_content(self._make_summary())
         assert result == ""
 
+    def test_draft_blocked_us_valuation_is_not_published(self):
+        from scheduler.wp_poster import _build_post_content
+
+        summary = self._make_summary(
+            valuations=[
+                {
+                    "company": "StubCo",
+                    "market": "US",
+                    "status": "draft_blocked",
+                    "summary_md": "Must remain internal",
+                }
+            ]
+        )
+        assert _build_post_content(summary) == ""
+
     def test_company_name_markdown_escaping(self):
         from scheduler.wp_poster import _build_post_content
 

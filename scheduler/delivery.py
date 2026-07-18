@@ -22,6 +22,45 @@ def _safe_url(url: str) -> str:
     return url if scheme in ("http", "https") else ""
 
 
+def _company_key(entry: dict) -> str:
+    ticker = str(entry.get("ticker") or "").strip().upper()
+    if ticker:
+        return f"ticker:{ticker}"
+    name = str(entry.get("company") or entry.get("name") or "").strip().lower()
+    return f"name:{name}"
+
+
+def _news_by_company(summary: dict) -> dict[str, list[dict]]:
+    by_key: dict[str, list[dict]] = {}
+    for co in summary.get("scored_companies", []):
+        news = co.get("top_news") or []
+        if news:
+            by_key[_company_key(co)] = news
+    return by_key
+
+
+def _render_news_links(news: list[dict], limit: int = 2) -> str:
+    items: list[str] = []
+    for item in news[:limit]:
+        url = _esc(_safe_url(str(item.get("url") or item.get("link") or "")))
+        title = _esc(str(item.get("title") or "").strip())
+        if not url or not title:
+            continue
+        items.append(
+            f'<li style="margin:2px 0;"><a href="{url}" '
+            f'style="color:#1a73e8;text-decoration:none;">{title}</a></li>'
+        )
+    if not items:
+        return ""
+    return (
+        '<div style="margin-top:8px;font-size:12px;color:#444;">'
+        '<strong>관련 기사</strong>'
+        '<ul style="margin:4px 0;padding-left:16px;line-height:1.5;">'
+        f'{"".join(items)}'
+        '</ul></div>'
+    )
+
+
 def build_company_gamma_text(entry: dict) -> str:
     """Build per-company Gamma presentation input text (Korean).
 
@@ -233,7 +272,7 @@ def _extract_cross_validation_html(summary_md: str) -> str:
     return "\n".join(html_parts)
 
 
-def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
+def build_gmail_html(summary: dict, gamma_urls: dict | None = None) -> str:
     """Build Gmail-compatible HTML email body (Korean).
 
     Args:
@@ -247,7 +286,9 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     label = _esc(summary.get("label", ""))
     status = summary.get("status_summary", {})
     valuations = summary.get("valuations", [])
+    gamma_urls = gamma_urls or {}
     summary_gamma = _esc(_safe_url(gamma_urls.get("_summary", "")))
+    news_lookup = _news_by_company(summary)
 
     # Build company cards
     company_cards = ""
@@ -265,6 +306,8 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
         )
         gamma_url = _esc(_safe_url(gamma_urls.get(v.get("company", ""), "")))
         download_url = _esc(_safe_url(v.get("download_url", "")))
+        top_news = v.get("top_news") or news_lookup.get(_company_key(v), [])
+        news_html = _render_news_links(top_news)
 
         links = ""
         if gamma_url:
@@ -278,6 +321,17 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
             links += (
                 f'<a href="{download_url}" style="color:#1a73e8;text-decoration:none;">'
                 f"📄 Excel</a>"
+            )
+
+        download_button = ""
+        if download_url:
+            download_button = (
+                f'<div style="margin-top:8px;">'
+                f'<a href="{download_url}" '
+                f'style="display:inline-block;background:#1a73e8;color:white;'
+                f'padding:7px 12px;border-radius:6px;text-decoration:none;'
+                f'font-size:12px;font-weight:bold;">📥 엑셀 다운로드</a>'
+                f'</div>'
             )
 
         reason = _esc(v.get("reason", ""))
@@ -296,7 +350,9 @@ def build_gmail_html(summary: dict, gamma_urls: dict) -> str:
     <span style="color:#666;font-size:12px;margin-left:8px;">{market} · {cap_str}</span>
     <br>
     {reason_html}
+    {news_html}
     {f'<div style="margin:6px 0 4px;line-height:1.7;">{cv_html}</div>' if cv_html else ""}
+    {download_button}
     <span style="font-size:13px;margin-top:4px;display:inline-block;">{links}</span>
   </td>
 </tr>

@@ -11,6 +11,7 @@ import argparse
 import json
 import logging
 import sys
+from datetime import date
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -25,23 +26,15 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 from schemas.models import ValuationInput, ValuationResult, MarketComparisonResult
 from engine.market_comparison import compare_to_market
-from valuation_runner import load_profile, run_valuation
+from valuation_runner import enrich_market_dependent_result, load_profile, run_valuation
 from orchestrator import _save_to_db
 from output.console_report import print_report
 
 logger = logging.getLogger(__name__)
 
 
-def _fetch_and_compare_market_price(
-    vi: ValuationInput, result: ValuationResult
-) -> ValuationResult:
-    """Fetch market price for listed companies and calculate the gap ratio."""
-    is_listed = vi.company.legal_status in ("상장", "listed")
-    if not is_listed or not vi.company.ticker or result.weighted_value <= 0:
-        return result
-
-    import math
-
+def _fetch_live_market_price(vi: ValuationInput) -> float:
+    """Fetch a current quote without deciding whether it should be used."""
     price = 0
     # Primary: yfinance_fetcher (leverages existing _ticker_info_cache)
     try:
@@ -83,188 +76,122 @@ def _fetch_and_compare_market_price(
         except Exception as e:
             logger.debug("KRX fallback 실패 (%s): %s", vi.company.ticker, e)
 
-    # Manual/profile market price override -- used offline (sandbox) when the
-    # live fetch is unavailable. A live price, if fetched above, takes precedence.
-    if not price and getattr(vi, "market_price", None) and vi.market_price > 0:
-        price = float(vi.market_price)
+    return float(price or 0)
+
+
+def _format_price(price: float, market: str) -> str:
+    if market == "KR":
+        return f"{price:,.0f}원"
+    return f"${price:,.2f}"
+
+
+def _fetch_and_compare_market_price(
+    vi: ValuationInput,
+    result: ValuationResult,
+    use_live_price: bool = False,
+) -> ValuationResult:
+    """Select an as-of profile price by default and calculate the market gap."""
+    import math
+
+    is_listed = vi.company.legal_status in ("상장", "listed")
+    if not is_listed or not vi.company.ticker or result.weighted_value <= 0:
+        return result
+
+    profile_price = float(vi.market_price or 0)
+    if not math.isfinite(profile_price) or profile_price <= 0:
+        profile_price = 0
+    live_price = _fetch_live_market_price(vi)
+    if not math.isfinite(live_price) or live_price <= 0:
+        live_price = 0
+
+    explicit_as_of = bool(vi.price_as_of and profile_price)
+    if vi.price_as_of and not profile_price:
+        logger.warning(
+            "price_as_of=%s가 선언됐지만 유효한 market_price가 없습니다 — "
+            "실시간 가격을 사용합니다",
+            vi.price_as_of,
+        )
+
+    if use_live_price and live_price:
+        price = live_price
+        price_source = "live"
+        price_as_of = date.today()
+    elif explicit_as_of:
+        price = profile_price
+        price_source = "profile_as_of"
+        price_as_of = vi.price_as_of
+    elif live_price:
+        price = live_price
+        price_source = "live"
+        price_as_of = date.today()
+    else:
+        price = profile_price
+        price_source = "profile_snapshot" if profile_price else ""
+        price_as_of = None
+
+    if profile_price and live_price and not math.isclose(profile_price, live_price):
+        profile_text = _format_price(profile_price, vi.company.market)
+        live_text = _format_price(live_price, vi.company.market)
+        if price_source == "profile_as_of":
+            logger.warning(
+                "as-of %s 사용 (analysis_date %s) — 실시간 %s은 무시됨. "
+                "실시간을 쓰려면 --live-price",
+                profile_text,
+                vi.company.analysis_date,
+                live_text,
+            )
+        elif use_live_price and explicit_as_of:
+            logger.warning(
+                "--live-price: 실시간 %s 사용 — as-of %s "
+                "(analysis_date %s)는 무시됨",
+                live_text,
+                profile_text,
+                vi.price_as_of,
+            )
+        elif not explicit_as_of:
+            logger.warning(
+                "자동수집 스냅샷 %s vs 실시간 %s — 실시간 가격을 사용합니다. "
+                "as-of 고정을 원하면 price_as_of 선언",
+                profile_text,
+                live_text,
+            )
+    elif use_live_price and profile_price and not live_price:
+        fallback_label = "as-of" if explicit_as_of else "자동 스냅샷"
+        logger.warning(
+            "실시간 가격 조회 실패 — 프로필 %s 가격을 사용합니다", fallback_label
+        )
+
+    if price_source == "profile_as_of" and price_as_of:
+        age_days = (date.today() - price_as_of).days
+        if age_days >= 7:
+            divergence = ""
+            if live_price:
+                gap_pct = abs(profile_price - live_price) / profile_price * 100
+                divergence = f" 실시간 대비 {gap_pct:.1f}% 차이."
+            logger.warning(
+                "as-of %s 가격(%s) 사용 — 실행일 대비 %d일 경과.%s "
+                "최신 시장 비교는 --live-price",
+                price_as_of,
+                _format_price(profile_price, vi.company.market),
+                age_days,
+                divergence,
+            )
 
     # Sanity check: reject invalid price values
-    if price and not math.isnan(price) and price > 0:
+    if price > 0:
         mc = compare_to_market(result.weighted_value, price)
         result.market_comparison = MarketComparisonResult(
             intrinsic_value=mc.intrinsic_value,
             market_price=mc.market_price,
+            price_source=price_source,
+            price_as_of=price_as_of,
             gap_ratio=mc.gap_ratio,
             flag=mc.flag,
         )
 
-        # Diagnostic relative-valuation layer needs a live price. When the profile
-        # carried no market_price, run_valuation() skipped it — recompute here now
-        # that a price is known (covers both --profile and --company entry paths).
-        if result.relative_valuation is None:
-            try:
-                from valuation_runner import _build_relative_valuation
-                from engine.wacc import calc_wacc
-
-                vi_priced = vi.model_copy(update={"market_price": float(price)})
-                result.relative_valuation = _build_relative_valuation(
-                    vi_priced, result, calc_wacc(vi_priced.wacc_params)
-                )
-            except Exception as e:  # pragma: no cover - defensive
-                logger.debug("relative valuation recompute skipped: %s", e)
-
-        # ── Reverse-DCF gap diagnostics (|gap| >= 20%) ──
-        _attach_gap_diagnostic(vi, result)
-
-        # ── Reverse rNPV (rNPV method only) ──
-        _attach_reverse_rnpv(vi, result)
+        result = enrich_market_dependent_result(vi, result)
 
     return result
-
-
-def _attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
-    """Compute and attach GapDiagnostic when market-intrinsic gap exceeds threshold.
-
-    Requires: result.market_comparison already set, DCF-based primary method.
-    No-op for non-DCF methods (SOTP with only peer multiples, DDM, RIM).
-    """
-    from engine.gap_diagnostics import diagnose_gap, GAP_THRESHOLD
-
-    mc = result.market_comparison
-    if mc is None or mc.market_price <= 0:
-        return
-    if abs(mc.gap_ratio) < GAP_THRESHOLD:
-        return
-
-    # Need EBITDA base data for reverse DCF
-    by = vi.base_year
-    cons = vi.consolidated.get(by, {})
-    da_base = cons.get("dep", 0) + cons.get("amort", 0)
-    ebitda_base = cons.get("op", 0) + da_base
-    revenue_base = cons.get("revenue", 0)
-
-    if ebitda_base <= 0:
-        return
-
-    # Market EV = market cap + net debt (display units)
-    shares = vi.company.shares_outstanding
-    net_debt = vi.net_debt
-    market_cap_display = mc.market_price * shares / vi.company.unit_multiplier
-    market_ev = market_cap_display + max(net_debt, 0)
-
-    try:
-        diag = diagnose_gap(
-            gap_ratio=mc.gap_ratio,
-            market_price=mc.market_price,
-            intrinsic_per_share=mc.intrinsic_value,
-            market_ev=market_ev,
-            ebitda_base=int(ebitda_base),
-            da_base=int(da_base),
-            revenue_base=int(revenue_base),
-            wacc_pct=result.wacc.wacc,
-            params=vi.dcf_params,
-            holding_discount_applied=bool(
-                result.holding_discount and result.holding_discount.enabled
-            ),
-            de_ratio=cons.get("de_ratio", 0.0),
-            industry=vi.industry,
-        )
-        if diag:
-            from schemas.models import GapDiagnostic as _GD
-
-            result.gap_diagnostic = _GD(
-                gap_pct=diag.gap_pct,
-                direction=diag.direction,
-                implied_wacc=diag.implied_wacc,
-                implied_tgr=diag.implied_tgr,
-                implied_growth_mult=diag.implied_growth_mult,
-                category=diag.category,
-                primary_reason=diag.primary_reason,
-                secondary_reasons=diag.secondary_reasons,
-                explanation=diag.explanation,
-                suggestions=diag.suggestions,
-                actions=diag.actions,
-                reconcilable=diag.reconcilable,
-            )
-    except Exception as e:
-        logger.debug("Gap diagnostics failed: %s", e)
-
-
-def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
-    """Compute reverse rNPV when primary method is rNPV and market price is available."""
-    if result.primary_method != "rnpv" or not vi.rnpv_params:
-        return
-
-    mc = result.market_comparison
-    if mc is None or mc.market_price <= 0:
-        return
-
-    from engine.reverse_rnpv import reverse_rnpv
-    from schemas.models import (
-        ReverseRNPVResult as _RR,
-        ReverseRNPVDrugImplied as _DI,
-        ReverseRNPVDrugSolo as _DS,
-    )
-
-    # Market EV = market cap (display units) + net debt
-    shares = vi.company.shares_outstanding
-    market_cap_display = mc.market_price * shares / vi.company.unit_multiplier
-    market_ev = market_cap_display + max(vi.net_debt, 0)
-
-    model_ev = float(result.rnpv.enterprise_value) if result.rnpv else 0
-
-    pipeline_dicts = [d.model_dump() for d in vi.rnpv_params.pipeline]
-    discount_rate = vi.rnpv_params.discount_rate or result.wacc.wacc
-
-    try:
-        raw = reverse_rnpv(
-            target_ev=market_ev,
-            model_ev=model_ev,
-            pipeline=pipeline_dicts,
-            discount_rate=discount_rate,
-            r_and_d_cost=vi.rnpv_params.r_and_d_cost,
-            decline_rate=vi.rnpv_params.decline_rate,
-            default_margin=vi.rnpv_params.default_margin,
-            tax_rate=vi.rnpv_params.tax_rate,
-        )
-        result.reverse_rnpv = _RR(
-            target_ev=raw.target_ev,
-            model_ev=raw.model_ev,
-            gap_pct=raw.gap_pct,
-            implied_pos_scale=raw.implied_pos_scale,
-            implied_peak_scale=raw.implied_peak_scale,
-            implied_discount_rate=raw.implied_discount_rate,
-            implied_pos_per_drug=[
-                _DI(
-                    name=d["name"],
-                    base_value=d["base_pos"],
-                    implied_value=d["implied_pos"],
-                )
-                for d in raw.implied_pos_per_drug
-            ],
-            implied_peak_per_drug=[
-                _DI(
-                    name=d["name"],
-                    base_value=d["base_peak"],
-                    implied_value=d["implied_peak"],
-                )
-                for d in raw.implied_peak_per_drug
-            ],
-            implied_pos_solo=[
-                _DS(
-                    name=d["name"],
-                    phase=d["phase"],
-                    base_pos=d["base_pos"],
-                    implied_pos=d["implied_pos"],
-                    solvable=d["solvable"],
-                    max_ev_contribution=d["max_ev_contribution"],
-                    skipped=d["skipped"],
-                )
-                for d in raw.implied_pos_solo
-            ],
-        )
-    except Exception as e:
-        logger.debug("Reverse rNPV failed: %s", e)
 
 
 def main():
@@ -292,6 +219,11 @@ def main():
         "--band",
         action="store_true",
         help="역사적 LTM P/B·P/S 밴드 출력 (1단계: 파일럿 3사 스냅샷, --profile 전용, 참고용)",
+    )
+    parser.add_argument(
+        "--live-price",
+        action="store_true",
+        help="프로필의 as-of 가격 대신 실시간 가격을 우선 사용",
     )
     parser.add_argument("--json", action="store_true", help="Emit ValuationResult JSON")
     parser.add_argument("--output-dir", "-o", default=None, help="Excel 출력 디렉토리")
@@ -381,14 +313,18 @@ def main():
     result = run_valuation(vi)
 
     # Listed company market price comparison
-    result = _fetch_and_compare_market_price(vi, result)
+    result = _fetch_and_compare_market_price(
+        vi, result, use_live_price=args.live_price
+    )
 
     # Recompute quality score now that market_comparison is attached
     # (run_valuation computes quality before market price is available)
     if result.market_comparison and result.market_comparison.market_price > 0:
         from engine.quality import calc_quality_score
+        from valuation_runner import _apply_investability_gate
 
         result.quality = calc_quality_score(vi, result)
+        result = _apply_investability_gate(vi, result)
 
     if args.json:
         print(json.dumps(result.model_dump(mode="json"), ensure_ascii=False, indent=2))

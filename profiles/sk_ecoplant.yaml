@@ -1,6 +1,11 @@
 # SK Ecoplant valuation profile
 # Source: SK Inc. 35th annual report (2026.03.18), 38.co.kr, DART OpenAPI
-# Validation reference: probability-weighted per-share value KRW 39,892
+# 2026-06 RE-VALUATION: 2026 1분기보고서(rcept_no=20260515001323, reprt_code=11013) 반영.
+#   연결 Q1'26: 매출 4,899,713 / OP 931,444 / 순익 519,195 (백만원), 부채비율 176.2%.
+#   세그먼트 단위 EBITDA는 분기 주석 미공개(JS 렌더) → 세그먼트 경제성은 FY2025 정상화 기준 유지(base_year=2025).
+#   GPM 9.5%(FY25)->23.1%(Q1) 급등은 일회성/인플렉션 혼재 -> 단순 연율화 배제, 상방은 Bull growth_adj로 반영.
+#   시나리오 재구성: IPO 옵션 제거(2026.07 기한 미준수) + 자력 상환 확정 -> 잔존 일반주주 지분가치.
+# Validation reference (old FY2025/IPO 3-scenario): probability-weighted KRW 34,745
 
 company:
   name: "SK에코플랜트"
@@ -93,46 +98,53 @@ wacc_params:
   rf: 3.50
   erp: 7.00
   bu: 0.750
-  de: 192.0
+  de: 176.0                    # 2026 1Q말 부채비율 176.2% (FY2025말 192%에서 개선)
   tax: 22.0
   kd_pre: 5.50
   eq_w: 34.2
   size_premium: 1.5            # 비상장 할인 프리미엄 (1.5~2.0%p, unlisted conglomerate)
 
+# 2026-06 재구성: IPO 옵션 제거(2026.07 상장기한 미준수로 사실상 철회) +
+# CPS 자력 상환 확정 추진(자기주식 취득 임시주총, SK㈜의 FI 지분 일부 ~2,000억 인수).
+# 시나리오 축이 'IPO 성공/실패'에서 '상환 후 잔존 일반주주 지분가치'로 이동.
+# 전 시나리오 CPS 상환->소각으로 보통주(54,278,993주)만 잔존. growth_adj_pct로 EV 차등(Bull>Base>Bear).
 scenarios:
-  A:
-    name: "IPO 성공"
-    prob: 20
-    ipo: "성공"
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 65599748   # CPS converted → all shares
-    desc: "중복상장 예외 인정 → CPS/RCPS 전환, 공모 상장"
-  B:
-    name: "IPO 실패 + FI 우호"
-    prob: 45
+  Base:
+    name: "자력 상환 (확정 경로)"
+    prob: 65
     ipo: "불발"
     irr: 5.0
-    dlom: 20
-    cps_repay: null     # Auto-calculated based on IRR
+    dlom: 15            # 자력·질서있는 상환 + SK㈜ 백스톱 -> 강제매각 할인 완화(기존 20->15)
+    cps_repay: null     # IRR 5% 복리 자동 산출 (600,000×1.05^4≈729,300)
+    rcps_repay: 490000  # 배당 기지급 차감 후 협상 추정치
+    buyback: 200000     # 자기주식 취득 프로그램(임시주총 승인)
+    shares: 54278993    # CPS 상환·소각 -> 보통주만
+    growth_adj_pct: 0
+    desc: "IPO 철회, 자체 현금으로 CPS 질서있게 상환. FI와 IRR 5% 우호적 정산"
+  Bull:
+    name: "상환 + 하이테크 마진 정착"
+    prob: 20
+    ipo: "불발"
+    irr: 5.0
+    dlom: 12
+    cps_repay: null
     rcps_repay: 490000
     buyback: 200000
-    shares: 54278993   # CPS redeemed and extinguished → ordinary shares only
-    desc: "IPO 불발, FI와 IRR 5% 합의 → CPS 상환 + 자회사 매각"
-  C:
-    name: "IPO 실패 + FI 분쟁"
-    prob: 35
+    shares: 54278993
+    growth_adj_pct: 15  # 용인 반도체·AI DC 하이테크 마진 인플렉션 일부 정착 -> 세그먼트 EBITDA +15%
+    desc: "상환 확정 + Q1 실적 모멘텀(매출 +99%, OP 마진 개선) 구조적 지속"
+  Bear:
+    name: "상환 지연·분쟁 잔존"
+    prob: 15
     ipo: "불발"
     irr: 12.0
     dlom: 25
-    cps_repay: null     # Auto-calculated based on IRR
+    cps_repay: null     # IRR 12% -> 600,000×1.12^4≈944,100
     rcps_repay: 575000
     buyback: 200000
     shares: 54278993
-    desc: "IPO 불발, FI 분쟁 → IRR 12% 강제, 드래그얼롱 리스크"
+    growth_adj_pct: -10 # 마진 정상화·운전자본 부담 -> 세그먼트 EBITDA −10%
+    desc: "상환 일정 지연/FI 잔여 분쟁, IRR 12% 강제 + 마진 되돌림"
 
 dcf_params:
   ebitda_growth_rates: [0.10, 0.08, 0.06, 0.05, 0.04]
@@ -141,25 +153,21 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.5
   terminal_ev_ebitda: 7.0      # Exit Multiple TV cross-check (건설/환경 복합 6~8x)
-  # Actual Capex/NWC (optional — used instead of ratios if provided)
   actual_capex: 350000      # 2025 actual Capex (KRW M) — from cash flow statement
   actual_nwc: 610000        # 2025 net working capital (KRW M) — current assets minus current liabilities
   prior_nwc: 580000         # 2024 net working capital (KRW M)
 
 cps_principal: 600000       # CPS 6,000억원 (2022.07 발행, zero-coupon)
 cps_years: 4                # 만기 2026.07
-cps_dividend_rate: 0.0      # IPO 전까지 무배당; 불발 시 5%→8%→11% step-up (+3%p/yr)
+cps_dividend_rate: 0.0      # IPO 전까지 무배당; 불발 시 5%->8%->11% step-up (+3%p/yr)
 
 rcps_principal: 400000      # RCPS 4,000억원 (2022.06 발행)
 rcps_years: 5               # 만기 2027.06 (CPS와 다름!)
 rcps_dividend_rate: 7.5     # 연동형 배당 7.4~7.6% (5.5% or 회사채+1.45%p 중 높은 값)
-                            # 스텝업: 2027.06부터 +2%p/yr (미상환), +2.5%p (미배당)
-                            # RCPS는 배당 지급 중이므로 상환액 ≠ 복리 IRR 적용값
-                            # 시나리오 B/C의 rcps_repay는 배당 기지급분 차감 후 협상 추정치
 
-net_debt: 2295568
+net_debt: 2295568          # 정상화 순차입금(steady-state). Q1'26 spot 3,230,880, 증가분 +935,312 전액이 1.23조 운전자본 일시 유출(매출 +99% 램프업)에서 기인 — 영업CF(WC前) +995,643이 투자·재무 유출 전액 커버. FY2025 EBITDA(정상화)와 정합. spot 적용 다운사이드는 본문 민감도로 별도 제시
 eco_frontier: 94644
-base_year: 2025
+base_year: 2025            # 세그먼트 경제성은 FY2025 정상화 기준 (Q1 세그먼트 주석 미공개 + 마진 급등 일회성 혼재)
 
 # Cross-validation multiples (0 = skip that method)
 ev_revenue_multiple: 0.5    # EV/Revenue: construction/environmental conglomerate 0.4~0.6x
@@ -170,7 +178,7 @@ pbv_multiple: 1.2           # P/BV: 1.0~1.5x after unlisted discount
 mc_enabled: true
 mc_sims: 10000
 mc_multiple_std_pct: 15.0   # Multiple std dev (applied value +/-15%)
-mc_dlom_mean: 20.0          # DLOM mean (based on scenario B)
+mc_dlom_mean: 17.0          # DLOM mean (Base 15 ~ Bear 25 중심, 기존 20에서 하향)
 mc_dlom_std: 5.0            # DLOM std dev
 
 peers:

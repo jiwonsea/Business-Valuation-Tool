@@ -11,7 +11,7 @@ company:
   shares_ordinary: 151192004
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-13'
+  analysis_date: '2026-05-09'
 segments:
   SEG1:
     name: Home Appliance & Air Solution
@@ -24,7 +24,7 @@ segments:
     multiple: 8.2
   SEG4:
     name: Business Solutions (B2B Display & Signage)
-    multiple: 9.0
+    multiple: 8.5
   SEG5:
     name: Other & Corporate
     multiple: 8.8
@@ -96,37 +96,13 @@ wacc_params:
   rf: 3.2
   erp: 6.5
   bu: 0.95
-  de: 5.6
+  de: 4.8
   tax: 19.3
   kd_pre: 4.2
-  eq_w: 94.7
+  eq_w: 95.4
 scenarios:
-  A:
-    name: 기본 시나리오
-    prob: 40.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 151192004
-    desc: 1분기 실적 호조 모멘텀이 지속되고 APAC 시장 성장이 순조롭게 진행되는 시나리오. 경쟁 압박은 중간 수준으로 관리 가능한 범위
-      내에서 진행.
-    probability_rationale: '기본 확률: 경기 정상화 70% × 실적 모멘텀 지속 60% × 경쟁 압박 중간 수준 90% =
-      38%, 40%로 조정'
-    active_drivers:
-      q1_record: 0.7
-      apac_lifestyle: 0.6
-      competition_pressure: 0.4
-    segment_multiples:
-      SEG1: 12.0
-      SEG2: 10.5
-      SEG3: 11.0
-      SEG4: 9.5
-      SEG5: 8.0
-  B:
-    name: 강세 시나리오
+  Bull:
+    name: VS 부문 주도 성장
     prob: 25.0
     ipo: N/A
     irr: null
@@ -135,23 +111,24 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 151192004
-    desc: 유럽 히트펌프 시장 진출이 성공하고 AI 기술 투자 효과가 조기에 나타나는 시나리오. 1분기 최고 실적 이후 지속적인 성장 모멘텀
-      확보.
-    probability_rationale: '기본 확률: 유럽 진출 성공 60% × AI 투자 효과 조기 발현 40% × 실적 서프라이즈 지속
-      50% = 12%, 시장 호조 반영하여 25%로 상향'
+    desc: VS 부문이 전기차 시장 확대와 함께 폭발적 성장을 달성하고, 글로벌 공급망 정상화로 전통 사업부문도 회복세를 보이는 시나리오.
+      투자자들이 LG전자를 전기차 부품 순수 플레이어로 재평가하며 밸류에이션 프리미엄 확대.
+    probability_rationale: 'Base rate: VS 부문 고성장 달성 확률 40% × 공급망 정상화 확률 70% × 시장 긍정
+      반응 확률 90% ≈ 25%'
     active_drivers:
-      europe_heatpump: 0.8
-      ai_investment: 0.7
-      q1_record: 0.9
+      vs_division_growth: 1.0
+      global_supply_chain: 0.8
     segment_multiples:
       SEG1: 14.0
-      SEG2: 12.5
-      SEG3: 13.0
-      SEG4: 11.0
-      SEG5: 9.5
-  C:
-    name: 약세 시나리오
-    prob: 20.0
+      SEG2: 12.0
+      SEG3: 11.0
+      SEG4: 10.0
+      SEG5: 9.0
+    growth_adj_pct: 25
+    market_sentiment_pct: 15
+  Base:
+    name: 안정적 회복
+    prob: 45.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -159,23 +136,24 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 151192004
-    desc: 쿠팡-TCL 등 중국 브랜드의 공격적 시장 진입으로 경쟁이 심화되고, 신시장 진출 효과가 예상보다 지연되는 시나리오. 가격 경쟁
-      압박으로 마진 축소.
-    probability_rationale: '기본 확률: 경쟁 심화 80% × 신시장 진출 지연 40% × 글로벌 경기 둔화 30% = 10%,
-      리스크 요인 고려하여 20%로 상향'
+    desc: VS 부문이 견조한 성장을 지속하고 기존 사업부문도 점진적으로 회복하는 균형잡힌 시나리오. 금리 환경과 공급망 이슈가 부분적으로
+      개선되며 전반적으로 안정적인 성장 궤도 유지.
+    probability_rationale: 'Base rate: 정상적인 시장 환경 확률 60% × 점진적 회복 확률 80% × 밸런스드 성장
+      확률 95% ≈ 45%'
     active_drivers:
-      competition_pressure: 1.0
-      europe_heatpump: 0.2
-      ai_investment: 0.3
+      vs_division_growth: 0.6
+      global_supply_chain: 0.5
     segment_multiples:
-      SEG1: 10.0
-      SEG2: 8.5
-      SEG3: 9.0
-      SEG4: 7.5
-      SEG5: 6.5
-  D:
-    name: 혁신 가속 시나리오
-    prob: 15.0
+      SEG1: 11.0
+      SEG2: 10.0
+      SEG3: 9.5
+      SEG4: 8.5
+      SEG5: 8.0
+    growth_adj_pct: 0
+    market_sentiment_pct: 0
+  Bear:
+    name: 금리 부담과 성장 둔화
+    prob: 30.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -183,20 +161,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 151192004
-    desc: AI 기술 투자와 유럽 히트펌프 시장 진출이 모두 성공하여 기술 혁신 리더로서의 지위를 확고히 하는 시나리오. 다중 성장 동력 확보로
-      프리미엄 밸류에이션 획득.
-    probability_rationale: '기본 확률: AI 기술 혁신 성공 30% × 다중 시장 동시 성공 20% × 프리미엄 포지셔닝 강화
-      50% = 3%, 기술 리더십 프리미엄 반영하여 15%로 상향'
+    desc: 연준의 추가 금리 인상으로 소비재 수요가 위축되고 VS 부문 성장도 예상보다 둔화되는 시나리오. 높은 자본비용과 경기 둔화 우려로
+      가전업체 전반에 밸류에이션 디스카운트 적용.
+    probability_rationale: 'Base rate: 금리 추가 인상 확률 35% × 소비 위축 확률 70% × VS 성장 둔화 확률
+      80% ≈ 20%, 보수적 조정으로 30%'
     active_drivers:
-      ai_investment: 1.0
-      europe_heatpump: 1.0
-      apac_lifestyle: 0.8
+      fed_rate_environment: 1.0
+      vs_division_growth: 0.3
     segment_multiples:
-      SEG1: 15.0
-      SEG2: 13.5
-      SEG3: 14.0
-      SEG4: 12.0
-      SEG5: 10.0
+      SEG1: 8.0
+      SEG2: 7.5
+      SEG3: 7.0
+      SEG4: 6.5
+      SEG5: 6.0
+    growth_adj_pct: -20
+    market_sentiment_pct: -10
 dcf_params:
   ebitda_growth_rates:
   - 0.1
@@ -211,9 +190,9 @@ dcf_params:
   actual_capex: 168187
   capex_fade_to: null
   da_to_ebitda_override: 0.1583
-pe_multiple: 19.1
-ev_revenue_multiple: 1.9
-pbv_multiple: 0.5
+pe_multiple: 22.3
+ev_revenue_multiple: 2.3
+pbv_multiple: 0.6
 cps_principal: 0
 cps_years: 0
 net_debt: -725938
@@ -365,16 +344,10 @@ peers:
     product portfolio to LG B2B segment. 2023 EV/EBITDA 7-9x range.
 - name: Nec Display Solutions
   segment_code: SEG4
-  ev_ebitda: 10.2
-  notes: Japanese listed subsidiary, pure-play B2B commercial display provider. Highest
-    business structure similarity. Premium multiple reflects focused business model.
-    2023 EV/EBITDA 10-11x.
-- name: Barco NV
-  segment_code: SEG4
-  ev_ebitda: 11.5
-  notes: Belgian listed, specialized B2B display/visualization solutions. Professional
-    signage, control rooms. Higher margin business (EBITDA ~18-20%). 2023 EV/EBITDA
-    11-13x.
+  ev_ebitda: 8.3
+  notes: Japanese subsidiary (NEC Corp listed), specialized B2B commercial display
+    systems. High-end signage/professional display focus. Estimated EV/EBITDA 8-9x
+    based on parent company metrics.
 - name: Samsung Electronics
   segment_code: SEG5
   ev_ebitda: 8.5
@@ -407,59 +380,35 @@ peers:
   ev_ebitda: 8.9
   notes: Japanese diversified electronics and appliances manufacturer. Comparable
     business portfolio and operational scale. 2023 market multiples.
-news_key_issues: '- [기회] 유럽의 히트펌프 시장 진출 (2026-04-12, 2026-04-10)
-
-  - [리스크] 쿠팡, TCL 대용량 냉장고 국내 시장 진출 (2026-04-10)
-
-  - [기회] 아시아-태평양 지역에서 라이프스타일 제품 및 구독 서비스 성장 목표 (2026-04-09)
-
-  - [실적] 1분기 실적 호조, 역대 최고 매출 기록 (2026-04-07)
-
-  - [기회] AI 기술에 대한 투자 및 성장 전략 (2026-04-07, 2026-04-09)'
+news_key_issues: '- [기회] LG전자 VS 부문,'
 news_drivers:
-- id: europe_heatpump
-  name: 유럽 히트펌프 시장 진출
+- id: vs_division_growth
+  name: LG전자 VS 부문 성장 가속화
   category: company
   effects:
     growth_adj_pct: 15
-    wacc_adj: 0
     market_sentiment_pct: 8
-  rationale: 유럽 히트펌프 시장은 연 20-30% 성장 중. LG전자의 기술력과 브랜드 인지도 고려 시 시장점유율 5-10% 확보 가능.
-    역사적으로 신시장 진출 성공률 약 60%
-- id: competition_pressure
-  name: 쿠팡-TCL 대용량 냉장고 경쟁 심화
+  rationale: VS(Vehicle component Solutions) 부문은 전기차 시장 확대와 함께 고성장이 예상됨. 과거 신사업 부문이
+    전체 실적을 견인한 사례(삼성전자 반도체, LG화학 배터리)에서 평균 15% 성장률 상승과 8% 밸류에이션 프리미엄 관찰
+- id: fed_rate_environment
+  name: 연준 금리 정책 변화
+  category: macro
+  effects:
+    wacc_adj: 0.4
+    growth_adj_pct: -8
+  rationale: 현재 Fed Funds 3.63%는 장기 평균 대비 높은 수준. 금리 상승 시 가전업체 WACC 평균 40bp 상승, 소비재
+    수요 둔화로 성장률 8% 하락하는 패턴이 과거 3회 금리 인상 사이클에서 관찰됨
+- id: global_supply_chain
+  name: 글로벌 공급망 정상화
   category: industry
   effects:
-    growth_adj_pct: -12
-    wacc_adj: 0.2
-    market_sentiment_pct: -6
-  rationale: 중국 브랜드의 국내 가전시장 진출은 과거 5년간 평균 15-20% 가격 경쟁 압박 유발. 프리미엄 브랜드 마진율 평균 2-3%p
-    하락
-- id: apac_lifestyle
-  name: 아시아-태평양 라이프스타일 제품 성장
-  category: company
-  effects:
     growth_adj_pct: 10
-    wacc_adj: -0.1
     market_sentiment_pct: 5
-  rationale: APAC 지역 중산층 확대로 프리미엄 가전 수요 연 12-15% 성장. LG전자의 지역 내 시장점유율 15% 수준에서 성장
-    여력 충분
-- id: q1_record
-  name: 1분기 역대 최고 실적
-  category: company
-  effects:
-    growth_adj_pct: 8
-    wacc_adj: -0.15
-    market_sentiment_pct: 12
-  rationale: 분기 최고 실적은 향후 2-3분기 모멘텀 지속 가능성 70% 시사. 실적 서프라이즈는 평균 10-15% 밸류에이션 프리미엄
-    제공
-- id: ai_investment
-  name: AI 기술 투자 및 성장 전략
-  category: company
-  effects:
-    growth_adj_pct: 12
-    wacc_adj: 0.1
-    market_sentiment_pct: 10
-  rationale: AI 가전 시장은 연 25-30% 성장 예상. 초기 투자비용으로 단기 WACC 상승하나 장기 성장성 확보. 기술 선도기업 프리미엄
-    10-15%
+  rationale: 반도체 부족 해소와 물류비 정상화로 가전업체 마진 개선 예상. 2022-2023년 공급망 이슈 해결 시 가전업체 평균 10%
+    성장률 회복과 5% 밸류에이션 상승 경험
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
 mc_enabled: true

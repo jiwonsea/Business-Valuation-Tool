@@ -1,0 +1,289 @@
+company:
+  name: OCI
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '456040'
+  cik: null
+  corp_code: 01760738
+  shares_total: 8952495
+  shares_ordinary: 8952495
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-25'
+segments:
+  SEG1:
+    name: 화학(요소·암모니아·기초화학)
+    multiple: 10.0
+  SEG2:
+    name: 건설(EPC·플랜트)
+    multiple: 7.5
+  SEG3:
+    name: 신재생에너지(태양광·수소)
+    multiple: 10.0
+  SEG4:
+    name: 기타(무역·서비스)
+    multiple: 9.8
+segment_data:
+  2025:
+    SEG1:
+      revenue: 904243
+      gross_profit: 0
+      op: 198
+      assets: 1024099
+    SEG2:
+      revenue: 703300
+      gross_profit: 0
+      op: 154
+      assets: 796521
+    SEG3:
+      revenue: 301414
+      gross_profit: 0
+      op: 66
+      assets: 341366
+    SEG4:
+      revenue: 100471
+      gross_profit: 0
+      op: 22
+      assets: 113789
+consolidated:
+  2023:
+    revenue: 1288826
+    op: 57451
+    net_income: 52204
+    assets: 1990471
+    liabilities: 1006943
+    equity: 983528
+    dep: 39414
+    amort: 0
+    gross_borr: 677295
+    net_borr: 396948
+    de_ratio: 68.9
+  2024:
+    revenue: 2215286
+    op: 110493
+    net_income: 96033
+    assets: 2283045
+    liabilities: 1041423
+    equity: 1207710
+    dep: 74717
+    amort: 0
+    gross_borr: 665234
+    net_borr: 379455
+    de_ratio: 55.1
+  2025:
+    revenue: 2009429
+    op: 440
+    net_income: -62613
+    assets: 2275775
+    liabilities: 1110991
+    equity: 1126636
+    dep: 90375
+    amort: 0
+    gross_borr: 779105
+    net_borr: 545487
+    de_ratio: 69.2
+wacc_params:
+  rf: 3.2
+  erp: 6.5
+  bu: 1.15
+  de: 59.8
+  tax: 21.2
+  kd_pre: 4.71
+  eq_w: 62.6
+scenarios:
+  Bull:
+    name: 우주 태양광 신시장 개척 성공
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 8952495
+    desc: 스페이스X와의 우주 태양광 협력이 성공하며 신규 고부가가치 시장을 개척. 동시에 지상 태양광 수요도 강력한 회복세를 보이며 폴리실리콘
+      사업의 잠재력이 현실화.
+    probability_rationale: 'Base rate: 신규 협력 성공률 40%. 조건부 분해: P(스페이스X 프로젝트 성공)=40%
+      × P(폴리실리콘 수요 확대|성공)=70% × P(OCI 수혜|수요확대)=90% ≈ 25%'
+    active_drivers:
+      spacex_solar_demand: 1.0
+      polysilicon_recovery: 0.8
+      earnings_momentum: 0.6
+    growth_adj_pct: 40
+    segment_multiples:
+      SEG1: 14.0
+      SEG2: 12.0
+      SEG3: 10.0
+      SEG4: 8.0
+  Base:
+    name: 점진적 회복 시나리오
+    prob: 45.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 8952495
+    desc: 2분기 연속 흑자를 바탕으로 실적이 점진적으로 개선되며, 태양광 시장 회복과 함께 폴리실리콘 사업이 안정적인 성장세를 보임. 우주
+      태양광은 중장기 옵션으로 평가.
+    probability_rationale: 'Base rate: 업황 점진 회복 확률 60%. 조건부 분해: P(태양광 수요 정상화)=60%
+      × P(실적 개선 지속)=75% = 45%'
+    active_drivers:
+      polysilicon_recovery: 0.5
+      earnings_momentum: 0.7
+      rate_environment: 0.3
+    growth_adj_pct: 0
+    segment_multiples:
+      SEG1: 11.0
+      SEG2: 9.5
+      SEG3: 8.0
+      SEG4: 7.0
+  Bear:
+    name: 고금리 지속 및 수요 둔화
+    prob: 30.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 8952495
+    desc: 고금리 환경이 지속되며 자본집약적 태양광 프로젝트 투자가 위축. 폴리실리콘 수요 회복이 지연되고 우주 태양광 프로젝트도 불확실성이
+      증가하여 실적 개선 모멘텀이 약화.
+    probability_rationale: 'Base rate: 고금리 장기화 확률 35%. 조건부 분해: P(금리 추가 상승)=35% × P(태양광
+      수요 둔화|고금리)=60% × P(실적 악화|수요둔화)=70% ≈ 15%, 보수적 조정하여 30%'
+    active_drivers:
+      rate_environment: 1.0
+      polysilicon_recovery: 0.0
+      spacex_solar_demand: 0.2
+    growth_adj_pct: -30
+    segment_multiples:
+      SEG1: 8.0
+      SEG2: 7.0
+      SEG3: 6.0
+      SEG4: 5.5
+dcf_params:
+  ebitda_growth_rates:
+  - 0.05
+  - 0.045
+  - 0.04
+  - 0.035
+  - 0.03
+  tax_rate: 21.2
+  capex_to_da: 1.08
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 83205
+  capex_fade_to: null
+  da_to_ebitda_override: 0.6018
+pe_multiple: 0.0
+ev_revenue_multiple: 0.9
+pbv_multiple: 1.2
+cps_principal: 0
+cps_years: 0
+net_debt: 545487
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: GS건설
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: 국내 건설·EPC 선도기업. 매출규모 유사(약 8조원대). 플랜트·해외EPC 비중 높음. 2023년 기준 EV/EBITDA 6.5배
+    (DART 재무제표 기반)
+- name: 현대건설
+  segment_code: SEG2
+  ev_ebitda: 7.2
+  notes: 국내 대형 건설사. 매출 약 7조원. EPC·플랜트 사업 비중 30% 이상. 2023년 기준 EV/EBITDA 7.2배
+- name: 삼성물산 건설부문
+  segment_code: SEG2
+  ev_ebitda: 8.1
+  notes: 삼성물산 건설·EPC 부문. 순수 건설사 대비 높은 마진율. 부문별 EBITDA 추정 기반 8.1배
+- name: 대우건설
+  segment_code: SEG2
+  ev_ebitda: 5.8
+  notes: 중견 건설·EPC사. 매출 약 4조원. 플랜트 수주 비중 증가. 2023년 기준 5.8배 (확인 필요)
+- name: TechnipFMC (국제)
+  segment_code: SEG2
+  ev_ebitda: 9.5
+  notes: 글로벌 EPC·플랜트 선도사. 매출 약 13조원(USD 기준). 해외 비교군으로 활용. 2023년 기준 9.5배
+- name: Fluor Corporation (국제)
+  segment_code: SEG2
+  ev_ebitda: 8.7
+  notes: 미국 대형 EPC사. 매출 약 15조원. 플랜트·인프라 사업 중심. 2023년 기준 8.7배
+- name: 대한통운
+  segment_code: SEG4
+  ev_ebitda: 8.5
+  notes: 물류·무역 서비스 기업, 유사한 B2B 거래 구조, KOSPI 상장, 2023년 기준
+- name: 현대글로비스
+  segment_code: SEG4
+  ev_ebitda: 9.2
+  notes: 종합 물류·무역 기업, 대규모 거래량, KOSPI 상장, 안정적 EBITDA 마진
+- name: 한진
+  segment_code: SEG4
+  ev_ebitda: 7.8
+  notes: 해운·물류·무역 통합 사업, 국제 거래 비중 높음, KOSPI 상장
+- name: 삼성물산
+  segment_code: SEG4
+  ev_ebitda: 10.5
+  notes: 종합 무역사, 대규모 거래액, 프리미엄 평가, KOSPI 상장
+- name: LG상사
+  segment_code: SEG4
+  ev_ebitda: 11.2
+  notes: 종합 무역사, 고부가가치 거래, 안정적 수익성, KOSPI 상장
+- name: Sojitz Corporation (일본)
+  segment_code: SEG4
+  ev_ebitda: 9.8
+  notes: 국제 종합 무역사, 유사한 비즈니스 모델, 도쿄증권거래소 상장
+- name: Marubeni Corporation (일본)
+  segment_code: SEG4
+  ev_ebitda: 10.1
+  notes: 글로벌 무역·서비스 기업, 비교 가능한 사업 구조
+news_key_issues: '- [기회] 스페이스X와의 협력으로 우주 태양광 수요 확대 기대 (2026-04-24)
+
+  - [실적] 2026년 1분기 영업이익 108억원, 2분기 연속 흑자 (2026-04-24)
+
+  - [실적] 목표가 40만원 상향, 에너지 비중 확대 반영 (2026-04-24)
+
+  - [기회] 폴리실리콘 사업 잠재력에 주목, 잠재력에 대한 기대 (2026-04-24)
+
+  - [기회] 태양광 수요 증가에 따른 수혜 기대 (2026-04-24)'
+news_drivers:
+- id: spacex_solar_demand
+  name: 스페이스X 협력 우주 태양광 수요 확대
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 8
+  rationale: 우주 태양광은 신규 고부가가치 시장으로 폴리실리콘 수요 증가 기대. 과거 신규 협력 발표시 평균 8% 주가 상승, 매출 성장률
+    10-20% 개선 사례
+- id: polysilicon_recovery
+  name: 폴리실리콘 사업 잠재력 및 태양광 수요 증가
+  category: industry
+  effects:
+    growth_adj_pct: 12
+    wacc_adj: -0.3
+  rationale: 글로벌 태양광 설치량 연평균 15% 증가 추세. 폴리실리콘 가격 회복시 OCI 수익성 크게 개선. 과거 사이클 분석시 업황
+    회복기 EBITDA 20-30% 증가
+- id: earnings_momentum
+  name: 2분기 연속 흑자 달성
+  category: company
+  effects:
+    growth_adj_pct: 8
+    market_sentiment_pct: 5
+  rationale: 실적 턴어라운드 확인으로 투자심리 개선. 연속 흑자 달성 기업의 향후 12개월 평균 주가 상승률 12% 기록
+- id: rate_environment
+  name: 금리 환경 변화
+  category: macro
+  effects:
+    wacc_adj: 0.4
+    growth_adj_pct: -5
+  rationale: 현재 Fed Funds 3.64%는 장기 평균 대비 높은 수준. 고금리 환경에서 자본집약적 화학업종 투자 부담 증가
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

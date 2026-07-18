@@ -7,38 +7,38 @@ company:
   ticker: '000660'
   cik: null
   corp_code: 00164779
-  shares_total: 690455268
-  shares_ordinary: 690455268
+  shares_total: 728002365      # DART 발행주식총수(보통주) 2025-12-31 사업보고서
+  shares_ordinary: 728002365
   shares_preferred: 0
-  treasury_shares: 0
-  analysis_date: '2026-04-12'
+  treasury_shares: 26310845     # DART 자기주식수 → 유통 701,691,520
+  analysis_date: '2026-07-16'
 segments:
   SEG1:
     name: 메모리 반도체 (DRAM)
-    multiple: 9.1
+    multiple: 9.5   # peer median ~9.0 + HBM 리더십 프리미엄
   SEG2:
     name: 메모리 반도체 (NAND Flash)
-    multiple: 8.6
+    multiple: 8.0   # peer median ~8.4에 사이클 디스카운트
   SEG3:
     name: 파운드리 및 기타 반도체
-    multiple: 10.3
+    multiple: 10.0  # 파운드리 peer median
 segment_data:
   2025:
-    SEG1:
-      revenue: 43716004
-      gross_profit: 0
-      op: 21242844
-      assets: 79248447
-    SEG2:
-      revenue: 46630404
-      gross_profit: 0
-      op: 22659033
-      assets: 84531676
-    SEG3:
-      revenue: 6800267
-      gross_profit: 0
-      op: 3304442
-      assets: 12327536
+    SEG1:              # DRAM(HBM 포함) ~78% mix. GP margin 66.3%, OP margin 55.0%
+      revenue: 75774407
+      gross_profit: 50238432
+      op: 41675924
+      assets: 105664595
+    SEG2:              # NAND(Solidigm 포함) ~20% mix. GP margin 40.0%, OP margin 28.0%
+      revenue: 19429335
+      gross_profit: 7771734
+      op: 5440214
+      assets: 61637681
+    SEG3:              # 파운드리/System IC/기타 ~2% mix. OP margin 4.6%
+      revenue: 1942933
+      gross_profit: 680624
+      op: 90181
+      assets: 8805383
 consolidated:
   2023:
     revenue: 32765719
@@ -71,7 +71,7 @@ consolidated:
     assets: 176107659
     liabilities: 55440908
     equity: 120516178
-    dep: 13930130
+    dep: 14389500   # 총 D&A: 회사 공시 EBITDA 61.596조 − OP 47.206조
     amort: 0
     gross_borr: 24757848
     net_borr: 9834082
@@ -94,7 +94,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 690455268
+    shares: 701691520
     desc: 반도체 호황이 예상대로 지속되고 청주 M15X 생산확대가 순조롭게 진행되는 시나리오. 노사갈등은 제한적 영향에 그치며 전반적으로
       긍정적 흐름 유지.
     probability_rationale: '기본 확률: 반도체 호황 지속 70% × 적정 수준 생산확대 80% × 노사갈등 제한적 영향 70%
@@ -115,7 +115,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 690455268
+    shares: 701691520
     desc: AI 수요 폭발과 HBM 시장 독점적 지위로 반도체 호황이 예상보다 강하게 지속되는 시나리오. 청주 M15X 풀가동과 성과급 효과로
       최적 성장 실현.
     probability_rationale: '기본 확률: AI 수요 폭발적 증가 40% × HBM 독점적 지위 강화 80% × 생산능력 최대
@@ -137,7 +137,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 690455268
+    shares: 701691520
     desc: 반도체 호황이 예상보다 빨리 둔화되고 업계 노사갈등이 확산되어 비용 부담이 가중되는 시나리오. 성과급 급증과 생산 차질로 수익성
       압박.
     probability_rationale: '기본 확률: 반도체 사이클 조기 둔화 30% × 노사갈등 확산 50% × 비용 압박 심화 80%
@@ -159,7 +159,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 690455268
+    shares: 701691520
     desc: 글로벌 경기침체로 반도체 수요가 급락하고 동시에 노사갈등이 심화되어 생산차질과 비용상승이 동시에 발생하는 최악 시나리오. 모든 부정적
       요인이 복합적으로 작용.
     probability_rationale: '기본 확률: 글로벌 경기침체 20% × 반도체 급락 60% × 노사갈등 심화 70% ≈ 15%'
@@ -183,8 +183,8 @@ dcf_params:
   nwc_to_rev_delta: 0.05
   terminal_growth: 2.0
   actual_capex: 28579343
-  capex_fade_to: null
-  da_to_ebitda_override: 0.9592
+  capex_fade_to: 1.3            # 1.99x(2025 AI capex) → 1.3x 정규화 페이드
+  da_to_ebitda_override: null   # 제거: 실제 D&A/EBITDA=0.234를 엔진이 산출
 pe_multiple: 16.5
 ev_revenue_multiple: 7.4
 pbv_multiple: 5.9
@@ -202,14 +202,6 @@ peers:
   segment_code: SEG1
   ev_ebitda: 9.2
   notes: 글로벌 DRAM 3위, 순수 메모리 비즈니스 모델, 2024년 실적 기준
-- name: SK Telecom (메모리 관련 투자)
-  segment_code: SEG1
-  ev_ebitda: 7.8
-  notes: SK 그룹 계열사, 메모리 산업 노출도 고려, 확인 필요
-- name: Intel (DRAM 사업부 추정)
-  segment_code: SEG1
-  ev_ebitda: 11.5
-  notes: DRAM 재진출 전략, 파운드리 통합 고려시 할인 적용, 2024년 기준
 - name: Nanya Technology
   segment_code: SEG1
   ev_ebitda: 8.8
@@ -234,14 +226,6 @@ peers:
   segment_code: SEG2
   ev_ebitda: 9.1
   notes: DRAM/NAND 혼합 포트폴리오, NAND 비중 증가 추세, 2024년 기준
-- name: Intel (QLC/3D NAND)
-  segment_code: SEG2
-  ev_ebitda: 10.8
-  notes: NAND 기술 개발 중, 파운드리 통합 고려시 할인, 확인 필요
-- name: SK Hynix 자체 비교
-  segment_code: SEG2
-  ev_ebitda: 8.4
-  notes: NAND 포지셔닝 검증용, 업계 평균 대비 평가
 - name: TSMC
   segment_code: SEG3
   ev_ebitda: 12.5
@@ -258,10 +242,6 @@ peers:
   segment_code: SEG3
   ev_ebitda: 11.8
   notes: 신규 파운드리 진출, 기술 투자 고려, 확인 필요
-- name: SK Hynix 파운드리 추정
-  segment_code: SEG3
-  ev_ebitda: 9.5
-  notes: 초기 단계 파운드리, 메모리 기반 기술 활용, 할인 적용
 - name: UMC (United Microelectronics)
   segment_code: SEG3
   ev_ebitda: 9.1
@@ -313,3 +293,5 @@ news_drivers:
   rationale: 삼성전자 노조 성과급 요구가 업계 전반 확산시 인건비 상승 압박. 과거 대규모 노사갈등시 생산차질로 성장률 5% 하락. 불확실성
     증가로 WACC 30bp 상승, 투자심리 8% 악화
 mc_enabled: true
+market_price: 1842000  # 2026-07-16 종가 (Daum 금융), per share KRW
+price_as_of: '2026-07-16'

@@ -7,11 +7,11 @@ company:
   ticker: GOOGL
   cik: '1652044'
   corp_code: null
-  shares_total: 5822000000
-  shares_ordinary: 5822000000
+  shares_total: 12100000000
+  shares_ordinary: 12100000000
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-08'
+  analysis_date: '2026-07-06'
 segments:
   SEG1:
     name: Google Services (Search, YouTube, Network)
@@ -122,7 +122,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5822000000
+    shares: 12100000000
     desc: AI 광고 플랫폼이 예상을 뛰어넘는 성과를 보이며 Google Search의 에이전트 매니저 전환이 성공적으로 진행. Q1 실적에서
       16%+ 성장률을 달성하고 숨겨진 자산 가치가 재평가됨.
     probability_rationale: 'Base rate: AI 플랫폼 성공률 30%. 조건부 분해: P(AI광고 성공)=70% × P(인프라
@@ -149,7 +149,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5822000000
+    shares: 12100000000
     desc: AI 투자와 광고 플랫폼 개선이 점진적으로 진행되며 기존 성장률을 유지. 반독점 리스크는 관리 가능한 수준에서 지속되고 전반적으로
       안정적인 사업 환경 유지.
     probability_rationale: 'Base rate: 기존 성장 트렌드 유지 확률 60%. 조건부 분해: P(현상유지)=60% ×
@@ -175,7 +175,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5822000000
+    shares: 12100000000
     desc: AI 인프라 투자 효과가 예상보다 늦게 나타나고 반독점 소송 압박이 강화됨. Q1 실적이 기대에 못 미치며 대규모 투자 대비 가시적
       성과 부족으로 시장 신뢰도 하락.
     probability_rationale: 'Base rate: 빅테크 성장 둔화 사례 25%. 조건부 분해: P(AI 투자 효과 지연)=40%
@@ -201,7 +201,7 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 5822000000
+    shares: 12100000000
     desc: 반독점 소송이 예상보다 강력하게 진행되며 사업 분할 압박이 현실화. AI 투자 효과는 미미하고 규제 불확실성으로 인한 밸류에이션
       디스카운트가 확대됨.
     probability_rationale: 'Base rate: 빅테크 강력한 규제 조치 15%. 조건부 분해: P(반독점 강화)=50% ×
@@ -395,3 +395,4 @@ multiples:
   AI_PLATFORM: 18.0
   QUANTUM_COMPUTING: 25.0
 mc_enabled: true
+market_price: 359  # live ~2026-07-06 (per share)

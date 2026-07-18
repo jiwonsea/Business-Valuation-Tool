@@ -1,0 +1,301 @@
+company:
+  name: UNITEDHEALTH GROUP INC
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: UNH
+  cik: '731766'
+  corp_code: null
+  shares_total: 908144404
+  shares_ordinary: 908144404
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-06-13'
+segments:
+  SEG1:
+    name: UnitedHealthcare (Health Insurance)
+    multiple: 9.5
+  SEG2:
+    name: Optum (Healthcare Services & Technology)
+    multiple: 10.5
+segment_data:
+  2025:
+    SEG1:
+      revenue: 268540
+      gross_profit: 0
+      op: 11378
+      assets: 185749
+    SEG2:
+      revenue: 179027
+      gross_profit: 0
+      op: 7586
+      assets: 123832
+consolidated:
+  2023:
+    revenue: 371622
+    op: 32358
+    net_income: 22381
+    assets: 273720
+    liabilities: 174801
+    equity: 88756
+    dep: 3972
+    amort: 0
+    gross_borr: 62537
+    net_borr: 37110
+    de_ratio: 70.5
+  2024:
+    revenue: 400278
+    op: 32287
+    net_income: 14405
+    assets: 298278
+    liabilities: 195687
+    equity: 92658
+    dep: 4099
+    amort: 0
+    gross_borr: 76904
+    net_borr: 51592
+    de_ratio: 83.0
+  2025:
+    revenue: 447567
+    op: 18964
+    net_income: 12056
+    assets: 309581
+    liabilities: 207883
+    equity: 94110
+    dep: 4361
+    amort: 0
+    gross_borr: 78389
+    net_borr: 54024
+    de_ratio: 83.3
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 0.95
+  de: 21.1
+  tax: 21.0
+  kd_pre: 4.2
+  eq_w: 82.6
+scenarios:
+  Bull:
+    name: 성장 가속화 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 908144404
+    desc: Medicare Advantage 사업의 AI 기반 성장 가속화와 Optum Rx 투명 PBM 모델의 성공적 안착으로 시장 리더십
+      강화. 규제 압박이 완화되면서 운영 효율성이 크게 개선되는 시나리오.
+    probability_rationale: 'Base rate: Medicare Advantage 고성장 달성 확률 40%. 조건부 분해: P(AI
+      혁신 성공)=60% × P(PBM 모델 확산)=70% × P(규제 완화)=60% ≈ 25%'
+    active_drivers:
+      medicare_growth: 1.0
+      pbm_innovation: 0.8
+      regulatory_pressure: 0.2
+    growth_adj_pct: 25
+    segment_multiples:
+      SEG1: 14.5
+      SEG2: 13.0
+  Base:
+    name: 기본 시나리오
+    prob: 45.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 908144404
+    desc: Medicare Advantage 사업의 점진적 성장과 규제 압박의 현상 유지 상황에서 안정적인 사업 운영을 지속. 일부 네트워크
+      축소에도 불구하고 전반적인 시장 지위는 유지되는 시나리오.
+    probability_rationale: 'Base rate: 현재 사업 모멘텀 유지 확률 70%. 조건부 분해: P(안정적 성장)=70%
+      × P(규제 현상유지)=80% × P(네트워크 부분 축소)=80% ≈ 45%'
+    active_drivers:
+      medicare_growth: 0.4
+      regulatory_pressure: 0.5
+      network_contraction: 0.3
+      rate_environment: 1.0
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 11.0
+  Bear:
+    name: 규제 압박 심화 시나리오
+    prob: 30.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 908144404
+    desc: 정부의 헬스케어 규제 압박이 크게 강화되고 주요 의료 제공자들의 네트워크 이탈이 가속화되면서 시장 점유율과 수익성이 동시에 악화.
+      높은 금리 환경이 추가적인 부담으로 작용하는 시나리오.
+    probability_rationale: 'Base rate: 헬스케어 규제 강화 확률 35%. 조건부 분해: P(정치적 압박 지속)=80%
+      × P(네트워크 대규모 이탈)=50% × P(수익성 악화)=75% ≈ 30%'
+    active_drivers:
+      regulatory_pressure: 1.0
+      network_contraction: 0.9
+      rate_environment: 1.0
+    growth_adj_pct: -20
+    segment_multiples:
+      SEG1: 9.5
+      SEG2: 8.5
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.05
+  - 0.04
+  tax_rate: 21.0
+  capex_to_da: 0.85
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.8
+  actual_capex: 3622
+  capex_fade_to: null
+  da_to_ebitda_override: 0.1363
+pe_multiple: 30.8
+ev_revenue_multiple: 0.9
+pbv_multiple: 3.9
+cps_principal: 0
+cps_years: 0
+net_debt: 54024
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Cigna Corp. (CI)
+  segment_code: SEG1
+  ev_ebitda: 9.2
+  notes: 미국 대형 건강보험사, 2023 EV $180B / EBITDA $19.5B (Bloomberg). 국제 보험사업 포함으로 다각화
+    수준 유사.
+- name: Humana Inc. (HUM)
+  segment_code: SEG1
+  ev_ebitda: 8.8
+  notes: Medicare Advantage 전문, 2023 EV $65B / EBITDA $7.4B. 고령층 보험 집중도 높음. UnitedHealthcare와
+    경쟁 구도.
+- name: Anthem Inc. (ANTM)
+  segment_code: SEG1
+  ev_ebitda: 10.5
+  notes: 미국 2위 건강보험사, 2023 EV $95B / EBITDA $9.0B. 상대적으로 높은 멀티플은 성장성 및 마진율 우위 반영.
+- name: Aetna (CVS Health 자회사, 별도 공시 없음)
+  segment_code: SEG1
+  ev_ebitda: 확인 필요
+  notes: 'CVS Health 통합 이후 별도 재무공시 중단. 모회사 CVS Health (CVS) 멀티플 참고 필요: 2023 EV/EBITDA
+    ~7.5x (약국 사업 혼재로 낮음).'
+- name: 삼성화재 (문화보험, 손해보험)
+  segment_code: SEG1
+  ev_ebitda: 6.8
+  notes: 한국 최대 손해보험사, 2023 EV ~15조원 / EBITDA ~2.2조원 (DART 기준). 건강보험과 직접 비교 제약 (손해보험
+    구조 상이).
+- name: 현대해상 (손해보험)
+  segment_code: SEG1
+  ev_ebitda: 6.2
+  notes: 한국 손해보험사, 2023 EV ~8조원 / EBITDA ~1.3조원. 보험 사이클 영향 받음.
+- name: KB손해보험
+  segment_code: SEG1
+  ev_ebitda: 5.9
+  notes: 한국 손해보험사, 2023 EV ~6.5조원 / EBITDA ~1.1조원. 소규모 및 낮은 마진율.
+- name: Samsung SDS
+  segment_code: SEG2
+  ev_ebitda: 12.5
+  notes: Healthcare IT & 의료정보관리 사업 (Veradigm 유사). KOSPI 상장. 2023 EV/EBITDA 12.5x (DART
+    기준). 의료IT 플랫폼 사업 구조 유사.
+- name: GC Pharma
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: 의료서비스 & 제약 통합 구조. KOSPI 상장. 2023 EV/EBITDA 9.8x. 헬스케어 밸류체인 통합 모델 참고.
+- name: 'Humana Inc (NYSE: HUM)'
+  segment_code: SEG2
+  ev_ebitda: 11.2
+  notes: 미국 의료보험 + 의료서비스 통합 (Aetna 유사). 2023 EV/EBITDA 11.2x. 보험-의료서비스 통합 구조 직접 비교
+    대상.
+- name: 'Cigna Group (NYSE: CI)'
+  segment_code: SEG2
+  ev_ebitda: 10.8
+  notes: 의료보험 + 의료서비스 + 약국 통합 (CVS Health 유사). 2023 EV/EBITDA 10.8x. 다층 헬스케어 플랫폼 구조.
+- name: 'Walgreens Boots Alliance (NYSE: WBA)'
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: 약국 + 의료서비스 통합 (Amazon Pharmacy 경쟁사). 2023 EV/EBITDA 8.5x. 소매약국-의료서비스 통합 모델.
+- name: 'CVS Health (NYSE: CVS)'
+  segment_code: SEG2
+  ev_ebitda: 9.3
+  notes: 약국 + 의료보험 + 의료서비스 완전 통합 (Aetna 인수 후). 2023 EV/EBITDA 9.3x. Optum 직접 경쟁사.
+- name: 'Teladoc Health (NYSE: TDOC)'
+  segment_code: SEG2
+  ev_ebitda: 14.2
+  notes: 원격의료 & 의료IT 플랫폼 (Veradigm 유사). 2023 EV/EBITDA 14.2x. 고성장 의료IT 세그먼트 참고.
+news_key_issues: '# UnitedHealth Group (UNH) 밸류에이션 영향 핵심 이슈
+
+
+  - [긍정] Q1 2026 실적 상회 및 애널리스트 상향 평가 - JPMorgan Chase 목표가 $466 제시 (6월 8일)
+
+
+  - [긍정] Medicare Advantage 사업 성장 모멘텀 - 2026년 등록 증가 및 AI 챗봇 활용 성장 전략 (6월 5-11일)
+
+
+  - [긍정] 배당금 인상 - $2.32 배당금 지급 및 독립 이사회 의장 거부로 주주 친화적 입장 강화 (6월 3-10일)
+
+
+  - [리스크] 규제 및 정책 의존성 심화 - FTC 인슐린 가격 책정 관행 합의, 높은 청구 거부율 보도 (6월 12일)
+
+
+  - [리스크] 의료 제공자 네트워크 축소 - Fairview 병원이 2027년부터 UnitedHealth Medicare Advantage 플랜
+  거부 (6월 12일)
+
+
+  - [리스크] 2년 전 대비 주가 30% 이상 하락 - 정책 의존성이 주요 투자 고려 사항으로 부상 (6월 12일)
+
+
+  - [기회] Optum Rx 투명 PBM 모델 도입 - 새로운 사업 모델로 성장 내러티브 전환 가능성 (5월 27일)
+
+
+  - [기회] 소아 선행 승인 감소 - 규제 압박 완화 신호로 운영 효율성 개선 전망 (5월 29일)'
+news_drivers:
+- id: medicare_growth
+  name: Medicare Advantage 성장 가속화
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 6
+  rationale: 2026년 등록 증가 및 AI 챗봇 활용으로 운영 효율성 개선. 헬스케어 디지털화 성공 사례의 역사적 성장률 상승폭 10-20%
+    기준
+- id: regulatory_pressure
+  name: 규제 압박 심화
+  category: industry
+  effects:
+    growth_adj_pct: -12
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: FTC 인슐린 가격 합의, 높은 청구 거부율 보도로 규제 리스크 증가. 과거 헬스케어 규제 강화 시기 밸류에이션 할인율 20-30bp
+    상승
+- id: network_contraction
+  name: 의료 제공자 네트워크 축소
+  category: company
+  effects:
+    growth_adj_pct: -8
+    market_sentiment_pct: -5
+  rationale: Fairview 병원 등 주요 제공자 이탈로 시장 점유율 하락 우려. 네트워크 축소 시 고객 이탈률 5-10% 증가 패턴
+- id: pbm_innovation
+  name: Optum Rx 투명 PBM 모델
+  category: company
+  effects:
+    growth_adj_pct: 10
+    market_sentiment_pct: 4
+  rationale: 새로운 투명 PBM 모델로 차별화된 성장 동력 확보. 헬스케어 혁신 모델 도입 시 프리미엄 밸류에이션 10-15% 상승 사례
+- id: rate_environment
+  name: 금리 환경 변화
+  category: macro
+  effects:
+    wacc_adj: 0.4
+  rationale: Fed Funds 3.62%, 10Y Treasury 4.45%로 장기 평균 대비 높은 수준. 헬스케어 섹터 WACC 민감도
+    분석 기준 40bp 상향
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

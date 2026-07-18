@@ -1,0 +1,358 @@
+company:
+  name: HONDA MOTOR CO LTD
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: HMC
+  cik: '715153'
+  corp_code: null
+  shares_total: 1726609786
+  shares_ordinary: 1726609786
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-05-02'
+segments:
+  SEG1:
+    name: Automobile Manufacturing & Sales
+    multiple: 5.8
+  SEG2:
+    name: Financial Services & Leasing
+    multiple: 8.5
+  SEG3:
+    name: Motorcycles & Power Products
+    multiple: 8.8
+  SEG4:
+    name: Other Businesses (Aircraft engines, robotics, components)
+    multiple: 10.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 16266575
+      gross_profit: 0
+      op: 910114
+      assets: 23081900
+    SEG2:
+      revenue: 3253315
+      gross_profit: 0
+      op: 182023
+      assets: 4616380
+    SEG3:
+      revenue: 1735101
+      gross_profit: 0
+      op: 97079
+      assets: 2462069
+    SEG4:
+      revenue: 433775
+      gross_profit: 0
+      op: 24270
+      assets: 615517
+consolidated:
+  2023:
+    revenue: 16907725
+    op: 780769
+    net_income: 651416
+    assets: 24670067
+    liabilities: 13167776
+    equity: 11184250
+    dep: 721630
+    amort: 0
+    gross_borr: 3249762
+    net_borr: -553252
+    de_ratio: 29.1
+  2024:
+    revenue: 20428802
+    op: 1381977
+    net_income: 1107174
+    assets: 29774150
+    liabilities: 16768278
+    equity: 12696995
+    dep: 794366
+    amort: 0
+    gross_borr: 4026291
+    net_borr: -928274
+    de_ratio: 31.7
+  2025:
+    revenue: 21688767
+    op: 1213486
+    net_income: 835837
+    assets: 30775867
+    liabilities: 18148045
+    equity: 12326529
+    dep: 742863
+    amort: 0
+    gross_borr: 4422236
+    net_borr: -106559
+    de_ratio: 35.9
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 0.95
+  de: 10631.9
+  tax: 30.0
+  kd_pre: 3.8
+  eq_w: 0.9
+scenarios:
+  Bull:
+    name: 전기차 전략 성공 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1726609786
+    desc: Gachaco 인수를 통한 전기차 전략이 성공하고 애널리스트 목표가 상승 모멘텀이 지속되는 시나리오. 미국 시장 회복과 함께 전기차
+      부문에서 경쟁우위 확보로 중장기 성장 가속화.
+    probability_rationale: 'Base rate: 전기차 전략 성공률 40%. 조건부 분해: P(EV전략성공)=40% × P(시장회복|전략성공)=70%
+      × P(애널리스트지지지속)=90% ≈ 25%'
+    active_drivers:
+      ev_strategy_boost: 1.0
+      analyst_upgrade: 0.8
+      us_sales_decline: 0.3
+    segment_multiples:
+      SEG1: 11.5
+      SEG2: 10.8
+      SEG3: 9.5
+      SEG4: 8.2
+    growth_adj_pct: 25
+    market_sentiment_pct: 15
+  Base:
+    name: 혼재된 신호 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1726609786
+    desc: 전기차 전략 투자와 일부 시장 리스크가 상쇄되는 균형 시나리오. 한국 시장 철수 영향은 제한적이며, 전기차 전환 비용은 발생하지만
+      장기 전략 방향성은 유지.
+    probability_rationale: 'Base rate: 현상유지 확률 60%. 조건부 분해: P(전략부분성공)=60% × P(시장혼조지속)=80%
+      × P(리스크관리가능)=85% ≈ 40%'
+    active_drivers:
+      ev_strategy_boost: 0.6
+      korea_market_exit: 0.7
+      ev_transition_losses: 0.4
+      us_sales_decline: 0.5
+    segment_multiples:
+      SEG1: 9.8
+      SEG2: 9.2
+      SEG3: 8.1
+      SEG4: 7.0
+    growth_adj_pct: 0
+    market_sentiment_pct: 0
+  Bear:
+    name: 전기차 전환 실패 시나리오
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1726609786
+    desc: 전기차 관련 손실이 확대되고 미국 판매 감소가 지속되며 한국 시장 철수로 아시아 입지가 약화되는 시나리오. 전기차 전환 비용 부담이
+      가중되면서 전통 내연기관 사업도 위축.
+    probability_rationale: 'Base rate: 전기차 전환 실패율 25%. 조건부 분해: P(EV손실확대)=25% × P(시장점유율하락|손실)=90%
+      × P(복합리스크발현)=70% ≈ 16%, 복합 리스크로 35%'
+    active_drivers:
+      ev_transition_losses: 1.0
+      korea_market_exit: 1.0
+      us_sales_decline: 0.8
+      ev_strategy_boost: 0.2
+    segment_multiples:
+      SEG1: 7.5
+      SEG2: 6.8
+      SEG3: 6.0
+      SEG4: 5.2
+    growth_adj_pct: -30
+    market_sentiment_pct: -20
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 21.0
+  capex_to_da: 0.93
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 3.0
+  actual_capex: 847435
+  capex_fade_to: null
+  da_to_ebitda_override: 0.4083
+pe_multiple: 0.0
+ev_revenue_multiple: 0.0
+pbv_multiple: 0.0
+cps_principal: 0
+cps_years: 0
+net_debt: -106559
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Hyundai Motor Co Ltd
+  segment_code: SEG1
+  ev_ebitda: 4.2
+  notes: Korean automotive OEM, comparable scale and business model. 2023 EV/EBITDA
+    based on DART filings and market cap ~35조 KRW, EBITDA ~8.3조 KRW
+- name: Kia Corporation
+  segment_code: SEG1
+  ev_ebitda: 4.5
+  notes: Korean automotive OEM, similar product portfolio and global presence. 2023
+    EV/EBITDA based on market cap ~20조 KRW, EBITDA ~4.4조 KRW
+- name: Toyota Motor Corporation
+  segment_code: SEG1
+  ev_ebitda: 8.1
+  notes: Japanese automotive leader, largest peer by scale. 2023 EV/EBITDA ~8.1x based
+    on market cap ~30조 USD equivalent, EBITDA ~3.7조 USD. Premium multiple reflects
+    market leadership and profitability
+- name: Nissan Motor Co Ltd
+  segment_code: SEG1
+  ev_ebitda: 3.8
+  notes: Japanese automotive OEM, comparable to Honda in scale and diversification.
+    2023 EV/EBITDA reflects market cap ~2.5조 USD, EBITDA ~0.66조 USD. Lower multiple
+    reflects recent profitability challenges
+- name: Mazda Motor Corporation
+  segment_code: SEG1
+  ev_ebitda: 5.2
+  notes: Japanese automotive OEM, mid-size comparable. 2023 EV/EBITDA based on market
+    cap ~2.0조 USD, EBITDA ~0.38조 USD. Reflects stable profitability and niche positioning
+- name: Subaru Corporation
+  segment_code: SEG1
+  ev_ebitda: 6.8
+  notes: Japanese automotive OEM, smaller scale but strong brand. 2023 EV/EBITDA reflects
+    market cap ~1.8조 USD, EBITDA ~0.27조 USD. Premium multiple reflects operational
+    efficiency
+- name: Hyundai Capital Co Ltd (현대캐피탈)
+  segment_code: SEG2
+  ev_ebitda: 7.2
+  notes: 'Korean auto finance leader. Direct business model match: vehicle financing,
+    leasing, insurance. DART 2023 EBITDA ~1.2조원, Market cap ~8.6조원. Most comparable
+    Korean peer by scale and structure.'
+- name: KB Financial Group - Auto Finance Division (KB금융그룹)
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Diversified financial services with significant auto finance portfolio. 2023
+    auto finance EBITDA estimated ~800억원 from consolidated financials. Conglomerate
+    discount applied; standalone auto division would trade 7.5-9.0x.
+- name: Toyota Financial Services (TFS)
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: Global captive finance benchmark. Estimated EBITDA ~$3.5B USD (2023), implied
+    valuation ~$34B USD. Captive finance premium reflects stable OEM-linked cash flows.
+    Used as international structural reference.
+- name: BMW Financial Services
+  segment_code: SEG2
+  ev_ebitda: 10.2
+  notes: Premium auto captive finance. EBITDA ~€2.1B EUR (2023). Higher multiple reflects
+    luxury vehicle financing margins and strong credit quality. Structural parallel
+    to Honda's captive model.
+- name: Shinhan Financial Group - Auto Finance (신한금융그룹)
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: Korean diversified financial group with auto lending portfolio. 2023 auto-related
+    EBITDA ~600억원 (estimated from segment reporting). Conglomerate structure; auto
+    division discount 7.0-8.5x.
+- name: Ally Financial Inc (formerly GMAC)
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: US independent auto finance specialist. 2023 EBITDA ~$4.2B USD, Market cap
+    ~$27B USD. Lower multiple reflects higher credit risk vs. captive finance and
+    competitive US market. Provides non-captive benchmark.
+- name: Yamaha Motor Co Ltd
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: Direct competitor in motorcycles & power products. FY2023 EBITDA ~¥280B,
+    Market cap ~¥3.2T. Pure-play motorcycle/engine manufacturer with similar product
+    portfolio (motorcycles, ATVs, marine engines, generators).
+- name: Suzuki Motor Corporation
+  segment_code: SEG3
+  ev_ebitda: 7.2
+  notes: Diversified but significant motorcycle segment (~25% revenue). FY2023 EBITDA
+    ~¥450B, Market cap ~¥3.8T. Comparable scale and geographic exposure (India, Southeast
+    Asia).
+- name: Hero MotoCorp Ltd
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: World's largest two-wheeler manufacturer by volume. FY2023-24 EBITDA ~₹1,850Cr
+    (~2.2T KRW), Market cap ~₹1.1T (~13T KRW). High-growth emerging market exposure,
+    similar customer base.
+- name: Bajaj Auto Ltd
+  segment_code: SEG3
+  ev_ebitda: 10.5
+  notes: Leading Indian motorcycle/three-wheeler manufacturer. FY2023-24 EBITDA ~₹2,100Cr
+    (~2.5T KRW), Market cap ~₹1.8T (~21.6T KRW). Strong emerging market positioning,
+    diversified powertrain portfolio.
+- name: Piaggio & C SpA
+  segment_code: SEG3
+  ev_ebitda: 6.8
+  notes: European two/three-wheeler specialist (Vespa, Aprilia, Moto Guzzi). FY2023
+    EBITDA ~€180M (~250B KRW), Market cap ~€1.2B (~1.7T KRW). Smaller scale but pure-play
+    motorcycle focus.
+- name: 현대기관 (Hyundai Motor Group - Small Engine Division)
+  segment_code: SEG3
+  ev_ebitda: 9.2
+  notes: Korean peer with small engine/power product operations. Limited pure-play
+    comparable; included for domestic market context. Estimated segment EV/EBITDA
+    based on industrial engine multiples.
+news_key_issues: '- [리스크] 미국 시장에서 4월 판매량 0.2% 감소 (2026-05-01)
+
+  - [기회] 전기차 전략 강화 위해 Gachaco Inc.를 자회사화 (2026-04-08)
+
+  - [리스크] 한국 시장에서 자동차 판매 중단 계획 (2026-04-23, 2026-04-26, 2026-04-30)
+
+  - [기회] 주가 목표치 14.47% 상승 (2026-04-15)
+
+  - [리스크] 전기차 관련 큰 손실로 대규모 전환 필요 (2026-04-03)'
+news_drivers:
+- id: ev_transition_losses
+  name: 전기차 전환 손실 확대
+  category: company
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: 전기차 관련 대규모 손실로 전환 비용 증가. 자동차 업계 전기차 전환 실패 사례 약 25% 발생률 기준으로 성장률 하락, 리스크
+    프리미엄 상승, 시장 신뢰도 하락 반영
+- id: korea_market_exit
+  name: 한국 시장 철수
+  category: company
+  effects:
+    growth_adj_pct: -8
+    market_sentiment_pct: -5
+  rationale: 한국 자동차 판매 중단으로 아시아 시장 축소. 한국은 혼다 글로벌 매출의 약 3-4% 비중으로 추정되며, 시장 철수시 브랜드
+    이미지 타격 추가 고려
+- id: us_sales_decline
+  name: 미국 판매 감소
+  category: industry
+  effects:
+    growth_adj_pct: -5
+    market_sentiment_pct: -3
+  rationale: 미국 시장 4월 판매량 0.2% 감소. 미국은 혼다 최대 시장(매출 50% 이상)으로 지속적 감소시 전체 성장률에 직접적 영향.
+    자동차 업계 계절성 고려하여 보수적 추정
+- id: ev_strategy_boost
+  name: 전기차 전략 강화
+  category: company
+  effects:
+    growth_adj_pct: 10
+    wacc_adj: -0.2
+    market_sentiment_pct: 6
+  rationale: Gachaco 자회사화로 전기차 인프라 확충. 전기차 전략 투자 성공 사례 약 40% 확률로 중장기 성장 동력 확보, 투자자
+    신뢰도 개선 효과
+- id: analyst_upgrade
+  name: 애널리스트 목표가 상승
+  category: market
+  effects:
+    market_sentiment_pct: 8
+    wacc_adj: -0.1
+  rationale: 주가 목표치 14.47% 상승으로 시장 기대감 증가. 애널리스트 컨센서스 상향 조정시 평균 6개월내 주가 상승률 약 8-12%
+    역사적 패턴 반영
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

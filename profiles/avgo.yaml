@@ -1,0 +1,300 @@
+company:
+  name: Broadcom Inc.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: AVGO
+  cik: '1730168'
+  corp_code: null
+  shares_total: 4734668184
+  shares_ordinary: 4734668184
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-04-25'
+segments:
+  SEG1:
+    name: Infrastructure Software
+    multiple: 28.0
+  SEG2:
+    name: Semiconductor Solutions
+    multiple: 20.0
+segment_data:
+  2025:
+    SEG1:
+      revenue: 22360
+      gross_profit: 0
+      op: 9126
+      assets: 59882
+    SEG2:
+      revenue: 41527
+      gross_profit: 0
+      op: 16949
+      assets: 111210
+consolidated:
+  2023:
+    revenue: 35819
+    op: 16451
+    net_income: 14082
+    assets: 72861
+    liabilities: 48873
+    equity: 23988
+    dep: 502
+    amort: 3333
+    gross_borr: 39229
+    net_borr: 25040
+    de_ratio: 163.5
+  2024:
+    revenue: 51574
+    op: 14996
+    net_income: 5895
+    assets: 165645
+    liabilities: 97967
+    equity: 67678
+    dep: 593
+    amort: 9417
+    gross_borr: 67566
+    net_borr: 58218
+    de_ratio: 99.8
+  2025:
+    revenue: 63887
+    op: 26075
+    net_income: 23126
+    assets: 171092
+    liabilities: 89800
+    equity: 81292
+    dep: 574
+    amort: 8201
+    gross_borr: 65136
+    net_borr: 48958
+    de_ratio: 80.1
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.15
+  de: 3.3
+  tax: 21.0
+  kd_pre: 4.2
+  eq_w: 96.8
+scenarios:
+  Bull:
+    name: AI 생태계 주도권 확보
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 4734668184
+    desc: Google, Meta와의 AI 파트너십이 본격화되며 데이터센터 AI 칩 시장에서 독점적 지위 확보. VMware Tanzu 플랫폼을
+      통한 엔터프라이즈 AI 시장 진출이 성공하며 소프트웨어 부문 고성장 지속.
+    probability_rationale: 'Base rate: AI 파트너십 성공률 70%. 조건부 분해: P(파트너십 확대)=70% × P(시장점유율
+      증가|파트너십)=60% × P(수익성 개선|점유율)=85% ≈ 36%, 보수적 조정하여 25%'
+    active_drivers:
+      ai_partnership_expansion: 1.0
+      vmware_ai_platform: 0.8
+    segment_multiples:
+      SEG1: 16.0
+      SEG2: 12.0
+    growth_adj_pct: 25
+  Base:
+    name: 안정적 성장 지속
+    prob: 45.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 4734668184
+    desc: AI 파트너십이 점진적으로 확대되며 반도체 부문 성장세 유지. VMware 통합 과정에서 일시적 어려움은 있으나 중장기 시너지 효과
+      기대. 금리 환경 변화에도 불구하고 펀더멘털 기반 안정 성장.
+    probability_rationale: 'Base rate: 기술주 평균 성장률 유지 확률 60%. 현재 시장 환경과 회사 펀더멘털 고려
+      시 가장 가능성 높은 시나리오로 45% 할당'
+    active_drivers:
+      ai_partnership_expansion: 0.5
+      vmware_ai_platform: 0.4
+      fed_rate_environment: 0.3
+    segment_multiples:
+      SEG1: 13.5
+      SEG2: 10.0
+    growth_adj_pct: 0
+  Bear:
+    name: 통합 리스크와 성장 둔화
+    prob: 30.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 4734668184
+    desc: VMware 통합 과정에서 예상보다 큰 고객 이탈과 라이선스 정책 혼란 발생. AI 파트너십 효과가 제한적이며, 연준의 매파적 스탠스로
+      기술주 밸류에이션 압박 지속. 소프트웨어 부문 성장 크게 둔화.
+    probability_rationale: 'Base rate: 대형 M&A 통합 실패율 40%. 조건부 분해: P(VMware 통합 지연)=40%
+      × P(고객 이탈|지연)=70% × P(성장 둔화|이탈)=90% ≈ 25%, 금리 리스크 추가하여 30%'
+    active_drivers:
+      software_growth_concerns: 1.0
+      fed_rate_environment: 0.8
+      ai_partnership_expansion: 0.2
+    segment_multiples:
+      SEG1: 11.0
+      SEG2: 8.0
+    growth_adj_pct: -20
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 11.3
+  capex_to_da: 0.3
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+  actual_capex: 623
+  capex_fade_to: null
+  da_to_ebitda_override: 0.2804
+pe_multiple: 86.6
+ev_revenue_multiple: 32.1
+pbv_multiple: 24.6
+cps_principal: 0
+cps_years: 0
+net_debt: 48958
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Microsoft Corporation
+  segment_code: SEG1
+  ev_ebitda: 28.5
+  notes: 'Enterprise cloud & software (Azure, Microsoft 365, Dynamics). Global leader
+    in cloud infrastructure software. 2024 EV/EBITDA ~28-30x reflects premium valuation
+    for high-margin SaaS/cloud. Source: Bloomberg, FactSet consensus.'
+- name: Salesforce Inc.
+  segment_code: SEG1
+  ev_ebitda: 32.0
+  notes: 'Enterprise cloud CRM & application software. High-growth SaaS model similar
+    to VMware''s cloud management. 2024 EV/EBITDA ~30-34x. Source: FactSet, company
+    filings.'
+- name: ServiceNow Inc.
+  segment_code: SEG1
+  ev_ebitda: 38.5
+  notes: 'Enterprise workflow & IT operations cloud software. Direct comparable to
+    Broadcom Software''s management solutions. Premium multiple reflects recurring
+    SaaS revenue. 2024 EV/EBITDA ~37-40x. Source: Bloomberg.'
+- name: Synopsys Inc.
+  segment_code: SEG1
+  ev_ebitda: 26.0
+  notes: 'Design software & IP (owned by Broadcom). EDA/semiconductor design tools.
+    2024 EV/EBITDA ~24-28x. Validates Broadcom Software segment positioning. Source:
+    FactSet.'
+- name: Atlassian Corporation
+  segment_code: SEG1
+  ev_ebitda: 42.0
+  notes: 'Enterprise DevOps & collaboration software (Jira, Confluence). High-growth
+    SaaS with strong retention. 2024 EV/EBITDA ~40-44x. Source: Bloomberg consensus.'
+- name: SK C&C Co., Ltd. (SKC&C)
+  segment_code: SEG1
+  ev_ebitda: 12.5
+  notes: 'Korean enterprise IT services & cloud solutions. Domestic comparable for
+    infrastructure software services. 2024 EV/EBITDA ~11-14x (lower than global SaaS
+    due to services mix). Source: DART, FactSet Korea.'
+- name: NHN Entertainment Corp.
+  segment_code: SEG1
+  ev_ebitda: 8.0
+  notes: 'Korean cloud platform & enterprise software. Smaller scale than Broadcom
+    Software but comparable business model. 2024 EV/EBITDA ~7-9x. Source: KOSDAQ filings.'
+- name: NVIDIA Corporation
+  segment_code: SEG2
+  ev_ebitda: 48.0
+  notes: 'Semiconductor infrastructure (GPUs, networking, data center). Includes Mellanox
+    (acquired by NVIDIA). 2024 EV/EBITDA ~45-50x reflects AI/data center growth premium.
+    Source: Bloomberg, FactSet.'
+- name: Marvell Technology Inc.
+  segment_code: SEG2
+  ev_ebitda: 22.0
+  notes: 'Semiconductor infrastructure (storage, networking, data center). Owned by
+    Broadcom. Direct comparable for SEG2. 2024 EV/EBITDA ~20-24x. Source: FactSet,
+    company filings.'
+- name: Broadcom Inc. (Historical Semiconductor)
+  segment_code: SEG2
+  ev_ebitda: 18.5
+  notes: 'Pre-acquisition Broadcom semiconductor infrastructure. Baseline for infrastructure
+    semiconductor valuation. 2024 EV/EBITDA ~17-20x. Source: Historical FactSet data.'
+- name: Advanced Micro Devices (AMD)
+  segment_code: SEG2
+  ev_ebitda: 24.0
+  notes: 'Semiconductor infrastructure (CPUs, GPUs, data center). Comparable scale
+    and market position to Marvell. 2024 EV/EBITDA ~22-26x. Source: Bloomberg.'
+- name: Qualcomm Inc.
+  segment_code: SEG2
+  ev_ebitda: 16.0
+  notes: 'Semiconductor infrastructure (mobile, networking, automotive). Lower multiple
+    reflects cyclicality and mobile exposure. 2024 EV/EBITDA ~14-18x. Source: FactSet.'
+- name: SK Hynix Inc.
+  segment_code: SEG2
+  ev_ebitda: 6.5
+  notes: 'Korean semiconductor (memory). Infrastructure-focused but different product
+    mix (DRAM/NAND vs. networking/storage). 2024 EV/EBITDA ~6-7x reflects commodity
+    cycle. Source: DART, FactSet Korea.'
+- name: Samsung Electronics Co., Ltd. (Semiconductor Division)
+  segment_code: SEG2
+  ev_ebitda: 7.0
+  notes: 'Korean semiconductor conglomerate (memory, foundry, display). Diversified;
+    semiconductor division ~7-8x EV/EBITDA. Lower than infrastructure-focused peers
+    due to commodity exposure. Source: DART, Bloomberg.'
+news_key_issues: '- [기회] Broadcom과 Google의 전략적 협력 확대 (2026-04-24)
+
+  - [기회] AI 관련 거래 증가로 주가 상승 (2026-04-18)
+
+  - [기회] VMware Tanzu 플랫폼을 통한 기업용 AI 확장 (2026-04-22)
+
+  - [기회] Meta와의 다년간 AI 인프라 파트너십 발표 (2026-04-23)
+
+  - [기회] Google Cloud와의 클라우드 네트워크 인사이트 협력 확대 (2026-04-22)
+
+  - [기회] 주가 상승으로 6번째로 미국 역사상 특정 기록 달성 (2026-04-22)
+
+  - [기회] 기술적 전망 밝아지는 중 (2026-04-24)
+
+  - [리스크] 소프트웨어 부문 성장에 대한 우려로 하락 (2026-04-07)'
+news_drivers:
+- id: ai_partnership_expansion
+  name: AI 인프라 파트너십 확대
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: -0.2
+    market_sentiment_pct: 8
+  rationale: Google, Meta와의 다년간 AI 파트너십으로 반도체 수요 급증. 역사적으로 대형 파트너십 발표 시 매출 성장률 10-20%
+    상승, 투자자 신뢰도 증가로 리스크 프리미엄 감소
+- id: vmware_ai_platform
+  name: VMware Tanzu AI 플랫폼 확장
+  category: company
+  effects:
+    growth_adj_pct: 8
+    market_sentiment_pct: 5
+  rationale: 기업용 AI 시장 진출로 소프트웨어 부문 성장 가속화. 엔터프라이즈 AI 시장 연평균 35% 성장 전망에 따른 매출 기여도
+    증가
+- id: software_growth_concerns
+  name: 소프트웨어 부문 성장 우려
+  category: company
+  effects:
+    growth_adj_pct: -12
+    market_sentiment_pct: -6
+  rationale: VMware 통합 과정에서 고객 이탈 및 라이선스 정책 변경으로 인한 성장 둔화 우려. 과거 대형 M&A 후 통합 리스크로
+    12개월간 성장률 10-15% 하락 사례 빈번
+- id: fed_rate_environment
+  name: 연준 금리 환경 변화
+  category: macro
+  effects:
+    wacc_adj: 0.3
+    growth_adj_pct: -5
+  rationale: 현재 Fed Funds 3.64%로 중립금리 수준. 기술주 밸류에이션에 민감한 금리 상승 압력과 성장 둔화 우려 반영
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

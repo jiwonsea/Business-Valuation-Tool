@@ -1,0 +1,196 @@
+# Meta Platforms 밸류에이션 프로파일.
+# 실적 앵커(보고치): FY2025 매출 $201.0B, 순이익 $60.5B, 희석 EPS $23.49 (Meta 8-K, 2026).
+#   FY2024 매출 $164.5B / 순이익 $62.4B, FY2023 매출 $134.9B / 순이익 $39.1B.
+# 세그먼트: Family of Apps(FoA, 고마진 광고) + Reality Labs(RL, 적자·옵셔널리티) + AI 수익화(옵셔널리티).
+# ※ 대차대조표 세부·세그먼트 자산배분 일부는 근사치(코멘트 표기). 라이브 주가는 오프라인이라 미포함.
+company:
+  name: Meta Platforms Inc.
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: META
+  cik: '1326801'
+  corp_code: null
+  shares_total: 2575000000
+  shares_ordinary: 2575000000
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-07-06'
+segments:
+  SEG1:
+    name: Family of Apps (Facebook/Instagram/WhatsApp 광고)
+    multiple: 14.0
+  SEG2:
+    name: Reality Labs (VR/AR 하드웨어·메타버스)
+    multiple: 5.0
+    optionality: true
+    method: ev_revenue
+  AI_PLATFORM:
+    name: AI 수익화 (Llama/AI 어시스턴트/비즈니스 메시징)
+    multiple: 12.0
+    optionality: true
+    method: ev_revenue
+segment_data:
+  2025:
+    SEG1:
+      revenue: 198900
+      gross_profit: 0
+      op: 100400
+      assets: 220000
+    SEG2:
+      revenue: 2100
+      gross_profit: 0
+      op: -20000
+      assets: 40000
+    AI_PLATFORM:
+      revenue: 1500
+      gross_profit: 0
+      op: 0
+      assets: 0
+consolidated:
+  2023:
+    revenue: 134902
+    op: 46751
+    net_income: 39098
+    assets: 229623
+    liabilities: 76455
+    equity: 153168
+    dep: 8686
+    amort: 0
+    gross_borr: 18385
+    net_borr: -20000
+    de_ratio: 12.0
+  2024:
+    revenue: 164501
+    op: 69380
+    net_income: 62360
+    assets: 276054
+    liabilities: 93417
+    equity: 182637
+    dep: 15498
+    amort: 0
+    gross_borr: 28826
+    net_borr: -15000
+    de_ratio: 15.8
+  2025:
+    revenue: 201000
+    op: 80400
+    net_income: 60500
+    assets: 330000
+    liabilities: 130000
+    equity: 200000
+    dep: 20000
+    amort: 0
+    gross_borr: 28800
+    net_borr: -15000
+    de_ratio: 14.4
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.2
+  de: 1.5
+  tax: 21.0
+  kd_pre: 4.2
+  eq_w: 93.0
+scenarios:
+  BULL:
+    name: AI 광고 초가속
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2575000000
+    desc: AI 추천·타겟팅으로 광고 단가/전환 급등, 비즈니스 메시징 수익화 본격화. RL 적자 축소, 오퍼레이팅 레버리지로 마진 확대.
+    probability_rationale: 'Base rate: 플랫폼 AI 수익화 성공 30%. 조건부: P(광고 재가속)=0.7 × P(마진확대)=0.6 ≈ 25%'
+    active_drivers:
+      ai_ad_monetization: 1.0
+    segment_multiples:
+      SEG1: 16.0
+    segment_revenue:
+      SEG2: 3000
+      AI_PLATFORM: 6000
+  BASE:
+    name: 견조한 광고 성장
+    prob: 50.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2575000000
+    desc: 광고 두 자릿수 성장 지속, 영업이익률 40% 유지. RL 적자·AI capex가 순증가율 제약.
+    probability_rationale: 'Base rate: 기존 성장 유지 55%. 조건부: P(광고 견조)=0.8 × P(리스크 관리)=0.65 ≈ 50%'
+    active_drivers:
+      ai_ad_monetization: 0.4
+    segment_multiples:
+      SEG1: 14.0
+    segment_revenue:
+      SEG2: 2100
+      AI_PLATFORM: 3000
+  BEAR:
+    name: 광고 둔화·RL 적자 확대
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 2575000000
+    desc: 광고 경기 둔화 + Reality Labs 적자 확대 + AI capex 상각으로 마진 하락, 규제(청소년 보호·프라이버시) 압박.
+    probability_rationale: 'Base rate: 빅테크 광고 둔화 25%. 조건부: P(광고둔화)=0.5 × P(마진압박)=0.6 ≈ 25%'
+    active_drivers:
+      regulatory_pressure: 1.0
+    segment_multiples:
+      SEG1: 11.5
+    segment_revenue:
+      SEG2: 1500
+      AI_PLATFORM: 1500
+dcf_params:
+  ebitda_growth_rates:
+  - 0.14
+  - 0.11
+  - 0.08
+  - 0.06
+  - 0.04
+  tax_rate: 15.0
+  capex_to_da: 2.8
+  nwc_to_rev_delta: 0.03
+  terminal_growth: 2.8
+  actual_capex: 72000
+  capex_fade_to: 1.4
+pe_multiple: 22.0
+ev_revenue_multiple: 8.0
+pbv_multiple: 7.0
+cps_principal: 0
+cps_years: 0
+net_debt: -15000
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: Alphabet Inc.
+  segment_code: SEG1
+  ev_ebitda: 15.2
+  notes: 글로벌 디지털 광고 플랫폼. 검색/YouTube 광고 모델. 규모·마진 유사.
+- name: Amazon.com Inc.
+  segment_code: SEG1
+  ev_ebitda: 22.5
+  notes: Amazon Ads 고성장. 전체 EBITDA 기준 참고.
+- name: NAVER Corporation
+  segment_code: SEG1
+  ev_ebitda: 12.5
+  notes: 한국 최대 포털/검색 광고 플랫폼. DART 공시 기준.
+- name: Snap Inc.
+  segment_code: SEG1
+  ev_ebitda: 16.0
+  notes: 소셜 광고 순수 플레이. 사용자 기반 광고 모델 유사(마진은 낮음).
+multiples:
+  SEG2: 5.0
+  AI_PLATFORM: 12.0
+mc_enabled: true
+market_price: 583  # live ~2026-07-06 (per share)

@@ -1,0 +1,168 @@
+valuation_method: multiples
+industry: cosmetics consumer staples household personal products beverage food retail
+company:
+  name: LG생활건강
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '051900'
+  cik: null
+  corp_code: '00356370'
+  shares_total: 17717894
+  shares_ordinary: 15618197
+  shares_preferred: 2099697
+  treasury_shares: 958412
+  analysis_date: '2026-05-05'
+segments:
+  MAIN:
+    name: Beauty, Household & Refreshment
+    multiple: 9.5
+segment_data:
+  2025:
+    MAIN:
+      revenue: 6355490
+      gross_profit: 0
+      op: 170776
+      assets: 6869384
+consolidated:
+  2023:
+    revenue: 6804839
+    op: 487163
+    net_income: 142755
+    assets: 7220286
+    liabilities: 1671359
+    equity: 5433451
+    dep: 269867
+    amort: 0
+    gross_borr: 346718
+    net_borr: -563630
+    de_ratio: 6.4
+  2024:
+    revenue: 6811919
+    op: 459444
+    net_income: 189135
+    assets: 7405784
+    liabilities: 1719864
+    equity: 5566264
+    dep: 255608
+    amort: 0
+    gross_borr: 439844
+    net_borr: -813626
+    de_ratio: 7.9
+  2025:
+    revenue: 6355490
+    op: 170776
+    net_income: -100095
+    assets: 6869384
+    liabilities: 1299082
+    equity: 5449474
+    dep: 239996
+    amort: 0
+    gross_borr: 218704
+    net_borr: -867630
+    de_ratio: 4.0
+wacc_params:
+  rf: 3.2
+  erp: 6.0
+  bu: 0.81
+  de: 4.0
+  tax: 24.2
+  kd_pre: 5.2
+  eq_w: 96.2
+scenarios:
+  Bull:
+    name: 화장품 턴어라운드 및 음료 안정성 동시 반영
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 14659785
+    desc: 화장품 부문 수익성이 회복되고 생활용품/음료 부문의 현금창출력이 방어되며 소비재 포트폴리오 가치가 재평가되는 시나리오.
+    probability_rationale: 화장품 채널 회복과 비용 정상화가 동시에 필요한 상방 경로로 25% 부여.
+    ev_multiple: 11.5
+    growth_adj_pct: 25
+    market_sentiment_pct: 5
+  Base:
+    name: 저성장 방어 및 점진적 마진 회복
+    prob: 45.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 14659785
+    desc: 생활용품과 음료가 현금흐름을 방어하고 화장품 부문은 낮은 기저에서 점진적으로 회복되는 시나리오.
+    probability_rationale: 소비재 방어주 성격과 2025년 이익 훼손 이후 정상화 가능성을 함께 반영한 중립 경로.
+    ev_multiple: 9.5
+    growth_adj_pct: 0
+  Bear:
+    name: 화장품 부진 장기화 및 브랜드 재정비 비용 확대
+    prob: 30.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 14659785
+    desc: 중국/면세 회복이 지연되고 브랜드 투자 및 구조조정 비용이 늘어나면서 낮은 수익성이 장기화되는 시나리오.
+    probability_rationale: 2025년 순손실과 이익 변동성이 이어지는 하방 경로로 30% 부여.
+    ev_multiple: 7.5
+    growth_adj_pct: -20
+    market_sentiment_pct: -5
+dcf_params:
+  ebitda_growth_rates:
+  - 0.04
+  - 0.045
+  - 0.04
+  - 0.035
+  - 0.03
+  tax_rate: 24.2
+  capex_to_da: 0.55
+  nwc_to_rev_delta: 0.04
+  terminal_growth: 1.8
+  actual_capex: 94631
+  capex_fade_to: null
+  da_to_ebitda_override: 0.424
+pe_multiple: 0.0
+ev_revenue_multiple: 0.6
+pbv_multiple: 0.9
+cps_principal: 0
+cps_years: 0
+net_debt: -867630
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: 아모레퍼시픽
+  segment_code: MAIN
+  ev_ebitda: 14.0
+  notes: 국내 프리미엄 화장품 대형사. 중국/면세 채널과 브랜드 리브랜딩 민감도 비교 대상.
+- name: Shiseido
+  segment_code: MAIN
+  ev_ebitda: 13.0
+  notes: 일본 프리미엄 화장품 기업. 아시아 뷰티 수요 및 턴어라운드 비교 대상.
+- name: Kao
+  segment_code: MAIN
+  ev_ebitda: 11.5
+  notes: 생활용품과 화장품을 함께 보유한 일본 소비재 기업. 포트폴리오 안정성 비교 대상.
+- name: Unilever
+  segment_code: MAIN
+  ev_ebitda: 12.0
+  notes: 글로벌 생활용품/퍼스널케어 기업. 방어적 소비재 멀티플 참고.
+- name: L'Oreal
+  segment_code: MAIN
+  ev_ebitda: 18.0
+  notes: 글로벌 뷰티 선도 기업. 브랜드력과 글로벌 믹스 프리미엄의 상단 참고.
+news_key_issues: '- [리스크] 2025년 영업이익 급감 및 순손실 기록
+
+  - [기회] 생활용품과 음료 부문의 방어적 현금흐름
+
+  - [기회] 화장품 부문 낮은 기저에서의 수익성 정상화 가능성
+
+  - [리스크] 중국/면세 채널과 브랜드 경쟁력 회복 속도 불확실'
+mc_enabled: true

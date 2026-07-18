@@ -11,7 +11,7 @@ company:
   shares_ordinary: 5919637922
   shares_preferred: 815974664
   treasury_shares: 91828987
-  analysis_date: '2026-04-12'
+  analysis_date: '2026-07-06'
 segments:
   SEG1:
     name: 반도체 (메모리/파운드리)
@@ -88,35 +88,13 @@ wacc_params:
   rf: 3.2
   erp: 5.5
   bu: 0.95
-  de: 1.8
+  de: 1.7
   tax: 22.0
   kd_pre: 3.8
-  eq_w: 98.2
+  eq_w: 98.3
 scenarios:
-  A:
-    name: 반도체 호황 지속 (Base Case)
-    prob: 40.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 5827808935
-    desc: AI 및 데이터센터 수요 지속으로 메모리 반도체 호황이 유지되고, 외국인 투자자 복귀로 밸류에이션 프리미엄 확대. 노조 이슈는 제한적
-      영향에 그치며 전반적으로 긍정적 실적 전망.
-    probability_rationale: 'Base rate: 반도체 업사이클 지속 확률 70%. 조건부 분해: P(AI수요 지속)=70%
-      × P(공급 균형)=80% × P(지정학적 안정)=70% ≈ 40%'
-    active_drivers:
-      semiconductor_boom: 0.8
-      labor_dispute: 0.3
-    segment_multiples:
-      SEG1: 12.0
-      SEG2: 9.0
-      SEG3: 11.0
-      SEG4: 8.0
-  B:
-    name: 칩플레이션 충격
+  Bull:
+    name: AI 혁신 주도 시나리오
     prob: 25.0
     ipo: N/A
     irr: null
@@ -125,21 +103,23 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    desc: 반도체 가격 급등이 최종 제품 가격 상승으로 이어지면서 소비자 수요 위축. 인플레이션 압력으로 금리 상승 우려가 확산되고, 노조
-      분규까지 겹치면서 실적 부진 심화.
-    probability_rationale: 'Base rate: 인플레이션 재점화 확률 30%. 조건부 분해: P(반도체 가격 급등)=60%
-      × P(최종재 가격 전가)=70% × P(수요 위축)=60% ≈ 25%'
+    desc: AI 기반 신제품이 시장을 주도하며 반도체와 가전 부문 모두 고성장을 달성. 노조 갈등이 조기 해결되고 기관 투자자들의 적극적 매수로
+      밸류에이션 프리미엄 확대.
+    probability_rationale: 'Base rate: AI 신기술 성공률 30%. 조건부 분해: P(AI 시장 확대)=70% × P(삼성
+      시장점유율 확대|AI 확대)=60% × P(노조 갈등 조기 해결)=60% ≈ 25%'
     active_drivers:
-      chipflation_risk: 1.0
-      labor_dispute: 0.7
+      ai_expansion: 1.0
+      institutional_buying: 0.8
+      labor_disruption: 0.2
     segment_multiples:
-      SEG1: 8.5
-      SEG2: 6.5
-      SEG3: 7.5
-      SEG4: 6.0
-  C:
-    name: 균형 성장
-    prob: 20.0
+      SEG1: 14.5
+      SEG2: 12.0
+      SEG3: 11.5
+      SEG4: 10.0
+    growth_adj_pct: 25
+  Base:
+    name: 균형 성장 시나리오
+    prob: 40.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -147,21 +127,24 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    desc: 반도체 호황이 다소 둔화되지만 에어컨 등 생활가전 수요 증가로 상쇄. 노사협상이 합리적 수준에서 타결되면서 안정적 성장세 유지.
-    probability_rationale: 'Base rate: 혼재된 시장 환경 확률 40%. 조건부 분해: P(반도체 둔화)=50% × P(가전
-      호조)=60% × P(노사 타협)=70% ≈ 20%'
+    desc: AI 신제품이 점진적으로 시장에 안착하며 안정적 성장을 지속. 노조 갈등과 경쟁 심화 요인이 부분적으로 상쇄되며 기관 투자자들의
+      선별적 매수 지속.
+    probability_rationale: 'Base rate: 현상 유지 확률 40%. 조건부 분해: P(점진적 AI 도입)=80% × P(노조
+      갈등 부분 해결)=70% × P(경쟁 현상 유지)=70% ≈ 40%'
     active_drivers:
-      semiconductor_boom: 0.3
-      appliance_demand: 1.0
-      labor_dispute: 0.4
+      ai_expansion: 0.4
+      institutional_buying: 0.5
+      premium_competition: 0.3
+      labor_disruption: 0.3
     segment_multiples:
-      SEG1: 10.5
+      SEG1: 12.0
       SEG2: 10.5
-      SEG3: 10.0
+      SEG3: 9.5
       SEG4: 8.5
-  D:
-    name: 복합 리스크 현실화
-    prob: 15.0
+    growth_adj_pct: 0
+  Bear:
+    name: 노사갈등 장기화 시나리오
+    prob: 35.0
     ipo: N/A
     irr: null
     dlom: 0
@@ -169,19 +152,20 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 5827808935
-    desc: 노조 분규 장기화와 칩플레이션이 동시에 발생하면서 운영비용 증가와 수요 위축이 복합적으로 작용. 반도체 호황 효과도 상쇄되면서 실적
-      부진 심화.
-    probability_rationale: 'Base rate: 다중 리스크 동시 발생 확률 15%. 조건부 분해: P(노조 장기화)=30%
-      × P(칩플레이션)=40% × P(수요 급감)=50% ≈ 15%'
+    desc: 노조 갈등이 장기화되며 생산 차질과 30조 손실이 현실화. 동시에 LG전자와의 경쟁 심화로 프리미엄 시장 점유율 하락하며 전반적
+      수익성 악화.
+    probability_rationale: 'Base rate: 대규모 노사분규 장기화 확률 25%. 조건부 분해: P(노조 갈등 장기화)=60%
+      × P(생산차질 심화|갈등)=80% × P(경쟁사 점유율 확대|차질)=75% ≈ 35%'
     active_drivers:
-      labor_dispute: 1.0
-      chipflation_risk: 0.8
-      semiconductor_boom: 0.2
+      labor_disruption: 1.0
+      premium_competition: 0.8
+      ai_expansion: 0.1
     segment_multiples:
-      SEG1: 7.5
-      SEG2: 6.0
-      SEG3: 6.5
-      SEG4: 5.5
+      SEG1: 9.0
+      SEG2: 8.0
+      SEG3: 7.5
+      SEG4: 6.5
+    growth_adj_pct: -20
 dcf_params:
   ebitda_growth_rates:
   - 0.1
@@ -196,9 +180,9 @@ dcf_params:
   actual_capex: 52153149
   capex_fade_to: null
   da_to_ebitda_override: 0.6463
-pe_multiple: 27.1
-ev_revenue_multiple: 3.6
-pbv_multiple: 2.8
+pe_multiple: 28.4
+ev_revenue_multiple: 3.8
+pbv_multiple: 3.0
 cps_principal: 0
 cps_years: 0
 net_debt: -32617239
@@ -269,59 +253,63 @@ peers:
 - name: Xiaomi
   segment_code: SEG3
   ev_ebitda: 12.3
-  notes: 스마트폰, IoT, TV 등 소비자전자 통합. 중국 시장 성장성 반영. 2023년 기준.
+  notes: 스마트폰, IoT, TV 등 소비자전자 통합. 2023년 기준. 중국 시장 프리미엄 반영.
 - name: Huawei
   segment_code: SEG3
   ev_ebitda: 6.8
-  notes: 스마트폰, 태블릿, 가전 포트폴리오. 공개 정보 제한으로 추정치. 지정학적 리스크 감안.
+  notes: 스마트폰, 가전, 통신장비. 2023년 기준. 지정학적 리스크 반영된 낮은 배수.
 - name: 삼성SDI
   segment_code: SEG3
   ev_ebitda: 7.4
-  notes: 국내 상장사. 배터리, 디스플레이 등 부품 공급. 소비자전자 밸류체인 참여. 2023년 기준.
-news_key_issues: '- [리스크] 삼성전자 노조의 성과급 요구로 인한 경영 리스크 (2026-04-12)
+  notes: 국내 소비자전자 관련 부품/배터리. 2023년 기준. 간접 비교 목적.
+news_key_issues: '- [리스크] 노조 갈등으로 30조 손실 우려 (2026-04-18)
 
-  - [기회] 반도체 초호황으로 인한 수익성 개선 기대 (2026-04-12)
+  - [기회] AI 기반 신제품 출시로 시장 확대 가능성 (2026-04-18)
 
-  - [기회] 에어컨 수요 증가로 인한 매출 상승 가능성 (2026-04-12)
+  - [경쟁] LG전자와의 프리미엄 TV 시장 경쟁 (2026-04-18)
 
-  - [리스크] 칩플레이션으로 인한 소비자 가격 상승 우려 (2026-04-12)
+  - [수급] 기관 투자자들의 매수 우호적 시그널 (2026-04-18)
 
-  - [기회] 외국인 투자자의 복귀와 반도체 랠리 시동 걸린 것에 따른 주가 상승 가능성 (2026-04-12)'
+  - [규제] 노동시장 이중구조 심화 우려 (2026-04-18)'
 news_drivers:
-- id: semiconductor_boom
-  name: 반도체 초호황 및 외국인 투자 복귀
+- id: labor_disruption
+  name: 노조 갈등 심화
+  category: company
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.3
+    market_sentiment_pct: -8
+  rationale: 삼성전자 노조 갈등으로 30조 손실 우려. 과거 대규모 노사분규 시 생산차질로 EBITDA 10-20% 감소, 리스크 프리미엄
+    상승으로 WACC 20-40bp 증가 사례
+- id: ai_expansion
+  name: AI 신제품 시장 확대
   category: industry
   effects:
     growth_adj_pct: 25
-    wacc_adj: -0.3
-    market_sentiment_pct: 15
-  rationale: 반도체 업사이클은 역사적으로 3-4년 주기로 발생하며, 현재 AI/데이터센터 수요로 인한 메모리 호황이 지속. 외국인 투자
-    복귀는 밸류에이션 프리미엄 확대 효과. 과거 반도체 호황기 EBITDA 증가율 20-30% 기록
-- id: labor_dispute
-  name: 노조 성과급 요구 및 경영 리스크
-  category: company
-  effects:
-    growth_adj_pct: -8
-    wacc_adj: 0.2
-    market_sentiment_pct: -5
-  rationale: 삼성전자 노조 파업은 2024년 이후 지속적 이슈. 성과급 요구는 인건비 상승으로 마진 압박 요인. 과거 대규모 노사분규 시
-    운영비용 5-10% 증가 사례 존재
-- id: chipflation_risk
-  name: 칩플레이션 및 소비자 가격 상승
-  category: macro
-  effects:
-    growth_adj_pct: -12
-    wacc_adj: 0.4
-    market_sentiment_pct: -8
-  rationale: 반도체 가격 상승이 최종 제품 가격에 전가되면서 수요 둔화 우려. 2021-2022년 칩 부족 시기 가전/모바일 수요 10-15%
-    감소 경험. 인플레이션 압력으로 금리 상승 리스크 증가
-- id: appliance_demand
-  name: 에어컨 수요 증가
+    wacc_adj: -0.2
+    market_sentiment_pct: 12
+  rationale: AI 기반 신제품 출시로 반도체/가전 시장 확대. AI 붐 시기 테크 기업 EBITDA 20-30% 성장, 성장주 프리미엄으로
+    밸류에이션 10-15% 상승 관찰
+- id: premium_competition
+  name: 프리미엄 시장 경쟁 심화
   category: industry
   effects:
-    growth_adj_pct: 8
-    wacc_adj: 0
-    market_sentiment_pct: 3
-  rationale: 기후변화로 인한 냉방기기 수요 증가는 구조적 트렌드. 생활가전 부문은 삼성전자 전체 매출의 약 15% 비중으로 제한적이나 마진
-    개선 효과 기대
+    growth_adj_pct: -8
+    market_sentiment_pct: -5
+  rationale: LG전자와 프리미엄 TV 시장 경쟁 격화. 프리미엄 가전 경쟁 심화 시 마진 압박으로 EBITDA 5-10% 하락, 시장 우려로
+    밸류에이션 디스카운트 발생
+- id: institutional_buying
+  name: 기관 매수 우호적
+  category: macro
+  effects:
+    market_sentiment_pct: 8
+    wacc_adj: -0.1
+  rationale: 기관 투자자 매수 시그널로 유동성 개선. 대형주 기관 매수 집중 시 밸류에이션 5-10% 프리미엄, 유동성 개선으로 할인율
+    소폭 하락
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
 mc_enabled: true
+market_price: 309500  # live ~2026-07-06 (per share)

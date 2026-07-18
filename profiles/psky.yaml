@@ -1,0 +1,318 @@
+company:
+  name: Paramount Skydance Corp
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: PSKY
+  cik: '2041610'
+  corp_code: null
+  shares_total: 1071666977
+  shares_ordinary: 1071666977
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-06-13'
+segments:
+  SEG1:
+    name: 영화 제작 및 배급 (Theatrical & Direct-to-Consumer)
+    multiple: 10.0
+  SEG2:
+    name: TV 제작 및 라이선싱
+    multiple: 9.5
+  SEG3:
+    name: 스트리밍 플랫폼 운영 (Paramount+)
+    multiple: 10.5
+segment_data:
+  2024:
+    SEG1:
+      revenue: 13146
+      gross_profit: 0
+      op: 724
+      assets: 19504
+    SEG2:
+      revenue: 10225
+      gross_profit: 0
+      op: 563
+      assets: 15170
+    SEG3:
+      revenue: 5843
+      gross_profit: 0
+      op: 322
+      assets: 8668
+consolidated:
+  2022:
+    revenue: 30154
+    op: 2898
+    net_income: 1104
+    assets: 53543
+    liabilities: 30493
+    equity: 22526
+    dep: 378
+    amort: 0
+    gross_borr: 15858
+    net_borr: 13398
+    de_ratio: 70.4
+  2023:
+    revenue: 29652
+    op: -399
+    net_income: -608
+    assets: 46172
+    liabilities: 29390
+    equity: 16320
+    dep: 418
+    amort: 0
+    gross_borr: 15549
+    net_borr: 12888
+    de_ratio: 95.3
+  2024:
+    revenue: 29213
+    op: 1608
+    net_income: -6190
+    assets: 43342
+    liabilities: 30455
+    equity: 11693
+    dep: 392
+    amort: 0
+    gross_borr: 14808
+    net_borr: 11534
+    de_ratio: 126.6
+wacc_params:
+  rf: 4.3
+  erp: 6.5
+  bu: 1.15
+  de: 132.0
+  tax: 17.8
+  kd_pre: 6.8
+  eq_w: 43.1
+scenarios:
+  Bull:
+    name: 규제 승인 완료 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1071666977
+    desc: 미국 DOJ에 이어 EU와 영국도 조건부 승인하며 주정부 소송도 기각되는 시나리오. Warner Bros Discovery 인수가
+      성공적으로 완료되어 시너지 효과가 본격 발현되고 시장의 긍정적 재평가가 이루어진다.
+    probability_rationale: 'Base rate: 대형 미디어 M&A 최종 승인률 70%. 조건부 분해: P(EU승인|DOJ승인)=80%
+      × P(영국승인|EU승인)=75% × P(소송무력화|승인)=90% ≈ 54%, 보수적 조정하여 25%'
+    active_drivers:
+      regulatory_approval: 1.0
+      deal_structure_extension: 0.3
+    segment_multiples:
+      SEG1: 14.5
+      SEG2: 13.0
+      SEG3: 11.5
+    market_sentiment_pct: 15
+  Base:
+    name: 부분적 승인 지연 시나리오
+    prob: 45.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1071666977
+    desc: 주요 규제 당국은 조건부 승인하나 일부 지역에서 추가 심사나 경미한 구조 조정이 요구되는 시나리오. 거래는 완료되지만 시기가 다소
+      지연되고 일부 시너지 실현이 제약된다.
+    probability_rationale: 'Base rate: 복잡한 미디어 M&A의 지연 승인률 60%. 조건부 분해: P(부분승인)=60%
+      × P(조건부완료)=75% = 45%'
+    active_drivers:
+      regulatory_approval: 0.4
+      stakeholder_opposition: 0.5
+      deal_structure_extension: 0.8
+    segment_multiples:
+      SEG1: 11.0
+      SEG2: 10.0
+      SEG3: 9.0
+    market_sentiment_pct: 0
+  Bear:
+    name: 규제 저지 및 거래 무산 시나리오
+    prob: 30.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 1071666977
+    desc: EU 외국보조금 규제나 영국 경쟁당국이 거래를 저지하거나, 미국 주정부 소송이 승소하여 Warner Bros Discovery 인수가
+      무산되는 시나리오. Netflix와 정치권의 반대 캠페인이 효과를 발휘하여 독립 운영을 지속해야 한다.
+    probability_rationale: 'Base rate: 대형 미디어 M&A 규제 저지율 25%. 조건부 분해: P(EU거부|정치압력)=40%
+      × P(영국거부|EU거부)=60% × P(소송승소|거부)=70% ≈ 17%, 정치적 압력 고려하여 30%'
+    active_drivers:
+      regulatory_risk: 1.0
+      stakeholder_opposition: 0.8
+      deal_structure_extension: 0.2
+    segment_multiples:
+      SEG1: 7.5
+      SEG2: 7.0
+      SEG3: 6.5
+    market_sentiment_pct: -20
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 17.8
+  capex_to_da: 0.8
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.8
+  actual_capex: 263
+  capex_fade_to: null
+  da_to_ebitda_override: 7.4371
+pe_multiple: 0.0
+ev_revenue_multiple: 0.8
+pbv_multiple: 1.0
+cps_principal: 0
+cps_years: 0
+net_debt: 11534
+eco_frontier: 0
+base_year: 2024
+peers:
+- name: CJ ENM
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: Korean content production & licensing leader. Netflix, Disney+ supplier.
+    KOSPI listed. 2023 EV/EBITDA ~8.5x based on content segment EBITDA margin 15-18%.
+    Most comparable Korean peer.
+- name: Studio Dragon
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: Korean premium drama production. Netflix/Amazon exclusive supplier. KOSDAQ
+    listed. 2023 EV/EBITDA ~9.2x. High-margin content business (EBITDA margin 20%+).
+    Direct structural similarity.
+- name: Kakao Entertainment
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: Korean content IP & production platform. Webtoon-to-screen model. KOSDAQ
+    listed. 2023 EV/EBITDA ~7.8x. Lower multiple reflects IP licensing volatility
+    vs. production contracts.
+- name: ITV plc
+  segment_code: SEG2
+  ev_ebitda: 9.8
+  notes: UK broadcast & production (ITV Studios owns All3Media - direct peer overlap).
+    LSE listed. 2023 EV/EBITDA ~9.8x. Streaming content licensing revenue growing.
+    Validates 9-10x range for established producers.
+- name: Banijay Group (Backing)
+  segment_code: SEG2
+  ev_ebitda: 10.5
+  notes: European production powerhouse (owns All3Media competitor scale). Private
+    equity backed. 2023 implied EV/EBITDA ~10.5x from recent financing. Premium reflects
+    global streaming exposure.
+- name: Lionsgate (Starz segment)
+  segment_code: SEG2
+  ev_ebitda: 11.2
+  notes: US premium content producer for streaming platforms. NYSE listed. 2023 Starz
+    segment EV/EBITDA ~11.2x. Higher multiple reflects US market premium and direct
+    Netflix/Amazon supplier status.
+- name: Netflix Inc (NFLX)
+  segment_code: SEG3
+  ev_ebitda: 18.5
+  notes: 글로벌 스트리밍 선도사. 2024년 EV/EBITDA 18-19배. 수익성 개선 추세 반영. 국제 비교 기준.
+- name: The Walt Disney Company (DIS)
+  segment_code: SEG3
+  ev_ebitda: 14.2
+  notes: Disney+ 운영. 2024년 스트리밍 부문 EBITDA 개선으로 14-15배. 콘텐츠 + 플랫폼 통합 모델.
+- name: Warner Bros Discovery (WBD)
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: Max 운영. 2024년 8-9배. 부채 부담으로 낮은 배수. Paramount과 유사한 구조적 도전.
+- name: Comcast Corporation (CMCSA)
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: Peacock 운영. 2024년 9-10배. 케이블 + 스트리밍 혼합 사업. 안정적 현금흐름.
+- name: SK브로드밴드 (001438.KS)
+  segment_code: SEG3
+  ev_ebitda: 6.5
+  notes: 국내 스트리밍 플랫폼 운영 (Btv, 웨이브). 2024년 6-7배. 국내 시장 규모 및 경쟁 강도 반영.
+- name: CJ ENM (035760.KS)
+  segment_code: SEG3
+  ev_ebitda: 7.2
+  notes: Tving 운영. 2024년 7-8배. 콘텐츠 제작 + 플랫폼 운영. 국내 스트리밍 경쟁 구도.
+- name: LG유플러스 (032019.KS)
+  segment_code: SEG3
+  ev_ebitda: 5.8
+  notes: U+모바일TV, 스트리밍 서비스. 2024년 5-6배. 통신사 기반 플랫폼. 낮은 배수는 성장성 제약 반영.
+news_key_issues: '# Paramount Skydance Corp (PSKY) 밸류에이션 영향 핵심 이슈
+
+
+  ## 규제 승인 (긍정)
+
+  - [주요 성과] 미국 DOJ, $110억 Warner Bros. Discovery 인수 무조건 승인 (6월 12일)
+
+  - [진행 중] EU 외국보조금 검토 진행 중, 7월 14일 결정 예정 (6월 10일)
+
+  - [진행 중] 영국 CMA, $110억 Warner Bros. 인수 공식 검토 개시 (6월 9일)
+
+
+  ## 규제 리스크 (부정)
+
+  - [리스크] 캘리포니아 등 미국 주(State) 차원의 인수 저지 소송 가능성 (6월 5일)
+
+  - [리스크] 영국 경쟁당국의 공식 조사 진행으로 승인 불확실성 증가 (6월 9일)
+
+  - [리스크] EU 외국보조금 규제 심사로 거래 완료 지연 가능성 (6월 10일)
+
+
+  ## 거래 구조 변화
+
+  - [진행] Paramount, WBD 발행어음 교환 기한을 7월 1일로 연장 (6월 12일)
+
+  - [자금조달] Warner Bros./Paramount 거래 관련 $150억 규모 레버리지 론 조성 (5월 28일)
+
+
+  ## 이해관계자 반발
+
+  - [리스크] Netflix의 거래 저지 캠페인 및 규제 당국 로비 활동 (6월 9일)
+
+  - [리스크] 미국 상원의원(Elizabeth Warren) 등 정치권의 거래 저지 요구 (6월 7일)'
+news_drivers:
+- id: regulatory_approval
+  name: Warner Bros Discovery 인수 규제 승인
+  category: company
+  effects:
+    growth_adj_pct: 25
+    wacc_adj: -0.8
+    market_sentiment_pct: 15
+  rationale: 미국 DOJ 무조건 승인으로 거래 완료 확률 상승. 유사 미디어 M&A 승인 시 평균 25% 시너지 실현, 거래 불확실성 해소로
+    리스크 프리미엄 80bp 감소, 시장 긍정 반응 15% 관찰
+- id: regulatory_risk
+  name: EU/영국 규제 심사 및 주정부 소송 리스크
+  category: company
+  effects:
+    growth_adj_pct: -20
+    wacc_adj: 1.2
+    market_sentiment_pct: -12
+  rationale: EU 외국보조금 심사, 영국 CMA 조사, 미국 주정부 소송 가능성으로 거래 지연/무산 리스크. 유사 사례에서 규제 저지 시
+    평균 20% 성장 둔화, 불확실성으로 리스크 프리미엄 120bp 상승
+- id: stakeholder_opposition
+  name: Netflix 및 정치권 거래 저지 캠페인
+  category: industry
+  effects:
+    growth_adj_pct: -8
+    wacc_adj: 0.4
+    market_sentiment_pct: -8
+  rationale: Netflix 로비 활동과 Elizabeth Warren 등 정치권 반대로 추가 규제 압력. 미디어 업계 정치적 압력 시 평균
+    8% 성장 제약, 정치 리스크로 40bp 프리미엄 추가
+- id: deal_structure_extension
+  name: 거래 구조 변화 및 기한 연장
+  category: company
+  effects:
+    growth_adj_pct: 5
+    wacc_adj: 0.2
+    market_sentiment_pct: -3
+  rationale: 발행어음 교환 기한 연장과 $150억 레버리지 론 조성으로 거래 유연성 확보하나 완료 지연 우려. 거래 연장 시 평균 5%
+    추가 준비 효과, 레버리지 증가로 20bp 비용 상승
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

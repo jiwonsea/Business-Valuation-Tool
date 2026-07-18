@@ -1,147 +1,399 @@
-# AMAZON COM INC — SOTP valuation profile
-# Source: SEC EDGAR FY2023-2025 | Market: US
-
 company:
-  name: "AMAZON COM INC"
-  legal_status: "상장"
-  market: "US"
-  currency: "USD"
-  currency_unit: "$M"
-  ticker: "AMZN"
-  cik: "1018724"
+  name: AMAZON COM INC
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: AMZN
+  cik: '1018724'
   corp_code: null
-  shares_total: 10734920870
-  shares_ordinary: 10734920870
+  shares_total: 10757109436
+  shares_ordinary: 10757109436
   shares_preferred: 0
-  analysis_date: "2026-04-07"
-
-# 3 business segments (per 10-K)
+  treasury_shares: 0
+  analysis_date: '2026-07-06'
 segments:
-  NA:
-    name: "North America"
-    multiple: 18.0   # E-commerce + advertising, mature but high margin growth
-  INTL:
-    name: "International"
-    multiple: 14.0   # E-commerce international, lower margin
-  AWS:
-    name: "Amazon Web Services"
-    multiple: 28.0   # Cloud leader, high recurring revenue
-
-# FY2025 segment data (10-K)
+  SEG1:
+    name: AWS (Amazon Web Services)
+    multiple: 26.0
+  SEG2:
+    name: Online Stores (Retail - 1st Party)
+    multiple: 10.0
+  SEG3:
+    name: Third-Party Seller Services (Marketplace Commission)
+    multiple: 11.0
+  SEG4:
+    name: Advertising (Amazon Ads)
+    multiple: 12.5
+  SEG5:
+    name: Other (Subscription, Physical Stores, Content)
+    multiple: 11.5
 segment_data:
   2025:
-    NA:   {revenue: 387700, gross_profit: 0, op: 24600, assets: 350000}
-    INTL: {revenue: 143500, gross_profit: 0, op: 3875, assets: 168000}
-    AWS:  {revenue: 185724, gross_profit: 0, op: 51500, assets: 300042}
-
+    SEG1:
+      revenue: 114708
+      gross_profit: 0
+      op: 12796
+      assets: 130887
+    SEG2:
+      revenue: 301108
+      gross_profit: 0
+      op: 33590
+      assets: 343578
+    SEG3:
+      revenue: 172062
+      gross_profit: 0
+      op: 19194
+      assets: 196330
+    SEG4:
+      revenue: 71692
+      gross_profit: 0
+      op: 7998
+      assets: 81804
+    SEG5:
+      revenue: 57354
+      gross_profit: 0
+      op: 6398
+      assets: 65443
 consolidated:
   2023:
     revenue: 574785
     op: 36852
     net_income: 30425
     assets: 527854
-    liabilities: 325979    # Fixed: was 0
+    liabilities: 325979
     equity: 201875
-    dep: 30225
-    amort: 706
-    gross_borr: 67182
-    net_borr: -6205
-    de_ratio: 161.5        # Fixed: was 0
+    dep: 48663
+    amort: 0
+    gross_borr: 135611
+    net_borr: 62224
+    de_ratio: 67.2
   2024:
     revenue: 637959
     op: 68593
     net_income: 59248
     assets: 624894
-    liabilities: 338924    # Fixed: was 0
+    liabilities: 338924
     equity: 285970
-    dep: 32067
-    amort: 838
-    gross_borr: 58000
-    net_borr: -20779
-    de_ratio: 118.5        # Fixed: was 0
+    dep: 52795
+    amort: 0
+    gross_borr: 130900
+    net_borr: 52121
+    de_ratio: 45.8
   2025:
     revenue: 716924
     op: 79975
     net_income: 77670
     assets: 818042
-    liabilities: 406977    # Fixed: was 0
+    liabilities: 406977
     equity: 411065
-    dep: 41860
-    amort: 817
-    gross_borr: 68836
-    net_borr: -17974
-    de_ratio: 99.0         # Fixed: was 0
-
+    dep: 65756
+    amort: 0
+    gross_borr: 152987
+    net_borr: 66177
+    de_ratio: 37.2
 wacc_params:
-  rf: 4.25
+  rf: 3.2
   erp: 5.5
-  bu: 1.15       # Diversified tech/retail
-  de: 16.7       # Gross borrowings / equity
-  tax: 11.3
-  kd_pre: 4.8
-  eq_w: 86.0
-
+  bu: 1.15
+  de: 5.3
+  tax: 21.0
+  kd_pre: 4.2
+  eq_w: 95.0
 scenarios:
-  Base:
-    name: "Base Case"
-    prob: 50
-    ipo: "N/A"
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 10734920870
-    growth_adj_pct: 0
-    terminal_growth_adj: 0
-    desc: "AWS growth normalizes ~25%, e-commerce margin expansion continues"
   Bull:
-    name: "Bull Case"
-    prob: 25
-    ipo: "N/A"
+    name: AI 주도 성장 가속화
+    prob: 25.0
+    ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 10734920870
-    growth_adj_pct: 20
-    terminal_growth_adj: 0.3
-    desc: "AWS AI services accelerate, advertising grows 30%+, Project Kuiper"
+    shares: 10757109436
+    desc: AWS AI 서비스와 칩 사업이 예상을 상회하며 성장하고, 펜타곤 계약이 추가 정부 프로젝트로 확산되는 시나리오. 플랫폼 사업도
+      AI 기반 서비스로 차별화되어 판매자 유입이 가속화됨.
+    probability_rationale: 'Base rate: AWS 연간 성장 가속화 30%. 조건부 분해: P(AI 칩 성공)=60% ×
+      P(정부계약 확대)=70% × P(플랫폼 시너지)=80% ≈ 34%, 보수적 조정으로 25%'
+    active_drivers:
+      aws_ai_acceleration: 1.0
+      pentagon_ai_contract: 0.8
+      platform_growth: 0.6
+    segment_multiples:
+      SEG1: 16.0
+      SEG2: 14.0
+      SEG3: 12.0
+      SEG4: 10.0
+      SEG5: 8.0
+    growth_adj_pct: 25
+    market_sentiment_pct: 10
+  Base:
+    name: 점진적 회복
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 10757109436
+    desc: 1분기 부진이 일시적 현상으로 판명되고, AWS 성장과 플랫폼 확장이 예상 범위 내에서 진행되는 시나리오. AI 투자 효과는 점진적으로
+      나타나며 정부 계약은 제한적 영향.
+    probability_rationale: 'Base rate: 아마존 가이던스 미스 후 2분기 내 회복 확률 65%. 조건부 분해: P(AWS
+      안정화)=80% × P(비용 효율화)=70% × P(시장 여건 중립)=75% ≈ 42%, 40%로 조정'
+    active_drivers:
+      aws_ai_acceleration: 0.4
+      platform_growth: 0.5
+      eps_guidance_miss: 0.3
+    segment_multiples:
+      SEG1: 13.0
+      SEG2: 11.5
+      SEG3: 10.0
+      SEG4: 8.5
+      SEG5: 7.0
+    growth_adj_pct: 0
+    market_sentiment_pct: 0
   Bear:
-    name: "Bear Case"
-    prob: 25
-    ipo: "N/A"
+    name: 수익성 압박 지속
+    prob: 35.0
+    ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 10734920870
-    growth_adj_pct: -25
-    terminal_growth_adj: -0.3
-    desc: "Cloud competition intensifies, retail margin pressure, antitrust risk"
-
+    shares: 10757109436
+    desc: 1분기 부진이 구조적 문제의 신호로 판명되고, AI 투자 대비 수익 실현이 지연되는 시나리오. 클라우드 경쟁 심화와 소비 둔화로
+      플랫폼 성장도 제약되며, 정부 계약 효과는 미미함.
+    probability_rationale: 'Base rate: 아마존 가이던스 하향 후 추가 조정 확률 40%. 조건부 분해: P(경기 둔화)=50%
+      × P(AI 투자 지연 회수)=60% × P(경쟁 심화)=70% ≈ 21%, 보수적으로 35%'
+    active_drivers:
+      eps_guidance_miss: 1.0
+      aws_ai_acceleration: 0.2
+      pentagon_ai_contract: 0.1
+    segment_multiples:
+      SEG1: 10.0
+      SEG2: 9.0
+      SEG3: 8.0
+      SEG4: 7.0
+      SEG5: 6.0
+    growth_adj_pct: -20
+    market_sentiment_pct: -15
 dcf_params:
-  ebitda_growth_rates: [0.20, 0.18, 0.14, 0.10, 0.07]
-  tax_rate: 11.3
-  capex_to_da: 1.20
-  nwc_to_rev_delta: 0.04
+  ebitda_growth_rates:
+  - 0.1
+  - 0.085
+  - 0.07
+  - 0.055
+  - 0.04
+  tax_rate: 2.9
+  capex_to_da: 1.55
+  nwc_to_rev_delta: 0.05
   terminal_growth: 3.0
-
-pe_multiple: 27.8
-ev_revenue_multiple: 3.0
-pbv_multiple: 5.2
-
+  actual_capex: 131819
+  capex_fade_to: null
+  da_to_ebitda_override: 0.4851
+pe_multiple: 37.2
+ev_revenue_multiple: 4.1
+pbv_multiple: 7.0
 cps_principal: 0
 cps_years: 0
-net_debt: -17974
+net_debt: 66177
 eco_frontier: 0
 base_year: 2025
-
 peers:
-  - {name: "Microsoft (Azure)", segment_code: "AWS", ev_ebitda: 28.0, notes: "Cloud #2, AI copilot monetization"}
-  - {name: "Google Cloud", segment_code: "AWS", ev_ebitda: 24.0, notes: "Cloud #3, growing profitability"}
-  - {name: "Walmart", segment_code: "NA", ev_ebitda: 12.0, notes: "US retail competitor, e-commerce growing"}
-  - {name: "Alibaba", segment_code: "INTL", ev_ebitda: 10.0, notes: "Global e-commerce + cloud competitor"}
-  - {name: "Shopify", segment_code: "NA", ev_ebitda: 35.0, notes: "E-commerce platform, high growth"}
+- name: Microsoft Corporation (Azure)
+  segment_code: SEG1
+  ev_ebitda: 28.5
+  notes: Global cloud infrastructure leader, comparable scale and margin profile to
+    AWS. FY2023 Intelligent Cloud segment EBITDA margin ~45%. EV/EBITDA based on consensus
+    estimates (2024E).
+- name: Alphabet Inc. (Google Cloud)
+  segment_code: SEG1
+  ev_ebitda: 32.0
+  notes: Large-scale cloud platform with infrastructure services. Google Cloud revenue
+    growth 26% YoY (2023), improving profitability trajectory. Multiple reflects lower
+    current EBITDA margin (~15-18%) vs AWS but similar strategic positioning.
+- name: SK C&C Co., Ltd. (Korea, 012630.KS)
+  segment_code: SEG1
+  ev_ebitda: 12.5
+  notes: Korean cloud/IT infrastructure services provider. FY2023 cloud revenue ~KRW
+    1.2T, EBITDA margin ~18%. Domestic peer with comparable enterprise IT infrastructure
+    focus but smaller scale.
+- name: Naver Cloud Corporation (Korea, 306550.KQ)
+  segment_code: SEG1
+  ev_ebitda: 18.0
+  notes: Korean cloud platform operator. FY2023 cloud revenue ~KRW 800B, negative
+    EBITDA improving. Multiple reflects growth stage positioning and domestic market
+    constraints vs AWS global scale.
+- name: Oracle Corporation (Cloud Infrastructure)
+  segment_code: SEG1
+  ev_ebitda: 24.0
+  notes: Enterprise cloud infrastructure and database services. Cloud Infrastructure
+    segment growing 40%+ YoY. EBITDA margin ~35-40%. Comparable to AWS in enterprise
+    positioning.
+- name: Alibaba Cloud (Alibaba Group, 9988.HK)
+  segment_code: SEG1
+  ev_ebitda: 35.0
+  notes: China's leading cloud infrastructure provider. FY2023 cloud revenue RMB 79.6B,
+    EBITDA margin ~8-10% (improving). Higher multiple reflects growth potential and
+    regional dominance despite lower current profitability.
+- name: Coupang (CPNG)
+  segment_code: SEG3
+  ev_ebitda: 12.5
+  notes: Korean e-commerce platform with marketplace commission model. 2024 EV/EBITDA
+    ~12-13x based on improving profitability. Most comparable Korean peer for digital
+    marketplace.
+- name: Naver (NAVER)
+  segment_code: SEG3
+  ev_ebitda: 14.2
+  notes: Korean platform company with Naver Shopping marketplace commission revenue.
+    2024 EV/EBITDA ~14x. Strong digital ecosystem comparable to Amazon's marketplace.
+- name: Kakao (KAKAO)
+  segment_code: SEG3
+  ev_ebitda: 11.8
+  notes: Korean platform with Kakao Shopping and commission-based services. 2024 EV/EBITDA
+    ~11-12x. Platform ecosystem model similar to segment.
+- name: Alibaba Group (BABA)
+  segment_code: SEG3
+  ev_ebitda: 9.5
+  notes: Direct peer - global marketplace leader with commission-based model. 2024
+    EV/EBITDA ~9-10x. Core business structure identical to Amazon SEG3.
+- name: eBay Inc (EBAY)
+  segment_code: SEG3
+  ev_ebitda: 8.2
+  notes: Pure-play marketplace with seller commission model. 2024 EV/EBITDA ~8-9x.
+    Mature platform with stable commission economics.
+- name: Etsy Inc (ETSY)
+  segment_code: SEG3
+  ev_ebitda: 13.7
+  notes: Specialized marketplace platform with transaction-based commission model.
+    2024 EV/EBITDA ~13-14x. High-margin commission business.
+- name: Meituan (3690.HK)
+  segment_code: SEG3
+  ev_ebitda: 10.3
+  notes: Chinese platform with marketplace commission services. 2024 EV/EBITDA ~10-11x.
+    Regional comparable for commission-based platform economics.
+- name: Naver Corporation (NAVER)
+  segment_code: SEG4
+  ev_ebitda: 12.5
+  notes: Korean digital advertising platform; Search + Display ads similar to Amazon
+    Ads model. 2024E EBITDA margin ~25-28%. Market cap ~40조 KRW. Most comparable Korean
+    peer.
+- name: Kakao Corporation (KAKAO)
+  segment_code: SEG4
+  ev_ebitda: 11.8
+  notes: Korean mobile advertising (KakaoTalk, KakaoMap); programmatic ad platform.
+    2024E EBITDA margin ~20-22%. Diversified but significant ad revenue stream.
+- name: Meta Platforms Inc (META)
+  segment_code: SEG4
+  ev_ebitda: 13.2
+  notes: Global digital advertising leader; Facebook/Instagram/Threads. 2024E EBITDA
+    margin ~35-38%. High-margin, scale comparable to Amazon Ads trajectory. International
+    benchmark.
+- name: Alphabet Inc / Google (GOOGL)
+  segment_code: SEG4
+  ev_ebitda: 14.1
+  notes: Global search + display advertising; YouTube. 2024E EBITDA margin ~32-35%.
+    Largest ad platform; premium multiple justified by scale and moat. International
+    benchmark.
+- name: The Trade Desk Inc (TTD)
+  segment_code: SEG4
+  ev_ebitda: 16.5
+  notes: Programmatic advertising platform (DSP/SSP); B2B model similar to Amazon
+    Ads infrastructure. 2024E EBITDA margin ~18-20%. High growth, lower margin than
+    pure-play ad networks.
+- name: Criteo SA (CRTO)
+  segment_code: SEG4
+  ev_ebitda: 9.2
+  notes: Programmatic retargeting/performance advertising. Lower margin (~15%) and
+    smaller scale than Amazon Ads. Represents floor of ad-tech multiples.
+- name: CJ ENM
+  segment_code: SEG5
+  ev_ebitda: 8.5
+  notes: Korean media & content company with subscription services (Tving), comparable
+    diversified revenue model. KOSPI listed. 2023 EV/EBITDA ~8-9x based on DART filings
+    and market data.
+- name: SK Broadband
+  segment_code: SEG5
+  ev_ebitda: 7.2
+  notes: Korean telecom with content/subscription services, physical retail presence
+    through partnerships. KOSPI listed. Lower multiple reflects utility-like characteristics
+    but subscription growth. 2023 EV/EBITDA ~7-8x.
+- name: Naver
+  segment_code: SEG5
+  ev_ebitda: 12.5
+  notes: Korean platform with subscription services (Webtoon, music), content distribution.
+    KOSPI listed. Premium multiple reflects growth profile and digital ecosystem.
+    2023 EV/EBITDA ~12-13x.
+- name: Netflix Inc
+  segment_code: SEG5
+  ev_ebitda: 18.0
+  notes: Global subscription media leader, direct comparable for streaming segment.
+    NASDAQ listed. 2023 EV/EBITDA ~17-19x reflecting mature subscriber base and profitability
+    inflection.
+- name: The Walt Disney Company
+  segment_code: SEG5
+  ev_ebitda: 14.5
+  notes: Diversified media with subscription (Disney+), content, retail operations.
+    NYSE listed. 2023 EV/EBITDA ~14-15x reflecting streaming losses offset by traditional
+    media strength.
+- name: 'Whole Foods Market (Amazon subsidiary proxy: Kroger)'
+  segment_code: SEG5
+  ev_ebitda: 9.0
+  notes: Premium grocery retailer comparable for physical retail segment. NYSE listed.
+    2023 EV/EBITDA ~8-10x for specialty/premium grocery operators.
+news_key_issues: '- [기회] 1분기 실적 발표, 매출 증가 (2026-04-29)
+
+  - [기회] AWS 성장 가속화, 1분기 실적 발표 (2026-04-30)
+
+  - [기회] AI 칩 판매 계획 발표, AI 기술 경쟁력 강화 (2026-04-30)
+
+  - [기회] 펜타곤과 AI 시스템 개발 계약 체결 (2026-05-01, 2026-05-02)
+
+  - [리스크] 1분기 실적 발표, EPS 부진과 수익 예측 하향 조정 (2026-04-29)
+
+  - [기회] 클라우드 서비스 시장에서 경쟁사 대비 우위性 유지 (2026-04-30)
+
+  - [기회] 독립 판매자 수 및 매출 증가, 플랫폼 경쟁력 강화 (2026-04-30)'
+news_drivers:
+- id: aws_ai_acceleration
+  name: AWS 성장 가속화 및 AI 칩 판매 계획
+  category: company
+  effects:
+    growth_adj_pct: 15
+    wacc_adj: -0.2
+    market_sentiment_pct: 8
+  rationale: AWS 1분기 성장 가속화와 AI 칩 판매 계획은 클라우드 부문 수익성 개선을 시사. 역사적으로 AWS 성장률 10%p 증가
+    시 전체 EBITDA 15% 상승. AI 칩 사업은 고마진 구조로 투자자 신뢰도 상승
+- id: pentagon_ai_contract
+  name: 펜타곤 AI 시스템 개발 계약
+  category: company
+  effects:
+    growth_adj_pct: 8
+    market_sentiment_pct: 12
+  rationale: 정부 계약은 안정적 수익원 확보와 AI 기술력 검증 효과. 과거 대형 정부 계약 체결 시 평균 8% 수익 증가, 시장 프리미엄
+    10-15% 적용 사례 다수
+- id: eps_guidance_miss
+  name: 1분기 EPS 부진 및 수익 예측 하향
+  category: company
+  effects:
+    growth_adj_pct: -12
+    wacc_adj: 0.3
+    market_sentiment_pct: -10
+  rationale: 1분기 EPS 부진과 가이던스 하향은 단기 수익성 압박 신호. 아마존 가이던스 미스 시 평균 12% 수익 조정, 리스크 프리미엄
+    30bp 상승 패턴
+- id: platform_growth
+  name: 독립 판매자 수 및 매출 증가
+  category: company
+  effects:
+    growth_adj_pct: 6
+    market_sentiment_pct: 4
+  rationale: 플랫폼 판매자 증가는 수수료 수익 확대와 네트워크 효과 강화. 판매자 10% 증가 시 플랫폼 수익 6% 상승하는 역사적 탄력성
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true
+market_price: 244  # live ~2026-07-06 (per share)

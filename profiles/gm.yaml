@@ -7,11 +7,11 @@ company:
   ticker: GM
   cik: '1467858'
   corp_code: null
-  shares_total: 903967853
-  shares_ordinary: 903967853
+  shares_total: 901665195
+  shares_ordinary: 901665195
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-13'
+  analysis_date: '2026-05-09'
 segments:
   SEG1:
     name: North America Automotive (ICE & EV)
@@ -88,35 +88,13 @@ wacc_params:
   rf: 3.2
   erp: 5.5
   bu: 1.15
-  de: 190.1
+  de: 184.8
   tax: 21.0
   kd_pre: 5.8
-  eq_w: 34.5
+  eq_w: 35.1
 scenarios:
-  A:
-    name: Base Case
-    prob: 40.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 903967853
-    desc: 리콜 비용은 관리 가능한 수준이며 중국 시장이 점진적으로 회복됩니다. EV 투자는 계획대로 진행되고 북미 생산 확대가 수익성을 지원합니다.
-    probability_rationale: 'Base rate: 자동차 업계 정상 운영 확률 70%. 조건부 분해: P(중간 수준 리콜 영향)=80%
-      × P(중국 회복)=70% = 56%, 40%로 조정'
-    active_drivers:
-      recall_costs: 0.5
-      ev_investment: 0.7
-      production_ramp: 0.8
-    segment_multiples:
-      SEG1: 8.5
-      SEG2: 7.0
-      SEG3: 9.0
-      SEG4: 6.5
-  B:
-    name: Bull Case - EV 리더십 확보
+  Bull:
+    name: Manufacturing Renaissance
     prob: 25.0
     ipo: N/A
     irr: null
@@ -124,22 +102,48 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 903967853
-    desc: EV 투자가 시장 리더십으로 이어지고 픽업트럭 생산 확대가 큰 성과를 거둡니다. 리콜 이슈는 신속히 해결되고 중국 시장도 회복세를
-      보입니다.
-    probability_rationale: 'Base rate: EV 전환 성공 사례 30%. 조건부 분해: P(EV 투자 성공)=40% ×
-      P(생산 효율성 개선)=70% × P(시장 점유율 확대)=90% = 25%'
+    shares: 901665195
+    desc: 60억달러 미국 투자가 성공적으로 실행되어 생산 효율성과 시장 점유율이 크게 개선되는 시나리오. 1분기 실적 모멘텀이 지속되며 품질
+      이슈는 신속히 해결된다.
+    probability_rationale: 'Base rate: 미국 제조업 대규모 투자 성공률 70%. 조건부 분해: P(투자 실행)=85%
+      × P(생산성 향상|투자)=75% × P(시장 점유율 확대|생산성)=60% ≈ 38%, 품질 리스크 고려하여 25%로 조정'
     active_drivers:
-      ev_investment: 1.0
-      production_ramp: 1.0
-      recall_costs: 0.3
+      us_manufacturing_investment: 1.0
+      q1_earnings_momentum: 0.8
+      quality_crisis: 0.2
     segment_multiples:
-      SEG1: 12.0
-      SEG2: 9.5
-      SEG3: 11.0
-      SEG4: 8.0
-  C:
-    name: Bear Case - 복합 리스크 현실화
+      SEG1: 11.5
+      SEG2: 10.8
+      SEG3: 9.5
+      SEG4: 8.2
+    growth_adj_pct: 25
+  Base:
+    name: Balanced Recovery
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 901665195
+    desc: 제조업 투자가 계획대로 진행되지만 품질 문제와 규제 리스크가 부분적으로 수익성을 제약하는 시나리오. 1분기 실적 개선세는 유지되나
+      성장 속도는 제한적이다.
+    probability_rationale: 'Base rate: 자동차 업계 정상 운영 확률 60%. 조건부 분해: P(투자 부분 성공)=70%
+      × P(품질 이슈 관리)=80% × P(규제 적응)=75% ≈ 42%, 40%로 설정'
+    active_drivers:
+      us_manufacturing_investment: 0.6
+      q1_earnings_momentum: 0.5
+      quality_crisis: 0.4
+      data_privacy_regulatory: 0.3
+    segment_multiples:
+      SEG1: 9.8
+      SEG2: 9.2
+      SEG3: 8.1
+      SEG4: 7.0
+    growth_adj_pct: 0
+  Bear:
+    name: Quality Crisis Deepening
     prob: 35.0
     ipo: N/A
     irr: null
@@ -147,20 +151,21 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 903967853
-    desc: 리콜 이슈가 확산되어 추가 비용이 발생하고 중국 시장 부진이 지속됩니다. EV 투자 효과는 제한적이며 전반적인 시장 신뢰도가 하락합니다.
-    probability_rationale: 'Base rate: 자동차 업계 복합 위기 발생률 25%. 조건부 분해: P(리콜 확산)=60%
-      × P(중국 악화 지속)=70% × P(EV 투자 지연)=80% = 34%, 35%로 조정'
+    shares: 901665195
+    desc: 변속기와 브레이크 결함이 더 광범위한 품질 문제로 확산되어 대규모 리콜과 소송 비용이 급증하는 시나리오. 데이터 프라이버시 규제도
+      강화되어 수익성이 크게 악화된다.
+    probability_rationale: 'Base rate: 자동차 대규모 리콜 후 추가 문제 발생률 40%. 조건부 분해: P(품질 문제
+      확산)=60% × P(소송 비용 급증)=70% × P(브랜드 신뢰도 하락)=85% ≈ 36%, 35%로 설정'
     active_drivers:
-      recall_costs: 1.0
-      china_weakness: 0.8
-      ev_investment: 0.3
-      production_ramp: 0.4
+      quality_crisis: 1.0
+      data_privacy_regulatory: 0.8
+      us_manufacturing_investment: 0.3
     segment_multiples:
-      SEG1: 6.0
-      SEG2: 5.5
-      SEG3: 7.0
-      SEG4: 5.0
+      SEG1: 7.2
+      SEG2: 6.8
+      SEG3: 5.9
+      SEG4: 5.1
+    growth_adj_pct: -20
 dcf_params:
   ebitda_growth_rates:
   - 0.1
@@ -171,13 +176,13 @@ dcf_params:
   tax_rate: 7.3
   capex_to_da: 1.97
   nwc_to_rev_delta: 0.05
-  terminal_growth: 2.9
+  terminal_growth: 3.0
   actual_capex: 25096
   capex_fade_to: null
   da_to_ebitda_override: 0.629
-pe_multiple: 25.6
+pe_multiple: 26.3
 ev_revenue_multiple: 1.0
-pbv_multiple: 1.1
+pbv_multiple: 1.2
 cps_principal: 0
 cps_years: 0
 net_debt: 110367
@@ -340,47 +345,55 @@ peers:
   notes: Korean tech with mapping (Naver Map) and autonomous vehicle software partnerships.
     2023 EV/EBITDA ~18x (market cap ~40T KRW, EBITDA ~2.2T KRW). Software-focused
     valuation closer to Cruise model.
-news_key_issues: '- [리스크] 리어뷰 카메라 이슈로 27만 대 이상의 차량 리콜 (2026-04-08, 2026-04-10)
+news_key_issues: '- [리스크] 불법적으로 운전자 위치 및 데이터 판매로 1,275만 달러의 합의금 지불 (2026-05-08)
 
-  - [기회] 미시간에서 픽업 트럭 생산량 증가 (2026-04-01)
+  - [리스크] 10속도 변속기 결함으로 인한 집단 소송 (2026-05-05, 2026-05-06, 2026-05-07)
 
-  - [기회] 2027년 가스 파워드 쉐보레 블레이저 생산 예정 (2026-04-10)
+  - [리스크] 브레이크 유체 결함으로 인한 40,400대 이상의 차량 리콜 (2026-05-07, 2026-05-08)
 
-  - [리스크] 중국 시장에서 성과 저조 (2026-03-16)
+  - [기회] 미시간과 오하이오에 8.3억 달러 투자, 미국 내 60억 달러 투자 계획 (2026-05-04)
 
-  - [기회] EV 사업에 대한 투자 및 발전 (2026-04-08)
-
-  - [리스크] 리콜 및 소송으로 인한 비용 증가 (2026-04-12)'
+  - [기회] 1분기 실적 호조, 수익 증가 (2026-04-28)'
 news_drivers:
-- id: recall_costs
-  name: 대규모 리콜 및 소송 비용
+- id: quality_crisis
+  name: Product Quality and Safety Crisis
+  category: company
+  effects:
+    growth_adj_pct: -15
+    wacc_adj: 0.8
+    market_sentiment_pct: -12
+  rationale: 변속기 결함 집단소송과 브레이크 유체 결함 리콜이 동시 발생. 자동차 업계 대규모 리콜 시 평균 15-20% 수익성 타격,
+    신용 스프레드 80bp 확대 역사적 패턴. 소비자 신뢰도 회복까지 평균 18개월 소요
+- id: us_manufacturing_investment
+  name: US Manufacturing Capacity Expansion
+  category: company
+  effects:
+    growth_adj_pct: 18
+    wacc_adj: -0.3
+    market_sentiment_pct: 10
+  rationale: 미시간-오하이오 8.3억달러 투자와 전체 60억달러 미국 투자 계획. 제조업 대규모 투자 시 3-5년간 평균 18% 생산성
+    향상, 정부 지원으로 자금조달 비용 30bp 절감 효과
+- id: data_privacy_regulatory
+  name: Data Privacy Regulatory Risk
   category: company
   effects:
     growth_adj_pct: -8
-    wacc_adj: 0.2
-    market_sentiment_pct: -3
-  rationale: 27만대 리콜과 소송 비용으로 EBITDA 마진 압박. 자동차 업계 대규모 리콜 시 평균 8% EBITDA 감소, 신용 리스크
-    증가로 WACC 상승
-- id: china_weakness
-  name: 중국 시장 성과 저조
-  category: industry
-  effects:
-    growth_adj_pct: -12
-    market_sentiment_pct: -5
-  rationale: 중국은 GM 글로벌 매출의 약 15% 차지. 중국 자동차 시장 둔화 시 다국적 OEM 평균 12% 수익성 하락 관찰
-- id: ev_investment
-  name: EV 사업 투자 확대
+    wacc_adj: 0.4
+    market_sentiment_pct: -6
+  rationale: 운전자 데이터 불법 판매로 1,275만달러 합의금. 자동차 업계 데이터 규제 강화 추세에서 컴플라이언스 비용 증가와 신규 수익원
+    제약으로 8% 수익성 압박
+- id: q1_earnings_momentum
+  name: Q1 Earnings Outperformance
   category: company
   effects:
-    growth_adj_pct: 15
-    wacc_adj: 0.1
+    growth_adj_pct: 12
+    wacc_adj: -0.2
     market_sentiment_pct: 8
-  rationale: EV 전환 투자로 장기 성장성 개선되나 단기 자본 지출 증가. Tesla 밸류에이션 프리미엄 효과로 시장 센티먼트 개선
-- id: production_ramp
-  name: 픽업트럭 생산 증가
-  category: company
-  effects:
-    growth_adj_pct: 8
-    market_sentiment_pct: 3
-  rationale: 미시간 픽업트럭 생산 증가와 2027년 블레이저 생산으로 북미 핵심 세그먼트 강화. 픽업트럭은 GM 최고 마진 제품군
+  rationale: 1분기 실적 호조로 수익 증가. 자동차 업계 분기 실적 서프라이즈 시 향후 4분기 평균 12% 수익 상향 조정, 실행력 입증으로
+    리스크 프리미엄 20bp 감소
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
 mc_enabled: true

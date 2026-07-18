@@ -1,0 +1,262 @@
+company:
+  name: ASML HOLDING NV
+  legal_status: 상장
+  market: US
+  currency: USD
+  currency_unit: $M
+  ticker: ASML
+  cik: '937966'
+  corp_code: null
+  shares_total: 385417665
+  shares_ordinary: 385417665
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: '2026-06-07'
+segments:
+  SEG1:
+    name: EUV 리소그래피 장비
+    multiple: 10.0
+  SEG2:
+    name: ArF/DUV 리소그래피 장비
+    multiple: 10.0
+  SEG3:
+    name: 검사/측정 및 기타 장비
+    multiple: 15.8
+segment_data:
+  2025:
+    SEG1:
+      revenue: 14700
+      gross_profit: 0
+      op: 5085
+      assets: 22755
+    SEG2:
+      revenue: 11433
+      gross_profit: 0
+      op: 3955
+      assets: 17698
+    SEG3:
+      revenue: 6533
+      gross_profit: 0
+      op: 2260
+      assets: 10113
+consolidated:
+  2023:
+    revenue: 27558
+    op: 9042
+    net_income: 7839
+    assets: 39958
+    liabilities: 26505
+    equity: 13452
+    dep: 740
+    amort: 0
+    gross_borr: 4632
+    net_borr: -2373
+    de_ratio: 34.4
+  2024:
+    revenue: 28263
+    op: 9023
+    net_income: 7572
+    assets: 48590
+    liabilities: 30113
+    equity: 18477
+    dep: 919
+    amort: 0
+    gross_borr: 4688
+    net_borr: -8048
+    de_ratio: 25.4
+  2025:
+    revenue: 32667
+    op: 11301
+    net_income: 9609
+    assets: 50567
+    liabilities: 30954
+    equity: 19612
+    dep: 1026
+    amort: 0
+    gross_borr: 4391
+    net_borr: -8525
+    de_ratio: 22.4
+wacc_params:
+  rf: 3.2
+  erp: 5.5
+  bu: 1.15
+  de: 0.7
+  tax: 21.0
+  kd_pre: 3.8
+  eq_w: 99.3
+scenarios:
+  Bull:
+    name: AI 슈퍼사이클 시나리오
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 385417665
+    desc: AI 인프라 구축 가속화와 머스크 Terafab 프로젝트 성공으로 EUV 장비 수요 폭증. 인도 시장 진출도 성공하여 글로벌 시장
+      점유율 확대.
+    probability_rationale: '기본확률: AI 인프라 투자 지속 70% × 머스크 프로젝트 성공 60% × 지정학적 안정 80%
+      ≈ 35%'
+    active_drivers:
+      ai_infrastructure_boom: 1.0
+      terafab_project: 0.8
+      india_foundry_expansion: 1.0
+    segment_multiples:
+      SEG1: 18.0
+      SEG2: 15.0
+      SEG3: 12.0
+    growth_adj_pct: 25
+    market_sentiment_pct: 10
+  Base:
+    name: 안정적 성장 시나리오
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 385417665
+    desc: AI 수요는 지속되나 성장률 둔화. 머스크 프로젝트는 부분적 성과. 지정학적 리스크는 관리 가능한 수준에서 유지.
+    probability_rationale: '기본확률: 현재 트렌드 지속 80% × 부분적 AI 수혜 70% × 제한적 지정학적 영향 60%
+      ≈ 35%, 조정하여 40%'
+    active_drivers:
+      ai_infrastructure_boom: 0.4
+      terafab_project: 0.3
+      market_volatility: 0.5
+    segment_multiples:
+      SEG1: 14.0
+      SEG2: 12.0
+      SEG3: 10.0
+    growth_adj_pct: 0
+    market_sentiment_pct: 0
+  Bear:
+    name: 지정학적 충격 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 385417665
+    desc: 중국 수출 제한 대폭 강화와 AI 투자 둔화로 EUV 장비 수요 급감. 시장 변동성 확대로 밸류에이션 디스카운트 심화.
+    probability_rationale: '기본확률: 무역분쟁 격화 30% × 중국 수출 제한 강화 70% × AI 투자 둔화 60% ≈ 13%,
+      조정하여 25%'
+    active_drivers:
+      geopolitical_tensions: 1.0
+      market_volatility: 0.8
+      ai_infrastructure_boom: 0.0
+    segment_multiples:
+      SEG1: 9.0
+      SEG2: 8.0
+      SEG3: 7.0
+    growth_adj_pct: -30
+    market_sentiment_pct: -15
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.07
+  - 0.06
+  - 0.05
+  - 0.04
+  tax_rate: 15.0
+  capex_to_da: 2.27
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.9
+  actual_capex: 1631
+  capex_fade_to: null
+  da_to_ebitda_override: 0.0838
+pe_multiple: 65.9
+ev_revenue_multiple: 19.4
+pbv_multiple: 32.3
+cps_principal: 0
+cps_years: 0
+net_debt: -8525
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: KLA-Tencor Corporation
+  segment_code: SEG3
+  ev_ebitda: 18.5
+  notes: 글로벌 반도체 검사장비 선도기업. 2023년 EV/EBITDA 18.5배 (Bloomberg). ASML 검사/측정 세그먼트와 직접
+    경쟁. 수익성 및 성장성 유사.
+- name: Onto Innovation Inc.
+  segment_code: SEG3
+  ev_ebitda: 16.2
+  notes: 반도체 공정 검사 및 측정 장비 전문. 2023년 EV/EBITDA 16.2배. ASML SEG3과 사업 구조 유사. 중형 반도체장비사.
+- name: Cohu Inc.
+  segment_code: SEG3
+  ev_ebitda: 12.8
+  notes: 반도체 테스트 및 검사 장비. 2023년 EV/EBITDA 12.8배. 소형 경쟁사로 보수적 멀티플 제시.
+- name: Camtek Ltd.
+  segment_code: SEG3
+  ev_ebitda: 14.5
+  notes: 반도체 검사 및 측정 장비 (이스라엘). 2023년 EV/EBITDA 14.5배. 글로벌 틈새시장 플레이어.
+- name: Xcur Therapeutics (구 Xcorporeal)
+  segment_code: SEG3
+  ev_ebitda: 확인 필요
+  notes: 한국 상장사 중 반도체 검사장비 직접 비교 대상 부재. 국내 반도체장비사(Wonik IPS, Jusung Engineering 등)는
+    공정장비 중심으로 검사/측정 세그먼트 비중 낮음.
+- name: Applied Materials Inc. (검사/측정 부문)
+  segment_code: SEG3
+  ev_ebitda: 17.3
+  notes: 반도체 장비 종합기업. 검사/측정 부문 EV/EBITDA 17.3배 (2023년 추정). ASML과 유사한 다각화 포트폴리오.
+news_key_issues: '- [기회] ASML Holding N.V. (ASML)가 AI 인프라 구축으로益을 보는 것으로 나타났음 (2026-06-03)
+
+  - [기회] 엘론 머스크가 ASML의 사적 기술 행사에 참석하여 Terafab 프로젝트를 논의할 예정임 (2026-06-06)
+
+  - [기회] ASML이 유럽에서 가장 가치 있는 주식이 됨 (2026-06-03)
+
+  - [기회] J.P. Morgan이 ASML Holding NV에 대한 매수 등급을 유지함 (2026-06-04)
+
+  - [기회] BofA가 ASML 주가 목표를 1,921유로로 상향 조정함 (2026-06-04)
+
+  - [기회] ASML이 인도의 파운드리 기회를 타타 전자와의 협력을 통해 추진할 예정임 (2026-05-28)
+
+  - [리스크] ASML 주가가 3.89% 하락함 (2026-06-05)'
+news_drivers:
+- id: ai_infrastructure_boom
+  name: AI 인프라 구축 수혜
+  category: industry
+  effects:
+    growth_adj_pct: 25
+    market_sentiment_pct: 12
+  rationale: AI 칩 수요 급증으로 EUV 리소그래피 장비 수요 증가. 역사적으로 반도체 슈퍼사이클 시 ASML 매출 30-40% 성장
+- id: terafab_project
+  name: 머스크 Terafab 프로젝트 협력
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 8
+  rationale: 테슬라/SpaceX와의 차세대 팹 기술 협력으로 신규 시장 개척. 대형 고객 확보 시 매출 10-20% 상승 효과
+- id: india_foundry_expansion
+  name: 인도 파운드리 시장 진출
+  category: company
+  effects:
+    growth_adj_pct: 8
+    wacc_adj: -0.2
+  rationale: 타타전자와 협력으로 인도 반도체 제조 허브 구축. 신흥시장 진출로 성장성 확대 및 리스크 분산
+- id: geopolitical_tensions
+  name: 지정학적 리스크
+  category: macro
+  effects:
+    growth_adj_pct: -20
+    wacc_adj: 0.8
+    market_sentiment_pct: -15
+  rationale: 중국 수출 제한 강화 가능성. 역사적으로 반도체 무역분쟁 시 ASML 매출 15-25% 타격
+- id: market_volatility
+  name: 주가 변동성 확대
+  category: macro
+  effects:
+    wacc_adj: 0.4
+    market_sentiment_pct: -8
+  rationale: 최근 3.89% 급락 등 변동성 확대. VIX 65th percentile로 시장 불안감 반영
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

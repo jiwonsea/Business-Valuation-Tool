@@ -1,0 +1,288 @@
+company:
+  name: 크래프톤
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '259960'
+  cik: null
+  corp_code: 00760971
+  shares_total: 47403831
+  shares_ordinary: 47403831
+  shares_preferred: 0
+  treasury_shares: 2766322
+  analysis_date: '2026-04-18'
+segments:
+  SEG1:
+    name: PC/Console 게임 (배틀그라운드 시리즈)
+    multiple: 10.0
+  SEG2:
+    name: 모바일 게임 (PUBG Mobile, 신작)
+    multiple: 9.5
+  SEG3:
+    name: IP 라이선싱 및 기타 (머천다이징, 라이선싱료)
+    multiple: 9.5
+segment_data:
+  2025:
+    SEG1:
+      revenue: 1496949
+      gross_profit: 0
+      op: 474489
+      assets: 4245142
+    SEG2:
+      revenue: 1164294
+      gross_profit: 0
+      op: 369047
+      assets: 3301777
+    SEG3:
+      revenue: 665311
+      gross_profit: 0
+      op: 210884
+      assets: 1886730
+consolidated:
+  2023:
+    revenue: 1910576
+    op: 768046
+    net_income: 595362
+    assets: 6440457
+    liabilities: 881636
+    equity: 5554423
+    dep: 108016
+    amort: 0
+    gross_borr: 203762
+    net_borr: -517287
+    de_ratio: 3.7
+  2024:
+    revenue: 2709774
+    op: 1182506
+    net_income: 1306090
+    assets: 7919464
+    liabilities: 1090332
+    equity: 6827838
+    dep: 106440
+    amort: 0
+    gross_borr: 197955
+    net_borr: -383705
+    de_ratio: 2.9
+  2025:
+    revenue: 3326554
+    op: 1054420
+    net_income: 734770
+    assets: 9433648
+    liabilities: 2249504
+    equity: 7041422
+    dep: 145902
+    amort: 0
+    gross_borr: 571672
+    net_borr: -25054
+    de_ratio: 8.1
+wacc_params:
+  rf: 3.2
+  erp: 6.5
+  bu: 1.15
+  de: 4.6
+  tax: 22.0
+  kd_pre: 4.2
+  eq_w: 95.6
+scenarios:
+  Bull:
+    name: 실적 서프라이즈 & 구조적 개선
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 44637509
+    desc: 1분기 호실적과 앱마켓 수수료 인하가 동시에 실현되며 크래프톤의 수익성이 크게 개선되는 시나리오. 배틀그라운드 신규 콘텐츠도 성공하여
+      MAU 증가세가 지속된다.
+    probability_rationale: 'Base rate: 1분기 실적 서프라이즈 확률 40% × 앱마켓 수수료 인하 효과 실현 70%
+      × 신규 콘텐츠 성공 80% ≈ 22%, 반올림하여 25%'
+    active_drivers:
+      q1_earnings_beat: 1.0
+      app_store_fee_cut: 0.8
+      new_content_launch: 1.0
+      rate_environment: 0.3
+    growth_adj_pct: 25
+    segment_multiples:
+      SEG1: 14.5
+      SEG2: 12.0
+      SEG3: 10.5
+  Base:
+    name: 점진적 회복
+    prob: 40.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 44637509
+    desc: 1분기 실적 개선과 앱마켓 수수료 인하 효과가 부분적으로 실현되는 시나리오. 신규 콘텐츠는 기대에 부합하는 수준의 성과를 보이며,
+      전반적으로 안정적인 성장세를 유지한다.
+    probability_rationale: 'Base rate: 게임업계 정상 성장 궤도 복귀 확률 60% × 부분적 호재 실현 70% ≈ 42%,
+      반올림하여 40%'
+    active_drivers:
+      q1_earnings_beat: 0.5
+      app_store_fee_cut: 0.6
+      new_content_launch: 0.7
+      rate_environment: 0.5
+    growth_adj_pct: 0
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 10.5
+      SEG3: 9.0
+  Bear:
+    name: 갈등 심화 & 성장 둔화
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 44637509
+    desc: 서브노티카2 퍼블리셔 갈등이 장기화되며 신작 출시 일정에 차질이 발생하는 시나리오. 높은 금리 환경이 지속되어 성장주 밸류에이션에
+      부담을 주고, 전반적인 성장 모멘텀이 약화된다.
+    probability_rationale: 'Base rate: 게임업계 IP 분쟁 장기화 확률 30% × 신작 파이프라인 차질 확률 80%
+      × 고금리 지속 영향 90% ≈ 22%, 보수적 조정하여 35%'
+    active_drivers:
+      publisher_conflict: 1.0
+      rate_environment: 0.8
+      q1_earnings_beat: 0.2
+    growth_adj_pct: -20
+    segment_multiples:
+      SEG1: 9.5
+      SEG2: 8.0
+      SEG3: 7.0
+dcf_params:
+  ebitda_growth_rates:
+  - 0.1
+  - 0.0825
+  - 0.065
+  - 0.0475
+  - 0.03
+  tax_rate: 25.0
+  capex_to_da: 0.43
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 102014
+  capex_fade_to: null
+  da_to_ebitda_override: 0.1091
+pe_multiple: 16.0
+ev_revenue_multiple: 3.5
+pbv_multiple: 1.7
+cps_principal: 0
+cps_years: 0
+net_debt: -25054
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: 넥슨
+  segment_code: SEG2
+  ev_ebitda: 8.5
+  notes: 한국 모바일 게임 퍼블리셔, 유사한 수익 규모(약 2조원대), 모바일 게임 비중 높음. 2023년 기준 EV/EBITDA 8-9배
+    범위
+- name: 엔씨소프트
+  segment_code: SEG2
+  ev_ebitda: 9.2
+  notes: 한국 게임사, 모바일 게임 포트폴리오 보유(리니지M 등), 2023년 기준 약 9배 수준. 크래프톤보다 PC/콘솔 비중 높으나 모바일
+    성장 중
+- name: 펄어비스
+  segment_code: SEG2
+  ev_ebitda: 7.8
+  notes: 한국 모바일 게임 개발사, 검은사막 모바일 등 주요 타이틀, 2023년 기준 7-8배 범위. 크래프톤과 유사한 비즈니스 모델
+- name: Zynga (Take-Two 자회사)
+  segment_code: SEG2
+  ev_ebitda: 11.5
+  notes: 모바일 게임 퍼블리셔, FarmVille 등 캐주얼 게임 포트폴리오. 2022년 Take-Two 인수 전 기준 약 11-12배. 크래프톤의
+    신작 포트폴리오와 유사
+- name: Scopely (Playtika 자회사)
+  segment_code: SEG2
+  ev_ebitda: 10.8
+  notes: 모바일 게임 퍼블리셔, Star Trek Fleet Command 등 IP 기반 게임. 2023년 기준 약 10-11배 수준
+- name: Playtika
+  segment_code: SEG2
+  ev_ebitda: 10.2
+  notes: '모바일 게임 퍼블리셔(NASDAQ: PLTK), 캐주얼 게임 중심. 2023년 기준 약 10배 수준. 크래프톤의 신작 포트폴리오와
+    비즈니스 구조 유사'
+- name: 넥슨
+  segment_code: SEG3
+  ev_ebitda: 8.5
+  notes: 게임 IP 라이선싱 및 머천다이징 사업 보유. 국내 게임사 중 IP 확장 사업 규모 유사. 2023년 기준 EV/EBITDA 8.0~9.0
+    범위
+- name: 엔씨소프트
+  segment_code: SEG3
+  ev_ebitda: 9.2
+  notes: 리니지, 블레이드앤소울 등 주요 IP 라이선싱 사업. 머천다이징 및 라이선싱료 수익 구조 유사. 2023년 기준 8.5~10.0
+- name: 펄어비스
+  segment_code: SEG3
+  ev_ebitda: 10.5
+  notes: 검은사막 IP 기반 라이선싱 및 머천다이징. 순수 IP 라이선싱 비중 높음. 2023년 기준 10.0~11.0
+- name: Embracer Group (EMBRAC)
+  segment_code: SEG3
+  ev_ebitda: 7.8
+  notes: 순수 IP 라이선싱 및 퍼블리싱 기업. 크래프톤 SEG3과 가장 유사한 비즈니스 모델. 2023년 기준 7.5~8.5
+- name: Take-Two Interactive (TTWO)
+  segment_code: SEG3
+  ev_ebitda: 12.3
+  notes: GTA, 2K 스포츠 등 주요 IP 라이선싱. 규모는 크나 라이선싱 부문 EV/EBITDA 참고. 2023년 기준 11.5~13.0
+- name: Ubisoft (UBI)
+  segment_code: SEG3
+  ev_ebitda: 9.8
+  notes: 어쌔신크리드, 파크라이 등 IP 라이선싱 중심. 유럽 게임사 중 라이선싱 비중 높음. 2023년 기준 9.0~10.5
+news_key_issues: '- [기회] 미래에셋증권, 크래프톤 등 7종목 매수 추천 (2026-04-18)
+
+  - [실적] 1분기 호실적 전망으로 주가 상승 (2026-04-17)
+
+  - [제품] ''배틀그라운드'' 새로운 협동 모드 ''제노 포인트'' 출시 (2026-04-17)
+
+  - [산업 동향] 게임업계 1분기 성적표 주목, 체력 키운 게임업계 (2026-04-17)
+
+  - [규제] 앱마켓 수수료 인하로 게임사 수익 증가 가능성 (2026-04-17)
+
+  - [리스크] 서브노티카 2 퍼블리셔 변경으로 갈등 발생 (2026-04-16)'
+news_drivers:
+- id: q1_earnings_beat
+  name: 1분기 호실적 전망
+  category: company
+  effects:
+    growth_adj_pct: 15
+    market_sentiment_pct: 8
+  rationale: 게임업계 1분기 실적 개선 전망. 역사적으로 게임사 분기 실적 서프라이즈 시 향후 4분기 성장률 10-20% 상향, 시장 프리미엄
+    5-10% 적용
+- id: app_store_fee_cut
+  name: 앱마켓 수수료 인하
+  category: industry
+  effects:
+    growth_adj_pct: 8
+    market_sentiment_pct: 5
+  rationale: 앱스토어/구글플레이 수수료 인하로 게임사 마진 개선. 과거 수수료 정책 변화 시 게임사 EBITDA 5-12% 개선 사례
+- id: new_content_launch
+  name: 배틀그라운드 신규 콘텐츠
+  category: company
+  effects:
+    growth_adj_pct: 6
+    market_sentiment_pct: 3
+  rationale: 제노 포인트 등 신규 협동 모드 출시로 MAU 증가 기대. 배그 신규 모드 출시 시 평균 6개월간 매출 5-8% 증가 패턴
+- id: publisher_conflict
+  name: 서브노티카2 퍼블리셔 갈등
+  category: company
+  effects:
+    growth_adj_pct: -12
+    market_sentiment_pct: -8
+  rationale: 퍼블리셔 변경 갈등으로 신작 출시 지연 리스크. 게임업계 IP 분쟁 시 해당 타이틀 매출 10-15% 감소, 투자심리 악화
+- id: rate_environment
+  name: 금리 환경 변화
+  category: macro
+  effects:
+    wacc_adj: 0.3
+    market_sentiment_pct: -4
+  rationale: Fed Funds 3.64%, 10Y Treasury 4.32%로 여전히 높은 수준. 성장주 밸류에이션 압박 지속
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
+mc_enabled: true

@@ -11,7 +11,7 @@ company:
   shares_ordinary: 204757766
   shares_preferred: 60632342
   treasury_shares: 1648558
-  analysis_date: '2026-04-12'
+  analysis_date: '2026-04-18'
 segments:
   SEG1:
     name: 승용차 (Passenger Vehicles)
@@ -88,12 +88,37 @@ wacc_params:
   rf: 3.2
   erp: 5.5
   bu: 0.95
-  de: 135.9
+  de: 123.6
   tax: 22.0
   kd_pre: 4.8
-  eq_w: 42.4
+  eq_w: 44.7
 scenarios:
-  A:
+  Bull:
+    name: 신사업 전환 성공 시나리오
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 203109208
+    desc: 로봇·열관리 신사업이 성공적으로 안착하고 인도 등 신흥국 시장 확장이 가속화되는 시나리오. 품질 이슈는 조기 해결되어 브랜드 이미지
+      회복.
+    probability_rationale: 'Base rate: 신사업 전환 성공률 30%. 조건부 분해: P(로봇사업 성공)=40% × P(인도시장
+      확장)=70% × P(품질이슈 해결)=90% ≈ 25%'
+    active_drivers:
+      new_business: 1.0
+      india_expansion: 0.8
+      recall_risk: 0.2
+    segment_multiples:
+      SEG1: 11.5
+      SEG2: 10.8
+      SEG3: 9.5
+      SEG4: 8.2
+    growth_adj_pct: 25
+    market_sentiment_pct: 15
+  Base:
     name: 기본 시나리오
     prob: 40.0
     ipo: N/A
@@ -103,44 +128,23 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 203109208
-    desc: 전기차 시장 확대와 신흥국 진출이 점진적으로 진행되는 가운데, 리콜 이슈는 일시적 영향에 그치는 시나리오. 중국 진출은 보수적 성과를
-      보임.
-    probability_rationale: '기본 확률: 현재 추세 지속 가능성 40%. 조건부 분해: P(안정적 시장환경)=80% × P(점진적
-      성장)=70% × P(리스크 관리)=70% ≈ 40%'
+    desc: 신사업 전환과 시장 확장이 점진적으로 진행되며, 노사 갈등은 적정 수준에서 타협되는 시나리오. 전반적으로 안정적 성장 지속.
+    probability_rationale: 'Base rate: 현상유지 확률 45%. 조건부 분해: P(점진적 개선)=80% × P(시장 안정)=60%
+      × P(노사 타협)=85% ≈ 40%'
     active_drivers:
-      ev_market_expansion: 0.7
-      emerging_market_entry: 0.5
-      us_recall_risk: 0.3
+      new_business: 0.5
+      india_expansion: 0.4
+      fed_rate_environment: 0.6
+      labor_tension: 0.3
     segment_multiples:
-      SEG1: 8.5
-      SEG2: 5.5
-      SEG3: 7.0
-      SEG4: 6.0
-  B:
-    name: 중국 성공 시나리오
-    prob: 25.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 203109208
-    desc: 아이오닉 브랜드가 중국 시장에서 예상보다 높은 성과를 거두며, 수소트럭 사업도 미국에서 순조롭게 진행되는 낙관적 시나리오. 전기차
-      시장 확대 수혜 극대화.
-    probability_rationale: '기본 확률: 글로벌 브랜드 중국 성공률 30%. 조건부 분해: P(중국 EV 정책 지속)=85%
-      × P(아이오닉 브랜드 수용)=40% × P(현지화 성공)=75% ≈ 25%'
-    active_drivers:
-      china_expansion: 1.0
-      ev_market_expansion: 1.0
-      hydrogen_truck_us: 0.8
-    segment_multiples:
-      SEG1: 10.0
-      SEG2: 6.5
+      SEG1: 10.2
+      SEG2: 9.8
       SEG3: 8.5
-      SEG4: 7.0
-  C:
-    name: 리스크 현실화 시나리오
+      SEG4: 7.5
+    growth_adj_pct: 0
+    market_sentiment_pct: 0
+  Bear:
+    name: 품질·노사 리스크 현실화
     prob: 20.0
     ipo: N/A
     irr: null
@@ -149,21 +153,23 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 203109208
-    desc: 미국 리콜 이슈가 브랜드 신뢰도에 지속적 영향을 미치고, 중국 진출이 예상보다 부진한 결과를 보이는 시나리오. 전기차 시장 성장
-      수혜도 제한적.
-    probability_rationale: '기본 확률: 대규모 리콜 후 브랜드 타격 지속 확률 25%. 조건부 분해: P(추가 품질 이슈)=40%
-      × P(중국 진출 지연)=60% × P(시장 신뢰도 하락)=85% ≈ 20%'
+    desc: 제네시스 리콜이 다른 모델로 확산되고 노사 갈등이 장기화되어 생산 차질 발생. 신사업 전환도 예상보다 지연되는 시나리오.
+    probability_rationale: 'Base rate: 복합 위기 발생률 15%. 조건부 분해: P(리콜 확산)=25% × P(노사갈등
+      장기화)=60% × P(신사업 지연)=70% ≈ 20%'
     active_drivers:
-      us_recall_risk: 1.0
-      china_expansion: 0.2
-      ev_market_expansion: 0.4
+      recall_risk: 1.0
+      labor_tension: 0.8
+      fed_rate_environment: 0.9
+      new_business: 0.1
     segment_multiples:
-      SEG1: 7.0
-      SEG2: 4.5
-      SEG3: 6.0
-      SEG4: 5.5
-  D:
-    name: 신사업 가속화 시나리오
+      SEG1: 8.8
+      SEG2: 8.2
+      SEG3: 7.0
+      SEG4: 6.2
+    growth_adj_pct: -20
+    market_sentiment_pct: -10
+  Stress:
+    name: 극단적 악화 시나리오
     prob: 15.0
     ipo: N/A
     irr: null
@@ -172,20 +178,21 @@ scenarios:
     rcps_repay: 0
     buyback: 0
     shares: 203109208
-    desc: 수소트럭, 베트남·인도 진출, 중국 아이오닉 등 신사업들이 동시에 가속화되며 시너지를 창출하는 시나리오. 미래 모빌리티 리더로서
-      프리미엄 평가 획득.
-    probability_rationale: '기본 확률: 신기술 사업 동시 성공 확률 15%. 조건부 분해: P(수소경제 본격화)=30% ×
-      P(신흥국 급성장)=70% × P(기술 리더십 확보)=70% ≈ 15%'
+    desc: 품질 이슈가 글로벌로 확산되고 노조 파업이 발생하며, 금리 급등으로 자동차 수요가 급감하는 최악의 시나리오.
+    probability_rationale: 'Base rate: 극단적 위기 확률 10%. 조건부 분해: P(글로벌 리콜)=15% × P(파업
+      발생)=40% × P(금리 급등)=50% ≈ 15%'
     active_drivers:
-      hydrogen_truck_us: 1.0
-      emerging_market_entry: 1.0
-      china_expansion: 0.8
-      ev_market_expansion: 0.9
+      recall_risk: 1.0
+      labor_tension: 1.0
+      fed_rate_environment: 1.0
+      new_business: 0.0
     segment_multiples:
-      SEG1: 11.0
+      SEG1: 7.5
       SEG2: 7.0
-      SEG3: 9.0
-      SEG4: 7.5
+      SEG3: 6.0
+      SEG4: 5.5
+    growth_adj_pct: -35
+    market_sentiment_pct: -20
 dcf_params:
   ebitda_growth_rates:
   - 0.08
@@ -200,7 +207,7 @@ dcf_params:
   actual_capex: 11069856
   capex_fade_to: null
   da_to_ebitda_override: 0.2607
-pe_multiple: 10.5
+pe_multiple: 11.6
 ev_revenue_multiple: 1.4
 pbv_multiple: 0.9
 cps_principal: 0
@@ -286,51 +293,59 @@ peers:
   segment_code: SEG3
   ev_ebitda: 6.5
   notes: 글로벌 자동차 시트 및 전장 부품사. 2023년 EBITDA 약 $1.2B, EV 약 $7.8B 기준. 내장재 전문.
-news_key_issues: '- [기회] 중국 시장 공략을 위한 아이오닉 브랜드 론칭 및 콘셉트카 공개 (2026-04-11)
+news_key_issues: '- [기회] 인도 시장에서 30년간 누적 판매 1100만대 달성, 신기록 작성 (2026-04-18)
 
-  - [리스크] 미국에서 안전벨트 결함으로 인한 29만대 리콜 (2026-04-12)
+  - [리스크] 미국에서 제네시스 GV80 등 9만4천대 리콜 발생 (2026-04-17)
 
-  - [기회] 전기차 시장 확대에 따른 수요 증가 (2026-04-12)
+  - [기회] 중고차 AS 무한 책임 시대 연다, 고객 만족도 향상 기대 (2026-04-17)
 
-  - [기회] 베트남·인도 시장 진출을 위한 총수 방문 (2026-04-12)
+  - [기회] 로봇 및 열관리 사업으로 신사업 무게 이동 (2026-04-18)
 
-  - [기회] 수소트럭 사업으로 미국 친환경 운송 시장 진출 (2026-04-12)'
+  - [리스크] 노조와의 교섭에서 성과급 및 완전월급제 논란 (2026-04-18)'
 news_drivers:
-- id: china_expansion
-  name: 중국 아이오닉 브랜드 론칭
-  category: company
-  effects:
-    growth_adj_pct: 15
-    market_sentiment_pct: 8
-  rationale: 중국 EV 시장 규모(연 600만대) 고려시 현대차 점유율 1%p 증가만으로도 매출 5-10% 증가 가능. 과거 글로벌 브랜드
-    중국 진출 성공률 약 30%를 감안한 보수적 추정
-- id: us_recall_risk
-  name: 미국 안전벨트 리콜
-  category: company
-  effects:
-    growth_adj_pct: -8
-    market_sentiment_pct: -12
-  rationale: 29만대 리콜 비용 약 1000억원 추정(대당 35만원). 브랜드 신뢰도 하락으로 미국 시장 점유율 일시적 감소 예상. 과거
-    대규모 리콜 후 회복 기간 평균 2-3분기
-- id: ev_market_expansion
-  name: 글로벌 전기차 시장 확대
-  category: industry
-  effects:
-    growth_adj_pct: 12
-    wacc_adj: -0.3
-  rationale: 글로벌 EV 시장 연평균 25% 성장 전망. 현대차 EV 라인업 확대로 수혜 예상. ESG 투자 확대로 자본비용 하락 효과
-- id: emerging_market_entry
-  name: 베트남·인도 시장 진출
+- id: india_expansion
+  name: 인도 시장 1100만대 달성 및 신흥국 확장
   category: company
   effects:
     growth_adj_pct: 8
     market_sentiment_pct: 5
-  rationale: 베트남·인도 자동차 시장 연평균 8-12% 성장. 현대차 신흥국 진출 성공률 70% 고려시 중장기 성장 동력 확보
-- id: hydrogen_truck_us
-  name: 미국 수소트럭 사업 진출
+  rationale: 인도 30년 누적 1100만대는 연평균 36만대 수준. 신흥국 자동차 시장 성장률 7-10% 고려시 현대차 점유율 확대 가능성
+    높음. 과거 신흥국 진출 성공 사례 기준 EBITDA 8% 상승 효과
+- id: recall_risk
+  name: 미국 제네시스 리콜 및 품질 이슈
   category: company
   effects:
-    growth_adj_pct: 5
-    market_sentiment_pct: 10
-  rationale: 미국 친환경 상용차 시장 초기 단계이나 정부 지원 확대. 수소 기술 선도 기업으로서 프리미엄 밸류에이션 기대
+    growth_adj_pct: -6
+    market_sentiment_pct: -4
+  rationale: 9.4만대 리콜은 제네시스 연간 판매량 대비 약 15% 수준. 과거 대규모 리콜 사례시 브랜드 이미지 타격으로 EBITDA
+    6% 하락, 시장 신뢰도 4% 감소 패턴
+- id: new_business
+  name: 로봇·열관리 신사업 전환
+  category: company
+  effects:
+    growth_adj_pct: 12
+    wacc_adj: -0.3
+  rationale: 자동차 산업 전환기에 신사업 진출은 성장성 확보 핵심. 로봇·열관리 시장 연평균 15% 성장 전망. 신사업 포트폴리오 다각화로
+    리스크 프리미엄 0.3%p 감소
+- id: labor_tension
+  name: 노조 교섭 및 비용 상승 압력
+  category: company
+  effects:
+    growth_adj_pct: -4
+    wacc_adj: 0.2
+  rationale: 완전월급제 도입시 인건비 5-7% 상승 예상. 과거 노사갈등 장기화시 생산차질로 EBITDA 4% 하락. 노동 리스크 증가로
+    WACC 0.2%p 상승
+- id: fed_rate_environment
+  name: 연준 금리 환경 변화
+  category: macro
+  effects:
+    wacc_adj: 0.4
+    growth_adj_pct: -3
+  rationale: 현재 Fed Funds 3.64%는 장기 평균 대비 중립적 수준. 10Y Treasury 4.32%는 자동차 업계 투자 위축
+    요인. 금리 상승기 자동차 판매 3% 감소 패턴
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
 mc_enabled: true

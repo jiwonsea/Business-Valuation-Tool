@@ -7,11 +7,11 @@ company:
   ticker: MSFT
   cik: '789019'
   corp_code: null
-  shares_total: 7425629076
-  shares_ordinary: 7425629076
+  shares_total: 7428434704
+  shares_ordinary: 7428434704
   shares_preferred: 0
   treasury_shares: 0
-  analysis_date: '2026-04-13'
+  analysis_date: '2026-07-06'
 segments:
   SEG1:
     name: Productivity & Business Processes (Office 365, Dynamics 365, LinkedIn)
@@ -80,34 +80,13 @@ wacc_params:
   rf: 3.2
   erp: 5.5
   bu: 0.95
-  de: 2.2
+  de: 2.0
   tax: 21.0
   kd_pre: 3.8
-  eq_w: 97.8
+  eq_w: 98.1
 scenarios:
-  A:
-    name: 기본 시나리오
-    prob: 40.0
-    ipo: N/A
-    irr: null
-    dlom: 0
-    cps_repay: 0
-    rcps_repay: 0
-    buyback: 0
-    shares: 7425629076
-    desc: 실적 발표 전 관망세 속에서 기관투자자 매수가 지속되는 상황. AI 전략 리스크와 일본 투자 기회가 상쇄되며 현재 밸류에이션 수준
-      유지.
-    probability_rationale: '기본 확률: 실적 발표 전 중립적 상황 60% × 기관 매수 지속 확률 70% = 42%, 40%로
-      조정'
-    active_drivers:
-      institutional_buying: 1.0
-      earnings_uncertainty: 0.3
-    segment_multiples:
-      SEG1: 28.0
-      SEG2: 22.0
-      SEG3: 18.0
-  B:
-    name: AI 투자 성공 시나리오
+  Bull:
+    name: AI 혁신 가속화
     prob: 25.0
     ipo: N/A
     irr: null
@@ -115,62 +94,67 @@ scenarios:
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 7425629076
-    desc: 일본 AI 투자 계획이 성공적으로 진행되며 AI 전략 우려가 해소되는 상황. 아시아 시장 확장과 AI 경쟁력 강화로 프리미엄 밸류에이션
-      정당화.
-    probability_rationale: '기본 확률: 일본 AI 투자 성공 30% × 전략 리스크 완화 확률 80% × 시장 긍정 반응 확률
-      90% = 22%, 25%로 조정'
+    shares: 7428434704
+    desc: AI 신규 비즈니스 모델이 예상보다 빠르게 수익화되고, 규제 환경 개선으로 투자 가속화. 강력한 3분기 실적이 지속적 성장 모멘텀으로
+      이어지는 시나리오.
+    probability_rationale: 'Base rate: AI 신기술 상용화 성공률 40%. 조건부 분해: P(AI 비즈니스 성공)=40%
+      × P(규제 우호적)=70% × P(실적 모멘텀 지속)=90% ≈ 25%'
     active_drivers:
-      japan_ai_investment: 1.0
-      ai_strategy_risk: 0.2
-      institutional_buying: 0.8
+      ai_business_expansion: 1.0
+      ai_regulation_clarity: 0.8
+      strong_q3_growth: 0.7
     segment_multiples:
-      SEG1: 32.0
-      SEG2: 26.0
-      SEG3: 20.0
-  C:
-    name: 전략 리스크 현실화 시나리오
-    prob: 20.0
+      SEG1: 16.5
+      SEG2: 14.0
+      SEG3: 12.5
+    growth_adj_pct: 25
+  Base:
+    name: 균형 성장
+    prob: 45.0
     ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 7425629076
-    desc: AI 전략 변경이 실제 경쟁력 저하로 이어지며 실적 발표에서 부정적 결과가 나타나는 상황. 성장성 둔화와 리스크 프리미엄 상승으로
-      밸류에이션 하락.
-    probability_rationale: '기본 확률: AI 전략 변경 부정적 영향 25% × 경쟁력 저하 현실화 60% × 실적 부진 확률
-      70% = 11%, 보수적으로 20% 할당'
+    shares: 7428434704
+    desc: AI 투자 효과가 점진적으로 나타나며, 에너지 비용 증가와 기관 매도 압력이 일부 상쇄. 전반적으로 안정적인 성장세를 유지하는 시나리오.
+    probability_rationale: 'Base rate: 대형 기술주 안정 성장 확률 60%. 조건부 분해: P(현상 유지)=60% ×
+      P(부분적 AI 성과)=80% × P(일반적 시장 환경)=95% ≈ 45%'
     active_drivers:
-      ai_strategy_risk: 1.0
-      earnings_uncertainty: 0.8
-      japan_ai_investment: 0.3
+      ai_business_expansion: 0.4
+      ai_energy_risk: 0.3
+      strong_q3_growth: 0.5
+      institutional_selling: 0.6
     segment_multiples:
-      SEG1: 22.0
-      SEG2: 18.0
-      SEG3: 15.0
-  D:
-    name: 혼재 상황 시나리오
-    prob: 15.0
+      SEG1: 14.0
+      SEG2: 12.0
+      SEG3: 10.5
+    growth_adj_pct: 0
+  Bear:
+    name: AI 투자 부담 가중
+    prob: 30.0
     ipo: N/A
     irr: null
     dlom: 0
     cps_repay: 0
     rcps_repay: 0
     buyback: 0
-    shares: 7425629076
-    desc: AI 투자 기회와 전략 리스크가 동시에 부각되며 시장이 혼재된 신호를 받는 상황. 높은 변동성 속에서 밸류에이션 불확실성이 지속됨.
-    probability_rationale: '기본 확률: 엇갈린 신호 지속 40% × 시장 혼란 지속 확률 50% × 변동성 확대 확률 80%
-      = 16%, 15%로 조정'
+    shares: 7428434704
+    desc: AI 데이터센터 에너지 소비 급증으로 운영비 부담이 가중되고, 청정 에너지 목표 달성을 위한 추가 투자 필요. 대형 기관투자자 매도가
+      지속되며 밸류에이션 압박.
+    probability_rationale: 'Base rate: 기술주 대규모 투자 실패율 25%. 조건부 분해: P(AI 투자 부담)=25%
+      × P(에너지 비용 급증)=60% × P(기관 매도 지속)=80% ≈ 12%, 보수적 조정으로 30%'
     active_drivers:
-      ai_strategy_risk: 0.6
-      japan_ai_investment: 0.7
-      earnings_uncertainty: 1.0
+      ai_energy_risk: 1.0
+      institutional_selling: 0.8
+      ai_business_expansion: 0.2
     segment_multiples:
-      SEG1: 25.0
-      SEG2: 20.0
-      SEG3: 16.0
+      SEG1: 11.5
+      SEG2: 9.5
+      SEG3: 8.0
+    growth_adj_pct: -20
+    market_sentiment_pct: -15
 dcf_params:
   ebitda_growth_rates:
   - 0.1
@@ -181,13 +165,13 @@ dcf_params:
   tax_rate: 20.8
   capex_to_da: 1.97
   nwc_to_rev_delta: 0.05
-  terminal_growth: 2.9
+  terminal_growth: 3.0
   actual_capex: 64551
   capex_fade_to: null
   da_to_ebitda_override: 0.1715
-pe_multiple: 27.0
-ev_revenue_multiple: 9.9
-pbv_multiple: 8.0
+pe_multiple: 30.3
+ev_revenue_multiple: 11.1
+pbv_multiple: 9.0
 cps_principal: 0
 cps_years: 0
 net_debt: 30346
@@ -271,48 +255,63 @@ peers:
   notes: Korean enterprise cloud & IT services. FY2023 cloud/IT revenue ~₩2.5T, operating
     margin ~8-10%. Established enterprise infrastructure provider. Telecom-backed
     infrastructure advantage.
-news_key_issues: '- [리스크] AI 관련 비즈니스 전략 변경으로 경쟁력 저하 우려 (2026-04-11)
+news_key_issues: '- [리스크] AI 관련 에너지 소비 증가로 2030년 청정 에너지 목표 재고찰 (2026-05-06, Bloomberg.com)
 
-  - [기회] 일본에서 AI에 100억 달러 투자 계획 발표 (2026-04-03)
+  - [기회] AI 기술을 활용한 신규 비즈니스 모델 개발 (2026-05-07, The Official Microsoft Blog)
 
-  - [재무] 2026년 4월 29일 분기 실적 발표 예정 (2026-04-08)
+  - [매각] 헤지 펀드 TCI가 MICROSOFT CORP 지분을 감소 (2026-05-08, GuruFocus)
 
-  - [투자] 로열 펀드 매니지먼트, 마이크로소프트 주식 3,661주 추가 매수 (2026-04-11)
+  - [규제] 정부의 AI 모델 사전 검토 허용 (2026-05-06, SiliconANGLE)
 
-  - [분석] 애널리스트, 마이크로소프트의 AI 비즈니스 전망에 우려 표명 (2026-04-09)'
+  - [재무] MICROSOFT CORP의 3분기 매출이 18% 증가 (2026-05-06, Yahoo! Finance Canada)'
 news_drivers:
-- id: ai_strategy_risk
-  name: AI 비즈니스 전략 변경 리스크
+- id: ai_energy_risk
+  name: AI 에너지 소비 증가로 청정 에너지 목표 재고찰
   category: company
   effects:
-    growth_adj_pct: -15
+    growth_adj_pct: -8
     wacc_adj: 0.3
-    market_sentiment_pct: -8
-  rationale: AI 전략 변경으로 인한 경쟁력 저하 우려. 과거 빅테크 전략 변경 시 성장률 10-20% 하락, 리스크 프리미엄 상승으로
-    WACC 20-50bp 증가 사례 참조
-- id: japan_ai_investment
-  name: 일본 AI 투자 확대
-  category: company
-  effects:
-    growth_adj_pct: 25
-    wacc_adj: -0.2
-    market_sentiment_pct: 12
-  rationale: 100억 달러 일본 AI 투자로 아시아 시장 확장 기대. 대규모 투자 발표 시 성장률 20-30% 상향, 투자자 신뢰도 증가로
-    리스크 프리미엄 하락 패턴
-- id: earnings_uncertainty
-  name: 4월 실적 발표 불확실성
-  category: company
-  effects:
-    growth_adj_pct: 0
-    wacc_adj: 0.4
     market_sentiment_pct: -5
-  rationale: 실적 발표 전 불확실성 증가. 애널리스트 우려 표명으로 변동성 확대, 리스크 프리미엄 30-50bp 상승 예상
-- id: institutional_buying
-  name: 기관투자자 매수 증가
+  rationale: AI 데이터센터 에너지 소비 급증으로 ESG 목표 달성 비용 증가. 유사 사례(구글 2019년 에너지 목표 연기) 시 성장률
+    5-10% 하락, 리스크 프리미엄 20-30bp 상승 관찰
+- id: ai_business_expansion
+  name: AI 기술 활용 신규 비즈니스 모델 개발
   category: company
   effects:
-    growth_adj_pct: 0
-    wacc_adj: -0.1
+    growth_adj_pct: 15
+    wacc_adj: -0.2
+    market_sentiment_pct: 8
+  rationale: 생성형 AI 기반 신규 수익원 창출. 과거 클라우드 전환기(2014-2018) 유사 혁신 시 EBITDA 성장률 10-20%
+    상승, 투자자 신뢰도 증가로 리스크 프리미엄 감소
+- id: institutional_selling
+  name: 헤지펀드 TCI 지분 감소
+  category: company
+  effects:
+    market_sentiment_pct: -4
+    wacc_adj: 0.1
+  rationale: 대형 기관투자자 매도는 단기 유동성 압박 야기. TCI 규모($40B+ AUM) 고려 시 주가 압박 2-5% 예상, 소폭 리스크
+    프리미엄 상승
+- id: ai_regulation_clarity
+  name: 정부 AI 모델 사전 검토 허용
+  category: industry
+  effects:
+    growth_adj_pct: 5
     market_sentiment_pct: 3
-  rationale: 로열 펀드 등 기관투자자 지속 매수로 주가 지지. 기관 매수 증가 시 유동성 개선, 소폭 리스크 프리미엄 하락 효과
+    wacc_adj: -0.1
+  rationale: 규제 명확성 제고로 AI 투자 불확실성 감소. 과거 GDPR 등 규제 명확화 시 기술주 밸류에이션 3-7% 상승, 규제 리스크
+    프리미엄 감소
+- id: strong_q3_growth
+  name: 3분기 매출 18% 증가
+  category: company
+  effects:
+    growth_adj_pct: 10
+    market_sentiment_pct: 6
+  rationale: 18% 성장은 컨센서스 15% 대비 상회. 과거 실적 서프라이즈 시 향후 4분기 성장률 5-12% 상향 조정, 투자심리 개선
+    효과
+scenario_validation:
+  status: ok
+  errors: []
+  retryable: false
+  retry_attempts: 1
 mc_enabled: true
+market_price: 390  # live ~2026-07-06 (per share)

@@ -1,0 +1,168 @@
+valuation_method: multiples
+industry: cosmetics consumer staples household personal products retail
+company:
+  name: 아모레퍼시픽
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  ticker: '090430'
+  cik: null
+  corp_code: '00583424'
+  shares_total: 69050589
+  shares_ordinary: 58492759
+  shares_preferred: 10557830
+  treasury_shares: 117485
+  analysis_date: '2026-05-05'
+segments:
+  MAIN:
+    name: Beauty & Personal Care
+    multiple: 14.0
+segment_data:
+  2025:
+    MAIN:
+      revenue: 4252820
+      gross_profit: 0
+      op: 335827
+      assets: 6961213
+consolidated:
+  2023:
+    revenue: 3673964
+    op: 108171
+    net_income: 180102
+    assets: 5886511
+    liabilities: 1013806
+    equity: 4897988
+    dep: 251833
+    amort: 0
+    gross_borr: 350403
+    net_borr: -155976
+    de_ratio: 7.2
+  2024:
+    revenue: 3885111
+    op: 220481
+    net_income: 593187
+    assets: 6783508
+    liabilities: 1457500
+    equity: 5252371
+    dep: 257414
+    amort: 0
+    gross_borr: 440218
+    net_borr: -11325
+    de_ratio: 8.4
+  2025:
+    revenue: 4252820
+    op: 335827
+    net_income: 235682
+    assets: 6961213
+    liabilities: 1457756
+    equity: 5449272
+    dep: 268074
+    amort: 0
+    gross_borr: 350080
+    net_borr: -174478
+    de_ratio: 6.4
+wacc_params:
+  rf: 3.2
+  erp: 6.0
+  bu: 1.13
+  de: 6.4
+  tax: 24.2
+  kd_pre: 5.2
+  eq_w: 94.0
+scenarios:
+  Bull:
+    name: 중국 회복 및 럭셔리 리브랜딩 성공
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 58375274
+    desc: 설화수 등 핵심 브랜드 리브랜딩이 안착하고 중국/면세 채널 회복과 북미 성장이 동시에 나타나는 시나리오.
+    probability_rationale: 중국 소비 회복, 면세 채널 정상화, 프리미엄 브랜드 믹스 개선이 동시에 필요한 경우로 25% 부여.
+    ev_multiple: 17.0
+    growth_adj_pct: 20
+    market_sentiment_pct: 5
+  Base:
+    name: 수익성 정상화 지속
+    prob: 50.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 58375274
+    desc: 국내와 해외 주요 채널의 완만한 회복, 비용 효율화, 브랜드 포트폴리오 재정비가 점진적으로 반영되는 시나리오.
+    probability_rationale: 2025년 실적 개선 추세가 급격한 재평가 없이 이어지는 중립 경로.
+    ev_multiple: 14.0
+    growth_adj_pct: 0
+  Bear:
+    name: 중국 부진 및 마진 압박 재발
+    prob: 25.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 58375274
+    desc: 중국 화장품 수요 회복이 지연되고 국내 경쟁 심화와 마케팅 비용 증가로 수익성 개선 폭이 제한되는 시나리오.
+    probability_rationale: 소비재 턴어라운드에서 채널 회복 지연과 비용 재상승이 동시에 나타나는 하방 경로.
+    ev_multiple: 10.5
+    growth_adj_pct: -20
+    market_sentiment_pct: -5
+dcf_params:
+  ebitda_growth_rates:
+  - 0.08
+  - 0.065
+  - 0.05
+  - 0.04
+  - 0.03
+  tax_rate: 24.2
+  capex_to_da: 0.45
+  nwc_to_rev_delta: 0.04
+  terminal_growth: 2.0
+  actual_capex: 91299
+  capex_fade_to: null
+  da_to_ebitda_override: 0.5141
+pe_multiple: 28.0
+ev_revenue_multiple: 2.1
+pbv_multiple: 1.7
+cps_principal: 0
+cps_years: 0
+net_debt: -174478
+eco_frontier: 0
+base_year: 2025
+peers:
+- name: LG생활건강
+  segment_code: MAIN
+  ev_ebitda: 9.5
+  notes: 국내 화장품/생활용품 대형 소비재 기업. 브랜드 포트폴리오와 채널 리스크 비교 대상.
+- name: Shiseido
+  segment_code: MAIN
+  ev_ebitda: 13.0
+  notes: 일본 프리미엄 화장품 기업. 아시아 럭셔리 뷰티 수요와 중국 노출도 비교 대상.
+- name: Kao
+  segment_code: MAIN
+  ev_ebitda: 11.5
+  notes: 일본 생활용품/화장품 기업. 성숙 소비재 마진과 브랜드 포트폴리오 비교 대상.
+- name: L'Oreal
+  segment_code: MAIN
+  ev_ebitda: 18.0
+  notes: 글로벌 프리미엄 뷰티 선도 기업. 브랜드 파워와 글로벌 믹스 프리미엄 참고.
+- name: Estee Lauder
+  segment_code: MAIN
+  ev_ebitda: 15.0
+  notes: 글로벌 럭셔리 화장품 기업. 중국/면세 채널 민감도 비교 대상.
+news_key_issues: '- [기회] 2025년 매출과 영업이익 개선, 브랜드 포트폴리오 정상화 기대
+
+  - [리스크] 중국 및 면세 채널 회복 속도 불확실
+
+  - [기회] 북미와 온라인 채널 성장에 따른 지역 믹스 개선 가능성
+
+  - [리스크] 국내 화장품 경쟁 심화와 마케팅 비용 증가 가능성'
+mc_enabled: true

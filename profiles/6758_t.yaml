@@ -1,0 +1,177 @@
+# Sony Group Corporation - curated JP v1 profile
+# Source: Sony FY2025/FY2026 financial summary (May 2026), Yahoo Finance market data.
+# Segment facts are continuing operating segments in JPY millions after Financial Services spin-off treatment.
+
+draft: false
+
+company:
+  name: "Sony Group Corporation"
+  legal_status: "상장"
+  market: "JP"
+  currency: "JPY"
+  currency_unit: "百万円"
+  ticker: "6758.T"
+  cik: null
+  corp_code: null
+  shares_total: 5871859854
+  shares_ordinary: 5871859854
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: "2026-07-08"
+
+valuation_method: "sotp"
+industry: "entertainment electronics semiconductors"
+
+segments:
+  GNS:
+    name: "Game & Network Services"
+    multiple: 10.0
+    method: "ev_ebitda"
+  MUSIC:
+    name: "Music"
+    multiple: 15.0
+    method: "ev_ebitda"
+  PICTURES:
+    name: "Pictures"
+    multiple: 9.0
+    method: "ev_ebitda"
+  ETS:
+    name: "Entertainment, Technology & Services"
+    multiple: 7.0
+    method: "ev_ebitda"
+  ISS:
+    name: "Imaging & Sensing Solutions"
+    multiple: 12.0
+    method: "ev_ebitda"
+  OTHER:
+    name: "All Other"
+    multiple: 0.0
+    method: "ev_ebitda"
+
+segment_data:
+  2026:
+    GNS: {revenue: 4570053, gross_profit: 0, op: 463258, assets: 3500000}
+    MUSIC: {revenue: 2090534, gross_profit: 0, op: 446986, assets: 2500000}
+    PICTURES: {revenue: 1486296, gross_profit: 0, op: 104872, assets: 1500000}
+    ETS: {revenue: 2184815, gross_profit: 0, op: 158584, assets: 2200000}
+    ISS: {revenue: 2059020, gross_profit: 0, op: 357318, assets: 3000000}
+    OTHER: {revenue: 74564, gross_profit: 0, op: -74646, assets: 300000}
+
+consolidated:
+  2024:
+    revenue: 11260037
+    op: 1012816
+    net_income: 970573
+    assets: 34107490
+    liabilities: 26351385
+    equity: 7587177
+    dep: 1117292
+    amort: 0
+    gross_borr: 4088433
+    net_borr: 2181320
+    de_ratio: 53.9
+  2025:
+    revenue: 12034917
+    op: 1280339
+    net_income: 1141600
+    assets: 35293173
+    liabilities: 26783022
+    equity: 8179745
+    dep: 1125588
+    amort: 0
+    gross_borr: 4198246
+    net_borr: 1217290
+    de_ratio: 51.3
+  2026:
+    revenue: 12479620
+    op: 1447507
+    net_income: -326865
+    assets: 15683490
+    liabilities: 7169901
+    equity: 8119011
+    dep: 1180655
+    amort: 0
+    gross_borr: 1669669
+    net_borr: -539210
+    de_ratio: 20.6
+
+wacc_params:
+  rf: 1.0
+  erp: 6.0
+  bu: 0.75
+  de: 8.2
+  tax: 25.5
+  kd_pre: 2.1
+  eq_w: 92.4
+
+scenarios:
+  Base:
+    name: "Base Case"
+    prob: 50
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5871859854
+    segment_multiples: {GNS: 10.0, MUSIC: 15.0, PICTURES: 9.0, ETS: 7.0, ISS: 12.0, OTHER: 0.0}
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: "Entertainment and image-sensor mix offsets mature hardware pressure."
+  Bull:
+    name: "Bull Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5871859854
+    segment_multiples: {GNS: 11.5, MUSIC: 17.0, PICTURES: 10.0, ETS: 8.0, ISS: 14.0, OTHER: 0.0}
+    growth_adj_pct: 8
+    terminal_growth_adj: 0.1
+    desc: "Higher software/music mix and image-sensor cycle improvement."
+  Bear:
+    name: "Bear Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 5871859854
+    segment_multiples: {GNS: 8.0, MUSIC: 12.0, PICTURES: 7.0, ETS: 5.5, ISS: 9.0, OTHER: 0.0}
+    growth_adj_pct: -10
+    terminal_growth_adj: -0.1
+    desc: "Console/hardware weakness and sensor cycle pressure."
+
+dcf_params:
+  ebitda_growth_rates: [0.04, 0.035, 0.03, 0.02, 0.015]
+  tax_rate: 25.5
+  capex_to_da: 0.55
+  nwc_to_rev_delta: 0.04
+  terminal_growth: 0.5
+  actual_capex: 457681
+  capex_fade_to: 0.75
+  terminal_ev_ebitda: 10.0
+  da_to_ebitda_override: 0.4494
+
+pe_multiple: 0.0
+ev_revenue_multiple: 2.0
+pbv_multiple: 2.0
+
+cps_principal: 0
+cps_years: 0
+net_debt: -539210
+eco_frontier: 0
+base_year: 2026
+
+peers:
+  - {name: "Nintendo", ticker: "7974.T", segment_code: "GNS", ev_ebitda: 12.0, notes: "JP games peer"}
+  - {name: "Bandai Namco", ticker: "7832.T", segment_code: "GNS", ev_ebitda: 10.0, notes: "JP entertainment peer"}
+  - {name: "Universal Music Group", ticker: "UMG.AS", segment_code: "MUSIC", ev_ebitda: 16.0, notes: "music rights peer"}
+  - {name: "Canon", ticker: "7751.T", segment_code: "ETS", ev_ebitda: 7.0, notes: "JP imaging/electronics peer"}
+  - {name: "Renesas", ticker: "6723.T", segment_code: "ISS", ev_ebitda: 9.0, notes: "JP semiconductor peer"}

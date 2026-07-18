@@ -1,0 +1,166 @@
+# Toyota Motor Corporation - curated JP v1 profile
+# Source: Toyota FY2026 Financial Summary (May 2026), Yahoo Finance market data.
+# Segment facts are consolidated operating segments in JPY millions.
+
+draft: false
+
+company:
+  name: "Toyota Motor Corporation"
+  legal_status: "상장"
+  market: "JP"
+  currency: "JPY"
+  currency_unit: "百万円"
+  ticker: "7203.T"
+  cik: null
+  corp_code: null
+  shares_total: 11841052480
+  shares_ordinary: 11841052480
+  shares_preferred: 0
+  treasury_shares: 0
+  analysis_date: "2026-07-08"
+
+valuation_method: "sotp"
+industry: "auto"
+
+segments:
+  AUTO:
+    name: "Automotive"
+    multiple: 5.5
+    method: "ev_ebitda"
+  FINANCE:
+    name: "Financial Services"
+    multiple: 0.9
+    method: "pbv"
+    book_equity: 5500000
+    net_income_segment: 618430
+    distress_exempt: true
+  OTHER:
+    name: "All Other"
+    multiple: 6.0
+    method: "ev_ebitda"
+
+segment_data:
+  2026:
+    AUTO: {revenue: 45417700, gross_profit: 0, op: 2777000, assets: 58000000}
+    FINANCE: {revenue: 4857115, gross_profit: 0, op: 851722, assets: 45000000}
+    OTHER: {revenue: 1651400, gross_profit: 0, op: 132000, assets: 2522331}
+
+consolidated:
+  2024:
+    revenue: 45095325
+    op: 5352935
+    net_income: 4944933
+    assets: 90114296
+    liabilities: 54874958
+    equity: 34220991
+    dep: 2087066
+    amort: 0
+    gross_borr: 36561781
+    net_borr: 27149721
+    de_ratio: 106.8
+  2025:
+    revenue: 48036704
+    op: 4795586
+    net_income: 4765086
+    assets: 93601350
+    liabilities: 56722436
+    equity: 35924826
+    dep: 2251233
+    amort: 0
+    gross_borr: 38792879
+    net_borr: 29810475
+    de_ratio: 108.0
+  2026:
+    revenue: 50684952
+    op: 3766216
+    net_income: 3848098
+    assets: 105522331
+    liabilities: 64502263
+    equity: 39918854
+    dep: 2392519
+    amort: 0
+    gross_borr: 43205469
+    net_borr: 30545847
+    de_ratio: 108.2
+
+wacc_params:
+  rf: 1.0
+  erp: 6.0
+  bu: 0.55
+  de: 30.0
+  tax: 25.5
+  kd_pre: 2.0
+  eq_w: 70.0
+
+scenarios:
+  Base:
+    name: "Base Case"
+    prob: 50
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 11841052480
+    segment_multiples: {AUTO: 5.5, FINANCE: 0.9, OTHER: 6.0}
+    growth_adj_pct: 0
+    terminal_growth_adj: 0
+    desc: "Stable global auto cycle with finance valued on book."
+  Bull:
+    name: "Bull Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 11841052480
+    segment_multiples: {AUTO: 6.5, FINANCE: 1.0, OTHER: 7.0}
+    growth_adj_pct: 8
+    terminal_growth_adj: 0.1
+    desc: "Hybrid mix and cost control support modest re-rating."
+  Bear:
+    name: "Bear Case"
+    prob: 25
+    ipo: "N/A"
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 11841052480
+    segment_multiples: {AUTO: 4.5, FINANCE: 0.75, OTHER: 4.5}
+    growth_adj_pct: -12
+    terminal_growth_adj: -0.1
+    desc: "Auto margin compression and finance normalization."
+
+dcf_params:
+  ebitda_growth_rates: [0.01, 0.01, 0.01, 0.01, 0.005]
+  tax_rate: 25.5
+  capex_to_da: 2.32
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 0.2
+  actual_capex: 5293348
+  capex_fade_to: 1.25
+  terminal_ev_ebitda: 5.5
+  da_to_ebitda_override: 0.3295
+
+pe_multiple: 12.0
+ev_revenue_multiple: 1.0
+pbv_multiple: 1.0
+
+cps_principal: 0
+cps_years: 0
+net_debt: 30545847
+segment_net_debt:
+  FINANCE: 30545847
+eco_frontier: 0
+base_year: 2026
+
+peers:
+  - {name: "Honda Motor", ticker: "7267.T", segment_code: "AUTO", ev_ebitda: 5.0, notes: "JP auto peer"}
+  - {name: "Nissan Motor", ticker: "7201.T", segment_code: "AUTO", ev_ebitda: 4.0, notes: "JP auto peer"}
+  - {name: "Hyundai Motor", ticker: "005380.KS", segment_code: "AUTO", ev_ebitda: 4.5, notes: "global auto peer"}
+  - {name: "Denso", ticker: "6902.T", segment_code: "OTHER", ev_ebitda: 7.0, notes: "Toyota supplier / mobility peer"}

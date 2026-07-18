@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrli:xbrl
+  xmlns:xbrli="http://www.xbrl.org/2003/instance"
+  xmlns:jpcrp="http://disclosure.edinet-fsa.go.jp/taxonomy/jpcrp/2025-03-31/jpcrp_cor"
+  xmlns:ifrs-full="http://xbrl.ifrs.org/taxonomy/2025-03-31/ifrs-full">
+  <xbrli:context id="CurrentYearDuration">
+    <xbrli:entity>
+      <xbrli:identifier scheme="http://disclosure.edinet-fsa.go.jp">E02144</xbrli:identifier>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:startDate>2024-04-01</xbrli:startDate>
+      <xbrli:endDate>2025-03-31</xbrli:endDate>
+    </xbrli:period>
+  </xbrli:context>
+  <xbrli:context id="CurrentYearInstant">
+    <xbrli:entity>
+      <xbrli:identifier scheme="http://disclosure.edinet-fsa.go.jp">E02144</xbrli:identifier>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:instant>2025-03-31</xbrli:instant>
+    </xbrli:period>
+  </xbrli:context>
+
+  <ifrs-full:RevenueIFRS contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">48036700000000</ifrs-full:RevenueIFRS>
+  <ifrs-full:OperatingProfitLossIFRS contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">5352900000000</ifrs-full:OperatingProfitLossIFRS>
+  <ifrs-full:ProfitLossAttributableToOwnersOfParentIFRS contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">4765100000000</ifrs-full:ProfitLossAttributableToOwnersOfParentIFRS>
+  <ifrs-full:DepreciationAndAmortisationIFRS contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">2100000000000</ifrs-full:DepreciationAndAmortisationIFRS>
+  <ifrs-full:FinanceCostsIFRS contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">120000000000</ifrs-full:FinanceCostsIFRS>
+  <ifrs-full:PurchaseOfPropertyPlantAndEquipment contextRef="CurrentYearDuration" unitRef="JPY" decimals="-6">-2200000000000</ifrs-full:PurchaseOfPropertyPlantAndEquipment>
+  <ifrs-full:AssetsIFRS contextRef="CurrentYearInstant" unitRef="JPY" decimals="-6">90000000000000</ifrs-full:AssetsIFRS>
+  <ifrs-full:LiabilitiesIFRS contextRef="CurrentYearInstant" unitRef="JPY" decimals="-6">55000000000000</ifrs-full:LiabilitiesIFRS>
+  <ifrs-full:EquityAttributableToOwnersOfParentIFRS contextRef="CurrentYearInstant" unitRef="JPY" decimals="-6">35000000000000</ifrs-full:EquityAttributableToOwnersOfParentIFRS>
+  <ifrs-full:BondsAndBorrowingsIFRS contextRef="CurrentYearInstant" unitRef="JPY" decimals="-6">28000000000000</ifrs-full:BondsAndBorrowingsIFRS>
+  <ifrs-full:CashAndCashEquivalentsIFRS contextRef="CurrentYearInstant" unitRef="JPY" decimals="-6">9000000000000</ifrs-full:CashAndCashEquivalentsIFRS>
+</xbrli:xbrl>

@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TERMINAL_GROWTH = {
     "US": 2.5,  # US: ~2% inflation + ~0.5% real growth (conservative)
     "KR": 2.0,  # KR: ~2% target inflation + ~0% potential growth (aging demographics)
+    "JP": 1.0,  # JP: low nominal long-run growth; conservative v1 default
 }
 
 # ── FRED persistent disk cache ──

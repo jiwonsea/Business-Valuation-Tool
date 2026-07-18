@@ -615,7 +615,11 @@ def estimate_weekly_cost(
         estimates["yfinance"] = max_companies * 2  # financials + market data
         estimates["fred"] = 1 if max_companies > 0 else 0
 
-        # LLM calls per company: identify + classify + peers + wacc + scenarios + research_note
+        # Reserved LLM budget per company (not a hard cap):
+        # classify_segments + recommend_peers_batch + suggest_wacc
+        # + summarize_key_issues on a news cache miss + design_scenarios
+        # + one scenario-repair call. Per-segment peer fallback can exceed
+        # this reservation.
         valuation_llm = max_companies * 6
     else:
         valuation_llm = 0

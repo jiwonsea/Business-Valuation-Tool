@@ -114,7 +114,10 @@ def calc_quality_score(
         result.wacc, vi.wacc_params, market
     )
     sc_score, sc_warns = _scenario_consistency_score(
-        vi.scenarios, result.scenarios, result.weighted_value
+        vi.scenarios,
+        result.scenarios,
+        result.weighted_value,
+        multiples_clamped=vi.scenario_multiples_clamped,
     )
 
     warnings = cv_warns + wacc_warns + sc_warns
@@ -283,7 +286,9 @@ def _cv_convergence_score(
                 f"(독립 방법 {len(non_trading)}개로 수렴도 산정, 기타 제외 완화)"
             )
         else:
-            considered = list(cross_vals)
+            # Never re-admit market-anchored methods merely to manufacture a
+            # convergence score. Fewer than two independent methods means 0/25.
+            considered = non_trading if trading else list(cross_vals)
             if trading:
                 warnings.append(
                     "독립 교차검증 방법 2개 미만 → 전체 집합 폴백 (수렴도에 순환성 포함, 해석 주의)"
@@ -588,6 +593,7 @@ def _scenario_consistency_score(
     scenarios_in: dict,
     scenarios_out: dict,
     weighted_value: int,
+    multiples_clamped: bool = False,
 ) -> tuple[int, list[str]]:
     """Score scenario design quality (0-25).
 
@@ -658,6 +664,35 @@ def _scenario_consistency_score(
     else:
         spread_pts = 2
         warnings.append(f"시나리오 간 편차 과대 ({spread_pct:.0f}%)")
+
+    normalized_out = {str(code).lower(): result for code, result in scenarios_out.items()}
+    bull = normalized_out.get("bull")
+    base = normalized_out.get("base")
+    paired = [
+        (scenarios_in[code], result)
+        for code, result in scenarios_out.items()
+        if code in scenarios_in
+    ]
+    if base is None and paired:
+        base = max(paired, key=lambda item: item[0].prob)[1]
+    if bull is None and paired:
+        bull = max(paired, key=lambda item: item[1].total_ev)[1]
+        if bull is base:
+            spread_pts = min(spread_pts, 6)
+            warnings.append("업사이드 시나리오 부재 — Bull/Base EV 스프레드 평가 생략")
+            bull = None
+    if bull is not None and base is not None and base.total_ev > 0:
+        bull_base_ratio = bull.total_ev / base.total_ev
+        if bull_base_ratio < 1.2:
+            spread_pts = min(spread_pts, 6)
+            warnings.append(
+                "Bull/Base EV 스프레드 부족 "
+                f"({bull_base_ratio:.2f}x, 최소 1.20x 필요)"
+            )
+
+    if multiples_clamped:
+        spread_pts = min(spread_pts, 5)
+        warnings.append("SOTP 시나리오 multiple 클램프 발동 — 원본 가정 정합성 감점")
 
     return count_pts + dev_pts + spread_pts, warnings
 

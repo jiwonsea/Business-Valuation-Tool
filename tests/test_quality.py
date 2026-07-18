@@ -22,6 +22,7 @@ from engine.quality import (
     _grade,
     format_quality_report,
 )
+from engine.investability_gate import evaluate_investability, gate_inputs_from_profile
 
 
 # ── CV Convergence Tests ──
@@ -218,6 +219,73 @@ class TestScenarioConsistency:
         score, warns = _scenario_consistency_score(sc_in, sc_out, 50000)
         assert any("과대" in w for w in warns)
 
+    def test_bull_base_ev_below_1_2x_is_deducted(self):
+        sc_in = self._make_scenarios_in([30, 40, 30])
+        sc_out = self._make_scenarios_out([105, 100, 60])
+        sc_out = {
+            code: result.model_copy(update={"total_ev": result.post_dlom})
+            for code, result in sc_out.items()
+        }
+
+        score, warns = _scenario_consistency_score(sc_in, sc_out, 88)
+
+        assert score == 22
+        assert any("Bull/Base EV 스프레드 부족" in warning for warning in warns)
+        assert any("최소 1.20x 필요" in warning for warning in warns)
+
+    def test_abc_codes_use_probability_base_and_highest_ev_bull(self):
+        named_in = self._make_scenarios_in([30, 40, 30])
+        named_out = self._make_scenarios_out([110, 100, 60])
+        sc_in = {
+            "A": named_in["bull"],
+            "B": named_in["base"],
+            "C": named_in["bear"],
+        }
+        sc_out = {
+            "A": named_out["bull"].model_copy(update={"total_ev": 110}),
+            "B": named_out["base"].model_copy(update={"total_ev": 100}),
+            "C": named_out["bear"].model_copy(update={"total_ev": 60}),
+        }
+
+        score, warns = _scenario_consistency_score(sc_in, sc_out, 91)
+
+        assert score == 22
+        assert any("Bull/Base EV 스프레드 부족" in warning for warning in warns)
+
+    def test_missing_bull_preserves_explicit_base_and_reports_absence(self):
+        named_in = self._make_scenarios_in([20, 50, 30])
+        named_out = self._make_scenarios_out([40, 100, 60])
+        sc_in = {
+            "Stress": named_in["bull"],
+            "Base": named_in["base"],
+            "Bear": named_in["bear"],
+        }
+        sc_out = {
+            "Stress": named_out["bull"].model_copy(update={"total_ev": 40}),
+            "Base": named_out["base"].model_copy(update={"total_ev": 100}),
+            "Bear": named_out["bear"].model_copy(update={"total_ev": 60}),
+        }
+
+        _, warns = _scenario_consistency_score(sc_in, sc_out, 80)
+
+        assert any("업사이드 시나리오 부재" in warning for warning in warns)
+        assert not any("1.00x" in warning for warning in warns)
+
+    def test_multiple_clamp_caps_spread_quality_points(self):
+        sc_in = self._make_scenarios_in([30, 40, 30])
+        sc_out = self._make_scenarios_out([140, 100, 60])
+        sc_out = {
+            code: result.model_copy(update={"total_ev": result.post_dlom})
+            for code, result in sc_out.items()
+        }
+
+        score, warns = _scenario_consistency_score(
+            sc_in, sc_out, 100, multiples_clamped=True
+        )
+
+        assert score == 21
+        assert any("multiple 클램프 발동" in warning for warning in warns)
+
 
 # ── Market Alignment Tests ──
 
@@ -275,6 +343,38 @@ class TestGrade:
     def test_grade_f(self):
         assert _grade(39) == "F"
         assert _grade(0) == "F"
+
+
+class TestDraftProfileGuard:
+    def test_draft_marker_forces_quality_f(self):
+        from schemas.models import QualityScore
+
+        q = QualityScore(
+            total=0,
+            grade="F",
+            draft=True,
+            warnings=["Draft profile: TODO/stub assumptions remain; not investable until curated."],
+        )
+        report = format_quality_report(q, is_listed=True)
+        assert "0/100" in report
+        assert "(F)" in report
+        assert "draft: true" in report
+
+    def test_detects_auto_generated_stub_profile(self):
+        raw = {
+            "segments": {"MAIN": {"name": "Main Business", "multiple": 10.0}},
+            "scenarios": {"Base": {}, "Bull": {}, "Bear": {}},
+            "peers": [],
+        }
+        inputs = gate_inputs_from_profile(
+            raw,
+            dcf_value=None,
+            peer_median_value=None,
+            quality_grade=None,
+            consolidated_revenue=None,
+            text="# TODO: Add segment data",
+        )
+        assert evaluate_investability(inputs).draft is True
 
 
 # ── Rescaling Tests ──

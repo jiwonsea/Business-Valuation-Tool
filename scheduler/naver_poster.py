@@ -15,6 +15,8 @@ import json
 import logging
 import os
 import re
+import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -26,10 +28,12 @@ from PIL import Image, UnidentifiedImageError
 from selenium import webdriver
 from selenium.common.exceptions import (
     NoSuchElementException,
+    SessionNotCreatedException,
     TimeoutException,
     WebDriverException,
 )
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -507,8 +511,62 @@ def build_blog_content(summary: dict) -> tuple[str, str]:
 # ── Chrome driver ─────────────────────────────────────────────────────────────
 
 
+def _kill_zombie_profile_chrome() -> int:
+    """Kill leftover chrome.exe processes bound to _PROFILE_DIR (Windows only).
+
+    A crashed prior run can leave a chrome.exe holding the dedicated
+    user-data-dir; the next launch then forwards to that instance and exits
+    immediately ("session not created: Chrome instance exited" — observed
+    2026-07-18 09:00 weekly run). Only processes whose command line references
+    _PROFILE_DIR are killed; the user's normal Chrome is untouched.
+
+    Returns:
+        Number of processes killed (0 on non-Windows or on any error).
+    """
+    if sys.platform != "win32":
+        return 0
+    marker = str(_PROFILE_DIR)
+    script = (
+        "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | "
+        f"Where-Object {{ $_.CommandLine -like '*{marker}*' }} | "
+        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        pids = [p for p in result.stdout.split() if p.strip().isdigit()]
+        if pids:
+            logger.warning(
+                "Killed %d zombie Chrome process(es) holding %s: %s",
+                len(pids),
+                marker,
+                ", ".join(pids),
+            )
+        return len(pids)
+    except Exception as e:
+        logger.warning("Zombie Chrome scan failed (non-fatal): %s", e)
+        return 0
+
+
+def _make_service() -> Service:
+    """Chrome driver service with verbose log for launch-failure diagnosis."""
+    log_dir = Path(__file__).resolve().parent.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return Service(
+        log_output=str(log_dir / "chromedriver.log"),
+        service_args=["--verbose"],
+    )
+
+
 def _build_driver(headless: bool = False) -> webdriver.Chrome:
     """Create Chrome WebDriver with persistent profile for CAPTCHA avoidance.
+
+    On SessionNotCreatedException ("Chrome instance exited"), kills zombie
+    Chrome processes bound to the dedicated profile and retries once.
 
     Args:
         headless: Run Chrome in headless mode.
@@ -528,7 +586,19 @@ def _build_driver(headless: bool = False) -> webdriver.Chrome:
     if headless:
         opts.add_argument("--headless=new")
 
-    driver = webdriver.Chrome(options=opts)
+    try:
+        driver = webdriver.Chrome(options=opts, service=_make_service())
+    except SessionNotCreatedException as e:
+        killed = _kill_zombie_profile_chrome()
+        logger.warning(
+            "Chrome session not created (%s); killed %d zombie process(es); "
+            "retrying once (see logs/chromedriver.log)",
+            getattr(e, "msg", e),
+            killed,
+        )
+        time.sleep(2)
+        driver = webdriver.Chrome(options=opts, service=_make_service())
+
     driver.execute_script(
         "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
     )

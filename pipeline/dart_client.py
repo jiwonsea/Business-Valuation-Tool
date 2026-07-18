@@ -202,7 +202,14 @@ def get_single_company_info(corp_code: str) -> dict:
 
 
 def _parse_dart_number(s: str) -> int:
-    """Parse DART number string ('5,969,782,550' -> 5969782550, '-' -> 0)."""
+    """Parse DART number string ('5,969,782,550' -> 5969782550, '-' -> 0).
+
+    Fail-closed by design: only blank/'-' map to 0; any other non-numeric
+    string raises ValueError. A silent 0 on a valid share-class row would
+    understate treasury shares and flow an unflagged wrong number into
+    valuation -- explicit failure is safer. Non-numeric rows (합계/비고)
+    must be filtered out by the caller before parsing.
+    """
     if not s or s.strip() in ("-", ""):
         return 0
     return int(s.replace(",", "").strip())
@@ -256,6 +263,12 @@ def get_stock_total_info(
     }
     for item in data.get("list", []):
         se = (item.get("se") or "").strip()
+        # Only 보통주/우선주 rows carry per-class share counts. The 합계 row
+        # duplicates totals and the 비고 row holds multi-line free text
+        # (e.g. treasury-stock history) that must never reach the number
+        # parser -- it crashed with ValueError on SK hynix.
+        if "보통주" not in se and "우선주" not in se:
+            continue
         # istc_totqy: total shares currently issued, tesstk_co: treasury shares
         issued = _parse_dart_number(item.get("istc_totqy", "0"))
         treasury = _parse_dart_number(item.get("tesstk_co", "0"))
@@ -263,7 +276,7 @@ def get_stock_total_info(
         if "보통주" in se:
             result["shares_ordinary"] = issued
             result["treasury_ordinary"] = treasury
-        elif "우선주" in se:
+        else:
             result["shares_preferred"] = issued
             result["treasury_preferred"] = treasury
 

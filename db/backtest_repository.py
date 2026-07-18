@@ -85,6 +85,13 @@ def save_prediction_snapshot(
             else {}
         ),
         "segment_disclosure_level": getattr(vi, "segment_disclosure_level", "none"),
+        "scenario_multiples_clamped": getattr(
+            result, "scenario_multiples_clamped", False
+        ),
+        "wide_scenario_spread_allowed": getattr(
+            result, "wide_scenario_spread_allowed", False
+        ),
+        "scenario_spread_warnings": getattr(result, "scenario_spread_warnings", []),
     }
 
     try:

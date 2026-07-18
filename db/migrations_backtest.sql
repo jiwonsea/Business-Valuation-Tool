@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS prediction_snapshots (
     -- 시나리오별 예측 (JSON)
     -- {code: {name, prob, pre_dlom, post_dlom, growth_adj_pct, wacc_adj, ...}}
     scenario_values JSONB NOT NULL DEFAULT '{}',
+    scenario_multiples_clamped BOOLEAN NOT NULL DEFAULT FALSE,
+    wide_scenario_spread_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+    scenario_spread_warnings JSONB NOT NULL DEFAULT '[]',
 
     -- 메타데이터
     model_version TEXT DEFAULT '',
@@ -89,6 +92,12 @@ ALTER TABLE prediction_snapshots
     ADD COLUMN IF NOT EXISTS net_debt_components JSONB DEFAULT '{}';
 ALTER TABLE prediction_snapshots
     ADD COLUMN IF NOT EXISTS segment_disclosure_level TEXT DEFAULT 'none';
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS scenario_multiples_clamped BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS wide_scenario_spread_allowed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE prediction_snapshots
+    ADD COLUMN IF NOT EXISTS scenario_spread_warnings JSONB NOT NULL DEFAULT '[]';
 
 -- Add unique constraints for upsert support
 CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date

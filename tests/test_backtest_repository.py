@@ -267,6 +267,23 @@ def test_market_signals_version_preserves_explicit_zero(attr, expected):
     assert row["valuation_bucket"] == "holding_governance_sensitive"
 
 
+def test_scenario_spread_audit_fields_are_persisted():
+    vi, result = _make_vi_result("absent")
+    result.scenario_multiples_clamped = True
+    result.wide_scenario_spread_allowed = False
+    result.scenario_spread_warnings = ["Bull GAME 3.00x → 2.00x"]
+    client = _FakeClient([{"id": "snap-1"}])
+
+    with patch.object(repo, "get_client", return_value=client):
+        repo.save_prediction_snapshot(vi, result, valuation_id="val-1")
+
+    upsert_call = next(c for c in client.query.calls if c[0] == "upsert")
+    row = upsert_call[1][0]
+    assert row["scenario_multiples_clamped"] is True
+    assert row["wide_scenario_spread_allowed"] is False
+    assert row["scenario_spread_warnings"] == ["Bull GAME 3.00x → 2.00x"]
+
+
 # ── update_backtest_prices: zero-row detection ──
 
 

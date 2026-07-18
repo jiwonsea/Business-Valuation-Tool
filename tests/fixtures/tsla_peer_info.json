@@ -1,0 +1,9 @@
+{
+  "F": {"enterpriseToEbitda": 10.8, "enterpriseToRevenue": 1.0, "trailingPE": 12.0, "forwardPE": 7.5, "debtToEquity": 320.0, "marketCap": 45000000000},
+  "GM": {"enterpriseToEbitda": 8.5, "enterpriseToRevenue": 0.9, "trailingPE": 6.5, "forwardPE": 5.1, "debtToEquity": 180.0, "marketCap": 55000000000},
+  "STLA": {"enterpriseToEbitda": 2.9, "enterpriseToRevenue": 0.3, "trailingPE": 4.5, "forwardPE": 4.0, "debtToEquity": 60.0, "marketCap": 40000000000},
+  "TM": {"enterpriseToEbitda": 10.0, "enterpriseToRevenue": 1.1, "trailingPE": 8.0, "forwardPE": 7.2, "debtToEquity": 105.0, "marketCap": 250000000000},
+  "HMC": {"enterpriseToEbitda": 7.5, "enterpriseToRevenue": 0.5, "trailingPE": 7.5, "forwardPE": 6.0, "debtToEquity": 75.0, "marketCap": 45000000000},
+  "NIO": {"enterpriseToEbitda": null, "enterpriseToRevenue": 1.2, "trailingPE": null, "forwardPE": null, "debtToEquity": 140.0, "marketCap": 8000000000},
+  "LI": {"enterpriseToEbitda": 15.0, "enterpriseToRevenue": 1.4, "trailingPE": 20.0, "forwardPE": 15.0, "debtToEquity": 25.0, "marketCap": 30000000000}
+}

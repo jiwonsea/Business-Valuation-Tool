@@ -1,0 +1,12 @@
+{
+  "CRM": {"enterpriseToEbitda": 22.4, "enterpriseToRevenue": 6.8, "trailingPE": 42.1, "forwardPE": 25.3, "debtToEquity": 19.0, "marketCap": 260000000000},
+  "ADBE": {"enterpriseToEbitda": 20.1, "enterpriseToRevenue": 9.2, "trailingPE": 30.5, "forwardPE": 22.0, "debtToEquity": 37.0, "marketCap": 220000000000},
+  "NOW": {"enterpriseToEbitda": 48.0, "enterpriseToRevenue": 16.5, "trailingPE": 85.0, "forwardPE": 55.0, "debtToEquity": 28.0, "marketCap": 185000000000},
+  "WDAY": {"enterpriseToEbitda": 30.0, "enterpriseToRevenue": 8.0, "trailingPE": null, "forwardPE": 28.0, "debtToEquity": 30.0, "marketCap": 70000000000},
+  "ORCL": {"enterpriseToEbitda": 18.5, "enterpriseToRevenue": 7.2, "trailingPE": 38.0, "forwardPE": 21.0, "debtToEquity": 500.0, "marketCap": 380000000000},
+  "GOOGL": {"enterpriseToEbitda": 15.0, "enterpriseToRevenue": 6.1, "trailingPE": 23.5, "forwardPE": 20.0, "debtToEquity": 8.0, "marketCap": 2100000000000},
+  "AMZN": {"enterpriseToEbitda": 17.0, "enterpriseToRevenue": 3.2, "trailingPE": 45.0, "forwardPE": 30.0, "debtToEquity": 55.0, "marketCap": 1800000000000},
+  "IBM": {"enterpriseToEbitda": 13.5, "enterpriseToRevenue": 3.4, "trailingPE": 22.0, "forwardPE": 17.5, "debtToEquity": 210.0, "marketCap": 180000000000},
+  "SAP": {"enterpriseToEbitda": 19.0, "enterpriseToRevenue": 6.5, "trailingPE": 36.0, "forwardPE": 24.0, "debtToEquity": 33.0, "marketCap": 220000000000},
+  "INTU": {"enterpriseToEbitda": 28.5, "enterpriseToRevenue": 11.0, "trailingPE": 55.0, "forwardPE": 31.0, "debtToEquity": 41.0, "marketCap": 170000000000}
+}

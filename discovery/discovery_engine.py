@@ -10,6 +10,7 @@ import logging
 import sys
 
 from .news_collector import NewsCollector
+from .saveticker_collector import fetch_saveticker_news, get_top_us_tickers
 
 logger = logging.getLogger(__name__)
 
@@ -161,13 +162,17 @@ def summarize_key_issues(
 
     # Disk cache (reuse ai/analyst.py cache infrastructure)
     from ai.analyst import _get_cached, _set_cached
+    from ai.llm_client import ask
+    from ai.prompts import SYSTEM_DISCOVERY
+    from ai.telemetry import call_context, emit
 
     cached = _get_cached(company_name, "key_issues")
     if cached:
-        return cached.get("text", "")
-
-    from ai.llm_client import ask
-    from ai.prompts import SYSTEM_DISCOVERY
+        with call_context(company_name, "news_summary"):
+            emit("step_start")
+            emit("cache_hit")
+            emit("step_end", outcome="cache_hit")
+            return cached.get("text", "")
 
     news_text = "\n".join(f"- [{n['pub_date'][:10]}] {n['title']}" for n in news)
 
@@ -188,13 +193,20 @@ def summarize_key_issues(
 - [규제] ESG 관련 신규 규제안 국회 통과 가능성 (2월 뉴스)
 </example>"""
 
-    try:
-        result = ask(prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1024)
-        if result:
-            _set_cached(company_name, "key_issues", {"text": result})
-        return result
-    except Exception:
-        return ""
+    with call_context(company_name, "news_summary"):
+        emit("step_start")
+        emit("cache_miss")
+        try:
+            result = ask(
+                prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1024
+            )
+            if result:
+                _set_cached(company_name, "key_issues", {"text": result})
+            emit("step_end", outcome="success")
+            return result
+        except Exception:
+            emit("step_end", outcome="error")
+            return ""
 
 
 class DiscoveryEngine:
@@ -216,6 +228,25 @@ class DiscoveryEngine:
         _safe_print(f"\n{'=' * 60}")
         _safe_print(f"[Discovery Mode] {market} 시장 뉴스 분석")
         _safe_print(f"{'=' * 60}")
+
+        if market == "US":
+            # Primary: SaveTicker ticker-tagged news (LLM-free, quota-cheap).
+            # SaveTicker changed its feed shape (2026-06): tag_names no longer
+            # carries "$TICKER" tags and titles are Korean-translated, so
+            # fetch_saveticker_news() now yields 0 items. Fall back to the
+            # proven Google News RSS + LLM path (matches the "google_rss" US
+            # provider that weekly_run.py already assumes) instead of failing.
+            result = self._discover_us_saveticker()
+            if result.get("news_count", 0) > 0:
+                return result
+            logger.warning(
+                "SaveTicker returned 0 items — falling back to Google News RSS "
+                "+ LLM for US discovery (saveticker feed shape likely changed)"
+            )
+            _safe_print(
+                "[WARN] SaveTicker 0건 — Google News RSS + LLM 경로로 폴백합니다."
+            )
+            # fall through to the generic news + LLM flow below
 
         # Step 1: Collect news
         queries = _KR_QUERIES if market == "KR" else _US_QUERIES
@@ -299,11 +330,42 @@ class DiscoveryEngine:
             "news": unique_news,
         }
 
+    def _discover_us_saveticker(self) -> dict:
+        """Discover US targets from SaveTicker ticker-tagged news without LLM."""
+        _safe_print("  SaveTicker news collection...")
+        news = fetch_saveticker_news(max_items=100)
+        companies = get_top_us_tickers(n=8, news=news)
+        _safe_print(f"    -> {len(news)} items, {len(companies)} tickers")
+
+        if not news:
+            _safe_print("[WARN] SaveTicker news collection returned no items.")
+            return {
+                "news_count": 0,
+                "analysis": "",
+                "companies": [],
+                "scenarios": [],
+                "news": [],
+            }
+
+        summary = "US discovery used SaveTicker ticker-tagged news ranked by mention count."
+        _safe_print("\n[Recommended US tickers]")
+        for i, co in enumerate(companies, 1):
+            _safe_print(f"  {i}. {co.get('ticker', '')} - {co.get('reason', '')}")
+
+        return {
+            "news_count": len(news),
+            "analysis": summary,
+            "companies": companies,
+            "scenarios": [],
+            "news": news,
+        }
+
     def _analyze_with_ai(self, news: list[dict], market: str) -> dict:
         """Analyze news via Claude API."""
         from ai.llm_client import ask
         from ai.analyst import _parse_json
         from ai.prompts import SYSTEM_DISCOVERY
+        from ai.telemetry import call_context, emit
 
         # Compose news summary text (token-efficient: titles only)
         news_text = "\n".join(
@@ -342,9 +404,21 @@ class DiscoveryEngine:
 }}
 </output_format>"""
 
-        response = ask(
-            prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=1200
-        )
+        with call_context(market, "discovery_analyze"):
+            emit("step_start")
+            emit("cache_miss")
+            try:
+                # max_tokens=1200 truncated Korean JSON output mid-string on the
+                # Anthropic haiku fallback path (2026-07-18 run: 출력=1200 exactly,
+                # parse failed, discovery returned 0 companies). Korean chars are
+                # token-heavy; summary + 8 companies + 3 scenarios needs headroom.
+                response = ask(
+                    prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=2500
+                )
+                emit("step_end", outcome="success")
+            except Exception:
+                emit("step_end", outcome="error")
+                raise
 
         try:
             parsed = _parse_json(response)

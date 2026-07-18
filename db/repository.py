@@ -7,6 +7,7 @@ from datetime import date
 from typing import Optional
 
 from schemas.models import ValuationInput, ValuationResult
+from schemas.history import Provenance, ValuationHistoryRecord
 from .client import get_client
 
 logger = logging.getLogger(__name__)
@@ -50,15 +51,34 @@ def save_valuation(
     }
 
     try:
-        resp = (
-            client.table("valuations")
-            .upsert(row, on_conflict="company_name,analysis_date")
-            .execute()
-        )
+        # History policy: every successful run is append-only, including reruns on
+        # the same analysis date.  The history reader orders by created_at and can
+        # therefore identify the latest run without erasing earlier assumptions.
+        resp = client.table("valuations").insert(row).execute()
         uid = resp.data[0]["id"]
-        logger.info("Upserted valuation %s for %s", uid, vi.company.name)
+        logger.info("Inserted valuation %s for %s", uid, vi.company.name)
         return uid
-    except Exception:
+    except Exception as exc:
+        # Live databases may still have the legacy UNIQUE(company_name,
+        # analysis_date) index until db/migrations.sql is applied.  Preserve the
+        # pre-migration behaviour instead of dropping the valuation entirely.
+        msg = str(exc)
+        if "23505" in msg or "duplicate key" in msg.lower():
+            try:
+                resp = (
+                    client.table("valuations")
+                    .upsert(row, on_conflict="company_name,analysis_date")
+                    .execute()
+                )
+                uid = resp.data[0]["id"]
+                logger.warning(
+                    "Valuation history migration is not applied; overwrote legacy "
+                    "same-date row for %s",
+                    vi.company.name,
+                )
+                return uid
+            except Exception:
+                pass
         logger.warning("Failed to save valuation for %s", vi.company.name)
         return None
 
@@ -66,6 +86,7 @@ def save_valuation(
 def list_valuations(
     company_name: Optional[str] = None,
     market: Optional[str] = None,
+    ticker: Optional[str] = None,
     limit: int = 20,
 ) -> list[dict]:
     """List valuations."""
@@ -83,7 +104,9 @@ def list_valuations(
         .order("created_at", desc=True)
         .limit(limit)
     )
-    if company_name:
+    if ticker:
+        query = query.eq("ticker", ticker)
+    elif company_name:
         query = query.ilike("company_name", f"%{company_name}%")
     if market:
         query = query.eq("market", market)
@@ -93,6 +116,79 @@ def list_valuations(
     except Exception:
         logger.warning("Failed to list valuations")
         return []
+
+
+def list_valuation_history(
+    *,
+    ticker: Optional[str],
+    market: Optional[str],
+    company_name: Optional[str] = None,
+    limit: int = 50,
+) -> list[ValuationHistoryRecord]:
+    """Load persisted headline history without rerunning the valuation engine.
+
+    ``ticker + market`` is authoritative.  Name lookup exists only for legacy
+    rows whose ticker was never stored.
+    """
+    client = get_client()
+    if not client:
+        return []
+
+    select_fields = (
+        "company_name,ticker,market,analysis_date,weighted_value,wacc_pct,"
+        "market_price,gap_ratio,valuation_method,result_data,created_at"
+    )
+    query = (
+        client.table("valuations")
+        .select(select_fields)
+        .order("analysis_date", desc=True)
+        .order("created_at", desc=True)
+        .limit(limit)
+    )
+    if ticker and market:
+        query = query.eq("ticker", ticker).eq("market", market)
+    elif company_name:
+        query = query.eq("company_name", company_name)
+        if market:
+            query = query.eq("market", market)
+    else:
+        return []
+
+    try:
+        rows = query.execute().data
+    except Exception:
+        logger.warning("Failed to list valuation history")
+        return []
+
+    records: list[ValuationHistoryRecord] = []
+    # Query the latest N efficiently, then return chronological order for charts.
+    for row in reversed(rows):
+        result_data = row.get("result_data") or {}
+        quality = result_data.get("quality") or {}
+        gap_ratio = row.get("gap_ratio")
+        records.append(
+            ValuationHistoryRecord(
+                ticker=row.get("ticker"),
+                market=row.get("market"),
+                company_name=row.get("company_name"),
+                analysis_date=row.get("analysis_date"),
+                weighted_value=row.get("weighted_value"),
+                market_price=row.get("market_price"),
+                gap_pct=gap_ratio * 100 if gap_ratio is not None else None,
+                wacc_pct=row.get("wacc_pct"),
+                quality_grade=quality.get("grade"),
+                primary_method=row.get("valuation_method"),
+                valuation_bucket=result_data.get("valuation_bucket"),
+                created_at=row.get("created_at"),
+                provenance={
+                    "weighted_value": Provenance.DERIVED,
+                    "market_price": Provenance.REPORTED,
+                    "gap_pct": Provenance.DERIVED,
+                    "wacc_pct": Provenance.DERIVED,
+                },
+            )
+        )
+    return records
 
 
 def get_valuation(valuation_id: str) -> Optional[dict]:

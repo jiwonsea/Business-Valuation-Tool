@@ -11,10 +11,13 @@ import re
 from pathlib import Path
 
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 
 from schemas.models import ValuationInput, ValuationResult
 from .sheets._ctx import make_ctx
+from .sheets._guide import apply_guides
 from .sheets.assumptions import sheet_assumptions
+from .sheets.raw_data import sheet_raw_data
 from .sheets.financials import sheet_financials
 from .sheets.valuation import VALUATION_MAP, valuation_dcf
 from .sheets.rnpv import valuation_rnpv
@@ -23,6 +26,7 @@ from .sheets.scenarios import sheet_scenarios
 from .sheets.sensitivity import sheet_sensitivity
 from .sheets.dashboard import sheet_dashboard
 from .sheets.relative import sheet_relative
+from .sheets.history import sheet_valuation_history
 
 
 def export(
@@ -62,7 +66,25 @@ def export(
         from .sheets.band import sheet_historical_band
 
         sheet_historical_band(ctx, band_reports, band_current)
+    sheet_valuation_history(ctx)
     sheet_dashboard(ctx)
+
+    # Raw Data goes LAST in build order but FIRST in tab order (create_sheet index 0).
+    # It must not be built first: sheet_assumptions() claims wb.active, which would
+    # rename the Raw Data sheet to "Assumptions".
+    sheet_raw_data(ctx)
+
+    # Per-sheet "build it yourself" notes -- written into reserved blank rows, so
+    # no insert_rows() and no broken conditional formatting / chart anchors.
+    apply_guides(wb)
+
+    if vi.draft or result.draft:
+        warning = wb.create_sheet("DRAFT WARNING", 0)
+        warning["A1"] = "DRAFT / NOT FOR PUBLICATION"
+        warning["A2"] = "Assumptions are not fully verified; publication is blocked."
+        warning["A1"].font = Font(bold=True, color="FFFFFF", size=16)
+        warning["A1"].fill = PatternFill("solid", fgColor="C00000")
+        warning.column_dimensions["A"].width = 72
 
     # Save
     if output_dir is None:

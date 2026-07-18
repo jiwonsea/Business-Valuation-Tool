@@ -95,9 +95,11 @@ CREATE OR REPLACE TRIGGER profiles_updated_at
 -- Upsert용 UNIQUE 제약조건
 -- ============================================================
 
--- 같은 기업 + 같은 분석일 → 최신 결과로 갱신
-CREATE UNIQUE INDEX IF NOT EXISTS uq_valuations_company_date
-    ON valuations(company_name, analysis_date);
+-- Valuation history is append-only: same-date reruns remain separate rows and
+-- created_at identifies their order.  Drop the legacy overwrite constraint.
+DROP INDEX IF EXISTS uq_valuations_company_date;
+CREATE INDEX IF NOT EXISTS idx_valuations_ticker_market_date
+    ON valuations(ticker, market, analysis_date, created_at);
 
 -- 같은 기업 + 같은 파일명 → 최신 프로필로 갱신
 CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_company_file

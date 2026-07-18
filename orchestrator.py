@@ -21,6 +21,9 @@ def _save_to_db(
     vi: ValuationInput, result: ValuationResult, profile_path: str | None = None
 ) -> str | None:
     """Save valuation result to Supabase (silently ignore on failure)."""
+    if vi.draft or result.draft:
+        logger.info("DB publication blocked for draft valuation: %s", vi.company.name)
+        return None
     try:
         from db.repository import save_valuation, save_profile
 
@@ -57,8 +60,9 @@ def run_from_profile(
     """
     vi = load_profile(profile_path)
     result = run_valuation(vi)
-    excel_path = export(vi, result, output_dir)
     _save_to_db(vi, result, profile_path)
+    # Persist first so the read-only history sheet includes this run.
+    excel_path = export(vi, result, output_dir)
     return vi, result, excel_path
 
 

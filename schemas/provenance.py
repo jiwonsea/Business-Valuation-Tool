@@ -374,7 +374,7 @@ class BetaObservation(BaseModel):
         return self.equity_beta.as_of
 
     def blume(self) -> float:
-        """Blume 조정 (0.67 × raw + 0.33). **병기용이며 raw를 대체하지 않는다.**"""
+        """Approved Blume shrinkage of an observed raw levered beta."""
         return round(0.67 * self.raw_levered_beta + 0.33, 4)
 
     def dataset_mismatches(self, other: "BetaObservation") -> list[str]:

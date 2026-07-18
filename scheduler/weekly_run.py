@@ -85,17 +85,34 @@ _RESULTS_BASE = Path(
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 _LOG_DIR.mkdir(exist_ok=True)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(
-            _LOG_DIR / f"weekly_{datetime.now().strftime('%Y%m%d')}.log",
-            encoding="utf-8",
-        ),
-    ],
-)
+WEEKLY_LLM_BUDGET = int(os.getenv("WEEKLY_LLM_BUDGET", "80"))
+
+def _setup_logging() -> None:
+    """Attach console + dated file handlers to the root logger (idempotent).
+
+    Must be called from an entry point (main() / run_weekly()), NOT at import
+    time: module-level FileHandler construction created a 0-byte
+    logs/weekly_YYYYMMDD.log on every pytest collection (4 test modules import
+    this module), while pytest's pre-configured root logger turned basicConfig
+    into a no-op so the file was never written. If the root logger already has
+    handlers (pytest, embedding app), leave it alone — no file is created.
+    """
+    if logging.getLogger().handlers:
+        return
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(
+                _LOG_DIR / f"weekly_{datetime.now().strftime('%Y%m%d')}.log",
+                encoding="utf-8",
+                delay=True,
+            ),
+        ],
+    )
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,6 +124,25 @@ def _alert(phase: str, error: str) -> None:
         send_error_alert(phase, error)
     except Exception:
         pass
+
+
+def _draft_publish_state(summary: dict) -> tuple[bool, str]:
+    """Return whether draft gating leaves zero externally publishable results."""
+    valuations = summary.get("valuations", [])
+    publishable_count = sum(1 for value in valuations if value.get("status") == "success")
+    blocked_entries = [
+        value for value in valuations if value.get("status") == "draft_blocked"
+    ]
+    if not blocked_entries or publishable_count > 0:
+        return False, ""
+    reasons = "; ".join(
+        f"{entry['company']}: {', '.join(entry.get('draft_blockers', [])) or 'draft'}"
+        for entry in blocked_entries
+    )
+    return True, (
+        f"published 0 / blocked {len(blocked_entries)}. "
+        f"Draft valuation results were retained internally. {reasons}"
+    )
 
 
 def _week_number(dt: datetime) -> int:
@@ -227,6 +263,7 @@ def run_weekly(
     """
     from discovery.discovery_engine import DiscoveryEngine
 
+    _setup_logging()
     markets = markets or ["KR", "US"]
     start = time.time()
     now = datetime.now()
@@ -408,13 +445,16 @@ def run_weekly(
     calls_per_company = (
         6  # classify + peers_batch + wacc + scenarios + news_summary + profile_gen
     )
-    max_affordable = max(llm_budget // calls_per_company, 1)
+    effective_budget = max(llm_budget, WEEKLY_LLM_BUDGET)
+    max_affordable = max(effective_budget // calls_per_company, 1)
     if len(targets) > max_affordable:
         logger.warning(
-            "Trimming targets from %d to %d to fit LLM quota (%d remaining)",
+            "Trimming targets from %d to %d to fit LLM quota "
+            "(%d remaining, weekly budget=%d)",
             len(targets),
             max_affordable,
             llm_budget,
+            WEEKLY_LLM_BUDGET,
         )
         targets = targets[:max_affordable]
 
@@ -441,15 +481,36 @@ def run_weekly(
                 query, output_dir=str(week_dir), scored_data=co
             )
             if analyze_result:
+                vr = getattr(analyze_result, "validation_report", None)
+                valuation_result = getattr(analyze_result, "result", None)
+                is_draft = bool(
+                    valuation_result is not None and valuation_result.draft
+                )
                 return {
                     "company": name,
                     "ticker": ticker,
                     "reason": reason,
                     "market": co.get("market", ""),
-                    "status": "success",
+                    "status": "draft_blocked" if is_draft else "success",
+                    "draft": is_draft,
+                    "quality_grade": (
+                        valuation_result.quality.grade
+                        if valuation_result is not None
+                        and valuation_result.quality is not None
+                        else None
+                    ),
+                    "draft_blockers": (
+                        list(valuation_result.investability_blockers)
+                        if valuation_result is not None
+                        else []
+                    ),
                     "excel_path": analyze_result.excel_path,
                     "summary_md": analyze_result.summary_md,
                     "market_cap_usd": co.get("market_cap_usd"),
+                    "scenario_validation": getattr(vr, "status", None),
+                    "scenario_validation_codes": (
+                        [e.code for e in vr.errors] if vr is not None else []
+                    ),
                 }
             return {
                 "company": name,
@@ -495,35 +556,43 @@ def run_weekly(
     # ── Phase 3.6: Save JSON summary for delivery agent ──
     _save_json_summary(summary, week_dir)
 
-    # ── Phase 5: Send email notification (best-effort) ──
-    try:
-        from .email_sender import send_weekly_email
+    all_draft_blocked, draft_block_message = _draft_publish_state(summary)
+    if all_draft_blocked:
+        logger.error("Weekly publishing blocked: %s", draft_block_message)
+        _alert("Draft Gate", draft_block_message)
 
-        send_weekly_email(summary)
-    except Exception as e:
-        logger.warning("Email notification failed: %s", e)
+    # ── Phase 5: Send email notification (best-effort) ──
+    if not all_draft_blocked:
+        try:
+            from .email_sender import send_weekly_email
+
+            send_weekly_email(summary)
+        except Exception as e:
+            logger.warning("Email notification failed: %s", e)
 
     # ── Phase 6a: WordPress posting (US only, best-effort) ──
-    try:
-        from .wp_poster import post_to_wordpress
+    if not all_draft_blocked:
+        try:
+            from .wp_poster import post_to_wordpress
 
-        wp_url = post_to_wordpress(summary)
-        if wp_url:
-            summary["wp_url"] = wp_url
-    except Exception as e:
-        logger.warning("WordPress posting failed: %s", e)
-        _alert("WordPress", str(e))
+            wp_url = post_to_wordpress(summary)
+            if wp_url:
+                summary["wp_url"] = wp_url
+        except Exception as e:
+            logger.warning("WordPress posting failed: %s", e)
+            _alert("WordPress", str(e))
 
     # ── Phase 6b: Naver Blog posting (KR+US, best-effort) ──
-    try:
-        from .naver_poster import post_to_naver
+    if not all_draft_blocked:
+        try:
+            from .naver_poster import post_to_naver
 
-        naver_url = post_to_naver(summary)
-        if naver_url:
-            summary["naver_url"] = naver_url
-    except Exception as e:
-        logger.warning("Naver Blog posting failed: %s", e)
-        _alert("Naver Blog", str(e))
+            naver_url = post_to_naver(summary)
+            if naver_url:
+                summary["naver_url"] = naver_url
+        except Exception as e:
+            logger.warning("Naver Blog posting failed: %s", e)
+            _alert("Naver Blog", str(e))
 
     # ── Phase 7: YouTube video creation + upload (disabled) ──
     # TODO: Re-enable when YouTube pipeline is ready
@@ -663,13 +732,48 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
     """Save JSON summary file for the delivery agent to read."""
     success_count = sum(1 for v in summary["valuations"] if v["status"] == "success")
     failed_count = sum(1 for v in summary["valuations"] if v["status"] == "failed")
+    blocked_count = sum(
+        1 for v in summary["valuations"] if v["status"] == "draft_blocked"
+    )
 
     # Set on the live summary dict so email (sent before this function returns) gets it too
     summary["status_summary"] = {
         "total": len(summary["valuations"]),
         "success": success_count,
         "failed": failed_count,
+        "draft_blocked": blocked_count,
     }
+
+    # Scenario-differentiation validation roll-up (per-company status persisted on each
+    # valuation entry by auto_analyze). Surfaces silent differentiation failures that the
+    # post-generation repair loop could not fix within quota.
+    sv_counts: dict[str, int] = {}
+    sv_failures: list[dict] = []
+    for v in summary["valuations"]:
+        sv_status = v.get("scenario_validation")
+        if sv_status is None:
+            continue
+        sv_counts[sv_status] = sv_counts.get(sv_status, 0) + 1
+        if sv_status in ("fail", "skipped"):
+            sv_failures.append(
+                {
+                    "company": v["company"],
+                    "status": sv_status,
+                    "codes": v.get("scenario_validation_codes", []),
+                }
+            )
+    if sv_counts:
+        summary["scenario_validation_summary"] = {
+            "counts": sv_counts,
+            "failures": sv_failures,
+        }
+        if sv_failures:
+            logger.warning(
+                "scenario_validation_failures: %d/%d profiles did not pass differentiation (%s)",
+                len(sv_failures),
+                sum(sv_counts.values()),
+                ", ".join(f"{f['company']}={f['status']}" for f in sv_failures),
+            )
 
     summary["_debug"] = {
         "companies_with_empty_top_news": sum(
@@ -806,6 +910,7 @@ def _release_lock() -> None:
 
 
 def main() -> None:
+    _setup_logging()
     parser = argparse.ArgumentParser(
         description="Weekly automated news collection + valuation",
     )

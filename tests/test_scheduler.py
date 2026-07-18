@@ -209,13 +209,18 @@ class TestWeeklyRun:
     @patch("scheduler.weekly_run._save_run_start", return_value=None)
     @patch("scheduler.weekly_run._finalize_run")
     @patch("scheduler.weekly_run.score_companies")
-    def test_dry_run_skips_valuation(self, mock_score, mock_finalize, mock_save):
+    def test_dry_run_skips_valuation(self, mock_score, mock_finalize, mock_save, tmp_path):
         """dry_run=True skips valuation execution."""
         mock_score.return_value = [
             {"name": "TestCo", "stars": "★★★☆☆", "score": 50, "news_count": 3},
         ]
 
-        with patch("discovery.discovery_engine.DiscoveryEngine") as MockEngine:
+        # Redirect week_dir/_weekly_summary.json to tmp_path — without this the
+        # test pollutes the real valuation-results/ with mock summaries that
+        # masquerade as production weekly runs (observed 2026-07-12..18).
+        with patch("scheduler.weekly_run._RESULTS_BASE", tmp_path), patch(
+            "discovery.discovery_engine.DiscoveryEngine"
+        ) as MockEngine:
             instance = MockEngine.return_value
             instance.discover.return_value = {
                 "news_count": 10,
@@ -232,11 +237,13 @@ class TestWeeklyRun:
     @patch("scheduler.weekly_run._save_run_start", return_value=None)
     @patch("scheduler.weekly_run._finalize_run")
     @patch("scheduler.weekly_run.score_companies")
-    def test_discovery_error_isolation(self, mock_score, mock_finalize, mock_save):
+    def test_discovery_error_isolation(self, mock_score, mock_finalize, mock_save, tmp_path):
         """Per-market error isolation: US continues even if KR fails."""
         mock_score.return_value = []
 
-        with patch("discovery.discovery_engine.DiscoveryEngine") as MockEngine:
+        with patch("scheduler.weekly_run._RESULTS_BASE", tmp_path), patch(
+            "discovery.discovery_engine.DiscoveryEngine"
+        ) as MockEngine:
             instance = MockEngine.return_value
             instance.discover.side_effect = [
                 RuntimeError("KR API 실패"),
@@ -250,3 +257,56 @@ class TestWeeklyRun:
         assert len(result["errors"]) == 1
         assert result["errors"][0]["market"] == "KR"
         assert len(result["discoveries"]) == 1  # only US succeeded
+
+
+class TestDraftPublishingGate:
+    def test_all_draft_builds_actionable_alert(self):
+        from scheduler.weekly_run import _draft_publish_state
+
+        blocked, message = _draft_publish_state(
+            {
+                "valuations": [
+                    {
+                        "company": "StubCo",
+                        "status": "draft_blocked",
+                        "draft_blockers": ["no peer-median comp"],
+                    }
+                ]
+            }
+        )
+        assert blocked is True
+        assert "published 0 / blocked 1" in message
+        assert "StubCo" in message
+        assert "no peer-median comp" in message
+
+    def test_mixed_results_publish_only_success(self):
+        from scheduler.weekly_run import _draft_publish_state
+
+        blocked, message = _draft_publish_state(
+            {
+                "valuations": [
+                    {"company": "GoodCo", "status": "success"},
+                    {"company": "StubCo", "status": "draft_blocked"},
+                ]
+            }
+        )
+        assert blocked is False
+        assert message == ""
+
+    @patch("db.storage.upload_and_get_url")
+    def test_draft_blocked_excel_is_not_uploaded(self, mock_upload):
+        from scheduler.weekly_run import _upload_excels_to_storage
+
+        summary = {
+            "valuations": [
+                {
+                    "company": "StubCo",
+                    "ticker": "STUB",
+                    "market": "US",
+                    "status": "draft_blocked",
+                    "excel_path": "internal.xlsx",
+                }
+            ]
+        }
+        _upload_excels_to_storage(summary, "2026-07-12(Jul 3rd week)")
+        mock_upload.assert_not_called()

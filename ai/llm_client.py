@@ -36,18 +36,37 @@ def _get_anthropic_client(api_key: str):
     return _anthropic_client
 
 
-# OpenRouter default model (start with free/low-cost, change as needed)
-_OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-4"
+# OpenRouter default model for bare ask() calls (e.g. summarize_key_issues)
+_OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-5"
 _ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 # Model tiers for mixed strategy (Haiku for routine, Sonnet for reasoning)
 MODEL_LIGHT = "claude-haiku-4-5-20251001"  # classify, peers, wacc
-MODEL_HEAVY = "claude-sonnet-4-6"  # scenarios, research notes
+MODEL_HEAVY = "claude-sonnet-5-20260630"  # scenarios, research notes (pinned snapshot)
 
 _OPENROUTER_MODEL_MAP = {
     MODEL_LIGHT: "anthropic/claude-haiku-4.5",
-    MODEL_HEAVY: "anthropic/claude-sonnet-4.6",
+    MODEL_HEAVY: "anthropic/claude-sonnet-5",
 }
+
+# F1b (PLAN_r18 §8-1): Sonnet 5+ (and Opus 4.7+) return HTTP 400 when
+# temperature/top_p/top_k is set to a non-default value — both on the direct
+# Anthropic API and on OpenRouter (supported_parameters lacks temperature).
+# For these models the temperature parameter must be OMITTED entirely.
+# Models that still support it (Haiku 4.5, Sonnet 4.6 env overrides) keep
+# receiving the caller's temperature unchanged — the ask_structured
+# "temperature=0 determinism" methodology question stays deferred (CODEX loop).
+_TEMPERATURE_UNSUPPORTED_PREFIXES = (
+    "claude-sonnet-5",
+    "anthropic/claude-sonnet-5",
+    "claude-opus-4-7",
+    "anthropic/claude-opus-4.7",
+)
+
+
+def _supports_temperature(resolved_model: str) -> bool:
+    """Whether the resolved (provider-specific) model accepts a temperature param."""
+    return not resolved_model.startswith(_TEMPERATURE_UNSUPPORTED_PREFIXES)
 
 
 def _resolve_anthropic_model(model: str) -> str:
@@ -130,9 +149,10 @@ def _ask_anthropic(
     kwargs = {
         "model": model,
         "max_tokens": max_tokens,
-        "temperature": temperature,
         "messages": messages,
     }
+    if _supports_temperature(model):
+        kwargs["temperature"] = temperature
     if system:
         # Prompt caching: 90% input cost reduction when reusing system prompts
         kwargs["system"] = [
@@ -227,8 +247,9 @@ def _ask_openrouter(
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
-        "temperature": temperature,
     }
+    if _supports_temperature(model):
+        payload["temperature"] = temperature
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
     headers = {

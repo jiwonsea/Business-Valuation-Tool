@@ -95,4 +95,4 @@ CLAUDE.md가 단독 커밋으로 분리하라고 못박은 사안이라 임의�
 
 - Supabase 마이그레이션(`db/migrations_backtest.sql` 3컬럼) 수동 적용. 미적용이어도 스냅샷 저장은 죽지 않는다(P0 컬럼만 빼고 재시도 + WARN).
 - Windows에서 `python cli.py --company NVDA --auto` → 로그의 `순차입금 정규화 소비/차단` 라인 확인 (§3 판단 근거).
-- 별건(기록): SK
+- 별건(기록): SK에코플랜트 품질 71→0(F)은 다른 세션 WIP investability gate(`DCF/peer-median 0.49`)가 stale `.pyc` 때문에 그동안 실행되지 않다가 이제 도는 것. P0-1 무관, `vi.draft`는 여전히 False.

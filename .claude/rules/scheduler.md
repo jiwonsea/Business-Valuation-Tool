@@ -4,6 +4,10 @@ paths: ["scheduler/**/*.py"]
 
 # Scheduler Gotchas
 
+## Weekly Pipeline Output
+
+- Weekly pipeline outputs to `valuation-results/YYYY-MM-DD(Month Xth week)/`. `_weekly_summary.json` is the regression-detection entry point — check `discoveries[].companies` (filter/buffer efficacy) and `valuations[].status` (`no_result` = regression per market). Filenames in that folder reveal whether Excel naming convention is actually applied in production runs.
+
 ## Discovery & News Pipeline (weekly_run.py)
 
 - Discovery `_filter_companies()` post-filter runs deterministically after every AI JSON parse — prompt rules alone are insufficient to exclude media outlets (Bloomberg, Yahoo Finance, Electrek). Request 8 candidates from AI; `weekly_run.py` caps final output at `max_per_market`. Filtered slots are not refilled — buffer is the only compensation.
@@ -27,5 +31,4 @@ paths: ["scheduler/**/*.py"]
 - **Naver SE3 file dialog detection**: `_handle_file_dialog_win32` must match `cls == "#32770" AND title ∈ {"열기","Open","파일 열기","파일 선택"}`. OR-logic catches Chrome's "페이지를 복원하시겠습니까?" dialog (same class) and `WM_SETTEXT` sends the file path as a Chrome URL, navigating the browser away.
 - **`SetForegroundWindow` Windows restriction**: wrap in try/except — Windows denies focus-stealing from background processes (`pywintypes.error` code 0). Unhandled aborts the entire posting run.
 - **SE3 body focus after image insert**: file dialog close leaves focus outside the editor body. Re-focus via `driver.execute_script("var b=document.querySelector('div.se-body, div.__se-body'); if(b) b.focus();")` + ArrowDown/Return before next content write; otherwise subsequent paragraphs are dropped silently.
-- **Logo source priority**: DuckDuckGo `icons.duckduckgo.com/ip3/{domain}.ico` > Google Favicon for ambiguous brands. Google returns "Samsung Pay" icon for samsung.com; DuckDuckGo returns the corporate logo. Order in `_download_logo`: Clearbit → DuckDuckGo → Google Favicon.
-- **Weekly summary freshness**: `naver_poster.py` reads `_weekly_summary.json` as-is. Code fixes in `weekly_run.py` (EDGAR ticker lookup, top_news attachment, etc.) require regenerating the summary before posting — stale summaries reproduce `no_result` / missing `top_news` regardless of the fix.
+- **Logo source priority**: DuckDuckGo `icons.duckduckgo.com/ip3/{domain}.ico` > Google Favicon for ambiguous brands. Google returns "Samsung Pay" icon for samsung.com; DuckDuck

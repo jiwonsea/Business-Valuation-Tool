@@ -418,3 +418,20 @@ P/B·P/S historical band (reporting-only, Codex 4라운드 GO)`
 4. Phase 2b 후보(§6-4 + §11.3 한계): 미커버 필드(eps/bps/dps/roic/fcf) · D&A 주석 경로 ·
    신규 회사 수집(§10 quota 계약) · 분할 전 raw close 복원(액션 비율 검증 계약) ·
    非12월 결산 FYE 처리 · `TestScenarioDriverRoundTrip` fixtures 분리.
+
+### 12.5 커밋 확정 — 세션 종결 (2026-07-18)
+
+호스트에서 §12.3 순서대로 커밋 실행·최종 감사 완료 (실행 주체: 사용자/Codex, 호스트):
+
+| 단위 | 커밋 | 내용 |
+|---|---|---|
+| ① | `fbec0b1` | DART 주식수 파싱 수정 |
+| ② | `4ebe508` | LLM 예약 예산 주석 정합화 |
+| ③ | `6c246cc` | 파일럿 v2 연구 산출물 |
+| ④ | `2e51d3b` | point-in-time 파서 계약 |
+| ⑤ | `2693260` | historical P/B·P/S 밴드 본구현 |
+
+검증: 밴드 38/38 · 전체 **1093 passed** · staged diff clean · `.git/index.lock` 제거
+확인 · staging 보조 파일 제거 · Phase 2 파일 미커밋 변경 0 · 타 트랙 작업 트리 변경
+보존. **차기 세션 시작 검증 기준 HEAD = 2693260.** 본 §12.5 추가로 이 문서 자체만
+커밋 이후 재수정 상태(문서 1파일, 코드 무변경)임을 명시한다.

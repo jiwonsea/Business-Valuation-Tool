@@ -83,11 +83,23 @@ def sheet_scenarios(ctx: Ctx):
 
     for name in all_names:
         r += 1
-        write_cell(ws, r, 1, f"(-) {name}")
+        values = [
+            next(
+                (
+                    adj.value
+                    for adj in ctx.result.scenarios[sc_code].adjustments
+                    if adj.name == name
+                ),
+                0,
+            )
+            for sc_code in sc_codes
+        ]
+        sign = "(+)" if any(value < 0 for value in values) else "(-)"
+        write_cell(ws, r, 1, f"{sign} {name}")
         for i, sc_code in enumerate(sc_codes, 2):
             sr = ctx.result.scenarios[sc_code]
             val = next((adj.value for adj in sr.adjustments if adj.name == name), 0)
-            write_cell(ws, r, i, val, fmt=NUM_FMT)
+            write_cell(ws, r, i, abs(val) if sign == "(+)" else val, fmt=NUM_FMT)
 
     # Equity Value
     r += 1

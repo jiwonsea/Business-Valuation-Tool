@@ -111,6 +111,7 @@ def sheet_financials(ctx: Ctx):
                     seg_method = ctx.vi.segments.get(code, {}).get(
                         "method", "ev_ebitda"
                     )
+                    is_equity_based = seg_method in ("pbv", "pe")
                     m_lbl = {
                         "ev_ebitda": "EV/EBITDA",
                         "pbv": "P/BV",
@@ -119,18 +120,42 @@ def sheet_financials(ctx: Ctx):
                     }.get(seg_method, seg_method)
                     write_cell(ws, r, 1, ctx.seg_names[code])
                     write_cell(ws, r, 2, m_lbl)
-                    write_cell(ws, r, 3, s["revenue"], fmt=NUM_FMT, fill=YELLOW_FILL)
-                    write_cell(ws, r, 4, s["op"], fmt=NUM_FMT, fill=YELLOW_FILL)
+                    write_cell(
+                        ws,
+                        r,
+                        3,
+                        "N/A" if is_equity_based else s["revenue"],
+                        fmt=NUM_FMT if not is_equity_based else None,
+                        fill=YELLOW_FILL,
+                    )
+                    write_cell(
+                        ws,
+                        r,
+                        4,
+                        "N/A" if is_equity_based else s["op"],
+                        fmt=NUM_FMT if not is_equity_based else None,
+                        fill=YELLOW_FILL,
+                    )
                     write_cell(ws, r, 5, s["assets"], fmt=NUM_FMT, fill=YELLOW_FILL)
                     write_cell(ws, r, 6, a.asset_share / 100, fmt=PCT_FMT)
-                    write_cell(ws, r, 7, a.da_allocated, fmt=NUM_FMT)
+                    write_cell(
+                        ws,
+                        r,
+                        7,
+                        "N/A" if is_equity_based else a.da_allocated,
+                        fmt=NUM_FMT if not is_equity_based else None,
+                    )
                     write_cell(
                         ws,
                         r,
                         8,
-                        a.ebitda,
-                        fmt=NUM_FMT,
-                        fill=GREEN_FILL if a.ebitda > 0 else RED_FILL,
+                        "N/A" if is_equity_based else a.ebitda,
+                        fmt=NUM_FMT if not is_equity_based else None,
+                        fill=(
+                            None
+                            if is_equity_based
+                            else GREEN_FILL if a.ebitda > 0 else RED_FILL
+                        ),
                     )
                 else:
                     write_cell(ws, r, 1, ctx.seg_names[code])

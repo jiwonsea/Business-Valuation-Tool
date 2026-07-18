@@ -18,6 +18,16 @@ from ..excel_styles import (
 
 
 def sheet_sensitivity(ctx: Ctx):
+    if not any(
+        (
+            ctx.result.sensitivity_multiples,
+            ctx.result.sensitivity_irr_dlom,
+            ctx.result.sensitivity_dcf,
+            ctx.result.sensitivity_primary,
+        )
+    ):
+        return
+
     ws = ctx.wb.create_sheet("Sensitivity")
     ws.sheet_properties.tabColor = "E74C3C"
     write_cell(ws, 1, 1, "민감도 분석", font=TITLE_FONT)
@@ -43,8 +53,8 @@ def sheet_sensitivity(ctx: Ctx):
             f"① 멀티플 민감도 → 주당가치 ({ctx.currency_sym})",
             ctx.result.sensitivity_multiples,
             f"{row_name} \\ {col_name}",
-            lambda v: f"{v:.1f}x",
-            lambda v: f"{v:.1f}x",
+            _fmt_multiple,
+            _fmt_multiple,
         )
         r += 2
 
@@ -132,6 +142,16 @@ def _sensitivity_format(method: str):
     elif method == "rnpv":
         return lambda v: f"{v:.1f}%", lambda v: f"{v:.1f}x", "DR \\ PoS Scale"
     return lambda v: f"{v}", lambda v: f"{v}", "Row \\ Col"
+
+
+def _fmt_multiple(value: float) -> str:
+    """Show at least two decimals without hiding meaningful precision."""
+    text = f"{value:.5f}".rstrip("0").rstrip(".")
+    if "." not in text:
+        text += ".00"
+    elif len(text.rsplit(".", 1)[1]) == 1:
+        text += "0"
+    return f"{text}x"
 
 
 def _write_sensitivity_table(

@@ -28,7 +28,7 @@ class MCInput:
     tg_std: float
     n_sims: int = 10_000
     seed: int | None = 42
-    # Per-segment valuation method: {code: "ev_ebitda"|"ev_revenue"}
+    # Per-segment valuation method: ev_ebitda | ev_revenue | pbv | pe
     segment_methods: dict[str, str] = field(default_factory=dict)
     # Per-segment revenue uncertainty: {code: (mean, std)} for ev_revenue segments
     revenue_params: dict[str, tuple[float, float]] = field(default_factory=dict)
@@ -73,7 +73,10 @@ def run_monte_carlo(
     dcf_pv_fcff_sum: int = 0,
     dcf_n_periods: int = 5,
     seg_revenues: dict[str, int] | None = None,
+    seg_book_equity: dict[str, int] | None = None,
+    seg_net_income: dict[str, int] | None = None,
     cps_dividend_rate: float = 0.0,
+    receivable_recovery_value: int = 0,
 ) -> MCResult:
     """Run Monte Carlo simulation.
 
@@ -99,6 +102,9 @@ def run_monte_carlo(
         dcf_pv_fcff_sum: DCF projection period PV sum (fixed)
         dcf_n_periods: Number of DCF projection periods
         seg_revenues: segment code -> Revenue (base for ev_revenue segments)
+        seg_book_equity: segment code -> Book equity (base for pbv segments)
+        seg_net_income: segment code -> Net income (base for pe segments)
+        receivable_recovery_value: Scenario-specific non-operating receivable value
 
     Returns:
         MCResult with distribution statistics
@@ -110,7 +116,8 @@ def run_monte_carlo(
     # Convert desired mean/std to lognormal parameters:
     #   mu_ln = ln(m² / sqrt(m² + s²)),  sigma_ln = sqrt(ln(1 + (s/m)²))
     multiples_samples = {}
-    for code, (mu, sigma) in mc_input.multiple_params.items():
+    for code in sorted(mc_input.multiple_params):
+        mu, sigma = mc_input.multiple_params[code]
         if mu > 0 and sigma > 0:
             sigma_ln = np.sqrt(np.log(1 + (sigma / mu) ** 2))
             mu_ln = np.log(mu) - 0.5 * sigma_ln**2
@@ -141,31 +148,38 @@ def run_monte_carlo(
 
     # Revenue uncertainty sampling for ev_revenue segments
     revenue_samples: dict[str, np.ndarray] = {}
-    for code, (r_mu, r_sigma) in mc_input.revenue_params.items():
+    for code in sorted(mc_input.revenue_params):
+        r_mu, r_sigma = mc_input.revenue_params[code]
         if r_sigma > 0:
             rev_s = rng.normal(r_mu, r_sigma, n)
             revenue_samples[code] = np.maximum(rev_s, 0)  # Revenue >= 0
 
-    # Vectorized SOTP EV calculation (ev_ebitda: EBITDA*mult, ev_revenue: Revenue*mult)
+    # Vectorized mixed-method SOTP calculation. PBV/PE are equity-direct values;
+    # the caller must therefore pass effective net debt excluding those segments.
     ev_ebitda_part = np.zeros(n)
     ev_revenue_part = np.zeros(n)
-    for code, ebitda in seg_ebitdas.items():
-        if code not in multiples_samples:
-            continue
+    equity_direct_part = np.zeros(n)
+    for code in sorted(multiples_samples):
+        multiple_samples = multiples_samples[code]
         method = mc_input.segment_methods.get(code, "ev_ebitda")
         if method == "ev_revenue":
             if code in revenue_samples:
-                ev_revenue_part += revenue_samples[code] * multiples_samples[code]
+                ev_revenue_part += revenue_samples[code] * multiple_samples
             else:
                 rev = (seg_revenues or {}).get(code, 0)
                 if rev > 0:
-                    ev_revenue_part += rev * multiples_samples[code]
-        elif method in ("pbv", "pe"):
-            # PBV/PE segments use book value or net income, not EBITDA — skip in MC
-            continue
+                    ev_revenue_part += rev * multiple_samples
+        elif method == "pbv":
+            book_equity = (seg_book_equity or {}).get(code, 0)
+            if book_equity > 0:
+                equity_direct_part += book_equity * multiple_samples
+        elif method == "pe":
+            net_income = (seg_net_income or {}).get(code, 0)
+            if net_income != 0:
+                equity_direct_part += net_income * multiple_samples
         else:
             # Include negative EBITDA segments (consistent with calc_sotp)
-            ev_ebitda_part += ebitda * multiples_samples[code]
+            ev_ebitda_part += seg_ebitdas.get(code, 0) * multiple_samples
 
     # DCF TV variation applies only to EBITDA-based EV (not revenue-based optionality)
     if use_dcf_tv:
@@ -196,11 +210,11 @@ def run_monte_carlo(
             )  # Cap TV scaling to prevent fat-tail contamination
             ev_ebitda_part = np.where(valid, ev_ebitda_part * ratio, ev_ebitda_part)
 
-    ev = ev_ebitda_part + ev_revenue_part
+    ev = ev_ebitda_part + ev_revenue_part + equity_direct_part
 
     # Equity bridge (vectorized)
     claims = net_debt + cps_repay + rcps_repay + buyback + eco_frontier
-    equity = ev - claims
+    equity = ev - claims + receivable_recovery_value
 
     if shares > 0:
         ps = equity * (unit_multiplier / shares)

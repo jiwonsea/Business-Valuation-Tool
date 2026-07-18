@@ -2,7 +2,6 @@
 
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
-from openpyxl.formatting.rule import ColorScaleRule
 
 from ._ctx import Ctx
 from ..excel_styles import (
@@ -323,68 +322,6 @@ def valuation_ddm(ctx: Ctx):
         write_cell(ws, r, 2, val, fill=fill, font=font)
         write_cell(ws, r, 3, note)
         r += 1
-
-    # DDM sensitivity (Ke x Growth)
-    r += 1
-    _write_ddm_sensitivity(ws, r, ddm, ctx.currency_sym)
-
-
-def _write_ddm_sensitivity(ws, r: int, ddm, currency_sym: str):
-    """DDM Ke x Growth sensitivity table."""
-    write_cell(
-        ws,
-        r,
-        1,
-        f"DDM 민감도 — Ke × 배당성장률 → 주당가치 ({currency_sym})",
-        font=SECTION_FONT,
-    )
-    r += 1
-
-    ke_base, g_base = ddm.ke, ddm.growth
-    ke_range = [ke_base + d for d in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]]
-    g_range = [g_base + d for d in [-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]]
-
-    write_cell(ws, r, 1, "Ke \\ Growth", fill=GRAY_FILL, font=SECTION_FONT)
-    for j, g_val in enumerate(g_range, 2):
-        write_cell(ws, r, j, f"{g_val:.1f}%", fill=GRAY_FILL, font=SECTION_FONT)
-        ws.column_dimensions[get_column_letter(j)].width = 12
-
-    from engine.ddm import calc_ddm as _calc_ddm
-
-    sens_start = r + 1
-    for ke_val in ke_range:
-        r += 1
-        write_cell(ws, r, 1, f"{ke_val:.1f}%", fill=GRAY_FILL, font=SECTION_FONT)
-        for j, g_val in enumerate(g_range, 2):
-            try:
-                v = _calc_ddm(
-                    ddm.dps,
-                    g_val,
-                    ke_val,
-                    buyback_per_share=getattr(ddm, "buyback_per_share", 0.0),
-                ).equity_per_share
-            except ValueError:
-                v = 0
-            is_base = abs(ke_val - ke_base) < 0.01 and abs(g_val - g_base) < 0.01
-            fill = GREEN_FILL if is_base else (RED_FILL if v <= 0 else None)
-            write_cell(ws, r, j, v, fmt=NUM_FMT, fill=fill)
-    sens_end = r
-
-    if g_range:
-        end_col = get_column_letter(1 + len(g_range))
-        ws.conditional_formatting.add(
-            f"B{sens_start}:{end_col}{sens_end}",
-            ColorScaleRule(
-                start_type="min",
-                start_color="FADBD8",
-                mid_type="percentile",
-                mid_value=50,
-                mid_color="F5F6FA",
-                end_type="max",
-                end_color="D5F5E3",
-            ),
-        )
-
 
 def valuation_rim(ctx: Ctx):
     ws = ctx.wb.create_sheet("RIM Valuation")

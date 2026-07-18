@@ -28,6 +28,11 @@ from pipeline.reconciliation import (
 PRICE = 100_000.0  # KRW
 TRUE_SHARES = 70_000_000
 MARKET_CAP = PRICE * TRUE_SHARES  # 7,000,000,000,000 KRW (raw)
+# fetch_shares() emits market_cap in 백만원 / $M, NOT raw currency
+# (pipeline/yfinance_fetcher.py divides marketCap by 1e6). The fixture must
+# mirror that contract -- the old raw-unit fixture is what let the ~1e6x
+# reconciliation bug ship (every auto-fetched profile hard-blocked).
+MARKET_CAP_M = MARKET_CAP / 1_000_000  # 7,000,000 백만원
 
 
 def make_financials(**overrides) -> dict:
@@ -56,7 +61,7 @@ def make_shares_info(shares_total: int = TRUE_SHARES, **overrides) -> dict:
         "shares_preferred": 0,
         "treasury_shares": 0,
         "price": PRICE,
-        "market_cap": MARKET_CAP,
+        "market_cap": MARKET_CAP_M,
         "currency": "KRW",
         "beta": 1.1,
     }
@@ -207,6 +212,23 @@ class TestReconcileMarketData:
         report = reconcile_market_data({}, make_shares_info(), market="KR")
         assert report.status in ("ok", "warn")
 
+    def test_us_million_unit_market_cap_does_not_block(self):
+        """Regression: real NVDA payload used to hard-block at 99,913,201.5%.
+
+        market_cap comes back in $M while price/shares are raw -- if the
+        reconciler forgets to rebase, the identity checks are off by ~1e6 and no
+        US/KR auto-fetched profile can ever be persisted.
+        """
+        info = make_shares_info(
+            shares_total=24_200_000_000,
+            price=210.96,
+            market_cap=5_109_662,  # $M, as yfinance_fetcher emits it
+        )
+        report = reconcile_market_data(make_financials(), info, market="US")
+        assert not report.blocked
+        share_check = next(f for f in report.findings if f.check == "share_count")
+        assert share_check.rel_diff_pct < 1.0  # ~0.09%, not 99,913,201%
+
     def test_unit_check_runs_only_with_alt_source(self):
         fin = make_financials()
         report = reconcile_market_data(fin, make_shares_info(), market="KR")
@@ -319,6 +341,27 @@ class TestProfileGeneratorGate:
         recon = raw["data_reconciliation"]
         assert recon["status"] == "ok"
         assert any(f["check"] == "share_count" for f in recon["findings"])
+        assert raw["draft"] is True
+        assert raw["generated"] == "auto"
+        assert raw["curated"] is False
+
+    def test_existing_curated_profile_is_staged_not_overwritten(
+        self, monkeypatch, tmp_path
+    ):
+        _patch_project_root(monkeypatch, tmp_path)
+        destination = tmp_path / "profiles" / "testco.yaml"
+        original = "curated: true\ndraft: false\ncompany: {name: Curated}\n"
+        destination.write_text(original, encoding="utf-8")
+
+        result = pg._generate_draft_profile(
+            _make_identity(), make_financials(), make_shares_info()
+        )
+
+        assert result == "profiles/staging/testco.yaml"
+        assert destination.read_text(encoding="utf-8") == original
+        staged = yaml.safe_load((tmp_path / result).read_text(encoding="utf-8"))
+        assert staged["draft"] is True
+        assert staged["generated"] == "auto"
 
     def test_warn_level_mismatch_still_persists(self, monkeypatch, tmp_path, capsys):
         _patch_project_root(monkeypatch, tmp_path)

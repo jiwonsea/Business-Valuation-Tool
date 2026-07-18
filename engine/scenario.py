@@ -46,6 +46,7 @@ def calc_scenario(
     else:
         rcps_repay = 0
     buyback = sc.buyback
+    receivable_recovery_value = sc.receivable_recovery_value or 0
 
     # Build dynamic equity bridge adjustment items
     adjustments: list[AdjustmentItem] = []
@@ -59,6 +60,12 @@ def calc_scenario(
         adjustments.append(AdjustmentItem(name="자사주 매입", value=buyback))
     if eco_frontier:
         adjustments.append(AdjustmentItem(name="기타 차감", value=eco_frontier))
+    if receivable_recovery_value:
+        adjustments.append(
+            AdjustmentItem(
+                name="매출채권 회수가치", value=-receivable_recovery_value
+            )
+        )
 
     # Equity bridge calculation
     total_claims = sum(a.value for a in adjustments)
@@ -81,6 +88,7 @@ def calc_scenario(
         rcps_repay=rcps_repay,
         buyback=buyback,
         eco_frontier=eco_frontier,
+        receivable_recovery_value=receivable_recovery_value,
         equity_value=equity_value,
         shares=sc.shares,
         pre_dlom=pre_dlom,

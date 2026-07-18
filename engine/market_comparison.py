@@ -37,10 +37,19 @@ def compare_to_market(
     gap = (intrinsic - market_price) / market_price
 
     flag = ""
+    value_ratio = intrinsic / market_price
     if abs(gap) >= 1.0:
         flag = "심각한 괴리. 입력 데이터를 반드시 재검토하세요."
     elif abs(gap) > threshold:
         flag = "데이터 또는 가정에 오류가 없는지 확인하세요."
+
+    if intrinsic > 0 and (value_ratio > 10 or value_ratio < 0.1):
+        unit_warning = (
+            f"단위 오염 또는 극단적 밸류에이션 괴리 의심: "
+            f"내재가치/시장가 비율이 {value_ratio:.2f}배입니다. "
+            "단위 계약과 모델 가정을 함께 확인하세요."
+        )
+        flag = f"{flag} {unit_warning}".strip()
 
     return MarketComparison(
         intrinsic_value=intrinsic,

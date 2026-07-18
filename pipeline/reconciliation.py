@@ -26,6 +26,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
+# ── Units ───────────────────────────────────────────────────
+# fetch_shares() hands us MIXED units: `price` is raw currency (USD/KRW),
+# `shares_total` is a raw share count, but `market_cap` has already been
+# rebased to financial-statement units ($M / 백만원) by
+# pipeline/yfinance_fetcher.py (`market_cap = marketCap / 1_000_000`).
+# Comparing them unscaled makes every identity check off by ~1e6 and hard-blocks
+# every auto-fetched profile (observed: NVDA, "주식수 불일치 99913201.5%").
+# Rebase market_cap to raw currency before any comparison.
+MARKET_CAP_UNIT = 1_000_000
+
 # ── Thresholds ──────────────────────────────────────────────
 # Soft warn floor for the 25%-block identity checks.
 WARN_THRESHOLD = 0.10
@@ -223,7 +233,8 @@ def reconcile_market_data(
 
     shares_total = shares_info.get("shares_total") or 0
     price = shares_info.get("price") or 0
-    market_cap = shares_info.get("market_cap") or 0
+    # market_cap arrives in $M / 백만원 -> raw currency (see MARKET_CAP_UNIT).
+    market_cap = (shares_info.get("market_cap") or 0) * MARKET_CAP_UNIT
 
     # 1) Share-count identity: registry shares vs market_cap / price.
     if price > 0 and market_cap > 0:

@@ -17,18 +17,27 @@ def _seg_metric(
     segments_info: dict[str, dict] | None,
     revenue_by_seg: dict[str, int] | None,
 ) -> int:
-    """Return the appropriate metric for a segment: revenue for ev_revenue, EBITDA otherwise.
-
-    P/BV and P/E segments return 0 (equity-based metrics not supported in SOTP sensitivity).
-    """
-    if alloc is None:
-        return 0
-    method = (segments_info or {}).get(code, {}).get("method", "ev_ebitda")
+    """Return the valuation metric required by the segment's method."""
+    seg_info = (segments_info or {}).get(code, {})
+    method = seg_info.get("method", "ev_ebitda")
     if method == "ev_revenue":
         return (revenue_by_seg or {}).get(code, 0)
-    if method in ("pbv", "pe"):
+    if method == "pbv":
+        return seg_info.get("book_equity", 0)
+    if method == "pe":
+        return seg_info.get("net_income_segment", 0)
+    if alloc is None:
         return 0
     return alloc.ebitda
+
+
+def _multiplicative_range(base: float) -> list[float]:
+    """Return a positive, scale-aware range that includes the exact base value."""
+    if base <= 0:
+        return []
+    factors = (0.6, 0.8, 1.0, 1.2, 1.4)
+    values = [base if factor == 1.0 else round(base * factor, 6) for factor in factors]
+    return list(dict.fromkeys(max(value, 0.000001) for value in values))
 
 
 def sensitivity_multiples(
@@ -49,28 +58,59 @@ def sensitivity_multiples(
     buyback: int = 0,
     pbv_pe_ev: int = 0,
 ) -> tuple[list[SensitivityRow], list[float], list[float]]:
-    """Sensitivity: two-segment multiple variation -> Scenario A per-share value."""
-    # Auto-select segment codes (avoid hardcoding)
-    seg_codes = list(multiples.keys())
+    """Sensitivity: two-segment multiple variation -> reference per-share value."""
+    # Auto-select only segments with a usable method metric and positive multiple.
+    seg_codes = [
+        code
+        for code, multiple in multiples.items()
+        if multiple > 0
+        and _seg_metric(
+            code,
+            base_ebitda_by_seg.get(code),
+            segments_info,
+            revenue_by_seg,
+        )
+        != 0
+    ]
+    if len(seg_codes) < 2 and (row_seg is None or col_seg is None):
+        return [], [], []
     if row_seg is None:
-        row_seg = seg_codes[0] if len(seg_codes) > 0 else ""
+        row_seg = seg_codes[0]
     if col_seg is None:
-        col_seg = seg_codes[1] if len(seg_codes) > 1 else row_seg
+        col_seg = next((code for code in seg_codes if code != row_seg), "")
+
+    if not row_seg or not col_seg or row_seg == col_seg:
+        return [], [], []
+
+    axis_methods = {
+        (segments_info or {}).get(code, {}).get("method", "ev_ebitda")
+        for code in (row_seg, col_seg)
+    }
+    if pbv_pe_ev > 0 and axis_methods.intersection({"pbv", "pe"}):
+        raise ValueError(
+            "pbv_pe_ev cannot be combined with a P/BV or P/E sensitivity axis"
+        )
 
     if row_range is None:
-        base_m = multiples.get(row_seg, 8.0)
-        row_range = [round(base_m + i, 1) for i in range(-2, 3)]
+        row_range = _multiplicative_range(multiples.get(row_seg, 0))
     if col_range is None:
-        base_m = multiples.get(col_seg, 13.0)
-        col_range = [round(base_m + i, 1) for i in range(-3, 4)]
+        col_range = _multiplicative_range(multiples.get(col_seg, 0))
+    row_range = [max(value, 0.000001) for value in row_range]
+    col_range = [max(value, 0.000001) for value in col_range]
 
     # Pre-compute EV for non-varying segments (uses revenue for ev_revenue method)
-    # pbv_pe_ev: equity-based segment value (P/BV, P/E) — constant, not sensitivity-varied
+    # pbv_pe_ev is retained only for backward-compatible callers that do not vary
+    # an equity-based segment. Combining both paths raises above to prevent double count.
     fixed_ev = pbv_pe_ev
-    for code, alloc in base_ebitda_by_seg.items():
+    for code in multiples:
         if code != row_seg and code != col_seg:
             m = multiples.get(code, 0)
-            metric = _seg_metric(code, alloc, segments_info, revenue_by_seg)
+            metric = _seg_metric(
+                code,
+                base_ebitda_by_seg.get(code),
+                segments_info,
+                revenue_by_seg,
+            )
             fixed_ev += round(metric * m)
     deductions = net_debt + eco_frontier + cps_repay + rcps_repay + buyback
 
@@ -89,11 +129,10 @@ def sensitivity_multiples(
         if col_seg in base_ebitda_by_seg
         else 0
     )
-    same_seg = row_seg == col_seg
     for row_m in row_range:
         row_ev = round(row_metric * row_m)
         for col_m in col_range:
-            col_ev = 0 if same_seg else round(col_metric * col_m)
+            col_ev = round(col_metric * col_m)
             eq = fixed_ev + row_ev + col_ev - deductions
             ps = per_share(eq, unit_multiplier, shares)
             rows.append(SensitivityRow(row_val=row_m, col_val=col_m, value=ps))

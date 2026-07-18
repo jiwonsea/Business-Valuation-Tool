@@ -172,7 +172,9 @@ def resolve_net_debt(
 #      basis가 다른 값끼리 비교·대체하지 않는다 — 배선층에서 몰래 우회하면 provenance가 거짓이 된다.
 #   3. 교차검증은 **같은 basis끼리** 한다. raw βL을 먼저 언레버한 뒤 peer median unlevered와 비교한다
 #      (레버리지 높은 회사가 정상 값으로도 충돌 판정되던 오류 — CODEX 블로커 3).
-#   4. 자동 클램프·자동 상수 대체 금지. 범위 이탈([0.3, 2.0])은 경고 + 민감도 표시일 뿐이다.
+#   4. 임의 클램프·출처 없는 상수 대체 금지. 관측 provenance를 보존하는 승인된
+#      shrinkage estimator(현재 Blume만)는 명시적 opt-in으로 허용한다.
+#      범위 이탈([0.3, 2.0])은 경고 + 민감도 표시일 뿐이다.
 #      단 **NaN/Inf 차단은 클램프가 아니다** — 애초에 관측치가 아닌 것을 걸러내는 일이다.
 #   5. 차단 시 `normalized_value`는 None이고 `diagnostic_value`(legacy)만 남는다.
 #      진단 실행 경계에서 diagnostic_value를 **명시적으로** 선택해야 쓸 수 있다 (우회 소비 차단).
@@ -186,6 +188,7 @@ BetaStatus = Literal[
     "consumed_raw_equity",  # 상장 · equity basis(금융업): raw βL 그대로
     "consumed_peer_median",  # 비상장: peer median (target basis와 동일 basis)
     "consumed_industry_table",  # 비상장 · unlevered basis: 버전 고정 산업 테이블
+    "consumed_blume",  # 상장 · 관측 raw βL -> Blume shrinkage -> Hamada 언레버
     "blocked_invalid_number",  # NaN/Inf
     "blocked_invalid_capital_structure",  # D/E < 0, 세율 정의역 밖, Hamada 분모 <= 0
     "blocked_no_provenance",  # 관측창/빈도/출처 없는 beta
@@ -329,6 +332,7 @@ def resolve_beta(
     peer_snapshot: Optional[BetaPeerSnapshot] = None,
     industry_entry: Optional[IndustryBetaEntry] = None,
     legacy_unlevered_beta: Optional[float] = None,
+    use_blume: bool = False,
 ) -> BetaResolution:
     """§2.3 베타 게이트 (P0-2a). 순수 함수 — IO 없음, 현재 시각을 읽지 않음."""
     peer_median = peer_snapshot.median_beta if peer_snapshot else None
@@ -517,6 +521,18 @@ def resolve_beta(
                 f"언레버 beta {target_bu:.3f} > peer median unlevered {peer_median:.3f} × "
                 f"{BETA_REFERENCE_CONFLICT_MULTIPLE} — 중대 불일치가 해소되지 않았습니다. "
                 "사람이 override하고 {원값, 대체값, 사유, WACC 민감도}를 남겨야 합니다.",
+            )
+
+        if use_blume:
+            adjusted_bl = observation.blume()
+            adjusted_bu = unlever_beta(adjusted_bl, de_ratio_pct, tax_rate_pct)
+            return consumed(
+                "consumed_blume",
+                adjusted_bu,
+                f"검증된 raw βL {raw_bl:.3f} -> Blume βL {adjusted_bl:.3f} "
+                f"-> Hamada 언레버 {adjusted_bu:.3f}",
+                unlevered_from_raw=target_bu,
+                extra_warnings=peer_excluded_warning,
             )
 
         return consumed(

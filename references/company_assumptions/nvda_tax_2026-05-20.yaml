@@ -1,0 +1,9 @@
+ticker: NVDA
+as_of: 2026-05-20
+value_pct: 17.0
+method: forward_gaap_and_non_gaap_tax_rate_guidance_midpoint
+range_pct: [16.0, 18.0]
+source:
+  provider: NVIDIA Corporation
+  url: https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/q1fy27pr.htm
+retrieved_at: 2026-07-14

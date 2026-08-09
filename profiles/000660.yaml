@@ -11,6 +11,19 @@ company:
   shares_ordinary: 728002365
   shares_preferred: 0
   treasury_shares: 26310845     # DART 자기주식수 → 유통 701,691,520
+  share_state_as_of: '2025-12-31'
+  corporate_actions:
+    - effective_date: '2026-01-31'  # Policy source is month-granular; normalized to month-end
+      kind: treasury_cancellation
+      ordinary_issued_delta: -15300000
+      treasury_delta: -15300000
+      source: 'POLICY_p0_fact_ledger_2026-08-07.md §6 (company announcement; derived count)'
+      confidence: derived
+    - effective_date: '2026-07-14'
+      kind: new_issue
+      ordinary_issued_delta: 17790000
+      source: 'POLICY_p0_fact_ledger_2026-08-07.md §6 (ADR offering payment)'
+      confidence: confirmed
   analysis_date: '2026-07-16'
 segments:
   SEG1:

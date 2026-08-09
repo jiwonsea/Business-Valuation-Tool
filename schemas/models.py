@@ -111,6 +111,50 @@ class PeerBetaSnapshot(BaseModel):
     judgement: PeerBetaJudgement
 
 
+class CorporateAction(BaseModel):
+    """A dated change to the issued-share state."""
+
+    effective_date: date
+    kind: Literal[
+        "treasury_cancellation", "new_issue", "buyback", "split", "reverse_split"
+    ]
+    ordinary_issued_delta: int = 0
+    preferred_issued_delta: int = 0
+    treasury_delta: int = 0
+    split_ratio: Optional[float] = None
+    source: str
+    confidence: Literal["confirmed", "derived"]
+
+    @model_validator(mode="after")
+    def split_contract(self):
+        is_split = self.kind in {"split", "reverse_split"}
+        deltas = (
+            self.ordinary_issued_delta,
+            self.preferred_issued_delta,
+            self.treasury_delta,
+        )
+        if is_split:
+            if self.split_ratio is None or self.split_ratio <= 0:
+                raise ValueError("split actions require a positive split_ratio")
+            if any(deltas):
+                raise ValueError("split actions must not carry share deltas")
+        elif self.split_ratio is not None:
+            raise ValueError("split_ratio is only valid for split actions")
+        return self
+
+
+class ShareState(BaseModel):
+    shares_total: int
+    shares_ordinary: int
+    shares_preferred: int
+    treasury_shares: int
+    contains_derived_action: bool = False
+
+    @property
+    def shares_outstanding(self) -> int:
+        return max(self.shares_ordinary - self.treasury_shares, 1)
+
+
 
 class CompanyProfile(BaseModel):
     name: str
@@ -131,6 +175,8 @@ class CompanyProfile(BaseModel):
     shares_ordinary: int  # Common shares issued
     shares_preferred: int = 0  # Preferred shares issued
     treasury_shares: int = 0  # Treasury shares (common basis)
+    share_state_as_of: Optional[date] = None
+    corporate_actions: list[CorporateAction] = Field(default_factory=list)
     cps_conversion_shares: int = 0
     analysis_date: date = Field(default_factory=date.today)
     industry: Optional[str] = None
@@ -139,7 +185,37 @@ class CompanyProfile(BaseModel):
     @property
     def shares_outstanding(self) -> int:
         """Outstanding common shares (issued common - treasury). Basis for per-share value."""
-        return max(self.shares_ordinary - self.treasury_shares, 1)
+        return self.share_state_at(self.analysis_date).shares_outstanding
+
+    def share_state_at(self, as_of: date) -> ShareState:
+        """Apply registered corporate actions to the declared base share state."""
+        ordinary = self.shares_ordinary
+        preferred = self.shares_preferred
+        treasury = self.treasury_shares
+        contains_derived = False
+
+        for action in sorted(self.corporate_actions, key=lambda item: item.effective_date):
+            if action.effective_date > as_of:
+                break
+            if action.kind in {"split", "reverse_split"}:
+                ratio = action.split_ratio or 1.0
+                values = (ordinary * ratio, preferred * ratio, treasury * ratio)
+                if any(not value.is_integer() for value in values):
+                    raise ValueError("split_ratio must produce integral share counts")
+                ordinary, preferred, treasury = (int(value) for value in values)
+            else:
+                ordinary += action.ordinary_issued_delta
+                preferred += action.preferred_issued_delta
+                treasury += action.treasury_delta
+            contains_derived = contains_derived or action.confidence == "derived"
+
+        return ShareState(
+            shares_total=ordinary + preferred,
+            shares_ordinary=ordinary,
+            shares_preferred=preferred,
+            treasury_shares=treasury,
+            contains_derived_action=contains_derived,
+        )
 
     @field_validator("shares_total")
     @classmethod
@@ -157,6 +233,13 @@ class CompanyProfile(BaseModel):
 
     @model_validator(mode="after")
     def shares_consistency(self):
+        if self.corporate_actions and self.share_state_as_of is None:
+            raise ValueError("share_state_as_of is required with corporate_actions")
+        if self.share_state_as_of is not None and any(
+            action.effective_date <= self.share_state_as_of
+            for action in self.corporate_actions
+        ):
+            raise ValueError("corporate actions must occur after share_state_as_of")
         if self.treasury_shares > self.shares_ordinary:
             raise ValueError(
                 f"자기주식({self.treasury_shares})이 보통주({self.shares_ordinary})보다 "
@@ -166,6 +249,11 @@ class CompanyProfile(BaseModel):
             raise ValueError(
                 f"보통주({self.shares_ordinary:,})가 총주식수({self.shares_total:,})를 초과합니다"
             )
+        state = self.share_state_at(self.analysis_date)
+        if state.treasury_shares < 0 or state.treasury_shares > state.shares_ordinary:
+            raise ValueError("corporate actions produce an invalid treasury-share balance")
+        if state.shares_ordinary <= 0 or state.shares_total <= 0:
+            raise ValueError("corporate actions produce a non-positive issued-share balance")
         expected_multiplier = {
             "원": 1,
             "천원": 1_000,

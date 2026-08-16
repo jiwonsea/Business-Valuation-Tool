@@ -1,0 +1,71 @@
+# Amazon (AMZN) — generic top-down forecast profile.
+# E-commerce + AWS -> generic path. Reported FY2025: net sales $716.9B (+12%),
+# net income $77.7B, diluted EPS $7.17; AWS $128.7B rev / $45.6B op income;
+# NA $426.3B / $29.6B op (Amazon 8-K, 2026).
+name: "Amazon.com Inc."
+name_kr: "아마존"
+ticker: "AMZN"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12
+weighted_avg_diluted: 10840000000       # $77.7B NI / $7.17 EPS
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 181519
+  net_profit: 30255
+  eps_diluted: 2.78
+
+actuals:
+  - { quarter_label: "2020Q1", revenue_total: 75452, net_profit: 2535, eps_diluted: 5.01, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-21-000010 filed 2021-04-30" }
+  - { quarter_label: "2020Q2", revenue_total: 88912, net_profit: 5243, eps_diluted: 10.3, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-21-000020 filed 2021-07-30" }
+  - { quarter_label: "2020Q3", revenue_total: 96145, net_profit: 6331, eps_diluted: 12.37, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-21-000028 filed 2021-10-29" }
+  - { quarter_label: "2020Q4", revenue_total: 125555, net_profit: 7222, eps_diluted: 14.09, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-K 0001018724-21-000004 filed 2021-02-03" }
+  - { quarter_label: "2021Q1", revenue_total: 108518, net_profit: 8107, eps_diluted: 15.79, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-22-000013 filed 2022-04-29" }
+  - { quarter_label: "2021Q2", revenue_total: 113080, net_profit: 7778, eps_diluted: 0.76, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-22-000019 filed 2022-07-29" }
+  - { quarter_label: "2021Q3", revenue_total: 110812, net_profit: 3156, eps_diluted: 0.31, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-22-000023 filed 2022-10-28" }
+  - { quarter_label: "2022Q1", revenue_total: 116444, net_profit: -3844, eps_diluted: -0.38, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-23-000008 filed 2023-04-28" }
+  - { quarter_label: "2022Q2", revenue_total: 121234, net_profit: -2028, eps_diluted: -0.2, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-23-000012 filed 2023-08-04" }
+  - { quarter_label: "2022Q3", revenue_total: 127101, net_profit: 2872, eps_diluted: 0.28, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-23-000018 filed 2023-10-27" }
+  - { quarter_label: "2023Q1", revenue_total: 127358, net_profit: 3172, eps_diluted: 0.31, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-24-000083 filed 2024-05-01" }
+  - { quarter_label: "2023Q2", revenue_total: 134383, net_profit: 6750, eps_diluted: 0.65, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-24-000130 filed 2024-08-02" }
+  - { quarter_label: "2023Q3", revenue_total: 143083, net_profit: 9879, eps_diluted: 0.94, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-24-000161 filed 2024-11-01" }
+  - { quarter_label: "2024Q1", revenue_total: 143313, net_profit: 10431, eps_diluted: 0.98, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-25-000036 filed 2025-05-02" }
+  - { quarter_label: "2024Q2", revenue_total: 147977, net_profit: 13485, eps_diluted: 1.26, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-25-000086 filed 2025-08-01" }
+  - { quarter_label: "2024Q3", revenue_total: 158877, net_profit: 15328, eps_diluted: 1.43, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-25-000123 filed 2025-10-31" }
+  - { quarter_label: "2025Q1", revenue_total: 155667, net_profit: 17127, eps_diluted: 1.59, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-26-000014 filed 2026-04-30" }
+  - { quarter_label: "2025Q2", revenue_total: 167702, net_profit: 18164, eps_diluted: 1.68, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-25-000086 filed 2025-08-01" }
+  - { quarter_label: "2025Q3", revenue_total: 180169, net_profit: 21187, eps_diluted: 1.95, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-25-000123 filed 2025-10-31" }
+  - { quarter_label: "2026Q1", revenue_total: 181519, net_profit: 30255, eps_diluted: 2.78, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001018724-26-000014 filed 2026-04-30" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Amazon op margin has expanded (AWS + retail efficiency). FY25 op income ~$83B /
+# $716.9B = ~11.6%. Seasonal-ish (Q4 holiday). Low tax rate.
+base:
+  probability: 0.50
+  rationale: "AWS 20%+ 재가속 + 리테일 마진 개선. 영업이익률 ~12%로 상승, 계절성 반영."
+  revenue_growth_qoq: [-0.24, 0.05, 0.07, 0.20]
+  op_margin: 0.116
+  effective_tax_rate: 0.13
+  net_interest_pct_of_revenue: 0.0
+bear:
+  probability: 0.25
+  rationale: "소비 둔화 + $200B capex 부담으로 마진 압박, AWS 성장 둔화."
+  revenue_growth_qoq: [-0.26, 0.03, 0.04, 0.16]
+  op_margin: 0.09
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.0
+bull:
+  probability: 0.25
+  rationale: "AWS AI 수요 가속 + 광고/리테일 오퍼레이팅 레버리지로 마진 대폭 확대."
+  revenue_growth_qoq: [-0.22, 0.07, 0.09, 0.24]
+  op_margin: 0.14
+  effective_tax_rate: 0.12
+  net_interest_pct_of_revenue: 0.0
+
+notes:
+  - "FY2025 매출/순이익/EPS·세그먼트는 보고치. 분기 split은 근사 역산."
+  - "op_margin은 FY25 세그먼트 영업이익 합산(~$83B)/매출 ≈ 11.6% 기준."

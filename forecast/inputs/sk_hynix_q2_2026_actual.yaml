@@ -1,0 +1,85 @@
+quarter_label: "2026Q2"
+currency: "KRW"
+unit: "billion"
+release_date: "2026-07-29"
+eps_derived: true
+shares_lever_degenerate: true
+revision_trigger: "2026 반기보고서 — 가중평균주식수 확정 시 EPS 파생치·주식수 레버 재계산"
+
+sources:
+  - id: "sk_hynix_q2_prnewswire"
+    kind: "company_earnings_release"
+    tier: "primary"
+    url: "https://www.prnewswire.com/news-releases/sk-hynix-announces-2q26-financial-results-302837085.html"
+    published_at: "2026-07-28"
+    quote: "Reports revenues of 79.3187 trillion won, operating profit of 60.5426 trillion won, net profit of 93.9226 trillion won"
+  - id: "newsway_q2_results"
+    kind: "news_report"
+    tier: "secondary"
+    url: "https://www.newsway.co.kr/news/view?ud=2026072908283040300"
+    published_at: "2026-07-29"
+    quote: "D램 평균판매가격(ASP)은 전 분기보다 약 30%, 낸드는 50% 중반 상승했다."
+
+actuals:
+  revenue_krw_bn:
+    value: 79318.7
+    source_id: "sk_hynix_q2_prnewswire"
+    quote: "Revenues | 79,318.7"
+  operating_profit_krw_bn:
+    value: 60542.6
+    source_id: "sk_hynix_q2_prnewswire"
+    quote: "Operating Profit | 60,542.6"
+  operating_margin:
+    value: 0.7633
+    source_id: "sk_hynix_q2_prnewswire"
+    quote: "Operating Margin | 76%"
+    note: "Computed at full precision as operating_profit_krw_bn / revenue_krw_bn."
+  gross_profit_krw_bn:
+    value: null
+    source_id: "sk_hynix_q2_prnewswire"
+    quote: ""
+    note: "Gross-margin and opex attribution cannot be separately identified from the preliminary release."
+  net_income_krw_bn:
+    value: 93922.6
+    source_id: "sk_hynix_q2_prnewswire"
+    quote: "Net Income | 93,922.6"
+    definition: "Consolidated K-IFRS net profit in the preliminary release; attribution to owners of the parent is not specified."
+  pretax_income_krw_bn:
+    value: null
+    note: "Not disclosed in the preliminary release."
+  income_tax_krw_bn:
+    value: null
+    note: "Not disclosed in the preliminary release."
+  below_op_breakdown:
+    value: null
+    note: "P&L versus OCI and disposal-gain versus convertible-bond remeasurement are not confirmed by a primary source."
+  weighted_avg_shares:
+    value: null
+    note: "The 2026 half-year report has not yet confirmed the quarter's weighted-average shares."
+  eps_krw:
+    value: 133099.60752064295
+    definition: "Derived as preliminary consolidated net income divided by the model profile share count of 705,656,476; not company-reported EPS."
+    source_id: "sk_hynix_q2_prnewswire"
+  dram_asp_qoq:
+    value: 0.30
+    definition: "Company-reported DRAM ASP QoQ; reviewed public material does not specify whether HBM is included, so conventional-versus-blended classification is unresolved."
+    source_id: "newsway_q2_results"
+    quote: "D램 평균판매가격(ASP)은 전 분기보다 약 30%, 낸드는 50% 중반 상승했다."
+  nand_asp_qoq:
+    value: 0.55
+    definition: "Company-reported NAND ASP QoQ, described as mid-50%; 0.55 records the midpoint shorthand, not a more precise disclosure."
+    source_id: "newsway_q2_results"
+    quote: "D램 평균판매가격(ASP)은 전 분기보다 약 30%, 낸드는 50% 중반 상승했다."
+  dram_bit_growth_qoq:
+    value: null
+    note: "Not disclosed; do not substitute an implied estimate."
+  nand_bit_growth_qoq:
+    value: null
+    note: "Not disclosed; do not substitute an implied estimate."
+
+estimates:
+  meritz:
+    as_of: "2026-07-28"
+    source: "Meritz Securities estimate cited in the handoff; secondary source, not an actual."
+    pretax_income_krw_bn: 101800.0
+    kioxia_related_gain_krw_bn: 40000.0

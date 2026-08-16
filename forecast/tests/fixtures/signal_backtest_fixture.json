@@ -1,0 +1,91 @@
+{
+  "_note": "Synthetic but hand-computable CAR spec for engine.signal_backtest. Stock/market closes chosen so AR is clean. Event 2024Q4 is the exact-value anchor: CAR[T+1d]=+0.05, CAR[T+5d]=+0.15. All four signal tones match the sign of realized CAR[T+1d] -> hit_ratio 1.0; IC>0.",
+  "documents": [
+    {
+      "document": {
+        "source": "ir_deck",
+        "doc_date": "2024-07-25",
+        "period_label": "2024Q2",
+        "raw_text": "2024Q2 IR deck (fixture). HBM 출하 확대, DRAM 가격 반등.",
+        "char_count_kr": 18,
+        "url_or_path": "fixture://skhynix_2024q2.pdf"
+      },
+      "extraction": {
+        "topics": [
+          {"topic": "HBM 수요/캐파", "salience": 0.8, "polarity": "positive", "evidence_quote": "HBM 출하 확대"}
+        ],
+        "guidance_tone": "up",
+        "surprise_candidates": ["HBM 출하"]
+      }
+    },
+    {
+      "document": {
+        "source": "ir_deck",
+        "doc_date": "2024-10-24",
+        "period_label": "2024Q3",
+        "raw_text": "2024Q3 IR deck (fixture). AI 서버 수요 강세, HBM3E 본격 양산.",
+        "char_count_kr": 20,
+        "url_or_path": "fixture://skhynix_2024q3.pdf"
+      },
+      "extraction": {
+        "topics": [
+          {"topic": "AI 서버 수요", "salience": 0.9, "polarity": "positive", "evidence_quote": "AI 서버 수요 강세"}
+        ],
+        "guidance_tone": "up",
+        "surprise_candidates": ["HBM3E 양산"]
+      }
+    },
+    {
+      "document": {
+        "source": "ir_deck",
+        "doc_date": "2025-01-23",
+        "period_label": "2024Q4",
+        "raw_text": "2024Q4 IR deck (fixture). 사상 최대 실적, DRAM 타이트.",
+        "char_count_kr": 16,
+        "url_or_path": "fixture://skhynix_2024q4.pdf"
+      },
+      "extraction": {
+        "topics": [
+          {"topic": "DRAM 가격", "salience": 0.85, "polarity": "positive", "evidence_quote": "DRAM 타이트"}
+        ],
+        "guidance_tone": "up",
+        "surprise_candidates": ["사상 최대 실적"]
+      }
+    },
+    {
+      "document": {
+        "source": "ir_deck",
+        "doc_date": "2025-04-24",
+        "period_label": "2025Q1",
+        "raw_text": "2025Q1 IR deck (fixture). 일반 DRAM 가격 약세, NAND 수요 둔화.",
+        "char_count_kr": 20,
+        "url_or_path": "fixture://skhynix_2025q1.pdf"
+      },
+      "extraction": {
+        "topics": [
+          {"topic": "DRAM 가격", "salience": 0.7, "polarity": "negative", "evidence_quote": "가격 약세"}
+        ],
+        "guidance_tone": "down",
+        "surprise_candidates": ["NAND 수요 둔화"]
+      }
+    }
+  ],
+  "event_dates": {
+    "2024Q2": "2024-07-25",
+    "2024Q3": "2024-10-24",
+    "2024Q4": "2025-01-23",
+    "2025Q1": "2025-04-24"
+  },
+  "stock_closes": {
+    "2024-07-25": 100.0, "2024-07-26": 103.0, "2024-07-29": 103.0, "2024-07-30": 103.0, "2024-07-31": 103.0, "2024-08-01": 103.0,
+    "2024-10-24": 100.0, "2024-10-25": 108.0, "2024-10-28": 108.0, "2024-10-29": 108.0, "2024-10-30": 108.0, "2024-10-31": 108.0,
+    "2025-01-23": 100.0, "2025-01-24": 110.0, "2025-01-27": 110.0, "2025-01-28": 121.0, "2025-01-29": 121.0, "2025-01-30": 121.0,
+    "2025-04-24": 100.0, "2025-04-25": 96.0, "2025-04-28": 96.0, "2025-04-29": 96.0, "2025-04-30": 96.0, "2025-05-02": 96.0
+  },
+  "market_closes": {
+    "2024-07-25": 100.0, "2024-07-26": 101.0, "2024-07-29": 101.0, "2024-07-30": 101.0, "2024-07-31": 101.0, "2024-08-01": 101.0,
+    "2024-10-24": 100.0, "2024-10-25": 102.0, "2024-10-28": 102.0, "2024-10-29": 102.0, "2024-10-30": 102.0, "2024-10-31": 102.0,
+    "2025-01-23": 100.0, "2025-01-24": 105.0, "2025-01-27": 105.0, "2025-01-28": 105.0, "2025-01-29": 105.0, "2025-01-30": 105.0,
+    "2025-04-24": 100.0, "2025-04-25": 101.0, "2025-04-28": 101.0, "2025-04-29": 101.0, "2025-04-30": 101.0, "2025-05-02": 101.0
+  }
+}

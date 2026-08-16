@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://data.sec.gov/api/xbrl/companyconcept/CIK0001692819/us-gaap/WeightedAverageNumberOfDilutedSharesOutstanding.json",
+    "accession":  null,
+    "form":  "SEC EDGAR companyconcept",
+    "taxonomy":  "us-gaap",
+    "concept":  "WeightedAverageNumberOfDilutedSharesOutstanding",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  15843,
+    "sha256":  "0961e0b280f1fcb262c320b3068b7e4f58a64d8fd287c1fdd0ce2be13de4f10b",
+    "page_count":  null,
+    "page_count_basis":  "JSON has no physical pagination",
+    "visual_verification":  "not_applicable_json"
+}

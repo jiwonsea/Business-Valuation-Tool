@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "earnings-forecast-engine"
+version = "0.1.0"
+description = "Quarterly EPS forward model + consensus gap + backtest. Currently covers SK Hynix."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "jiwonsea" }]
+
+[tool.setuptools.packages.find]
+include = ["engine*", "pipeline*", "schemas*", "output*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]  # line length is enforced loosely; long string literals OK
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+# `-m "not network"`: network-dependent tests are opt-in. Phase B is DORMANT
+# (no profile carries a signal_layer section), so its live-DART test would
+# otherwise fail for environmental reasons and be misread as a code defect.
+addopts = "-ra --strict-markers -m 'not network'"
+markers = [
+    "network: hits a live external service (DART/EDGAR/Yahoo); excluded by default, run with -m network",
+]
+
+[project.scripts]
+earnings-forecast = "cli:main"

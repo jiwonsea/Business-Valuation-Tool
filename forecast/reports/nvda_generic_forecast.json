@@ -1,0 +1,1184 @@
+{
+  "company": "NVIDIA Corporation",
+  "weighted_annual": [
+    {
+      "fiscal_year": 2026,
+      "scenario": "weighted",
+      "revenue_total": 287995.38099750003,
+      "operating_profit": 178352.60413155,
+      "net_profit": 153669.469005891,
+      "eps_basic": 6.274784361204206
+    },
+    {
+      "fiscal_year": 2027,
+      "scenario": "weighted",
+      "revenue_total": 107856.45058950002,
+      "operating_profit": 66941.59797279001,
+      "net_profit": 57689.399911752014,
+      "eps_basic": 2.3556308661393226
+    }
+  ],
+  "weighted_quarterly": [
+    {
+      "quarter_label": "2026Q2",
+      "scenario": "weighted",
+      "revenue_total": 89368.425,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 89368.425
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 55271.718375,
+      "net_profit": 47616.5986425,
+      "gp_margin": 0.0,
+      "op_margin": 0.6184703196347031,
+      "np_margin": 0.5328123287671233,
+      "eps_basic": 1.9443282418334014,
+      "eps_diluted": 1.9443282418334014
+    },
+    {
+      "quarter_label": "2026Q3",
+      "scenario": "weighted",
+      "revenue_total": 96195.51975,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 96195.51975
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 59572.175955000006,
+      "net_profit": 51327.5380191,
+      "gp_margin": 0.0,
+      "op_margin": 0.6192822296695372,
+      "np_margin": 0.5335751410512026,
+      "eps_basic": 2.0958570036382196,
+      "eps_diluted": 2.0958570036382196
+    },
+    {
+      "quarter_label": "2026Q4",
+      "scenario": "weighted",
+      "revenue_total": 102431.43624750001,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 102431.43624750001
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 63508.70980155001,
+      "net_profit": 54725.332344291004,
+      "gp_margin": 0.0,
+      "op_margin": 0.6200119038465599,
+      "np_margin": 0.5342630577985932,
+      "eps_basic": 2.2345991157325846,
+      "eps_diluted": 2.2345991157325846
+    },
+    {
+      "quarter_label": "2027Q1",
+      "scenario": "weighted",
+      "revenue_total": 107856.45058950002,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 107856.45058950002
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 66941.59797279001,
+      "net_profit": 57689.399911752014,
+      "gp_margin": 0.0,
+      "op_margin": 0.6206545608251907,
+      "np_margin": 0.5348720414629347,
+      "eps_basic": 2.3556308661393226,
+      "eps_diluted": 2.3556308661393226
+    }
+  ],
+  "backtest": {
+    "n": 26,
+    "revenue_mape": 9.920443659983473,
+    "revenue_bias": -4.110932324591177,
+    "eps_mape": 91.58743227650055,
+    "eps_bias": 77.3707471262812,
+    "naive_rw_revenue_mape": 13.897973216063617,
+    "naive_rw_eps_mape": 30.594195556711806,
+    "rows": [
+      {
+        "quarter": "2019Q4",
+        "actual_rev": 3105.0,
+        "model_rev": 3194.84,
+        "rw_rev": 3014.0,
+        "model_eps_share_count": 24720000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.03828502415458937,
+        "model_eps": 0.06920860922330097,
+        "rw_eps": 0.0363673139158576
+      },
+      {
+        "quarter": "2020Q1",
+        "actual_rev": 3080.0,
+        "model_rev": 3415.5000000000005,
+        "rw_rev": 3105.0,
+        "model_eps_share_count": 24840000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.036856913183279744,
+        "model_eps": 0.07363125000000001,
+        "rw_eps": 0.03828502415458937
+      },
+      {
+        "quarter": "2020Q2",
+        "actual_rev": 3866.0,
+        "model_rev": 3326.4,
+        "rw_rev": 3080.0,
+        "model_eps_share_count": 24880000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.02484025559105431,
+        "model_eps": 0.07159514469453376,
+        "rw_eps": 0.036856913183279744
+      },
+      {
+        "quarter": "2020Q3",
+        "actual_rev": 4726.0,
+        "model_rev": 4136.62,
+        "rw_rev": 3866.0,
+        "model_eps_share_count": 25040000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.053015873015873016,
+        "model_eps": 0.08846485662939298,
+        "rw_eps": 0.02484025559105431
+      },
+      {
+        "quarter": "2020Q4",
+        "actual_rev": 5003.0,
+        "model_rev": 5009.56,
+        "rw_rev": 4726.0,
+        "model_eps_share_count": 25200000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.05745268138801262,
+        "model_eps": 0.10645315,
+        "rw_eps": 0.053015873015873016
+      },
+      {
+        "quarter": "2021Q1",
+        "actual_rev": 5661.0,
+        "model_rev": 5503.3,
+        "rw_rev": 5003.0,
+        "model_eps_share_count": 25360000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.07563291139240506,
+        "model_eps": 0.11620730086750788,
+        "rw_eps": 0.05745268138801262
+      },
+      {
+        "quarter": "2021Q2",
+        "actual_rev": 6507.0,
+        "model_rev": 6113.88,
+        "rw_rev": 5661.0,
+        "model_eps_share_count": 25280000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.09375987361769353,
+        "model_eps": 0.1295088109177215,
+        "rw_eps": 0.07563291139240506
+      },
+      {
+        "quarter": "2021Q3",
+        "actual_rev": 7103.0,
+        "model_rev": 6962.490000000001,
+        "rw_rev": 6507.0,
+        "model_eps_share_count": 25320000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.0970843183609141,
+        "model_eps": 0.14725171386255925,
+        "rw_eps": 0.09375987361769353
+      },
+      {
+        "quarter": "2021Q4",
+        "actual_rev": 7643.0,
+        "model_rev": 7529.18,
+        "rw_rev": 7103.0,
+        "model_eps_share_count": 25380000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.11804245283018867,
+        "model_eps": 0.15886035815602836,
+        "rw_eps": 0.0970843183609141
+      },
+      {
+        "quarter": "2022Q1",
+        "actual_rev": 8288.0,
+        "model_rev": 8407.300000000001,
+        "rw_rev": 7643.0,
+        "model_eps_share_count": 25440000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.0637761135199054,
+        "model_eps": 0.17696969929245288,
+        "rw_eps": 0.11804245283018867
+      },
+      {
+        "quarter": "2022Q2",
+        "actual_rev": 6704.0,
+        "model_rev": 8951.04,
+        "rw_rev": 8288.0,
+        "model_eps_share_count": 25370000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.026073131955484895,
+        "model_eps": 0.1889350382341348,
+        "rw_eps": 0.0637761135199054
+      },
+      {
+        "quarter": "2022Q3",
+        "actual_rev": 5931.0,
+        "model_rev": 7173.280000000001,
+        "rw_rev": 6704.0,
+        "model_eps_share_count": 25160000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.027210884353741496,
+        "model_eps": 0.15267454054054055,
+        "rw_eps": 0.026073131955484895
+      },
+      {
+        "quarter": "2022Q4",
+        "actual_rev": 6051.0,
+        "model_rev": 6286.860000000001,
+        "rw_rev": 5931.0,
+        "model_eps_share_count": 24990000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.05708518368994752,
+        "model_eps": 0.13471842857142857,
+        "rw_eps": 0.027210884353741496
+      },
+      {
+        "quarter": "2023Q1",
+        "actual_rev": 7192.0,
+        "model_rev": 6656.1,
+        "rw_rev": 6051.0,
+        "model_eps_share_count": 24770000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.08204819277108434,
+        "model_eps": 0.14389751917642307,
+        "rw_eps": 0.05708518368994752
+      },
+      {
+        "quarter": "2023Q2",
+        "actual_rev": 13507.0,
+        "model_rev": 7767.360000000001,
+        "rw_rev": 7192.0,
+        "model_eps_share_count": 24900000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.24761904761904763,
+        "model_eps": 0.1670450313253012,
+        "rw_eps": 0.08204819277108434
+      },
+      {
+        "quarter": "2023Q3",
+        "actual_rev": 18120.0,
+        "model_rev": 14452.490000000002,
+        "rw_rev": 13507.0,
+        "model_eps_share_count": 24990000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.3706094627105052,
+        "model_eps": 0.3096962142857143,
+        "rw_eps": 0.24761904761904763
+      },
+      {
+        "quarter": "2023Q4",
+        "actual_rev": 22103.0,
+        "model_rev": 19207.2,
+        "rw_rev": 18120.0,
+        "model_eps_share_count": 24940000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.4925821972734563,
+        "model_eps": 0.4124080032076985,
+        "rw_eps": 0.3706094627105052
+      },
+      {
+        "quarter": "2024Q1",
+        "actual_rev": 26044.0,
+        "model_rev": 24313.300000000003,
+        "rw_rev": 22103.0,
+        "model_eps_share_count": 24940000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.5978706307754118,
+        "model_eps": 0.5220437910986367,
+        "rw_eps": 0.4925821972734563
+      },
+      {
+        "quarter": "2024Q2",
+        "actual_rev": 30040.0,
+        "model_rev": 28127.52,
+        "rw_rev": 26044.0,
+        "model_eps_share_count": 24890000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.6680215711526079,
+        "model_eps": 0.6051541566894335,
+        "rw_eps": 0.5978706307754118
+      },
+      {
+        "quarter": "2024Q3",
+        "actual_rev": 35082.0,
+        "model_rev": 32142.800000000003,
+        "rw_rev": 30040.0,
+        "model_eps_share_count": 24848000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.77940582869137,
+        "model_eps": 0.6927104555698648,
+        "rw_eps": 0.6680215711526079
+      },
+      {
+        "quarter": "2024Q4",
+        "actual_rev": 39331.0,
+        "model_rev": 37186.92,
+        "rw_rev": 35082.0,
+        "model_eps_share_count": 24774000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.8941914592187816,
+        "model_eps": 0.8038102712521191,
+        "rw_eps": 0.77940582869137
+      },
+      {
+        "quarter": "2025Q1",
+        "actual_rev": 44062.0,
+        "model_rev": 43264.100000000006,
+        "rw_rev": 39331.0,
+        "model_eps_share_count": 24705000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.7628702612652879,
+        "model_eps": 0.9377828597449909,
+        "rw_eps": 0.8941914592187816
+      },
+      {
+        "quarter": "2025Q2",
+        "actual_rev": 46743.0,
+        "model_rev": 47586.96000000001,
+        "rw_rev": 44062.0,
+        "model_eps_share_count": 24611000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.0770422305560086,
+        "model_eps": 1.0354238787534031,
+        "rw_eps": 0.7628702612652879
+      },
+      {
+        "quarter": "2025Q3",
+        "actual_rev": 57006.0,
+        "model_rev": 50015.01,
+        "rw_rev": 46743.0,
+        "model_eps_share_count": 24532000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.3033533472205203,
+        "model_eps": 1.0917592473096365,
+        "rw_eps": 1.0770422305560086
+      },
+      {
+        "quarter": "2025Q4",
+        "actual_rev": 68127.0,
+        "model_rev": 60426.36,
+        "rw_rev": 57006.0,
+        "model_eps_share_count": 24483000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.758493655341793,
+        "model_eps": 1.321664656292121,
+        "rw_eps": 1.3033533472205203
+      },
+      {
+        "quarter": "2026Q1",
+        "actual_rev": 81615.0,
+        "model_rev": 74939.70000000001,
+        "rw_rev": 68127.0,
+        "model_eps_share_count": 24430000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.3910868763068347,
+        "model_eps": 1.6426610458452726,
+        "rw_eps": 1.758493655341793
+      }
+    ],
+    "skill": {
+      "naive_rw_revenue_mape": 0.13897973216063617,
+      "naive_rw_eps_mape": 0.30594195556711806,
+      "n": 26,
+      "n_eps": 26,
+      "mase_revenue": 0.6091838301445448,
+      "mase_eps": 1.0812656206749478,
+      "theil_u2_revenue": 0.6277526118856058,
+      "theil_u2_eps": 1.0382988570575293,
+      "rw_hit_ratio_direction": 0.8846153846153846,
+      "skill_score_eps_vs_consensus": -0.5065543328904296,
+      "surprise_direction_accuracy": 0.25,
+      "n_surprise_scored": 4,
+      "trailing_8q": {
+        "naive_rw_revenue_mape": 0.13225489643144078,
+        "naive_rw_eps_mape": 0.1921443261669807,
+        "n": 8,
+        "n_eps": 8,
+        "mase_revenue": 0.5399317989598889,
+        "mase_eps": 0.9014840893725378,
+        "theil_u2_revenue": 0.5847981058605287,
+        "theil_u2_eps": 1.0261793623987947,
+        "rw_hit_ratio_direction": 1.0,
+        "skill_score_eps_vs_consensus": -0.5065543328904296,
+        "surprise_direction_accuracy": 0.25,
+        "n_surprise_scored": 4,
+        "trailing_8q": null
+      }
+    },
+    "windows": {
+      "full": {
+        "n": 26,
+        "n_eps": 26,
+        "revenue_mape": 9.920443659983473,
+        "revenue_bias": -4.110932324591177,
+        "eps_mape": 91.58743227650055,
+        "eps_bias": 77.3707471262812,
+        "skill": {
+          "naive_rw_revenue_mape": 0.13897973216063617,
+          "naive_rw_eps_mape": 0.30594195556711806,
+          "n": 26,
+          "n_eps": 26,
+          "mase_revenue": 0.6091838301445448,
+          "mase_eps": 1.0812656206749478,
+          "theil_u2_revenue": 0.6277526118856058,
+          "theil_u2_eps": 1.0382988570575293,
+          "rw_hit_ratio_direction": 0.8846153846153846,
+          "skill_score_eps_vs_consensus": -0.5065543328904296,
+          "surprise_direction_accuracy": 0.25,
+          "n_surprise_scored": 4,
+          "trailing_8q": null
+        },
+        "rows": [
+          {
+            "quarter": "2019Q4",
+            "actual_rev": 3105.0,
+            "model_rev": 3194.84,
+            "rw_rev": 3014.0,
+            "model_eps_share_count": 24720000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.03828502415458937,
+            "model_eps": 0.06920860922330097,
+            "rw_eps": 0.0363673139158576
+          },
+          {
+            "quarter": "2020Q1",
+            "actual_rev": 3080.0,
+            "model_rev": 3415.5000000000005,
+            "rw_rev": 3105.0,
+            "model_eps_share_count": 24840000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.036856913183279744,
+            "model_eps": 0.07363125000000001,
+            "rw_eps": 0.03828502415458937
+          },
+          {
+            "quarter": "2020Q2",
+            "actual_rev": 3866.0,
+            "model_rev": 3326.4,
+            "rw_rev": 3080.0,
+            "model_eps_share_count": 24880000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.02484025559105431,
+            "model_eps": 0.07159514469453376,
+            "rw_eps": 0.036856913183279744
+          },
+          {
+            "quarter": "2020Q3",
+            "actual_rev": 4726.0,
+            "model_rev": 4136.62,
+            "rw_rev": 3866.0,
+            "model_eps_share_count": 25040000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.053015873015873016,
+            "model_eps": 0.08846485662939298,
+            "rw_eps": 0.02484025559105431
+          },
+          {
+            "quarter": "2020Q4",
+            "actual_rev": 5003.0,
+            "model_rev": 5009.56,
+            "rw_rev": 4726.0,
+            "model_eps_share_count": 25200000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.05745268138801262,
+            "model_eps": 0.10645315,
+            "rw_eps": 0.053015873015873016
+          },
+          {
+            "quarter": "2021Q1",
+            "actual_rev": 5661.0,
+            "model_rev": 5503.3,
+            "rw_rev": 5003.0,
+            "model_eps_share_count": 25360000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.07563291139240506,
+            "model_eps": 0.11620730086750788,
+            "rw_eps": 0.05745268138801262
+          },
+          {
+            "quarter": "2021Q2",
+            "actual_rev": 6507.0,
+            "model_rev": 6113.88,
+            "rw_rev": 5661.0,
+            "model_eps_share_count": 25280000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.09375987361769353,
+            "model_eps": 0.1295088109177215,
+            "rw_eps": 0.07563291139240506
+          },
+          {
+            "quarter": "2021Q3",
+            "actual_rev": 7103.0,
+            "model_rev": 6962.490000000001,
+            "rw_rev": 6507.0,
+            "model_eps_share_count": 25320000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.0970843183609141,
+            "model_eps": 0.14725171386255925,
+            "rw_eps": 0.09375987361769353
+          },
+          {
+            "quarter": "2021Q4",
+            "actual_rev": 7643.0,
+            "model_rev": 7529.18,
+            "rw_rev": 7103.0,
+            "model_eps_share_count": 25380000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.11804245283018867,
+            "model_eps": 0.15886035815602836,
+            "rw_eps": 0.0970843183609141
+          },
+          {
+            "quarter": "2022Q1",
+            "actual_rev": 8288.0,
+            "model_rev": 8407.300000000001,
+            "rw_rev": 7643.0,
+            "model_eps_share_count": 25440000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.0637761135199054,
+            "model_eps": 0.17696969929245288,
+            "rw_eps": 0.11804245283018867
+          },
+          {
+            "quarter": "2022Q2",
+            "actual_rev": 6704.0,
+            "model_rev": 8951.04,
+            "rw_rev": 8288.0,
+            "model_eps_share_count": 25370000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.026073131955484895,
+            "model_eps": 0.1889350382341348,
+            "rw_eps": 0.0637761135199054
+          },
+          {
+            "quarter": "2022Q3",
+            "actual_rev": 5931.0,
+            "model_rev": 7173.280000000001,
+            "rw_rev": 6704.0,
+            "model_eps_share_count": 25160000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.027210884353741496,
+            "model_eps": 0.15267454054054055,
+            "rw_eps": 0.026073131955484895
+          },
+          {
+            "quarter": "2022Q4",
+            "actual_rev": 6051.0,
+            "model_rev": 6286.860000000001,
+            "rw_rev": 5931.0,
+            "model_eps_share_count": 24990000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.05708518368994752,
+            "model_eps": 0.13471842857142857,
+            "rw_eps": 0.027210884353741496
+          },
+          {
+            "quarter": "2023Q1",
+            "actual_rev": 7192.0,
+            "model_rev": 6656.1,
+            "rw_rev": 6051.0,
+            "model_eps_share_count": 24770000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.08204819277108434,
+            "model_eps": 0.14389751917642307,
+            "rw_eps": 0.05708518368994752
+          },
+          {
+            "quarter": "2023Q2",
+            "actual_rev": 13507.0,
+            "model_rev": 7767.360000000001,
+            "rw_rev": 7192.0,
+            "model_eps_share_count": 24900000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.24761904761904763,
+            "model_eps": 0.1670450313253012,
+            "rw_eps": 0.08204819277108434
+          },
+          {
+            "quarter": "2023Q3",
+            "actual_rev": 18120.0,
+            "model_rev": 14452.490000000002,
+            "rw_rev": 13507.0,
+            "model_eps_share_count": 24990000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.3706094627105052,
+            "model_eps": 0.3096962142857143,
+            "rw_eps": 0.24761904761904763
+          },
+          {
+            "quarter": "2023Q4",
+            "actual_rev": 22103.0,
+            "model_rev": 19207.2,
+            "rw_rev": 18120.0,
+            "model_eps_share_count": 24940000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.4925821972734563,
+            "model_eps": 0.4124080032076985,
+            "rw_eps": 0.3706094627105052
+          },
+          {
+            "quarter": "2024Q1",
+            "actual_rev": 26044.0,
+            "model_rev": 24313.300000000003,
+            "rw_rev": 22103.0,
+            "model_eps_share_count": 24940000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.5978706307754118,
+            "model_eps": 0.5220437910986367,
+            "rw_eps": 0.4925821972734563
+          },
+          {
+            "quarter": "2024Q2",
+            "actual_rev": 30040.0,
+            "model_rev": 28127.52,
+            "rw_rev": 26044.0,
+            "model_eps_share_count": 24890000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.6680215711526079,
+            "model_eps": 0.6051541566894335,
+            "rw_eps": 0.5978706307754118
+          },
+          {
+            "quarter": "2024Q3",
+            "actual_rev": 35082.0,
+            "model_rev": 32142.800000000003,
+            "rw_rev": 30040.0,
+            "model_eps_share_count": 24848000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.77940582869137,
+            "model_eps": 0.6927104555698648,
+            "rw_eps": 0.6680215711526079
+          },
+          {
+            "quarter": "2024Q4",
+            "actual_rev": 39331.0,
+            "model_rev": 37186.92,
+            "rw_rev": 35082.0,
+            "model_eps_share_count": 24774000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.8941914592187816,
+            "model_eps": 0.8038102712521191,
+            "rw_eps": 0.77940582869137
+          },
+          {
+            "quarter": "2025Q1",
+            "actual_rev": 44062.0,
+            "model_rev": 43264.100000000006,
+            "rw_rev": 39331.0,
+            "model_eps_share_count": 24705000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.7628702612652879,
+            "model_eps": 0.9377828597449909,
+            "rw_eps": 0.8941914592187816
+          },
+          {
+            "quarter": "2025Q2",
+            "actual_rev": 46743.0,
+            "model_rev": 47586.96000000001,
+            "rw_rev": 44062.0,
+            "model_eps_share_count": 24611000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.0770422305560086,
+            "model_eps": 1.0354238787534031,
+            "rw_eps": 0.7628702612652879
+          },
+          {
+            "quarter": "2025Q3",
+            "actual_rev": 57006.0,
+            "model_rev": 50015.01,
+            "rw_rev": 46743.0,
+            "model_eps_share_count": 24532000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.3033533472205203,
+            "model_eps": 1.0917592473096365,
+            "rw_eps": 1.0770422305560086
+          },
+          {
+            "quarter": "2025Q4",
+            "actual_rev": 68127.0,
+            "model_rev": 60426.36,
+            "rw_rev": 57006.0,
+            "model_eps_share_count": 24483000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.758493655341793,
+            "model_eps": 1.321664656292121,
+            "rw_eps": 1.3033533472205203
+          },
+          {
+            "quarter": "2026Q1",
+            "actual_rev": 81615.0,
+            "model_rev": 74939.70000000001,
+            "rw_rev": 68127.0,
+            "model_eps_share_count": 24430000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 2.3910868763068347,
+            "model_eps": 1.6426610458452726,
+            "rw_eps": 1.758493655341793
+          }
+        ]
+      },
+      "pre_break": {
+        "n": 14,
+        "n_eps": 14,
+        "revenue_mape": 8.563760345681578,
+        "revenue_bias": 1.9673989373069993,
+        "eps_mape": 155.2520077672268,
+        "eps_bias": 155.2520077672268,
+        "skill": {
+          "naive_rw_revenue_mape": 0.10727109389413252,
+          "naive_rw_eps_mape": 0.35665000408071473,
+          "n": 14,
+          "n_eps": 14,
+          "mase_revenue": 0.7544632073361668,
+          "mase_eps": 3.5367663752862457,
+          "theil_u2_revenue": 0.9902590965752537,
+          "theil_u2_eps": 3.1746979046156416,
+          "rw_hit_ratio_direction": 0.7857142857142857,
+          "skill_score_eps_vs_consensus": null,
+          "surprise_direction_accuracy": null,
+          "n_surprise_scored": 0,
+          "trailing_8q": null
+        },
+        "rows": [
+          {
+            "quarter": "2019Q4",
+            "actual_rev": 3105.0,
+            "model_rev": 3194.84,
+            "rw_rev": 3014.0,
+            "model_eps_share_count": 24720000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.03828502415458937,
+            "model_eps": 0.06920860922330097,
+            "rw_eps": 0.0363673139158576
+          },
+          {
+            "quarter": "2020Q1",
+            "actual_rev": 3080.0,
+            "model_rev": 3415.5000000000005,
+            "rw_rev": 3105.0,
+            "model_eps_share_count": 24840000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.036856913183279744,
+            "model_eps": 0.07363125000000001,
+            "rw_eps": 0.03828502415458937
+          },
+          {
+            "quarter": "2020Q2",
+            "actual_rev": 3866.0,
+            "model_rev": 3326.4,
+            "rw_rev": 3080.0,
+            "model_eps_share_count": 24880000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.02484025559105431,
+            "model_eps": 0.07159514469453376,
+            "rw_eps": 0.036856913183279744
+          },
+          {
+            "quarter": "2020Q3",
+            "actual_rev": 4726.0,
+            "model_rev": 4136.62,
+            "rw_rev": 3866.0,
+            "model_eps_share_count": 25040000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.053015873015873016,
+            "model_eps": 0.08846485662939298,
+            "rw_eps": 0.02484025559105431
+          },
+          {
+            "quarter": "2020Q4",
+            "actual_rev": 5003.0,
+            "model_rev": 5009.56,
+            "rw_rev": 4726.0,
+            "model_eps_share_count": 25200000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.05745268138801262,
+            "model_eps": 0.10645315,
+            "rw_eps": 0.053015873015873016
+          },
+          {
+            "quarter": "2021Q1",
+            "actual_rev": 5661.0,
+            "model_rev": 5503.3,
+            "rw_rev": 5003.0,
+            "model_eps_share_count": 25360000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.07563291139240506,
+            "model_eps": 0.11620730086750788,
+            "rw_eps": 0.05745268138801262
+          },
+          {
+            "quarter": "2021Q2",
+            "actual_rev": 6507.0,
+            "model_rev": 6113.88,
+            "rw_rev": 5661.0,
+            "model_eps_share_count": 25280000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.09375987361769353,
+            "model_eps": 0.1295088109177215,
+            "rw_eps": 0.07563291139240506
+          },
+          {
+            "quarter": "2021Q3",
+            "actual_rev": 7103.0,
+            "model_rev": 6962.490000000001,
+            "rw_rev": 6507.0,
+            "model_eps_share_count": 25320000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.0970843183609141,
+            "model_eps": 0.14725171386255925,
+            "rw_eps": 0.09375987361769353
+          },
+          {
+            "quarter": "2021Q4",
+            "actual_rev": 7643.0,
+            "model_rev": 7529.18,
+            "rw_rev": 7103.0,
+            "model_eps_share_count": 25380000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.11804245283018867,
+            "model_eps": 0.15886035815602836,
+            "rw_eps": 0.0970843183609141
+          },
+          {
+            "quarter": "2022Q1",
+            "actual_rev": 8288.0,
+            "model_rev": 8407.300000000001,
+            "rw_rev": 7643.0,
+            "model_eps_share_count": 25440000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.0637761135199054,
+            "model_eps": 0.17696969929245288,
+            "rw_eps": 0.11804245283018867
+          },
+          {
+            "quarter": "2022Q2",
+            "actual_rev": 6704.0,
+            "model_rev": 8951.04,
+            "rw_rev": 8288.0,
+            "model_eps_share_count": 25370000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.026073131955484895,
+            "model_eps": 0.1889350382341348,
+            "rw_eps": 0.0637761135199054
+          },
+          {
+            "quarter": "2022Q3",
+            "actual_rev": 5931.0,
+            "model_rev": 7173.280000000001,
+            "rw_rev": 6704.0,
+            "model_eps_share_count": 25160000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.027210884353741496,
+            "model_eps": 0.15267454054054055,
+            "rw_eps": 0.026073131955484895
+          },
+          {
+            "quarter": "2022Q4",
+            "actual_rev": 6051.0,
+            "model_rev": 6286.860000000001,
+            "rw_rev": 5931.0,
+            "model_eps_share_count": 24990000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.05708518368994752,
+            "model_eps": 0.13471842857142857,
+            "rw_eps": 0.027210884353741496
+          },
+          {
+            "quarter": "2023Q1",
+            "actual_rev": 7192.0,
+            "model_rev": 6656.1,
+            "rw_rev": 6051.0,
+            "model_eps_share_count": 24770000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.08204819277108434,
+            "model_eps": 0.14389751917642307,
+            "rw_eps": 0.05708518368994752
+          }
+        ]
+      },
+      "post_break": {
+        "n": 12,
+        "n_eps": 12,
+        "revenue_mape": 11.503240860002348,
+        "revenue_bias": -11.202318796805718,
+        "eps_mape": 17.31209420398663,
+        "eps_bias": -13.49072362148865,
+        "skill": {
+          "naive_rw_revenue_mape": 0.1759731434715571,
+          "naive_rw_eps_mape": 0.24678256563458864,
+          "n": 12,
+          "n_eps": 12,
+          "mase_revenue": 0.591728363543528,
+          "mase_eps": 0.8363448216459648,
+          "theil_u2_revenue": 0.6213510980336505,
+          "theil_u2_eps": 0.9980387985268644,
+          "rw_hit_ratio_direction": 1.0,
+          "skill_score_eps_vs_consensus": -0.5065543328904296,
+          "surprise_direction_accuracy": 0.25,
+          "n_surprise_scored": 4,
+          "trailing_8q": null
+        },
+        "rows": [
+          {
+            "quarter": "2023Q2",
+            "actual_rev": 13507.0,
+            "model_rev": 7767.360000000001,
+            "rw_rev": 7192.0,
+            "model_eps_share_count": 24900000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.24761904761904763,
+            "model_eps": 0.1670450313253012,
+            "rw_eps": 0.08204819277108434
+          },
+          {
+            "quarter": "2023Q3",
+            "actual_rev": 18120.0,
+            "model_rev": 14452.490000000002,
+            "rw_rev": 13507.0,
+            "model_eps_share_count": 24990000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.3706094627105052,
+            "model_eps": 0.3096962142857143,
+            "rw_eps": 0.24761904761904763
+          },
+          {
+            "quarter": "2023Q4",
+            "actual_rev": 22103.0,
+            "model_rev": 19207.2,
+            "rw_rev": 18120.0,
+            "model_eps_share_count": 24940000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.4925821972734563,
+            "model_eps": 0.4124080032076985,
+            "rw_eps": 0.3706094627105052
+          },
+          {
+            "quarter": "2024Q1",
+            "actual_rev": 26044.0,
+            "model_rev": 24313.300000000003,
+            "rw_rev": 22103.0,
+            "model_eps_share_count": 24940000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.5978706307754118,
+            "model_eps": 0.5220437910986367,
+            "rw_eps": 0.4925821972734563
+          },
+          {
+            "quarter": "2024Q2",
+            "actual_rev": 30040.0,
+            "model_rev": 28127.52,
+            "rw_rev": 26044.0,
+            "model_eps_share_count": 24890000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.6680215711526079,
+            "model_eps": 0.6051541566894335,
+            "rw_eps": 0.5978706307754118
+          },
+          {
+            "quarter": "2024Q3",
+            "actual_rev": 35082.0,
+            "model_rev": 32142.800000000003,
+            "rw_rev": 30040.0,
+            "model_eps_share_count": 24848000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.77940582869137,
+            "model_eps": 0.6927104555698648,
+            "rw_eps": 0.6680215711526079
+          },
+          {
+            "quarter": "2024Q4",
+            "actual_rev": 39331.0,
+            "model_rev": 37186.92,
+            "rw_rev": 35082.0,
+            "model_eps_share_count": 24774000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.8941914592187816,
+            "model_eps": 0.8038102712521191,
+            "rw_eps": 0.77940582869137
+          },
+          {
+            "quarter": "2025Q1",
+            "actual_rev": 44062.0,
+            "model_rev": 43264.100000000006,
+            "rw_rev": 39331.0,
+            "model_eps_share_count": 24705000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 0.7628702612652879,
+            "model_eps": 0.9377828597449909,
+            "rw_eps": 0.8941914592187816
+          },
+          {
+            "quarter": "2025Q2",
+            "actual_rev": 46743.0,
+            "model_rev": 47586.96000000001,
+            "rw_rev": 44062.0,
+            "model_eps_share_count": 24611000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.0770422305560086,
+            "model_eps": 1.0354238787534031,
+            "rw_eps": 0.7628702612652879
+          },
+          {
+            "quarter": "2025Q3",
+            "actual_rev": 57006.0,
+            "model_rev": 50015.01,
+            "rw_rev": 46743.0,
+            "model_eps_share_count": 24532000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.3033533472205203,
+            "model_eps": 1.0917592473096365,
+            "rw_eps": 1.0770422305560086
+          },
+          {
+            "quarter": "2025Q4",
+            "actual_rev": 68127.0,
+            "model_rev": 60426.36,
+            "rw_rev": 57006.0,
+            "model_eps_share_count": 24483000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 1.758493655341793,
+            "model_eps": 1.321664656292121,
+            "rw_eps": 1.3033533472205203
+          },
+          {
+            "quarter": "2026Q1",
+            "actual_rev": 81615.0,
+            "model_rev": 74939.70000000001,
+            "rw_rev": 68127.0,
+            "model_eps_share_count": 24430000000.0,
+            "model_eps_share_convention": "prior_quarter_split_adjusted",
+            "actual_eps": 2.3910868763068347,
+            "model_eps": 1.6426610458452726,
+            "rw_eps": 1.758493655341793
+          }
+        ]
+      }
+    }
+  },
+  "consensus": {
+    "ticker": "NVDA",
+    "as_of": "2026-08-05",
+    "revenue_estimate_quarterly": {
+      "2026Q2": 91846.09824,
+      "2026Q3": 103131.20616
+    },
+    "eps_estimate_quarterly": {
+      "2026Q2": 2.083,
+      "2026Q3": 2.35239
+    },
+    "revenue_estimate_annual": {
+      "2027": 393852.7321,
+      "2028": 561509.43987
+    },
+    "eps_estimate_annual": {
+      "2027": 8.99574,
+      "2028": 12.89043
+    },
+    "history": {
+      "2025Q2": {
+        "actual": 1.05,
+        "estimate": 1.00867,
+        "surprise_pct": 0.040999997
+      },
+      "2025Q3": {
+        "actual": 1.3,
+        "estimate": 1.25647,
+        "surprise_pct": 0.0346
+      },
+      "2025Q4": {
+        "actual": 1.62,
+        "estimate": 1.53812,
+        "surprise_pct": 0.053200003
+      },
+      "2026Q1": {
+        "actual": 1.87,
+        "estimate": 1.77191,
+        "surprise_pct": 0.0554
+      }
+    },
+    "notes": [],
+    "quality_notes": []
+  },
+  "consensus_fetch_timestamp": "2026-08-04T15:36:22.514459+00:00",
+  "signal": {
+    "bvt_independent": true,
+    "skill": {
+      "n": 12,
+      "min_n": 8,
+      "eps_mape": 17.31209420398663,
+      "naive_rw_eps_mape": 24.678256563458863,
+      "skill_pass": true,
+      "reason": "beats_naive & n>=min_n",
+      "primary_window_name": "post_break",
+      "primary_window": {
+        "n": 12,
+        "eps_mape": 17.31209420398663,
+        "naive_rw_eps_mape": 24.678256563458863,
+        "beats_naive": true
+      },
+      "full_window": {
+        "n": 26,
+        "eps_mape": 91.58743227650055,
+        "naive_rw_eps_mape": 30.594195556711806,
+        "beats_naive": false
+      },
+      "trailing_8q": {
+        "n": 8,
+        "eps_mape": 16.226316505884082,
+        "naive_rw_eps_mape": 19.214432616698073,
+        "beats_naive": true
+      },
+      "regime_shift": false,
+      "full_vs_primary_disagreement": true
+    },
+    "trajectory": {
+      "direction": "rising",
+      "growth_pct": 0.2115,
+      "n_quarters": 4
+    },
+    "consensus": {
+      "metric": "eps_fy1",
+      "model": 6.274784361204206,
+      "consensus": null,
+      "gap_pct": null,
+      "direction": "n_a"
+    },
+    "stance": "bullish"
+  }
+}

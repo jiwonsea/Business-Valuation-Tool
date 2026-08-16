@@ -1,0 +1,22 @@
+# Populate from Tesla IR/10-Q after release. Keep every value in USD millions
+# except per-share figures, margins (decimal), and diluted shares (absolute).
+# NOTE: this canonical path stays a pristine template (fail-closed by default).
+# The scored Q2 2026 actual is preserved in inputs/tsla_q2_2026_actual.filled.yaml;
+# score with:  python -m scripts.score_tsla_q2_2026 --actual inputs/tsla_q2_2026_actual.filled.yaml
+quarter_label: "2026Q2"
+provenance:
+  source: "TBD — Tesla IR shareholder deck / EDGAR 10-Q"
+  as_of: "TBD"
+revenue_total: null
+gaap_eps_diluted: null
+diluted_shares: null
+operating_income: null
+net_income: null
+automotive_revenue: null
+energy_revenue: null
+services_revenue: null
+automotive_gross_margin_ex_credits: null
+regulatory_credits: null
+other_income_expense: null
+non_gaap_eps: null
+stock_based_compensation: null

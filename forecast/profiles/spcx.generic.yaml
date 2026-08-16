@@ -1,0 +1,164 @@
+# SpaceX / Space Exploration Technologies Corp (SPCX) — generic top-down profile.
+#
+# ############################# REV-1 (프린트-전 정정) #############################
+# 2026-08-05 01:45 KST 정정. 최초 동결 2026-08-05 00:46 KST. **여전히 프린트 전**
+# (정정 시점 미국 12:45 ET, 장중. 실적은 마감 후) → 소급 은폐가 아니라 사전 정정이다.
+# Codex 6축 검토 + S-1/A 원문 F-페이지 직접 확보로 3건이 정정되었다.
+#   C1. `net_profit: -4270`은 **세전손실**이었다. 원문 연결 순손실은 **-4,276**.
+#       (보통주 귀속 순손실은 **-4,947** — 우선주 간주배당 565 + 기타 106 포함.)
+#   C2. `net_interest_pct_of_revenue`가 **이자수익을 차감하지 않은 총액 기준**이었다.
+#       원문 2026Q1: 이자비용 (664) + 이자수익 213 = **순이자 (451)** = 매출의 -9.6%.
+#       -10.7%/-13.0%/-9.0% → **-6.9%/-8.8%/-4.5%** 로 정정(순액 기준).
+#   C3. **주식수 기준 오류(최대).** 2026Q1 as-reported 가중평균은 **3,884M**(EPS -$1.27)이고
+#       13.09B은 **IPO 후 발행주식수**(Class A 7,488,063,555 + Class B 5,602,790,410
+#       = 13,090,853,965)다. 우선주 전환(Preferred Conversion)은 **공모 완료 시점**에
+#       발생하므로 2026Q2 as-reported 가중평균은 **~4.4–5.9B**에 불과하다.
+#       → 프로파일은 forward 3개 분기(Q3~Q1'27)에 맞는 13.09B을 **유지**하되,
+#         2026Q2 EPS는 **as-reported / 전환후 두 기준을 모두** FROZEN §(a-3)에 제시한다.
+# 정정 전 sha256: 05873a91c5902537171184b6606bc7bbe1f64d11094004e509f01beb4937d817
+# ##############################################################################
+#
+# ============================ NO_BACKTEST / LOW_SKILL ==========================
+# SPCX listed 2026-06-12. Its Q2 2026 print is the FIRST EVER as a public
+# company, so the number of SEC-filed *quarterly* periods available before this
+# forecast is effectively ONE (2026Q1, disclosed inside the S-1/A, not a 10-Q).
+# `backtest_generic` requires >= 13 quarters (engine/backtest.py:107) and is
+# therefore STRUCTURALLY REFUSED here. MASE / Theil / consensus-surprise skill
+# are all N/A — not "not computed yet", but *undefined*. Any number in this file
+# is a forward assumption, never a fitted parameter.
+#
+# ======================= RESTATED-COMBINED BASIS WARNING =======================
+# xAI acquired Twitter/X in 2025-03; SpaceX acquired xAI in 2026-02. Because the
+# three entities were under COMMON CONTROL (Musk), the combination was accounted
+# for retrospectively: the S-1 financials are RECAST back to 2023 as if the three
+# had always been one company, with no PPA step-up and no goodwill. Consequence:
+# **stand-alone historical SpaceX financials do not exist in comparable form**
+# anywhere in the public record. Every historical figure below is on the
+# "restated combined" basis and is NOT comparable to any pre-IPO press reporting
+# of SpaceX revenue. Label preserved in every `source` string.
+#
+# LABEL CONTRACT: fiscal year ends December 31 (calendar filer; confirmed in the
+# S-1/A prospectus). fiscal FY(N)Qq == model NQq, no offset, no consensus-join
+# offset. No stock splits post-IPO (the 5:1 recapitalisation predates the IPO and
+# is already reflected in the as-offered share counts) -> split_history empty.
+#
+# SCORING-TARGET NOTE (see reports/spcx_q2_2026_forecast_FROZEN.md §5): for a
+# pre-profit issuer with ~13.1bn shares, GAAP diluted EPS carries almost no
+# information. The FROZEN report therefore scores revenue / segments / adjusted
+# EBITDA / GAAP OP / capex / FCF and demotes EPS to band-only. That redefinition
+# is expressed in the REPORT, deliberately NOT here: GenericProfile is
+# `extra="forbid"` and has no field for scoring targets or segments, and adding
+# an SPCX-shaped one would push issuer-specific structure into the generic path
+# (COMMON-DELTA §4 axis 6). Proposed schema change is filed in
+# HANDOFF_CODEX_efe_2026aug_spcx.md §5 as P1, not implemented here.
+name: "Space Exploration Technologies Corp"
+name_kr: "스페이스X"
+ticker: "SPCX"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12         # calendar filer (S-1/A)
+
+# FORWARD share count: Class A 6.93bn + Class B 5.60bn + 555,555,555 primary
+# shares sold in the IPO ~= 13.09bn. Held flat across the window.
+# CAVEAT recorded in the FROZEN report: the 2026Q2 *weighted* average is lower
+# (~12.65-12.7bn) because the IPO closed 2026-06-26, i.e. only ~5 days inside the
+# quarter. Using 13.09bn understates the Q2 per-share loss by ~3.4%. EPS is
+# band-only for this print, so the profile keeps ONE forward-consistent number
+# rather than a Q2-only special case.
+weighted_avg_diluted: 13090000000
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 4694
+  net_profit: -4276          # REV-1/C1: CONSOLIDATED NET LOSS. (-4,270 is PRETAX.)
+  # eps_diluted intentionally omitted: the as-reported weighted-average share
+  # count (3,884M, pre-Preferred-Conversion) is NOT the current basis, so a
+  # stored EPS here would be a mixed-basis artefact (NVDA-1c rule). As-reported
+  # 2026Q1 EPS is $(1.27); pro forma (post-conversion, 10,607M) is $(0.41).
+
+# ONE fully-sourced quarter. Not enough for backtest_generic (needs 13) — this
+# is the point of the exercise, not an omission.
+actuals:
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 4694, net_profit: -4276, source: "S-1/A 0001628280-26-040364 filed 2026-06-03 (doc sha256 fd8aea34…4a88, verified in-session), restated-combined basis (SpaceX+xAI+X under common control), F-64/F-65 Consolidated Statements of Operations. Revenue $4,694M; total costs and expenses $6,637M; loss from operations $(1,943)M; interest expense $(664)M (incl. related party $186M); interest income $213M; other expense, net $(1,876)M; LOSS BEFORE INCOME TAXES $(4,270)M; provision for income taxes $6M; NET LOSS $(4,276)M; net loss attributable to shareholders $(4,947)M; basic/diluted EPS $(1.27) on 3,884M weighted shares. Adjusted EBITDA $1,127M. Segment split: Connectivity 3,257 / Space 619 / AI 818 — sums to 4,694 exactly." }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4                   # 2026Q2 .. 2027Q1
+
+# NO regime_break_quarter: with one quarter of history the concept is undefined.
+# NO backtest_methodology: COMMON-DELTA R4 requires it only where a calendar-slot
+# backtest runs. None runs here.
+
+# ============================== SCENARIO DESIGN ===============================
+# The forward path is NOT an extrapolation of history (there is none). It is a
+# CONTRACT-DRIVEN build: two disclosed compute contracts with known start dates
+# dominate 2026 revenue, and Starlink is modelled bottom-up from subscribers x
+# ARPU cross-checked against the 2026Q1 segment actual.
+#
+#   Anthropic  $1.25bn/month, Colossus I+II, through May 2029 (~$45bn), 90-day
+#              termination notice. Ramp: "May-June 2026 at a discounted rate",
+#              full rate afterwards.  -> 2026Q2 gets 2 discounted months.
+#   Google     ~$920M/month for ~110k GPUs (~$30bn term). Contract STARTS
+#              OCTOBER; ramp "through September at a reduced fee"; SpaceX must
+#              deliver the committed GPUs by 2026-09-30 or Google may terminate.
+#              -> essentially ZERO Google revenue in 2026Q2; Q4 is the step.
+#
+# COMMON-DELTA R1 applied in its stated form ("no historical average; level =
+# latest actual or company guidance"): every segment level is anchored to the
+# 2026Q1 ACTUAL and moved only by contract mechanics, never by a fitted trend.
+# R1's July direction (mark margins DOWN) is explicitly NOT carried over — see
+# COMMON-DELTA §1 R1 reversal warning.
+#
+# COMMON-DELTA R2 applied: the below-OP block is NOT anchored to the 2026Q1
+# outturn. 2026Q1 carried $1,870M of "net other expenses" (merger / fair-value
+# items) on top of interest; base sets that component to ZERO and carries it in
+# the band. Only the INTEREST floor is anchored, because it is computable from
+# debt x rate (SF3 exception). net_interest_pct_of_revenue below is therefore
+# interest-only: negative in 2026Q2 (debt $29.1bn + $20bn bridge, FY25 interest
+# $1.9bn, 2026Q1 interest +48.5% YoY), turning POSITIVE from 2026Q3 as ~$75bn of
+# IPO proceeds earn interest and the bridge is repaid.
+#
+# COMMON-DELTA R3 applied: effective tax rate is a RANGE across scenarios, not a
+# single anchor. A loss-making issuer with a full valuation allowance books ~0%;
+# rates only matter in the quarters where the model turns profitable.
+
+bear:
+  probability: 0.30
+  rationale: "Anthropic 램프가 '할인율'을 넘어 물리적 인도 지연까지 겹쳐 2026Q2 AI 매출이 $1.7B에 그침. Starlink는 ARPU 하락($66→$61)이 가입자 증가를 상쇄해 QoQ +3%대. Space는 2026Q1의 $619M 부진이 일시적이 아니라 발사 믹스의 구조 변화. Google GPU 인도 9/30 기한을 놓쳐 Q4 스텝이 2027로 밀림. below-OP에서 1분기와 유사한 평가손실이 재발."
+  revenue_growth_qoq: [0.214, 0.281, 0.260, 0.087]
+  op_margin: [-0.350, -0.180, -0.030, 0.000]
+  effective_tax_rate: 0.00
+  net_interest_pct_of_revenue: [-0.088, 0.005, 0.015, 0.015]   # REV-1/C2: netted
+base:
+  probability: 0.45
+  rationale: "Anthropic이 5~6월 2개월을 만액의 약 50~55%로 인식(≈$1.3B) → AI 세그 $2.18B로 컨센 일치. Starlink는 가입자 10.3M→11.7M·ARPU $66→$63.5의 바텀업으로 $3.55B — 컨센 $3.83B를 7% 하회(이 동결의 핵심 차별 뷰). Space는 $820M로 부분 회복. 2026Q3에 Anthropic 만액 3개월, 2026Q4에 Google 개시 → Q4에 GAAP 영업흑자 전환. below-OP는 이자 플로어만 앵커, 평가손익 base 0."
+  revenue_growth_qoq: [0.394, 0.367, 0.327, 0.066]
+  op_margin: [-0.206, -0.013, 0.110, 0.100]
+  effective_tax_rate: [0.00, 0.00, 0.05, 0.08]
+  net_interest_pct_of_revenue: [-0.069, 0.017, 0.025, 0.024]   # REV-1/C2: netted
+bull:
+  probability: 0.25
+  rationale: "Anthropic 할인폭이 작아 2개월 거의 만액($2.5B) 인식 + Colossus II 조기 가동. Starlink 기업·정부(FY25 +51%) 가속으로 세그 $3.9B 상회. Space가 발사 케이던스 정상화로 $1.0B 복귀. Google이 9월 인도 기한을 앞당겨 Q3부터 감액요율 매출 발생. IPO 대금 $75B의 이자수익이 below-OP를 플러스로 반전."
+  revenue_growth_qoq: [0.651, 0.329, 0.311, 0.074]
+  op_margin: [-0.060, 0.060, 0.170, 0.160]
+  effective_tax_rate: [0.00, 0.05, 0.10, 0.12]
+  net_interest_pct_of_revenue: [-0.045, 0.025, 0.030, 0.028]   # REV-1/C2: netted
+
+notes:
+  - "NO_BACKTEST — SEC 분기 히스토리 부재(상장 2026-06-12, 이번이 첫 실적). backtest_generic은 13분기 필요 → 구조적 REFUSE. MASE/Theil/consensus-skill 전부 N/A(미산출이 아니라 정의 불가). 헤더 라벨 LOW_SKILL."
+  - "재작성 통합(restated combined) 기준: xAI가 2025-03 X 인수, SpaceX가 2026-02 xAI 인수. 공통지배 회계로 2023까지 소급 통합(PPA·영업권 없음). → 과거 SpaceX 단독 재무는 비교 가능한 형태로 공개 기록에 존재하지 않는다."
+  - "2025 연간(재작성 통합): 매출 $18,674M = Connectivity 11,387 + Space 4,086 + AI 3,201. 세그 영업손익 4,423 / (657) / (6,355) = 연결 $(2,589)M. 세그 adj EBITDA 7,168 / 653 / (1,237) = 연결 $6,584M. 세그 합이 연결과 정확히 일치 → 미배분 본사비 없음(모델의 가법성 제약)."
+  - "2026Q1(재작성 통합): 매출 $4,694M = 3,257 + 619 + 818. 세그 OP 1,188 / (662) / (2,469) = 연결 $(1,943)M. 세그 adjEBITDA 2,087 / (351) / (609) = 연결 $1,127M. 순손실 $(4,270)M — OP와 순손실의 차 $(2,327)M이 below-OP 블록(이자 + '기타비용 순액 $1,870M')."
+  - "FY 매출(재작성 통합): 2023 $10.4B → 2024 $14.0B → 2025 $18.674B(+33%). 2026Q1은 YoY +15%(≈2025Q1 $4.08B, 당시 영업이익 +$27M) — 성장 감속이 이미 진행 중이었고, 2026년 가속은 전적으로 AI 컨트랙트에서 온다."
+  - "계약 기반 예측: Anthropic $1.25B/월(Colossus I+II, ~$45B, 2029-05까지, 90일 해지통보) — '5~6월 할인요율' 후 만액. Google ~$920M/월(~110k GPU, ~$30B) — 10월 개시, 9월까지 감액요율, 2026-09-30까지 GPU 미인도 시 해지 가능. → 2026Q2에는 Google 매출이 사실상 없다."
+  - "COMMON-DELTA R2: below-OP는 앵커 금지. 2026Q1의 '기타비용 순액 $1,870M'(합병/평가 관련)은 base에서 0으로 두고 밴드로만 표현. net_interest_pct_of_revenue는 이자 플로어(부채 $29.1B + 브릿지 $20B, FY25 이자 $1.9B, 2026Q1 이자 +48.5% YoY)만 앵커하며, IPO 대금 ~$75B의 이자수익으로 2026Q3부터 부호 반전."
+  - "COMMON-DELTA R3: 유효세율은 시나리오별 범위. 이월결손+평가충당금으로 적자 분기 ~0%, 흑자 전환 분기에만 유의미."
+  - "[SUPERSEDED by REV-1/C3] 최초 동결의 '2026Q2 가중평균 ~12.65-12.7B, 오프셋 -3.4%' 서술은 **틀렸다**. 원문 확인 결과 as-reported 가중평균은 ~4.4-5.9B이며 오프셋은 -3.4%가 아니라 약 3배다. 아래 REV-1/C3 항목이 유효한 서술이다."
+  - "채점 대상 재정의(매출/세그/adjEBITDA/GAAP OP/capex/FCF 우선, EPS는 밴드-온리)는 이 YAML이 아니라 FROZEN 리포트 §5에 있다. GenericProfile은 extra=forbid이고 세그먼트·채점대상 필드가 없다 — 종목 고유 구조를 generic 경로에 넣지 않기 위한 의도적 선택(6축 §6). 스키마 확장 제안은 HANDOFF_CODEX_efe_2026aug_spcx.md §5 P1."
+  - "원문 인용 계약(COMMON §7) — REV-1에서 **7항 전부 충족으로 승격**. 호스트가 확보한 원문 바이트(C:\\Temp\\earnings_forecast\\spaceexplorationtechnologib_20260603.htm, 12,116,869 bytes)를 세션에 스테이징해 **SHA-256을 독립 계산: fd8aea349e7f8550e4e3ccc4c72b06796ee27d2bfa2bff4891c6a21d11404a88** — Codex 산출값과 바이트 일치. 태그 제거 후 텍스트 1,496,651자/1,839행. 추출기: 자체 정규식 슬라이서(셀 경계 보존). 섹션 앵커 'Consolidated Statements of Operations'(F-64~F-65) 및 'Relationship with Antonio J. Gracias'(관련당사자) 확인. 항등식 검증 §아래."
+  - "REV-1/C1 정정: 최초 동결은 세전손실 $(4,270)M을 순손실로 잘못 기록했다. 원문 라인: 세전손실 (4,270) → 법인세 6 → **연결 순손실 (4,276)** → **보통주 귀속 순손실 (4,947)**. 차액 671 = 우선주 간주배당 565 + 기타 106. Q2 엔진 출력에는 영향 없음(시드는 매출만 사용)이나 데이터 무결성 오류였다."
+  - "REV-1/C2 정정: below-OP 이자 앵커가 **총액**이었다. 원문 2026Q1: 이자비용 (664)[관련당사자 186 포함] + 이자수익 213 = **순이자 (451)** = 매출의 -9.6%. below-OP 총계 (664)+213+(1,876) = **(2,327)** 로 연결 항등식 성립(OP (1,943) + below-OP (2,327) = 세전 (4,270) ✅). 순액 기준으로 재앵커."
+  - "REV-1/C3 정정(최대): **주식수 기준.** 원문 2026Q1 as-reported 가중평균 **3,884M**, EPS **$(1.27)**. 프로 포마(우선주 전환을 2025-01-01로 소급) 가중평균 **10,607M**, EPS **$(0.41)**, 분자에서 간주배당 565 환입. IPO 후 발행주식수는 Class A 7,488,063,555 + Class B 5,602,790,410 = **13,090,853,965**. 우선주 전환은 **공모 완료 시(2026-06-26)** 발생 → **2026Q2 as-reported 가중평균은 ~4.4–5.9B**. 프로파일의 13.09B은 forward 3개 분기에는 맞지만 **2026Q2에는 약 3배 과대**다. weighted_avg_diluted가 스칼라라 분기별 구분이 불가능(P2-1) → FROZEN §(a-3)에서 **as-reported / 전환후 이중 기준**으로 제시하고 양쪽 모두 채점한다."
+  - "자본구조(원문): Texas 법인, Nasdaq 상장 SPCX. Class B는 **주당 10의결권**(5:1 아님). 머스크 공모 후 의결권 **약 82.4%**(85.1% 아님). 5-for-1 주식분할 2026-05-04 효력, 모든 주당 수치 소급 조정됨. xAI 합병 2026-02-02 효력, X 합병 2025-03-28 효력."
+  - "관련당사자 GPU 리스 — REV-1에서 **원문 축자 확인(P0-1 해소)**: xAI 자회사가 **Valor Equity Partners**(이사 Antonio J. Gracias 관련)로부터 3건의 장비리스, 생애 총 현금지급액 **$6,986M + $6,633M + $6,587M = $20,206M**. '지급 및 이행 의무는 Space Exploration Technologies Corp. 또는 그 자회사가 보증'. **실지급: 2025년 $885M, 2026-01-01~04-30 $1,917M(4개월, 월 ~$479M) → Q2 추정 ~$1,438M.** 관련당사자 이자비용 $186M이 2026Q1 이자비용에 별도 표시된 점은 **금융리스 처리**를 시사 → GPU 원가가 EBITDA가 아니라 D&A+이자로 흐른다(AI 세그 EBITDA 기여율 가정의 근거)."
+  - "2025Q1 비교치(원문): 매출 $4,067M(2026Q1 +15.4% YoY), 영업이익 **+$27M**, 세전손실 (514), 법인세 14, 순손실 (528), EPS $(0.18), 가중평균 2,875M. 최초 동결의 '2025Q1 ≈ $4,081M'은 백분율 역산 파생값이었고 원문값으로 대체한다."

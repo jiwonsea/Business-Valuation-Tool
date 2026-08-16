@@ -1,0 +1,338 @@
+{
+  "company": "Apple Inc.",
+  "weighted_annual": [
+    {
+      "fiscal_year": 2026,
+      "scenario": "weighted",
+      "revenue_total": 236940.19197999997,
+      "operating_profit": 74760.13549799999,
+      "net_profit": 63380.37693695999,
+      "eps_basic": 4.2253584624639995
+    },
+    {
+      "fiscal_year": 2027,
+      "scenario": "weighted",
+      "revenue_total": 112764.522254,
+      "operating_profit": 35633.1850452,
+      "net_profit": 30214.377929778,
+      "eps_basic": 2.0142918619851997
+    }
+  ],
+  "weighted_quarterly": [
+    {
+      "quarter_label": "2026Q2",
+      "scenario": "weighted",
+      "revenue_total": 77828.79999999999,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 77828.79999999999
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 24541.088399999997,
+      "net_profit": 20804.055179999996,
+      "gp_margin": 0.0,
+      "op_margin": 0.3153214285714286,
+      "np_margin": 0.26730535714285714,
+      "eps_basic": 1.3869370119999997,
+      "eps_diluted": 1.3869370119999997
+    },
+    {
+      "quarter_label": "2026Q3",
+      "scenario": "weighted",
+      "revenue_total": 75730.20199999999,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 75730.20199999999
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 23893.997519999997,
+      "net_profit": 20256.821429999996,
+      "gp_margin": 0.0,
+      "op_margin": 0.3155147733529088,
+      "np_margin": 0.2674866948063865,
+      "eps_basic": 1.3504547619999998,
+      "eps_diluted": 1.3504547619999998
+    },
+    {
+      "quarter_label": "2026Q4",
+      "scenario": "weighted",
+      "revenue_total": 83381.18998,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 83381.18998
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 26325.049578,
+      "net_profit": 22319.50032696,
+      "gp_margin": 0.0,
+      "op_margin": 0.31571928374150554,
+      "np_margin": 0.26768028055624543,
+      "eps_basic": 1.487966688464,
+      "eps_diluted": 1.487966688464
+    },
+    {
+      "quarter_label": "2027Q1",
+      "scenario": "weighted",
+      "revenue_total": 112764.522254,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 112764.522254
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 35633.1850452,
+      "net_profit": 30214.377929778,
+      "gp_margin": 0.0,
+      "op_margin": 0.31599641742761,
+      "np_margin": 0.26794223330029876,
+      "eps_basic": 2.0142918619851997,
+      "eps_diluted": 2.0142918619851997
+    }
+  ],
+  "backtest": {
+    "n": 19,
+    "revenue_mape": 8.98269660805902,
+    "revenue_bias": -5.086195042217902,
+    "eps_mape": 16.421098303149826,
+    "eps_bias": 7.946446432724945,
+    "naive_rw_revenue_mape": 22.62167965552038,
+    "naive_rw_eps_mape": 29.070854779615054,
+    "rows": [
+      {
+        "quarter": "2020Q2",
+        "actual_rev": 59685.0,
+        "model_rev": 56563.61,
+        "rw_rev": 58313.0,
+        "actual_eps": 0.65,
+        "model_eps": 1.0096604385,
+        "rw_eps": 0.64
+      },
+      {
+        "quarter": "2020Q3",
+        "actual_rev": 64698.0,
+        "model_rev": 65653.5,
+        "rw_rev": 59685.0,
+        "actual_eps": 0.73,
+        "model_eps": 1.171914975,
+        "rw_eps": 0.65
+      },
+      {
+        "quarter": "2020Q4",
+        "actual_rev": 111439.0,
+        "model_rev": 87342.3,
+        "rw_rev": 64698.0,
+        "actual_eps": 1.68,
+        "model_eps": 1.559060055,
+        "rw_eps": 0.73
+      },
+      {
+        "quarter": "2021Q1",
+        "actual_rev": 89584.0,
+        "model_rev": 78007.29999999999,
+        "rw_rev": 111439.0,
+        "actual_eps": 1.4,
+        "model_eps": 1.3924303049999998,
+        "rw_eps": 1.68
+      },
+      {
+        "quarter": "2021Q2",
+        "actual_rev": 81434.0,
+        "model_rev": 86896.48,
+        "rw_rev": 89584.0,
+        "actual_eps": 1.3,
+        "model_eps": 1.5511021679999997,
+        "rw_eps": 1.4
+      },
+      {
+        "quarter": "2021Q4",
+        "actual_rev": 123945.0,
+        "model_rev": 109935.90000000001,
+        "rw_rev": 81434.0,
+        "actual_eps": 2.1,
+        "model_eps": 1.9623558150000002,
+        "rw_eps": 1.3
+      },
+      {
+        "quarter": "2022Q1",
+        "actual_rev": 97278.0,
+        "model_rev": 86761.5,
+        "rw_rev": 123945.0,
+        "actual_eps": 1.52,
+        "model_eps": 1.548692775,
+        "rw_eps": 2.1
+      },
+      {
+        "quarter": "2022Q2",
+        "actual_rev": 82959.0,
+        "model_rev": 94359.66,
+        "rw_rev": 97278.0,
+        "actual_eps": 1.2,
+        "model_eps": 1.684319931,
+        "rw_eps": 1.52
+      },
+      {
+        "quarter": "2022Q4",
+        "actual_rev": 117154.0,
+        "model_rev": 111994.65000000001,
+        "rw_rev": 82959.0,
+        "actual_eps": 1.88,
+        "model_eps": 1.9991045025000003,
+        "rw_eps": 1.2
+      },
+      {
+        "quarter": "2023Q1",
+        "actual_rev": 94836.0,
+        "model_rev": 82007.79999999999,
+        "rw_rev": 117154.0,
+        "actual_eps": 1.52,
+        "model_eps": 1.4638392299999998,
+        "rw_eps": 1.88
+      },
+      {
+        "quarter": "2023Q2",
+        "actual_rev": 81797.0,
+        "model_rev": 91990.92,
+        "rw_rev": 94836.0,
+        "actual_eps": 1.26,
+        "model_eps": 1.642037922,
+        "rw_eps": 1.52
+      },
+      {
+        "quarter": "2023Q4",
+        "actual_rev": 119575.0,
+        "model_rev": 110425.95000000001,
+        "rw_rev": 81797.0,
+        "actual_eps": 2.18,
+        "model_eps": 1.9711032075,
+        "rw_eps": 1.26
+      },
+      {
+        "quarter": "2024Q1",
+        "actual_rev": 90753.0,
+        "model_rev": 83702.5,
+        "rw_rev": 119575.0,
+        "actual_eps": 1.53,
+        "model_eps": 1.4940896249999998,
+        "rw_eps": 2.18
+      },
+      {
+        "quarter": "2024Q2",
+        "actual_rev": 85777.0,
+        "model_rev": 88030.41,
+        "rw_rev": 90753.0,
+        "actual_eps": 1.4,
+        "model_eps": 1.5713428185,
+        "rw_eps": 1.53
+      },
+      {
+        "quarter": "2024Q4",
+        "actual_rev": 124300.0,
+        "model_rev": 115798.95000000001,
+        "rw_rev": 85777.0,
+        "actual_eps": 2.4,
+        "model_eps": 2.0670112575000004,
+        "rw_eps": 1.4
+      },
+      {
+        "quarter": "2025Q1",
+        "actual_rev": 95359.0,
+        "model_rev": 87010.0,
+        "rw_rev": 124300.0,
+        "actual_eps": 1.65,
+        "model_eps": 1.5531285,
+        "rw_eps": 2.4
+      },
+      {
+        "quarter": "2025Q2",
+        "actual_rev": 94036.0,
+        "model_rev": 92498.23,
+        "rw_rev": 95359.0,
+        "actual_eps": 1.57,
+        "model_eps": 1.6510934054999997,
+        "rw_eps": 1.65
+      },
+      {
+        "quarter": "2025Q4",
+        "actual_rev": 143756.0,
+        "model_rev": 126948.6,
+        "rw_rev": 94036.0,
+        "actual_eps": 2.84,
+        "model_eps": 2.26603251,
+        "rw_eps": 1.57
+      },
+      {
+        "quarter": "2026Q1",
+        "actual_rev": 111184.0,
+        "model_rev": 100629.2,
+        "rw_rev": 143756.0,
+        "actual_eps": 2.01,
+        "model_eps": 1.79623122,
+        "rw_eps": 2.84
+      }
+    ]
+  },
+  "signal": {
+    "bvt_independent": true,
+    "skill": {
+      "n": 19,
+      "min_n": 8,
+      "eps_mape": 16.421098303149826,
+      "naive_rw_eps_mape": 29.070854779615054,
+      "skill_pass": true,
+      "reason": "beats_naive & n>=min_n",
+      "full_window": {
+        "n": 19,
+        "eps_mape": 16.421098303149826,
+        "naive_rw_eps_mape": 29.070854779615054,
+        "beats_naive": true
+      },
+      "trailing_8q": {
+        "n": 8,
+        "eps_mape": 9.990547416591328,
+        "naive_rw_eps_mape": 34.024975624846,
+        "beats_naive": true
+      },
+      "regime_shift": false
+    },
+    "trajectory": {
+      "direction": "rising",
+      "growth_pct": 0.4523,
+      "n_quarters": 4
+    },
+    "consensus": {
+      "metric": "eps_fy1",
+      "model": 4.2253584624639995,
+      "consensus": 8.7595,
+      "gap_pct": -0.5176,
+      "direction": "below"
+    },
+    "stance": "neutral"
+  }
+}

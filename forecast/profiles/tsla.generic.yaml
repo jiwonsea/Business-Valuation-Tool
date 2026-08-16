@@ -1,0 +1,120 @@
+# Tesla (TSLA) — generic top-down forecast profile.
+# EV + energy -> generic path.
+#
+# DATA PROVENANCE (NVDA-1 session, 2026-07-11): `actuals` are OFFICIAL
+# standalone quarters from EDGAR companyfacts as-filed originals (10-Q;
+# Q4 = 10-K annual minus same-FY Q3 10-Q 9M — original filings, no
+# disclosure-vintage mixing). Resolves the old "NI/EPS LOW-CONFIDENCE
+# estimate" handoff item. Regenerate with:
+# python scripts/build_generic_actuals.py --cik 1318605 --fye-month 12
+# --start 2019Q3 --end 2026Q1 (cache: reports/.cache/).
+# EPS is DERIVED at load from net_profit and split-adjusted per-quarter
+# diluted shares (split_history below); as-filed EPS provenance requires the
+# full companyfacts blob (fetch on host) — accessions are in source strings.
+# VINTAGE NOTE: FY2024 quarters were retroactively restated in FY2025 filings
+# (Q1 1129->1390, Q2 1478->1400, Q3 2167->2173, $M). Actuals keep the AS-FILED
+# originals (point-in-time honest backtest); FY2024 10-K (7091) matches the
+# as-filed quarterly sum, so Q4=2317 is vintage-consistent.
+# Calendar fiscal year (Dec-ending): fiscal FY(N)Qq == model NQq (identity).
+name: "Tesla, Inc."
+name_kr: "테슬라"
+ticker: "TSLA"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12
+# FORWARD-ONLY assumption: latest as-filed diluted weighted avg (2026Q1,
+# 10-Q 0001628280-26-026673). Historical actuals use per-quarter shares.
+weighted_avg_diluted: 3538000000
+
+# AI-supercycle comparison break; post-break headline starts at 2023Q2 per
+# REVIEW_nvda2_codex.md §1.2 row-partition evidence.
+regime_break_quarter: "2023Q2"
+
+# Stock splits (explicit, auditable — applied to as-filed diluted_shares at
+# load to reach the current basis; period_end < date -> multiply by ratio).
+split_history:
+  - { date: 2020-08-31, ratio: 5 }  # 5:1, trading split-adjusted from 2020-08-31
+  - { date: 2022-08-25, ratio: 3 }  # 3:1, trading split-adjusted from 2022-08-25
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 22387
+  net_profit: 477
+  eps_diluted: 0.13
+
+# Official standalone quarters, contiguous 2019Q3..2026Q1 (27 rows, Q4 restored).
+actuals:
+  - { quarter_label: "2019Q3", period_end: 2019-09-30, revenue_total: 6303, net_profit: 143, diluted_shares: 184000000, source: "EDGAR 10-Q 0001564590-19-038256 filed 2019-10-29 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2019Q4", period_end: 2019-12-31, revenue_total: 7384, net_profit: 105, diluted_shares: 180000000, source: "EDGAR 10-K−10-Q 0001564590-20-004475 − 0001564590-19-038256 filed 2020-02-13 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2020Q1", period_end: 2020-03-31, revenue_total: 5985, net_profit: 16, diluted_shares: 199000000, source: "EDGAR 10-Q 0001564590-20-019931 filed 2020-04-30 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2020Q2", period_end: 2020-06-30, revenue_total: 6036, net_profit: 104, diluted_shares: 207000000, source: "EDGAR 10-Q 0001564590-20-033670 filed 2020-07-28 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2020Q3", period_end: 2020-09-30, revenue_total: 8771, net_profit: 331, diluted_shares: 1105000000, source: "EDGAR 10-Q 0001564590-20-047486 filed 2020-10-26 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2020Q4", period_end: 2020-12-31, revenue_total: 10744, net_profit: 270, diluted_shares: 1155000000, source: "EDGAR 10-K−10-Q 0001564590-21-004599 − 0001564590-20-047486 filed 2021-02-08 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2021Q1", period_end: 2021-03-31, revenue_total: 10389, net_profit: 438, diluted_shares: 1133000000, source: "EDGAR 10-Q 0000950170-21-000046 filed 2021-04-28 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2021Q2", period_end: 2021-06-30, revenue_total: 11958, net_profit: 1142, diluted_shares: 1119000000, source: "EDGAR 10-Q 0000950170-21-000524 filed 2021-07-27 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2021Q3", period_end: 2021-09-30, revenue_total: 13757, net_profit: 1618, diluted_shares: 1123000000, source: "EDGAR 10-Q 0000950170-21-002253 filed 2021-10-25 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2021Q4", period_end: 2021-12-31, revenue_total: 17719, net_profit: 2321, diluted_shares: 1126000000, source: "EDGAR 10-K−10-Q 0000950170-22-000796 − 0000950170-21-002253 filed 2022-02-07 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q1", period_end: 2022-03-31, revenue_total: 18756, net_profit: 3318, diluted_shares: 1157000000, source: "EDGAR 10-Q 0000950170-22-006034 filed 2022-04-25 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q2", period_end: 2022-06-30, revenue_total: 16934, net_profit: 2259, diluted_shares: 1155000000, source: "EDGAR 10-Q 0000950170-22-012936 filed 2022-07-25 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q3", period_end: 2022-09-30, revenue_total: 21454, net_profit: 3292, diluted_shares: 3468000000, source: "EDGAR 10-Q 0000950170-22-019867 filed 2022-10-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q4", period_end: 2022-12-31, revenue_total: 24318, net_profit: 3687, diluted_shares: 3478000000, source: "EDGAR 10-K−10-Q 0000950170-23-001409 − 0000950170-22-019867 filed 2023-01-31 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q1", period_end: 2023-03-31, revenue_total: 23329, net_profit: 2513, diluted_shares: 3468000000, source: "EDGAR 10-Q 0000950170-23-013890 filed 2023-04-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q2", period_end: 2023-06-30, revenue_total: 24927, net_profit: 2703, diluted_shares: 3478000000, source: "EDGAR 10-Q 0000950170-23-033872 filed 2023-07-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q3", period_end: 2023-09-30, revenue_total: 23350, net_profit: 1853, diluted_shares: 3493000000, source: "EDGAR 10-Q 0001628280-23-034847 filed 2023-10-23 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q4", period_end: 2023-12-31, revenue_total: 25167, net_profit: 7928, diluted_shares: 3497000000, source: "EDGAR 10-K−10-Q 0001628280-24-002390 − 0001628280-23-034847 filed 2024-01-29 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q1", period_end: 2024-03-31, revenue_total: 21301, net_profit: 1129, diluted_shares: 3484000000, source: "EDGAR 10-Q 0001628280-24-017503 filed 2024-04-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q2", period_end: 2024-06-30, revenue_total: 25500, net_profit: 1478, diluted_shares: 3481000000, source: "EDGAR 10-Q 0001628280-24-032662 filed 2024-07-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-30, revenue_total: 25182, net_profit: 2167, diluted_shares: 3497000000, source: "EDGAR 10-Q 0001628280-24-043486 filed 2024-10-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-31, revenue_total: 25707, net_profit: 2317, diluted_shares: 3525000000, source: "EDGAR 10-K−10-Q 0001628280-25-003063 − 0001628280-24-043486 filed 2025-01-30 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-31, revenue_total: 19335, net_profit: 409, diluted_shares: 3521000000, source: "EDGAR 10-Q 0001628280-25-018911 filed 2025-04-23 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-30, revenue_total: 22496, net_profit: 1172, diluted_shares: 3519000000, source: "EDGAR 10-Q 0001628280-25-035806 filed 2025-07-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-30, revenue_total: 28095, net_profit: 1373, diluted_shares: 3526000000, source: "EDGAR 10-Q 0001628280-25-045968 filed 2025-10-23 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-31, revenue_total: 24901, net_profit: 840, diluted_shares: 3543000000, source: "EDGAR 10-K−10-Q 0001628280-26-003952 − 0001628280-25-045968 filed 2026-01-29 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 22387, net_profit: 477, diluted_shares: 3538000000, source: "EDGAR 10-Q 0001628280-26-026673 filed 2026-04-23 (as-filed EPS n/a, as-filed basis)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Historical one-step methodology uses target-quarter calendar slots:
+# [Q1, Q2, Q3, Q4]. Revenue rates are the 2023Q1-2026Q1 mean QoQ changes
+# from the as-filed actuals above; below-OP uses a recent negative OI&E bias.
+backtest_methodology:
+  revenue_growth_qoq: [-0.14, 0.14, 0.06, -0.01]
+  op_margin: 0.05
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: -0.005
+
+# Auto margins thin/volatile; energy + regulatory credits + other income swing
+# net materially. op_margin here is a blended ESTIMATE (~6%). HIGH UNCERTAINTY.
+# Q2 first-step growth is anchored to Tesla IR's 2026-07-02 release:
+# 480,126 deliveries and 13.5 GWh storage deployments.
+# 2026Q1 EDGAR actuals above: $940M operating income, $477M net income on
+# $22,387M revenue; use scenarioized below-OP assumptions because the gap is volatile.
+base:
+  probability: 0.50
+  rationale: "차량 판매 완만 회복 + 에너지 저장 고성장. 영업이익률 ~6%(추정). 오토파일럿/로보택시 옵션가치는 미반영."
+  revenue_growth_qoq: [0.20, 0.05, 0.08, -0.10]
+  op_margin: 0.06
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.0  # Neutral; 2026Q1 below-OP was negative and volatile.
+bear:
+  probability: 0.25
+  rationale: "가격 경쟁 심화·수요 약세로 오토 마진 추가 압박, 규제 크레딧 축소."
+  revenue_growth_qoq: [0.14, 0.00, 0.03, -0.15]
+  op_margin: 0.03
+  effective_tax_rate: 0.18
+  net_interest_pct_of_revenue: -0.010  # Downside for bitcoin/FX and other-income swings.
+bull:
+  probability: 0.25
+  rationale: "신모델·에너지 급성장 + FSD 수익화로 마진 반등."
+  revenue_growth_qoq: [0.25, 0.10, 0.13, -0.05]
+  op_margin: 0.10
+  effective_tax_rate: 0.13
+  net_interest_pct_of_revenue: 0.015
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (10-Q; Q4는 동일 회계연도 10-K 연간 − Q3 10-Q 9M 차감 복원). 구 프로파일의 NI/EPS LOW-CONFIDENCE 추정 해소 (NVDA-1 세션, 2026-07-11)."
+  - "과거 EPS는 로드 시 파생: net_profit ÷ (as-filed 분기별 희석주식수 × split_history 조정, 현재 기준). FY2024 분기는 FY2025 공시에서 소급 재작성됨 — as-filed 원본 유지(point-in-time 백테스트 정합)."
+  - "테슬라는 규제 크레딧·기타수익 변동으로 순이익 예측 오차가 큼 — 결과 해석 주의(마진 가정 신뢰도 낮음)."
+  - "FSD/로보택시 옵션가치는 top-down 마진 모델로 포착 불가 — BVT 옵셔널리티 SOTP 참조."

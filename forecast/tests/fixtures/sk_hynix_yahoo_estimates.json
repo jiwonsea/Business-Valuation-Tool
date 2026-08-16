@@ -1,0 +1,187 @@
+{
+  "_captured_by": "Claude probe_yahoo.py (Phase A fixture capture)",
+  "_captured_at": "2026-05-30",
+  "_note": "Faithful raw yfinance capture for 000660.KS. NaN -> null. Codex: normalize via pipeline/consensus_loader.to_consensus_record.",
+  "ticker": "000660.KS",
+  "earnings_estimate": [
+    {
+      "period": "0q",
+      "avg": 69422.45,
+      "low": 61998.81,
+      "high": 76447.0,
+      "yearAgoEps": 9572.0,
+      "numberOfAnalysts": 7.0,
+      "growth": 6.2527003
+    },
+    {
+      "period": "+1q",
+      "avg": 82073.45,
+      "low": 76218.695,
+      "high": 87648.0,
+      "yearAgoEps": 17850.0,
+      "numberOfAnalysts": 7.0,
+      "growth": 3.5979998
+    },
+    {
+      "period": "0y",
+      "avg": 295507.16,
+      "low": 240235.0,
+      "high": 338061.0,
+      "yearAgoEps": 60372.0,
+      "numberOfAnalysts": 31.0,
+      "growth": 3.8948002
+    },
+    {
+      "period": "+1y",
+      "avg": 382296.38,
+      "low": 186357.0,
+      "high": 505743.0,
+      "yearAgoEps": 295507.16,
+      "numberOfAnalysts": 33.0,
+      "growth": 0.2937
+    }
+  ],
+  "revenue_estimate": [
+    {
+      "period": "0q",
+      "avg": 81815893820000.0,
+      "low": 76355566430000.0,
+      "high": 88466000000000.0,
+      "numberOfAnalysts": 26.0,
+      "yearAgoRevenue": 22231952000000.0,
+      "growth": 2.6801002
+    },
+    {
+      "period": "+1q",
+      "avg": 96764022330000.0,
+      "low": 88200000000000.0,
+      "high": 112037000000000.0,
+      "numberOfAnalysts": 26.0,
+      "yearAgoRevenue": 24448900000000.0,
+      "growth": 2.9578
+    },
+    {
+      "period": "0y",
+      "avg": 332825740470000.0,
+      "low": 281118724000000.0,
+      "high": 385521000000000.0,
+      "numberOfAnalysts": 35.0,
+      "yearAgoRevenue": 97146675000000.0,
+      "growth": 2.426
+    },
+    {
+      "period": "+1y",
+      "avg": 446058254040000.0,
+      "low": 232993000000000.0,
+      "high": 630045000000000.0,
+      "numberOfAnalysts": 38.0,
+      "yearAgoRevenue": 332825740470000.0,
+      "growth": 0.3402
+    }
+  ],
+  "earnings_history": [
+    {
+      "period": "2025-06-30 00:00:00",
+      "epsActual": 9572.0,
+      "epsEstimate": 9338.132,
+      "epsDifference": 233.87,
+      "surprisePercent": 0.025
+    },
+    {
+      "period": "2025-09-30 00:00:00",
+      "epsActual": 17850.0,
+      "epsEstimate": 12586.406,
+      "epsDifference": 5263.59,
+      "surprisePercent": 0.4182
+    },
+    {
+      "period": "2025-12-31 00:00:00",
+      "epsActual": 21522.0,
+      "epsEstimate": 17822.42,
+      "epsDifference": 3699.58,
+      "surprisePercent": 0.2076
+    },
+    {
+      "period": "2026-03-31 00:00:00",
+      "epsActual": 56670.0,
+      "epsEstimate": 40016.555,
+      "epsDifference": 16653.45,
+      "surprisePercent": 0.41619998
+    }
+  ],
+  "eps_trend": [
+    {
+      "period": "0q",
+      "current": 69422.45,
+      "7daysAgo": 67048.695,
+      "30daysAgo": 58192.668,
+      "60daysAgo": 51851.957,
+      "90daysAgo": 41227.727
+    },
+    {
+      "period": "+1q",
+      "current": 82073.45,
+      "7daysAgo": 78892.92,
+      "30daysAgo": 69035.32,
+      "60daysAgo": 60243.258,
+      "90daysAgo": 47425.387
+    },
+    {
+      "period": "0y",
+      "current": 295507.16,
+      "7daysAgo": 292667.16,
+      "30daysAgo": 219301.25,
+      "60daysAgo": 192469.52,
+      "90daysAgo": 166582.14
+    },
+    {
+      "period": "+1y",
+      "current": 382296.38,
+      "7daysAgo": 369543.4,
+      "30daysAgo": 268883.75,
+      "60daysAgo": 218665.44,
+      "90daysAgo": 180805.61
+    }
+  ],
+  "eps_revisions": [
+    {
+      "period": "0q",
+      "upLast7days": 2,
+      "upLast30days": 5,
+      "downLast30days": 1,
+      "downLast7Days": 0
+    },
+    {
+      "period": "+1q",
+      "upLast7days": 2,
+      "upLast30days": 5,
+      "downLast30days": 1,
+      "downLast7Days": 0
+    },
+    {
+      "period": "0y",
+      "upLast7days": 5,
+      "upLast30days": 26,
+      "downLast30days": 0,
+      "downLast7Days": 1
+    },
+    {
+      "period": "+1y",
+      "upLast7days": 8,
+      "upLast30days": 26,
+      "downLast30days": 0,
+      "downLast7Days": 0
+    }
+  ],
+  "info": {
+    "sharesOutstanding": 709854891,
+    "floatShares": 559398821,
+    "impliedSharesOutstanding": 709854891,
+    "currency": "KRW",
+    "financialCurrency": "KRW",
+    "marketCap": 1656091473608704,
+    "currentPrice": 2333000.0,
+    "shortName": "SK hynix",
+    "longName": "SK hynix Inc."
+  }
+}

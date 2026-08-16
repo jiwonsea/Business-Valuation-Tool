@@ -1,0 +1,73 @@
+# Samsung Electronics (005930) — generic top-down forecast profile.
+# WHOLE company (DS memory + MX mobile + display + CE). The memory engine only
+# fits the DS division, so the consolidated company uses the generic path.
+# Reported FY2025: revenue KRW 333.6T, operating profit KRW 43.6T (op margin
+# 13.1%), net income KRW 45.21T; DS sales KRW 130.1T / OP KRW 24.9T; Memory
+# sales KRW 104.1T (+23%) (Samsung Global Newsroom, 2026-01).
+name: "Samsung Electronics"
+name_kr: "삼성전자"
+ticker: "005930.KS"
+currency: "KRW"
+reporting_unit: "KRW_billion"
+fiscal_year_end_month: 12
+weighted_avg_diluted: 6450000000        # common-equivalent shares (approx)
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 133873.444
+  net_profit: 47225.272
+  eps_diluted: 7056.000
+
+actuals:
+  - { quarter_label: "2021Q2", revenue_total: 63671.585, net_profit: 9634.486, eps_diluted: 1391.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2021Q2" }
+  - { quarter_label: "2021Q3", revenue_total: 73979.187, net_profit: 12293.331, eps_diluted: 1776.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2021Q3" }
+  - { quarter_label: "2021Q4", revenue_total: 76565.524, net_profit: 10837.948, eps_diluted: 1566.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2021Q4" }
+  - { quarter_label: "2022Q1", revenue_total: 77781.498, net_profit: 11324.628, eps_diluted: 1638.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2022Q1" }
+  - { quarter_label: "2022Q2", revenue_total: 77203.607, net_profit: 11098.805, eps_diluted: 1613.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2022Q2" }
+  - { quarter_label: "2022Q3", revenue_total: 76781.680, net_profit: 9389.198, eps_diluted: 1346.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2022Q3" }
+  - { quarter_label: "2022Q4", revenue_total: 70464.575, net_profit: 23841.446, eps_diluted: 3460.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2022Q4" }
+  - { quarter_label: "2023Q1", revenue_total: 63745.371, net_profit: 1574.600, eps_diluted: 206.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2023Q1" }
+  - { quarter_label: "2023Q2", revenue_total: 60005.533, net_profit: 1723.571, eps_diluted: 228.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2023Q2" }
+  - { quarter_label: "2023Q3", revenue_total: 67404.652, net_profit: 5844.171, eps_diluted: 810.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2023Q3" }
+  - { quarter_label: "2023Q4", revenue_total: 67779.938, net_profit: 6344.758, eps_diluted: 887.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2023Q4" }
+  - { quarter_label: "2024Q1", revenue_total: 71915.601, net_profit: 6754.708, eps_diluted: 975.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2024Q1" }
+  - { quarter_label: "2024Q2", revenue_total: 74068.302, net_profit: 9841.345, eps_diluted: 1419.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2024Q2" }
+  - { quarter_label: "2024Q3", revenue_total: 79098.731, net_profit: 10100.904, eps_diluted: 1440.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2024Q3" }
+  - { quarter_label: "2024Q4", revenue_total: 75788.269, net_profit: 7754.394, eps_diluted: 1116.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2024Q4" }
+  - { quarter_label: "2025Q1", revenue_total: 79140.503, net_profit: 8222.878, eps_diluted: 1192.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2025Q1" }
+  - { quarter_label: "2025Q2", revenue_total: 74566.317, net_profit: 5116.435, eps_diluted: 737.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2025Q2" }
+  - { quarter_label: "2025Q3", revenue_total: 86061.747, net_profit: 12225.747, eps_diluted: 1801.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2025Q3" }
+  - { quarter_label: "2025Q4", revenue_total: 93837.371, net_profit: 19641.745, eps_diluted: 2880.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2025Q4" }
+  - { quarter_label: "2026Q1", revenue_total: 133873.444, net_profit: 47225.272, eps_diluted: 7056.000, source: "DART fnlttSinglAcntAll CFS corp_code=00126380 2026Q1" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Memory supercycle lifts DS; mobile/CE flattish. op_margin rises toward mid-teens.
+base:
+  probability: 0.50
+  rationale: "메모리(HBM/DRAM) 가격 강세로 DS 이익 급증, 전사 영업이익률 14%대. 모바일/CE는 완만. 비메모리(파운드리) 회복은 제한적."
+  revenue_growth_qoq: [0.02, 0.03, 0.03, 0.02]
+  op_margin: 0.145
+  effective_tax_rate: 0.19
+  net_interest_pct_of_revenue: 0.015
+bear:
+  probability: 0.25
+  rationale: "메모리 가격 조기 반락 + 파운드리 적자 지속, 모바일 수요 약세."
+  revenue_growth_qoq: [0.00, 0.01, 0.00, -0.02]
+  op_margin: 0.10
+  effective_tax_rate: 0.20
+  net_interest_pct_of_revenue: 0.015
+bull:
+  probability: 0.25
+  rationale: "HBM 점유율 회복 + 메모리 초강세 관통, 파운드리 대형 수주로 마진 확대."
+  revenue_growth_qoq: [0.04, 0.05, 0.05, 0.04]
+  op_margin: 0.18
+  effective_tax_rate: 0.18
+  net_interest_pct_of_revenue: 0.015
+
+notes:
+  - "FY2025 연결 매출/영업이익/순이익·DS 세그먼트는 보고치. 분기 split은 근사 역산."
+  - "전사(연결) 모델 — SK하이닉스처럼 순수 메모리가 아니므로 generic 경로 사용. DS만 보려면 메모리 엔진 별도 프로파일 필요."
+  - "우선주 포함 총주식수는 ~6.79B(보통 5.97B+우선 0.82B); EPS는 보통주 기준 근사."

@@ -1,0 +1,320 @@
+# SK Hynix (000660.KS) earnings forecast profile
+
+company:
+  name: "SK Hynix"
+  name_kr: "SK하이닉스"
+  ticker_yahoo: "000660.KS"
+  corp_code_dart: "00164779"
+  currency: "KRW"
+  fiscal_year_end_month: 12
+  reporting_unit: "KRW_billion"
+
+segments:
+  - id: "dram"
+    name: "DRAM (HBM + DDR)"
+    sub_components:
+      - "HBM"
+      - "DDR"
+  - id: "nand"
+    name: "NAND"
+  - id: "other"
+    name: "Other"
+
+segment_revenue_split:
+  dram: 0.70
+  nand: 0.25
+  other: 0.05
+
+forecast_window:
+  # Rolled 2026Q1 → 2026Q2 (2026-07-03, user-delegated): 2026Q1 reported
+  # (rev 52.6조 +60% QoQ, GP 79.3%, EPS 57,175 — DART cache). Seed = 2026Q1 실적.
+  start_quarter: "2026Q2"
+  n_quarters: 4
+  annual_horizon_years: 2
+
+backtest_window:
+  start_quarter: "2024Q1"
+  # 2026Q1 연장 (2026-07-03, user-delegated): DART 1Q26 실적 + yahoo vintage 컨센 존재 →
+  # 컨센 skill 표본 N=3→4. 앵커는 2024Q1 유지(start_idx = len−lookback).
+  end_quarter: "2026Q1"
+  lookback_quarters: 9
+
+# Historical market drivers (Claude 리서치 초안 2026-06-02, 사용자 확정 필요).
+# forward 마진 체인이 2024Q1부터 seed까지 이 실현 ASP factor를 누적.
+# 출처(독립 시장 데이터, 회사 매출 아님 — 순환 회피):
+#   hbm_share    = HBM의 DRAM 매출 비중. SK IR: 3Q24 30%·4Q24 40%, 2025 HBM매출 더블링.
+#   ddr_asp_qoq  = 일반 DRAM contract price 변동. TrendForce: 3Q25 +45~50%, 4Q25 +18~23%, 1Q25 약세.
+#   nand_asp_qoq = NAND contract price 변동. TrendForce: 2Q25 +10~15%, 4Q25 +5~10%, 4Q24 감산 약세.
+#   hbm_asp_qoq  = HBM ASP 변동(상대적 안정, 완만 상승).
+historical_drivers:
+  "2024Q1": { hbm_share: 0.20, hbm_asp_qoq:  0.05, ddr_asp_qoq:  0.05, nand_asp_qoq:  0.08 }
+  "2024Q2": { hbm_share: 0.25, hbm_asp_qoq:  0.05, ddr_asp_qoq:  0.13, nand_asp_qoq:  0.10 }
+  "2024Q3": { hbm_share: 0.30, hbm_asp_qoq:  0.05, ddr_asp_qoq:  0.08, nand_asp_qoq:  0.05 }
+  "2024Q4": { hbm_share: 0.40, hbm_asp_qoq:  0.05, ddr_asp_qoq:  0.05, nand_asp_qoq: -0.03 }
+  "2025Q1": { hbm_share: 0.45, hbm_asp_qoq:  0.03, ddr_asp_qoq: -0.05, nand_asp_qoq: -0.05 }
+  "2025Q2": { hbm_share: 0.50, hbm_asp_qoq:  0.05, ddr_asp_qoq:  0.03, nand_asp_qoq:  0.12 }
+  "2025Q3": { hbm_share: 0.53, hbm_asp_qoq:  0.10, ddr_asp_qoq:  0.47, nand_asp_qoq:  0.08 }
+  "2025Q4": { hbm_share: 0.55, hbm_asp_qoq:  0.10, ddr_asp_qoq:  0.20, nand_asp_qoq:  0.08 }
+  # 2026Q1 (리서치 초안 2026-07-03, user-delegated 확정):
+  #   ddr_asp_qoq  = TrendForce 1Q26 conventional DRAM contract 실측 +93~98% → 0.95.
+  #   nand_asp_qoq = TrendForce 1Q26 NAND contract 상향 전망 +55~60%(실측 "상회") → 0.575.
+  #   hbm_asp_qoq  = HBM4 램프 mix premium 추정 +30%. 식별: SK 실측 blended DRAM ASP
+  #                  +mid-60% = 0.55×(HBM 1.30) + 0.45×(DDR 1.95) ≈ +59% 정합.
+  #   hbm_share    = 상기 mix 정합에서 역산: 0.55×1.30/1.59 ≈ 0.45 (commodity 급등이
+  #                  HBM 비중을 희석 — "mix cycle").
+  "2026Q1": { hbm_share: 0.45, hbm_asp_qoq:  0.30, ddr_asp_qoq:  0.95, nand_asp_qoq:  0.575 }
+
+# 단일 역사 앵커 = 백테스트 윈도 시작 2024Q1 세그먼트 총이익률 (결함 12, 시나리오 독립).
+# 캘리브레이션 규율: 앵커 blended GP를 DART 실측 2024Q1 GP(38.6%, 매출12.43조/GP4.79조)에 고정.
+#   - gm_hbm: 애널리스트 추정 — HBM은 commodity 대비 현저히 고마진(2024 ~60%대). 정확치 비공시.
+#   - gm_ddr: 앵커 항등식에서 역산(blended=38.6% 충족). 2024Q1 DRAM 가격 급반등 반영.
+#   - gm_nand/other: NAND 회복 지연·기타 추정.
+# HBM/DDR split은 비공시라 under-identified — HBM은 리서치, DDR은 잔차. 사용자 확정 필요.
+anchor_margins:
+  gm_hbm: 0.60
+  gm_ddr: 0.46
+  gm_nand: 0.15
+  gm_other: 0.10
+  cost_decline_qoq_hbm: 0.03
+  cost_decline_qoq_ddr: 0.04
+  cost_decline_qoq_nand: 0.04
+
+share_count:
+  # Refreshed 2026-07-03 (user-delegated): implied from the 2026Q1 DART report
+  # (NI 40,345.909 bn × 1e9 / EPS 57,175 = 705,656,476). The old 689M (2024-era
+  # draft) understated the count → model EPS overstated by +2.4% in 2026Q1
+  # (attribution shares lever). Single fixed count is a model simplification —
+  # per-quarter weighted counts would be the structural fix (not worth the churn
+  # at a +0.4% mean lever).
+  weighted_avg_basic: 705656476
+  weighted_avg_diluted: 705656476
+  treasury_shares: 10000000
+  source: "2026Q1 DART implied (NI*1e9/EPS_basic)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Forward assumptions — 2026Q2 ~ 2027Q1 vectors (4 elements per array).
+# CONFIRMED 2026-07-03 (user-delegated sign-off; research-sourced this date).
+# Sources:
+#   [T1] TrendForce 2026-03-31 press: 2Q26 conventional DRAM contract +58~63% QoQ,
+#        NAND Flash +70~75% QoQ; CSP long-term agreements (LTA) lock supply.
+#   [T2] TrendForce 3Q26 Memory Price Forecast (2026-06-29, RP260629OC): 가격 상승
+#        지속하되 감속 — conventional/server DRAM 두 자릿수, mobile/wafer 한 자릿수;
+#        고베이스 + LTA 제약으로 인상폭 뚜렷이 축소.
+#   [T3] TrendForce/DIGITIMES 2025-12-24: HBM3E 2026 공급가 ~+20% 인상 (H200/ASIC 수요).
+#   [T4] HBM4 가격 HBM3E 대비 ~70% 프리미엄 ($500 vs $300/stack, 2026-06 기준) —
+#        eeworld/siliconanalysts; SK 1Q26 콜: HBM4 고객 합의 일정대로 램프,
+#        HBM4E 샘플 2H26·양산 2027.
+#   [T5] SK 1Q26 실적 콜: 2026 capex 대폭 증가 (Yong-in 인프라, M15X 램프, EUV);
+#        메모리 공급부족 late-2027까지 지속 경고. 신규 팹 램프는 2H27 이후
+#        (SK/삼성 신규 팹, Micron Idaho mid-2027) → 2027–28 공급과잉 리스크
+#        (Deloitte/TechInsights 하강 전망).
+# 백테스트 커플링 주의: run_backtest는 base 시나리오의 bit_growth_qoq[0] ·
+# other.revenue_growth_qoq[0] · margins · finance를 methodology 가정으로 소비한다.
+# 9Q 백테스트 bit-identical 불변식을 위해 base의 dram bit[0]=0.05 / nand bit[0]=0.04 /
+# other[0]=0.01 및 margins/finance 블록은 이번 롤링에서 변경 금지 (변경하려면 백테스트
+# methodology 가정을 분리하는 구조 작업이 선행돼야 함 — NOTICED BUT NOT TOUCHING).
+# ─────────────────────────────────────────────────────────────────────────────
+assumptions:
+  bear:
+    probability: 0.25
+    rationale: "Correction scenario (실질 리스크): 1H26 선구매 소진 → 2H26 소비자 피크시즌 부진, 기록적 가격발 수요 파괴; 4Q26부터 contract price 반락, 2027Q1 조정 심화. HBM은 LTA로 방어되나 HBM4 가격 협상력 약화."
+    dram:
+      # 2Q26은 LTA 락인으로 상승 지속(범위 하단 +40%), 3Q26 정체, 4Q26~2027Q1 반락 [T1][T2][T5].
+      bit_growth_qoq:     [0.02, 0.02, 0.03, 0.03]
+      hbm_share_qoq:      [0.45, 0.46, 0.47, 0.48]
+      hbm_asp_yoy:         0.15
+      ddr_asp_qoq:        [0.40, 0.00, -0.10, -0.15]
+    nand:
+      bit_growth_qoq:     [0.02, 0.03, 0.04, 0.04]
+      asp_qoq:            [0.50, 0.00, -0.10, -0.12]
+    other:
+      revenue_growth_qoq: [0.00, 0.00, 0.01, 0.01]
+    margins:
+      sga_pct_of_revenue: 0.06
+      rnd_pct_of_revenue: 0.10
+      # CONFIRMED 2026-07-03 (user-delegated sign-off) — fixed+variable opex split,
+      # seeded from the base-case 8Q OLS (see base margins comment). Bear keeps the
+      # original +1.0pp opex spread over base via the variable part.
+      opex_fixed_krw_bn: 990
+      opex_variable_pct_of_revenue: 0.083
+    finance:
+      # CONFIRMED 2026-07-03 (user-delegated sign-off). Re-centered on the realized
+      # 8Q-mean effective rate (~16.4%, see base), preserving the original bear
+      # spread of +2.0pp over base.
+      effective_tax_rate: 0.184
+      net_interest_pct_of_revenue: -0.01
+
+  base:
+    probability: 0.50
+    rationale: "슈퍼사이클 지속·감속: 2Q26 conventional DRAM +58~63% / NAND +70~75% QoQ(TrendForce), 3Q26 두 자릿수→4Q26 한 자릿수로 인상폭 축소(고베이스·LTA), HBM4 ~70% 프리미엄 램프, 공급부족 late-2027까지."
+    dram:
+      # bit[0]=0.05 고정(백테스트 커플링, 상단 주석). 공급 타이트로 bit 성장 제한,
+      # M15X 램프 반영해 2027Q1 소폭 확대 [T5].
+      bit_growth_qoq:     [0.05, 0.05, 0.05, 0.06]
+      # 1Q26 실측 45%(commodity 급등 희석). 2Q26 commodity 추가 급등으로 횡보 후
+      # 가격 감속 + HBM4 램프로 점진 회복 [T1][T4].
+      hbm_share_qoq:      [0.44, 0.46, 0.48, 0.50]
+      # blended HBM ASP YoY: HBM3E +20% [T3] + HBM4(+70% 프리미엄) mix 확대 [T4] → +30%.
+      hbm_asp_yoy:         0.30
+      # 2Q26 +60%(범위 중앙 [T1]) → 3Q26 +15%(두 자릿수 감속 [T2]) → 4Q26 +7% → 2027Q1 +2%(플래토).
+      ddr_asp_qoq:        [0.60, 0.15, 0.07, 0.02]
+    nand:
+      # bit[0]=0.04 고정(백테스트 커플링).
+      bit_growth_qoq:     [0.04, 0.04, 0.05, 0.05]
+      # 2Q26 +72%(범위 중앙 [T1]) → 3Q26 +15%(enterprise SSD 주도 감속 [T2]) → 4Q26 +5% → 플래토.
+      asp_qoq:            [0.72, 0.15, 0.05, 0.00]
+    other:
+      # other[0]=0.01 고정(백테스트 커플링).
+      revenue_growth_qoq: [0.01, 0.02, 0.02, 0.02]
+    margins:
+      sga_pct_of_revenue: 0.055
+      rnd_pct_of_revenue: 0.095
+      # CONFIRMED 2026-07-03 (user-delegated sign-off; PLAN_opex_model.md,
+      # diagnose_opex.py). Realized opex shows operating leverage — opex %rev fell
+      # 15.4% (2024Q1) → 10.4% (2025Q4) while the constant 15% above (anchored on
+      # the trough quarter) drove a -4.2% mean EPS-error contribution. Seeded from
+      # the 8Q OLS fit opex = 992 bn + 7.3% × revenue; robustness: leave-one-out
+      # fixed 840–1,076 / var 0.070–0.078, Theil-Sen 843/0.0766 — draft sits
+      # mid-range. When set, these supersede the constant (sga + rnd) ratio above
+      # (kept as fallback / documentation).
+      opex_fixed_krw_bn: 990
+      opex_variable_pct_of_revenue: 0.073
+    finance:
+      # CONFIRMED 2026-07-03 (user-delegated sign-off; PLAN_tax_finance.md,
+      # diagnose_tax_finance.py). Realized effective tax (tax/pretax) averaged
+      # ~16.4% over the 8Q backtest (range 12.8–19.8%) and sat below the old 0.20
+      # in every quarter — a one-directional over-tax that drove ~-3.9pp of the
+      # -10.55% EPS bias. Anchored to the realized 8Q mean. The below-OP block
+      # (net financial / FX / one-offs) is intentionally NOT folded in here — it
+      # stays in the risk/error-band layer (lookahead).
+      effective_tax_rate: 0.164
+      net_interest_pct_of_revenue: -0.008
+
+  bull:
+    probability: 0.25
+    rationale: "공급부족 2027 관통(SK 콜 경고), LTA 기반 가격 방어 지속, HBM4 램프 가속 + HBM4E 조기 샘플; contract price 감속이 시장 전망보다 완만."
+    dram:
+      # 상승 사이클 연장: 2Q26 범위 상단 +63%, 3Q26 +25%, 이후에도 두 자릿수 근접 유지 [T1][T2][T5].
+      bit_growth_qoq:     [0.06, 0.06, 0.07, 0.08]
+      hbm_share_qoq:      [0.44, 0.47, 0.51, 0.54]
+      hbm_asp_yoy:         0.45
+      ddr_asp_qoq:        [0.63, 0.25, 0.12, 0.08]
+    nand:
+      bit_growth_qoq:     [0.05, 0.06, 0.07, 0.06]
+      asp_qoq:            [0.75, 0.25, 0.10, 0.05]
+    other:
+      revenue_growth_qoq: [0.02, 0.03, 0.03, 0.03]
+    margins:
+      sga_pct_of_revenue: 0.052
+      rnd_pct_of_revenue: 0.090
+      # CONFIRMED 2026-07-03 (user-delegated sign-off) — fixed+variable opex split,
+      # seeded from the base-case 8Q OLS (see base margins comment). Bull keeps the
+      # original -0.8pp opex spread under base via the variable part.
+      opex_fixed_krw_bn: 990
+      opex_variable_pct_of_revenue: 0.065
+    finance:
+      # CONFIRMED 2026-07-03 (user-delegated sign-off). Re-centered on the realized
+      # 8Q-mean effective rate (~16.4%, see base), preserving the original bull
+      # spread of -1.0pp under base.
+      effective_tax_rate: 0.154
+      net_interest_pct_of_revenue: -0.005
+
+baselines:
+  prior_4q_avg_margins:
+    gp_margin: null
+    op_margin: null
+    np_margin: null
+  prior_4q_avg_asp:
+    dram_blended: null
+    nand_blended: null
+  prior_4q_capex_krw_bn: null
+
+# Below-OP (below-the-line) EPS risk band — a SEPARATE layer over the EPS point
+# estimate; the structurally volatile below-OP block (net financial / FX / one-offs)
+# is NOT folded into the point estimate (would inject lookahead + overfit an 8Q,
+# outlier-heavy sample). Seeded by engine.risk_band.robust_half_width over the
+# realized 8Q block contribution (block_term/NI from scripts/diagnose_tax_finance.py;
+# tests/fixtures/sk_hynix_block_contrib.json).
+# CONFIRMED 2026-07-03 (user-delegated sign-off): method=mad, k=1.5 채택.
+# 근거 — 2025Q3 +3,407bn 등 이상치가 있는 8Q 표본에서 MAD는 폭이 이상치에 끌려가지
+# 않고(트림 대비 보수적), k=1.5는 ~87% 경험 커버(7/8 분기)로 리스크 밴드 목적에 부합.
+#   method=mad  -> half_width_pct = 1.4826 × MAD(block_contrib_8Q) × k  (outlier-resistant)
+#   k=1.5       -> ~87% empirical coverage (7/8 분기가 ±밴드 내)
+#   reference  : MAD k=1.0 = 15.19% (4/8 cover) · trimmed-std 대안 = 11.28%
+risk_band:
+  method: "mad"
+  k: 1.5
+  half_width_pct: 0.2279
+
+# Identified below-OP events — output-only event-adjusted EPS scenarios. The EPS
+# point estimate, risk_band, backtest, and valuation bridge remain unchanged.
+# probability is an analyst judgment, not a statistically estimated frequency.
+# The event layer and 8Q MAD band are only approximately separated: the band
+# sample contains outliers, MAD limits but does not remove their contribution,
+# residual overlap is non-zero, and it is not quantified.
+below_op_events:
+  - id: "kioxia_spc1_disposal"
+    as_of_date: "2026-06-24"
+    amount_as_of: "2026-07-28"
+    target_period_label: "2026Q2"
+    kind: "asset_disposal_gain"
+    amount_krw_bn: 40000
+    basis: "net_income_level"
+    probability: 0.8
+    confidence: "estimated"
+    source: "KRX disclosure 2026-06-24 (event); Meritz Securities estimate 2026-07-28 (amount)"
+    note: "The source calls it non-operating profit, implying pre-tax, but tax treatment is unconfirmed. The event explains about 91% of the KRW 44,097.7bn actual NI gap; the residual is about KRW 4,098bn from other below-OP items and the OP miss."
+    revision_trigger: "2026 half-year report — revisit basis and amount when tax treatment is confirmed"
+
+# Point-in-time macro / timing / risk overlays (date-tagged, lookahead-safe).
+# 2층 분리: overlay는 valuation·entry·risk 레이어만 먹이고 EPS 점추정엔 절대 미주입.
+# magnitude = valuation/risk-layer 단위(공정가치 분율 또는 risk-band 가중), EPS 분율 아님.
+# 가드: as_of_date < target_period_label 의 분기 말일(없으면 ir_loader가 reject).
+# overlay→DCF 실제 결합은 engine/valuation_bridge.py 워크스트림으로 위임(seam).
+# CONFIRMED 2026-07-03 (user-delegated sign-off): magnitude 3~5% × confidence ≤0.40은
+# 실현 below-OP 변동(±10~23% of NI) 대비 보수적 annotation으로 적정. annotation-only라
+# EPS 무영향. ※ 분기 경과 시 재검토 대상 — 2026Q2 overlay는 이미 기간 종료(ex-ante 기록으로 유지).
+# 2026-07-03 리프레시 (user-delegated): 2026Q3 소비자 수요·2027Q1 공급전환 overlay 추가
+# ([T2][T5] 출처는 assumptions 블록 주석 참조). 기존 3건은 ex-ante 기록으로 유지.
+overlays:
+  - as_of_date: "2026-05-15"
+    target_period_label: "2026Q2"
+    driver: "USD/KRW 환율 평가손실 (below-OP FX)"
+    direction: "risk_down"
+    magnitude: 0.03
+    confidence: 0.40
+  - as_of_date: "2026-06-10"
+    target_period_label: "2026Q3"
+    driver: "UST 10Y/30Y 금리 급등 → 밸류에이션 할인율 상승"
+    direction: "risk_down"
+    magnitude: 0.05
+    confidence: 0.30
+  - as_of_date: "2026-06-01"
+    target_period_label: "2026Q4"
+    driver: "Nvidia HBM 파트너 의존도 (집중 리스크)"
+    direction: "risk_down"
+    magnitude: 0.04
+    confidence: 0.35
+  - as_of_date: "2026-07-03"
+    target_period_label: "2026Q3"
+    driver: "1H26 선구매 소진 → 2H26 소비자 피크시즌 부진 (스마트폰/PC 생산 하향)"
+    direction: "risk_down"
+    magnitude: 0.03
+    confidence: 0.35
+  - as_of_date: "2026-07-03"
+    target_period_label: "2027Q1"
+    driver: "2027 신규 캐파 램프(SK/삼성 2H27, Micron Idaho) → 2027–28 공급과잉 전환 리스크"
+    direction: "risk_down"
+    magnitude: 0.05
+    confidence: 0.30
+
+# Valuation bridge (EPS→BVT DCF 탄력도 + overlay 소비). engine/valuation_bridge.py.
+# - fair_value_elasticity: EPS gap → 공정가치 delta 배수. ⚠️ 여전히 DRAFT — 확정에는
+#   BVT DCF의 양(+) 공정가치 교정 + (%FV)/(%EPS) 실측이 선행돼야 함(호스트,
+#   HANDOFF_valuation_bridge.md #3). 1.2 = placeholder(선형 DCF 반응 + 소폭 터미널밸류
+#   증폭 가정, 이론 범위 1.0~1.3). loose coupling — BVT import 안 함.
+# - overlay_weight: CONFIRMED 2026-07-03 (user-delegated) — 1.0 (가중 왜곡 없는 기본값).
+# 컨센서스 FY EPS가 비신뢰(§①-B, yfinance .KS 깨짐)면 cli가 delta 보류 처리.
+valuation:
+  fair_value_elasticity: 1.2
+  overlay_weight: 1.0

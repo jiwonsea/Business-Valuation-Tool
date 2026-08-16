@@ -1,0 +1,125 @@
+# Texas Instruments (TXN) — generic top-down forecast profile.
+# Analog / Embedded Processing semiconductor company: revenue is NOT DRAM bits x
+# ASP, so it uses the generic path (schemas/generic.py), not the memory engine.
+#
+# DATA PROVENANCE (TXN-1, 2026-07-22): `actuals` are OFFICIAL standalone quarters
+# from EDGAR companyfacts as-filed originals (10-Q; Q4 = 10-K annual minus same-FY
+# 9M 10-Q — original filings, no disclosure-vintage mixing). Because the Cowork
+# sandbox proxy 403s data.sec.gov for processes, the companyfacts blob was rebuilt
+# as a DERIVED cache from web_fetch companyconcept transcriptions (as-filed original
+# accessions only) at reports/.cache/edgar_companyfacts_CIK0000097476.json, then
+# assembled + verified by scripts/build_generic_actuals.py (FY-sum identity for
+# revenue & NI + as-filed EPS coherence + contiguity — all green, 21 quarters).
+# Regenerate on host with: python scripts/build_generic_actuals.py --cik 97476
+# --fye-month 12 --start 2021Q1 --end 2026Q1 (host: delete derived cache first and
+# refetch the full blob via fetch_companyfacts(97476), SEC_EDGAR_USER_AGENT set).
+# EPS is NOT stored: it is DERIVED at load from net_profit / diluted_shares — see
+# schemas/generic.py. As-filed EPS + accession are preserved in each row's source.
+#
+# LABEL CONTRACT: TXN fiscal year ends December (calendar filer) → fiscal FY(N) Qq
+# == model NQq (identity, no offset). No ~1-month consensus-join offset (unlike
+# NVDA Jan / MSFT Jun / AAPL Sep). No stock splits in the covered window
+# (split_history empty).
+name: "Texas Instruments Incorporated"
+name_kr: "텍사스 인스트루먼트"
+ticker: "TXN"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12         # calendar filer
+
+# FORWARD-ONLY assumption (kept fixed as the current diluted share count; modest
+# net buyback). Historical actuals use per-quarter as-filed shares instead.
+weighted_avg_diluted: 912000000
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 4825
+  net_profit: 1545
+  eps_diluted: 1.68
+
+# Official standalone quarters, contiguous 2021Q1..2026Q1 (21 rows, Q4 restored
+# as 10-K annual − same-FY 9M 10-Q). VERIFIED: FY-sum identity (rev & NI) +
+# as-filed EPS coherence + label contiguity all green (build_generic_actuals.py).
+actuals:
+  - { quarter_label: "2021Q1", period_end: 2021-03-31, revenue_total: 4289, net_profit: 1753, diluted_shares: 935000000, source: "EDGAR 10-Q 0000097476-21-000013 filed 2021-04-28 (as-filed EPS 1.87, as-filed basis)" }
+  - { quarter_label: "2021Q2", period_end: 2021-06-30, revenue_total: 4580, net_profit: 1931, diluted_shares: 937000000, source: "EDGAR 10-Q 0000097476-21-000020 filed 2021-07-22 (as-filed EPS 2.05, as-filed basis)" }
+  - { quarter_label: "2021Q3", period_end: 2021-09-30, revenue_total: 4643, net_profit: 1947, diluted_shares: 936000000, source: "EDGAR 10-Q 0000097476-21-000032 filed 2021-10-27 (as-filed EPS 2.07, as-filed basis)" }
+  - { quarter_label: "2021Q4", period_end: 2021-12-31, revenue_total: 4832, net_profit: 2138, diluted_shares: 936000000, source: "EDGAR 10-K−10-Q 0000097476-22-000009 − 0000097476-21-000032 filed 2022-02-04 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q1", period_end: 2022-03-31, revenue_total: 4905, net_profit: 2201, diluted_shares: 934000000, source: "EDGAR 10-Q 0000097476-22-000028 filed 2022-04-27 (as-filed EPS 2.35, as-filed basis)" }
+  - { quarter_label: "2022Q2", period_end: 2022-06-30, revenue_total: 5212, net_profit: 2291, diluted_shares: 930000000, source: "EDGAR 10-Q 0000097476-22-000040 filed 2022-07-27 (as-filed EPS 2.45, as-filed basis)" }
+  - { quarter_label: "2022Q3", period_end: 2022-09-30, revenue_total: 5241, net_profit: 2295, diluted_shares: 923000000, source: "EDGAR 10-Q 0000097476-22-000048 filed 2022-10-26 (as-filed EPS 2.47, as-filed basis)" }
+  - { quarter_label: "2022Q4", period_end: 2022-12-31, revenue_total: 4670, net_profit: 1962, diluted_shares: 917000000, source: "EDGAR 10-K−10-Q 0000097476-23-000007 − 0000097476-22-000048 filed 2023-02-03 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q1", period_end: 2023-03-31, revenue_total: 4379, net_profit: 1708, diluted_shares: 916000000, source: "EDGAR 10-Q 0000097476-23-000025 filed 2023-04-26 (as-filed EPS 1.85, as-filed basis)" }
+  - { quarter_label: "2023Q2", period_end: 2023-06-30, revenue_total: 4531, net_profit: 1722, diluted_shares: 916000000, source: "EDGAR 10-Q 0000097476-23-000035 filed 2023-07-26 (as-filed EPS 1.87, as-filed basis)" }
+  - { quarter_label: "2023Q3", period_end: 2023-09-30, revenue_total: 4532, net_profit: 1709, diluted_shares: 916000000, source: "EDGAR 10-Q 0000097476-23-000041 filed 2023-10-25 (as-filed EPS 1.85, as-filed basis)" }
+  - { quarter_label: "2023Q4", period_end: 2023-12-31, revenue_total: 4077, net_profit: 1371, diluted_shares: 916000000, source: "EDGAR 10-K−10-Q 0000097476-24-000007 − 0000097476-23-000041 filed 2024-02-02 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q1", period_end: 2024-03-31, revenue_total: 3661, net_profit: 1105, diluted_shares: 917000000, source: "EDGAR 10-Q 0000097476-24-000021 filed 2024-04-24 (as-filed EPS 1.2, as-filed basis)" }
+  - { quarter_label: "2024Q2", period_end: 2024-06-30, revenue_total: 3822, net_profit: 1127, diluted_shares: 919000000, source: "EDGAR 10-Q 0000097476-24-000030 filed 2024-07-24 (as-filed EPS 1.22, as-filed basis)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-30, revenue_total: 4151, net_profit: 1362, diluted_shares: 920000000, source: "EDGAR 10-Q 0000097476-24-000042 filed 2024-10-23 (as-filed EPS 1.47, as-filed basis)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-31, revenue_total: 4007, net_profit: 1205, diluted_shares: 919000000, source: "EDGAR 10-K−10-Q 0000097476-25-000007 − 0000097476-24-000042 filed 2025-02-14 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-31, revenue_total: 4069, net_profit: 1179, diluted_shares: 916000000, source: "EDGAR 10-Q 0000097476-25-000027 filed 2025-04-24 (as-filed EPS 1.28, as-filed basis)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-30, revenue_total: 4448, net_profit: 1295, diluted_shares: 912000000, source: "EDGAR 10-Q 0000097476-25-000036 filed 2025-07-29 (as-filed EPS 1.41, as-filed basis)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-30, revenue_total: 4742, net_profit: 1364, diluted_shares: 914000000, source: "EDGAR 10-Q 0000097476-25-000060 filed 2025-10-23 (as-filed EPS 1.48, as-filed basis)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-31, revenue_total: 4423, net_profit: 1163, diluted_shares: 910000000, source: "EDGAR 10-K−10-Q 0000097476-26-000059 − 0000097476-25-000060 filed 2026-02-06 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 4825, net_profit: 1545, diluted_shares: 914000000, source: "EDGAR 10-Q 0000097476-26-000101 filed 2026-04-24 (as-filed EPS 1.68, as-filed basis)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Regime break at the cyclical-recovery inflection. Two structural shifts align at
+# 2025: (1) the 300mm/CHIPS depreciation ramp permanently reset gross margin lower
+# (~70% in 2022 → ~58% in 2025), and (2) demand troughed in FY2024 (NI $4.8B) and
+# began recovering in 2025. The forward window EXTENDS this post-2025 regime, so
+# the post-break window is the relevant skill read; the pre-break down-cycle (2021
+# peak margins → 2024 trough) is a different margin regime that fixed forward
+# op_margin assumptions cannot track (the known backtest↔forward coupling). All
+# three windows are reported transparently. Post-break N is small (recovery is
+# young) — treat as indicative.
+regime_break_quarter: "2025Q1"
+
+# Forward scenarios: cyclical recovery off the 2024 trough (FY24 NI $4.8B) led by
+# industrial (+30% YoY, +20% QoQ in Q1'26) and data center; automotive flat/near
+# peak. QoQ growth vectors are in FORWARD order [2026Q2, 2026Q3, 2026Q4, 2027Q1]
+# and traverse the natural TXN season (Q2 up, Q3 up, Q4 down, Q1 ~flat).
+# op_margin reflects operating leverage: GM rises with utilization (75-85%
+# ex-depreciation incremental fall-through, mgmt Q1'26 call) while the 300mm/CHIPS
+# depreciation ramp (~$2.2-2.4B FY26, ~flat QoQ) caps the upside. net_interest_pct
+# is NEGATIVE: TXN's below-OP block (net interest + OI&E) subtracts ~1.8% of
+# revenue (Q1'26: OP $1,808M → pretax $1,714M). tax ~13% (Q2'26 mgmt guide).
+#
+# NOTE (backtest↔forward slot coupling): backtest_generic indexes the base vector
+# by CALENDAR slot (Q1→[0]..Q4→[3]); the forward path indexes by step-from-seed
+# (seed=2026Q1 → 2026Q2 uses [0]). With a Q1 seed these differ by one seasonal
+# position, so the 1-step backtest is seasonally offset for TXN and understates
+# skill — the FROZEN forecast is calibrated for the FORWARD path (the scored
+# artifact). See reports/txn_q2_2026_forecast_FROZEN.md.
+base:
+  probability: 0.50
+  rationale: "산업+데이터센터 주도 회복 지속, 자동차 flat. Q2'26 매출 회사 가이던스 미드(~$5.2B)/컨센($5.24B) 근처. 가동률 상승으로 OP마진 ~40%까지 개선, 감가상각 램프가 상단 제약. 세율 ~13%."
+  revenue_growth_qoq: [0.083, 0.035, -0.030, 0.020]
+  op_margin: [0.400, 0.410, 0.390, 0.375]
+  effective_tax_rate: 0.13
+  net_interest_pct_of_revenue: -0.018
+bear:
+  probability: 0.25
+  rationale: "회복 둔화·자동차 재약세, 채널 재고 조정. Q2'26 매출 가이던스 하단(~$5.0B) 근처, 가동률 부진+감가상각 부담으로 GM/OP마진 정체(~37%). EPS 가이던스 하단 하회 리스크."
+  revenue_growth_qoq: [0.036, 0.010, -0.050, 0.010]
+  op_margin: [0.370, 0.375, 0.355, 0.350]
+  effective_tax_rate: 0.13
+  net_interest_pct_of_revenue: -0.018
+bull:
+  probability: 0.25
+  rationale: "산업 secular 재가속 + 데이터센터 강세, 가동률 급등으로 ex-감가 fall-through 80%+ 실현. Q2'26 매출 가이던스 상단(~$5.4B), OP마진 42%+. EPS 컨센/가이던스 상단 상회."
+  revenue_growth_qoq: [0.115, 0.050, -0.020, 0.030]
+  op_margin: [0.420, 0.430, 0.410, 0.400]
+  effective_tax_rate: 0.13
+  net_interest_pct_of_revenue: -0.018
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (10-Q; Q4는 동일 회계연도 10-K 연간 − 9M 10-Q 차감 복원). TXN-1 (2026-07-22). 21개 분기 2021Q1..2026Q1 FY합 항등식+EPS 정합성+연속성 검증 통과."
+  - "샌드박스 프록시가 data.sec.gov를 프로세스에 403 → web_fetch companyconcept 전사로 파생 캐시(as-filed 원본 accession only) 구축. 호스트에서는 파생 캐시 삭제 후 fetch_companyfacts(97476) 풀 블롭 재수집 권장."
+  - "과거 EPS는 저장하지 않고 로드 시 파생: net_profit ÷ 분기별 as-filed 희석주식수. 분할 이력 없음(split_history 비어있음). as-filed EPS·accession은 source에 보존."
+  - "라벨 계약: 12월 결산 캘린더 filer → fiscal FY(N)Qq = model NQq (오프셋 없음)."
+  - "총마진(GM) 분해는 generic 경로에 없음(gross_profit=0 의도적). GM 포인트 추정은 FROZEN 리포트의 애널리스트 레이어(감가상각 vs 가동률 순효과)로 별도 기재."
+  - "Q1'26 참고: 매출 $4,825M, NI $1,545M, EPS $1.68, GM 57.96%, OP마진 37.4%, 감가상각 $541M, capex $676M (10-Q 0000097476-26-000101)."

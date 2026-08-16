@@ -1,0 +1,99 @@
+# Alphabet (GOOGL) — generic top-down forecast profile.
+# Search/ads/cloud company -> generic path (schemas/generic.py), NOT the memory
+# engine (revenue is not DRAM bits x ASP).
+#
+# DATA PROVENANCE (GOOGL-1, 2026-07-22): `actuals` are OFFICIAL standalone
+# quarters from EDGAR companyfacts as-filed originals (10-Q; Q4 = 10-K annual
+# minus same-FY Q3 10-Q 9M). Regenerate with:
+#   python scripts/build_generic_actuals.py --cik 1652044 --fye-month 12 \
+#       --start 2024Q2 --end 2026Q2   (cache: reports/.cache/, SEC companyfacts).
+# EPS is NOT stored: it is DERIVED at load from net_profit and per-quarter
+# as-filed diluted shares (schemas/generic.py). As-filed EPS + accession are
+# preserved in each row's source string.
+#
+# WINDOW NOTE: the buildable, same-accession-clean span begins at 2024Q2 —
+# Alphabet's earlier interim 10-Qs do not tag a 3-month diluted-share
+# denominator under WeightedAverageNumberOfDilutedSharesOutstanding, so pre-2024Q2
+# quarters cannot be assembled under the same-accession integrity rule. All 8
+# quarters are POST the 20:1 split (effective 2022-07-15), so shares are on one
+# basis and split_history is intentionally EMPTY (the split does not fall inside
+# the window; keying it by period_end would also be unsafe because the split
+# fell between 2022Q2's period-end and its filing).
+#
+# LABEL CONTRACT: December fiscal-year end -> model label == calendar quarter
+# (identity, no offset), unlike NVDA/MSFT/AAPL.
+name: "Alphabet Inc."
+name_kr: "알파벳(구글)"
+ticker: "GOOGL"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12
+# FORWARD-ONLY assumption (kept fixed = latest as-filed diluted shares, 2026Q1
+# 10-Q). Historical actuals use per-quarter as-filed shares instead.
+weighted_avg_diluted: 12238000000
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 109896
+  net_profit: 62578
+  eps_diluted: 5.11
+
+# Official standalone quarters, contiguous 2024Q2..2026Q2 (9 rows, Q4s restored).
+actuals:
+  - { quarter_label: "2024Q2", period_end: 2024-06-30, revenue_total: 84742, net_profit: 23619, diluted_shares: 12495000000, source: "EDGAR 10-Q 0001652044-24-000079 filed 2024-07-24 (as-filed EPS 1.89, as-filed basis)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-30, revenue_total: 88268, net_profit: 26301, diluted_shares: 12419000000, source: "EDGAR 10-Q 0001652044-24-000118 filed 2024-10-30 (as-filed EPS 2.12, as-filed basis)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-31, revenue_total: 96469, net_profit: 26536, diluted_shares: 12348000000, source: "EDGAR 10-K−10-Q 0001652044-25-000014 − 0001652044-24-000118 filed 2025-02-05 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-31, revenue_total: 90234, net_profit: 34540, diluted_shares: 12291000000, source: "EDGAR 10-Q 0001652044-25-000043 filed 2025-04-25 (as-filed EPS 2.81, as-filed basis)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-30, revenue_total: 96428, net_profit: 28196, diluted_shares: 12198000000, source: "EDGAR 10-Q 0001652044-25-000062 filed 2025-07-24 (as-filed EPS 2.31, as-filed basis)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-30, revenue_total: 102346, net_profit: 34979, diluted_shares: 12203000000, source: "EDGAR 10-Q 0001652044-25-000091 filed 2025-10-30 (as-filed EPS 2.87, as-filed basis)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-31, revenue_total: 113829, net_profit: 34455, diluted_shares: 12230000000, source: "EDGAR 10-K−10-Q 0001652044-26-000018 − 0001652044-25-000091 filed 2026-02-05 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 109896, net_profit: 62578, diluted_shares: 12238000000, source: "EDGAR 10-Q 0001652044-26-000048 filed 2026-04-30 (as-filed EPS 5.11, as-filed basis)" }
+  - { quarter_label: "2026Q2", period_end: 2026-06-30, revenue_total: 119796, net_profit: 112193, diluted_shares: 12309000000, source: "EDGAR 10-Q 0001652044-26-000071 filed 2026-07-23 (as-filed EPS 9.11, as-filed basis)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Forward scenarios (top-down: revenue_growth_qoq x op_margin -> quarterly EPS).
+# op_margin anchored to the reported 2026 operating-margin uptrend (~34.5% base;
+# 2026Q1 36.1%, FY2025 ~32.5% -> AI/Cloud leverage). OP->NI via effective tax.
+# revenue_growth_qoq is a SMOOTH top-down trend (research/consensus-anchored: 2026Q2
+# QoQ ~+5.5% -> $115.9bn vs consensus $116.7bn), deliberately NOT seasonal: GOOGL's
+# mild Q2/Q4 up-seasonality and Q1 down-step are NOT modelled (see swing factor),
+# and the offline backtest's slot convention is calendar-quarter-of-target while the
+# forward is step-from-seed (structural coupling, engine untouched) — a smooth vector
+# keeps the backtest beating naive RW instead of being mis-phased.
+# NOTE: this OP path deliberately does NOT carry the large, volatile OI&E
+# equity-investment mark-to-market gains that inflate reported NI (e.g. 2026Q1 NI
+# $62.6bn / 57% net margin; BofA models an ~$80bn Anthropic markup for 2026Q2 that
+# could push GAAP EPS to ~$8+). Forward EPS here is an OPERATING-EPS proxy
+# comparable to the Street's ADJUSTED consensus (~$2.87), NOT to GAAP EPS.
+base:
+  probability: 0.50
+  rationale: "매출 스무스 성장(2026Q2 QoQ +5.5% -> $115.9bn, 컨센 $116.7bn과 거의 일치). Google Cloud 60%+ 성장 지속, 영업이익률 ~34.5%(2026Q1 36.1%·FY2025 32.5% 사이). AI capex($180-190bn)가 FCF/순증가율 제약."
+  revenue_growth_qoq: [0.055, 0.05, 0.06, 0.045]
+  op_margin: 0.345
+  effective_tax_rate: 0.16
+  net_interest_pct_of_revenue: 0.005
+bear:
+  probability: 0.25
+  rationale: "AI 검색 대체·광고 둔화, 반독점(검색 기본계약/애드테크 항소) 오버행, capex 감가상각 램프로 마진 압박. 매출 컨센 하단(~$113bn)."
+  revenue_growth_qoq: [0.03, 0.03, 0.04, 0.02]
+  op_margin: 0.315
+  effective_tax_rate: 0.17
+  net_interest_pct_of_revenue: 0.005
+bull:
+  probability: 0.25
+  rationale: "Google Cloud 65%+ 가속·백로그 확대, 광고 재가속, Gemini 수익화 + AI 레버리지로 영업이익률 Q1'26(36%) 수준 유지. 매출 컨센 상단(~$119bn)."
+  revenue_growth_qoq: [0.08, 0.07, 0.09, 0.06]
+  op_margin: 0.375
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.005
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (10-Q; Q4는 동일 회계연도 10-K 연간 − Q3 10-Q 9M 차감 복원). GOOGL-1 (2026-07-22)."
+  - "과거 EPS는 저장하지 않고 로드 시 파생: net_profit ÷ 분기별 as-filed 희석주식수 (split_history 없음, 창 전체가 20:1 분할 이후). as-filed EPS·accession은 source에 보존."
+  - "창은 2024Q2부터: 이전 분기 10-Q는 3개월 희석주식수를 same-accession으로 태깅하지 않아 무결성 규칙상 재구축 불가."
+  - "FY2025 검증: 분기 매출 합 = 402,837 ($402,836M 10-K과 라운딩 오차 1), 순이익 합 = 132,170 (일치)."
+  - "2026Q1 순이익 $62.6bn(순마진 57%)은 OI&E 비상장 지분 평가이익이 크게 반영된 값 — headline EPS 왜곡 주의. generic OP 기반 EPS는 이 일회성 이익을 반영하지 않음(영업 EPS proxy)."
+  - "2026Q2 순이익 $112.2bn·GAAP EPS $9.11은 OI&E 지분증권 평가이익 $99.0bn이 반영된 값 — GAAP 라벨 유지, 영업 EPS proxy와 직접 비교 금지."

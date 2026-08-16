@@ -1,0 +1,67 @@
+# PROPOSAL — policy/resolver_policy_v1.yaml (사람 승인 대기)
+# 승인 시 이 파일을 policy/resolver_policy_v1.yaml 로 이동하고,
+# 그 커밋 SHA를 policy/approvals.yaml 의 policy_commit 으로 기록한다.
+# 사양 근거: HANDOFF_CODEX_efe_autopilot_P1.md (DOC_REV rev3.4) §2~§3
+policy_version: "v1"
+
+r1_revenue:
+  window_quarters: 12          # fiscal slot당 ~3관측. 8~9Q는 슬롯당 2관측이라 과소
+  min_total_obs: 6             # 미만이면 계절성 0 + LOW_SKILL
+  shrinkage_k: 2               # eff = n/(n+k) × centered  (하드 컷오프 대신 연속 축소)
+
+r2_op_margin:
+  level_weights: [0.40, 0.30, 0.20, 0.10]   # 최근→과거, 합 1.0
+  window_quarters: 12
+  shrinkage_k: 2
+  margin_floor: -0.20          # GEV Wind 적자·TSLA 1.4% 같은 구간 수용
+  margin_cap: 0.60             # NVDA급 상한
+
+r3_tax:
+  window_quarters: 8
+  min_pretax_ratio: 0.005      # pretax > 0.5% × revenue 인 분기만 표본(ETR 발산 방지)
+  winsorize: true
+  winsorize_min_n: 5
+  min_obs_after_exclusion: 4
+  bear_quantile: 0.90          # 높은 세율 = bear
+  bull_quantile: 0.10
+  etr_clip: [0.00, 0.45]
+  default_etr_by_domicile: {US: 0.21, KR: 0.22}
+
+r4_below_op:
+  basis: "revenue"             # (pretax − op) / revenue
+  base_value: 0.0              # 구조적 예측불가(TSLA OI&E 부호반전·GEV lumpy) — 앵커 금지
+  window_quarters: 8
+  band_quantile: 0.80
+  band_floor: 0.005
+  min_obs: 4
+  sparse_band_multiplier: 4.0
+
+r5_shares:
+  window_quarters: 6
+  min_obs: 3
+  drift_clip: [-0.02, 0.01]    # 분기 로그드리프트: 자사주 소각 −2% ~ 희석 +1%
+
+r6_scenarios:
+  probabilities: {base: 0.50, bear: 0.25, bull: 0.25}
+
+r7_band:
+  metrics: ["revenue", "op_margin", "eps"]
+  horizons: [1]
+  residual_space:
+    revenue: "log_ratio"
+    op_margin: "level_delta"   # OP 금액 log_ratio 금지(적자·흑전에서 미정의)
+    eps: "level_usd"
+  lower_quantile: 0.10
+  upper_quantile: 0.90
+  min_residuals: 6
+  fallback_band:               # 대칭(경험 밴드는 비대칭 허용)
+    revenue_log_abs: 0.08
+    op_margin_abs: 0.030
+    eps:
+      pct_of_abs_forecast: 0.60
+      absolute_floor_usd: 0.25
+
+canonical_serialization:
+  decimals: 10
+
+selection_rules_file: "policy/selection_rules_v1.yaml"

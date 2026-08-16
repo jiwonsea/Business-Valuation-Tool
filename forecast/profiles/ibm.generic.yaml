@@ -1,0 +1,108 @@
+# IBM (International Business Machines) — generic top-down forecast profile.
+# Software + Consulting + Infrastructure + Financing conglomerate: revenue is NOT
+# DRAM bits x ASP, so it uses the generic path (schemas/generic.py), not the
+# memory engine. No independent physical-driver feed exists (segment revenue is a
+# top-down mix), so per COMMON §1 this is a matrix top-down model, not bottom-up.
+#
+# DATA PROVENANCE (EFE Q2-2026 batch, 2026-07-22): `actuals` are OFFICIAL
+# standalone quarters from EDGAR companyfacts as-filed originals (CIK 0000051143;
+# us-gaap:Revenues / NetIncomeLoss / WeightedAverageNumberOfDilutedSharesOutstanding).
+# Q1-Q3 = direct 3-month facts (earliest accession per period). Q4 = FY(10-K)
+# minus 9M — original filings of the same fiscal year, no disclosure-vintage
+# mixing. Q4 diluted shares derived as 4*FY_avg - 3*9M_avg (plausibility-guarded).
+# FY sum identity (rev & NI) verified EXACT for FY2023/2024/2025; as-filed EPS
+# coherence (NI/shares vs reported diluted EPS) green for every quarter.
+# EPS is NOT stored: DERIVED at load from net_profit / diluted_shares (no splits;
+# split_history empty). As-filed diluted EPS + accession preserved in `source`.
+#
+# SANDBOX NOTE: the whole-blob edgar_fetcher could not run in the Cowork sandbox
+# (data.sec.gov 403 to processes; browser not connected). Facts were pulled via
+# the WebFetch tool from data.sec.gov companyconcept slices and cross-checked
+# with the FY-sum identity by hand. HOST TODO: regenerate the canonical block +
+# auto-verification with:
+#   python scripts/build_generic_actuals.py --cik 51143 --fye-month 12 --start 2023Q1 --end 2026Q1
+#
+# LABEL CONTRACT: IBM fiscal year ends December (calendar filer) -> fiscal FY(N)Qq
+# == model NQq (identity, no offset). Consensus join needs no fiscal shift.
+name: "International Business Machines"
+name_kr: "IBM"
+ticker: "IBM"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12          # calendar filer, no consensus offset
+
+# FORWARD-ONLY assumption (kept fixed). Q1 2026 as-filed diluted was 952.1M;
+# share count drifts up ~0.3%/qtr (acquisition stock + comp net of buyback).
+weighted_avg_diluted: 955000000
+
+# IBM has not split since 1999 -> no adjustment needed; kept explicit/empty.
+split_history: []
+
+# No dramatic regime break over 2023-2026 (steady high-single-digit growth), so
+# a single backtest window is reported (unlike NVDA's AI-supercycle break).
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 15917
+  net_profit: 1216
+  eps_diluted: 1.28
+
+# Official standalone quarters, contiguous 2023Q1..2026Q1 (13 rows, Q4 restored).
+# revenue_total & net_profit in USD millions; diluted_shares absolute; GAAP.
+actuals:
+  - { quarter_label: "2023Q1", period_end: 2023-03-31, revenue_total: 14252, net_profit: 927,  diluted_shares: 917845279, source: "EDGAR 10-Q 0001558370-23-006656 filed 2023-04-25 (as-filed EPS 1.01)" }
+  - { quarter_label: "2023Q2", period_end: 2023-06-30, revenue_total: 15475, net_profit: 1583, diluted_shares: 919452496, source: "EDGAR 10-Q 0000051143-23-000021 filed 2023-07-25 (as-filed EPS 1.72)" }
+  - { quarter_label: "2023Q3", period_end: 2023-09-30, revenue_total: 14752, net_profit: 1704, diluted_shares: 923673300, source: "EDGAR 10-Q 0000051143-23-000032 filed 2023-10-31 (as-filed EPS 1.84)" }
+  - { quarter_label: "2023Q4", period_end: 2023-12-31, revenue_total: 17381, net_profit: 3288, diluted_shares: 927324236, source: "EDGAR 10-K 0000051143-24-000012 − 9M 0000051143-23-000032 (Q4=FY−9M; shares 4FY−3*9M; as-filed FY EPS 8.14, Q4 n/a)" }
+  - { quarter_label: "2024Q1", period_end: 2024-03-31, revenue_total: 14462, net_profit: 1605, diluted_shares: 933431312, source: "EDGAR 10-Q 0000051143-24-000025 filed 2024-04-30 (as-filed EPS 1.72)" }
+  - { quarter_label: "2024Q2", period_end: 2024-06-30, revenue_total: 15770, net_profit: 1834, diluted_shares: 934397595, source: "EDGAR 10-Q 0000051143-24-000039 filed 2024-07-30 (as-filed EPS 1.96)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-30, revenue_total: 14968, net_profit: -330, diluted_shares: 923577526, source: "EDGAR 10-Q 0000051143-24-000049 filed 2024-10-30 (as-filed EPS -0.36; net loss from ~$2.7B pension settlement charge — below-OP one-off)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-31, revenue_total: 17554, net_profit: 2914, diluted_shares: 942369197, source: "EDGAR 10-K 0000051143-25-000015 − 9M 0000051143-24-000049 (Q4=FY−9M; FY2024 rev 62754; shares 4FY−3*9M; as-filed FY EPS 6.43, Q4 n/a)" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-31, revenue_total: 14541, net_profit: 1055, diluted_shares: 945368229, source: "EDGAR 10-Q 0000051143-25-000032 filed 2025-04-24 (as-filed EPS 1.12)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-30, revenue_total: 16977, net_profit: 2194, diluted_shares: 947961917, source: "EDGAR 10-Q 0000051143-25-000052 filed 2025-07-24 (as-filed EPS 2.31)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-30, revenue_total: 16331, net_profit: 1744, diluted_shares: 948931026, source: "EDGAR 10-Q 0000051143-25-000064 filed 2025-10-23 (as-filed EPS 1.84)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-31, revenue_total: 19686, net_profit: 5600, diluted_shares: 952439739, source: "EDGAR 10-K 0000051143-26-000010 − 9M 0000051143-25-000064 (Q4=FY−9M; shares 4FY−3*9M; as-filed FY EPS 11.17, Q4 n/a; FY NI lifted by discrete tax benefit)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 15917, net_profit: 1216, diluted_shares: 952131057, source: "EDGAR 10-Q 0000051143-26-000038 filed 2026-04-23 (as-filed EPS 1.28)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# FORWARD SCENARIOS (2026Q2..2027Q1). Growth is per-quarter QoQ, matched to IBM's
+# strong seasonality (Q1->Q2 up, Q2->Q3 down, Q3->Q4 up big, Q4->Q1 down big).
+# op_margin here is a REDUCED-FORM GAAP margin, calibrated per-quarter so that
+# (op_margin - |net_int|)*(1-tax) reproduces IBM's seasonal GAAP NET margin
+# (Q1 ~8%, Q2 ~13%, Q3 ~11%, Q4 ~19%). It is NOT IBM's reported non-GAAP
+# operating margin (which is higher). The engine forecasts GAAP net income / EPS;
+# the GAAP->operating(non-GAAP) bridge (+~$0.60/qtr, acq. amortization + pension +
+# workforce charges, elevated by Confluent/HashiCorp) is applied in the FROZEN
+# report, not here. See notes.
+base:
+  probability: 0.50
+  rationale: "Software 두자릿수(레드햇/Data·watsonx) 지속하나 메인프레임(z17) 사이클 감속으로 Infrastructure YoY 둔화, Consulting 저성장. FX는 소폭 순풍. Q2 매출 ~$17.6B(+3.6% YoY, 컨센 $17.85B 소폭 하회)."
+  revenue_growth_qoq: [0.105, -0.045, 0.185, -0.180]
+  op_margin: [0.159, 0.135, 0.230, 0.100]
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: -0.006
+bear:
+  probability: 0.30
+  rationale: "z17 사이클 조기 롤오버 + Consulting 재량지출 위축(딜 슬리피지), TP(트랜잭션프로세싱) 침식, AI 백로그 매출전환 지연. 마진 압박. Q2 매출 ~$17.1B(+0.8% YoY)로 컨센 명확 하회."
+  revenue_growth_qoq: [0.075, -0.060, 0.160, -0.190]
+  op_margin: [0.145, 0.120, 0.210, 0.090]
+  effective_tax_rate: 0.16
+  net_interest_pct_of_revenue: -0.007
+bull:
+  probability: 0.20
+  rationale: "Software 재가속(watsonx/HashiCorp/Confluent 기여) + z17 견조 유지 + FX 순풍 확대 + 마진 확장. Q2 매출 ~$18.0B(+5.9% YoY)로 가이던스 부합/컨센 상회."
+  revenue_growth_qoq: [0.130, -0.035, 0.200, -0.170]
+  op_margin: [0.170, 0.145, 0.245, 0.110]
+  effective_tax_rate: 0.145
+  net_interest_pct_of_revenue: -0.005
+
+notes:
+  - "actuals=EDGAR companyfacts as-filed 원본 공식 분기 GAAP (CIK 0000051143; 10-Q 3M; Q4=10-K FY − 9M, 동일 회계연도 원본). FY 합계 항등식(매출·순이익) FY2023/24/25 정확 일치 검증. EFE Q2-2026 배치 2026-07-22."
+  - "과거 EPS 미저장·로드 시 파생: net_profit ÷ 분기별 희석주식수(무분할). as-filed EPS·accession은 source에 보존."
+  - "라벨 계약: 12월 결산 → fiscal FY(N)Qq = model NQq (오프셋 없음). 컨센서스 조인에 회계연도 시프트 불필요."
+  - "op_margin은 GAAP 순이익 계절성을 재현하는 축약형(reduced-form) 마진이며, IBM 보고 비GAAP operating margin이 아님. 엔진은 GAAP 순이익/EPS를 산출; GAAP→operating(비GAAP) 브릿지(+~$0.60/분기: 취득무형 상각·연금·workforce; Confluent/HashiCorp로 확대)는 FROZEN 리포트에서 적용."
+  - "2024Q3 순손실(-330M)은 ~$2.7B 연금 정산 charge에 기인한 below-OP 일회성 — generic이 예측 못하는 구조적 항목의 대표 사례(리스크밴드 대상)."
+  - "샌드박스 data.sec.gov 403 → WebFetch로 companyconcept 슬라이스 수집, FY 항등식 수기 교차검증. 호스트에서 build_generic_actuals.py --cik 51143 --fye-month 12 로 정규 캐시+자동검증 재생성 권장."

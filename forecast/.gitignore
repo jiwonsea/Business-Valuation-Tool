@@ -1,0 +1,50 @@
+# Env
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Reports — keep .gitkeep and a few sample outputs only
+reports/*.xlsx
+reports/*.html
+reports/*.pdf
+reports/.cache/
+!reports/.gitkeep
+!reports/sk_hynix_latest*.png
+
+# Virtualenv
+.venv/
+venv/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Claude/Codex working files (kept in repo by user policy 2026-04-27)
+# .claude/ — intentionally NOT gitignored
+# .codex/ — intentionally NOT gitignored
+
+# Sandbox SSL workaround artifact (literal-named "C:\\temp\\..." file created by
+# older _ssl_setup on POSIX; the module now returns early off-Windows)
+*cacert.pem
+
+# README demo artifacts (dated live-run outputs referenced from README Sample Output)
+!reports/sk_hynix_20260624.html
+!reports/sk_hynix_20260624_fan.png
+
+# Dated live-run artifacts & session verification scratch — reproducible via
+# `python cli.py --company sk_hynix`; only the README demo set stays tracked
+reports/_verify/
+reports/sk_hynix_20*.md
+reports/sk_hynix_20*.png
+!reports/sk_hynix_20260624*
+_to_delete/

@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://data.sec.gov/api/xbrl/companyconcept/CIK0001692819/us-gaap/Revenues.json",
+    "accession":  null,
+    "form":  "SEC EDGAR companyconcept",
+    "taxonomy":  "us-gaap",
+    "concept":  "Revenues",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  17632,
+    "sha256":  "a3eb1f5000ecf4f9e67129a3e678522b1f6882d2b1eb0b7983a469737bab5b8e",
+    "page_count":  null,
+    "page_count_basis":  "JSON has no physical pagination",
+    "visual_verification":  "not_applicable_json"
+}

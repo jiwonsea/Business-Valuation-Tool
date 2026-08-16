@@ -1,0 +1,185 @@
+# Sandisk Corporation (SNDK) — generic top-down forecast profile.
+# NAND flash pure-play. Revenue IS conceptually bits x ASP, but SanDisk does NOT
+# publish a verifiable per-quarter bit/ASP feed (only qualitative call remarks),
+# and no independent external feed reconciles to its P&L. Per
+# PLAN_nvidia_application.md §2 the bottom-up unit x ASP path is therefore
+# refused: this profile uses the generic top-down path (schemas/generic.py).
+# The SK Hynix memory engine (cli.py / engine/segment_revenue.py /
+# margin_model.py) is NOT touched.
+#
+# ---------------------------------------------------------------------------
+# LABEL CONTRACT (critical — non-December fiscal-year filer)
+# ---------------------------------------------------------------------------
+# SanDisk's fiscal year ends on the Friday nearest 30 June (52/53-week);
+# EDGAR submissions.json fiscalYearEnd = 0628. Model quarter label "NQq" means
+# FISCAL FY(N) Q(q) — NOT a calendar quarter. Mapping for the rows below:
+#
+#   model 2026Q3 = FY2026 Q3 = 2026-01-03 .. 2026-04-03  (~calendar 2026 Q1)
+#   model 2026Q4 = FY2026 Q4 = 2026-04-04 .. 2026-07-03  (~calendar 2026 Q2)  <- TARGET
+#   model 2027Q1 = FY2027 Q1 = 2026-07-04 .. ~2026-10-02 (~calendar 2026 Q3)
+#
+# The forecast target is FISCAL Q4 FY2026, which is CALENDAR Q2 2026. Every
+# consensus join, report label and test in this repo must use the fiscal label.
+# See tests/test_sndk_profile.py::test_fiscal_label_maps_to_calendar_quarter.
+#
+# Because the label digit IS the fiscal quarter, generic_cli.backtest_generic's
+# `_slot(label) = int(label[-1]) - 1` selects the FISCAL-quarter slot, and
+# backtest_methodology.revenue_growth_qoq below is ordered [FQ1, FQ2, FQ3, FQ4].
+# The forward vectors in bear/base/bull are POSITIONAL from the seed and are
+# therefore ordered [FQ4, FQ1, FQ2, FQ3] — deliberately a different ordering.
+# (START-efe-aug2026-00-COMMON-DELTA.md §R4.)
+#
+# ---------------------------------------------------------------------------
+# DATA PROVENANCE (EFE-2026aug-SNDK, frozen 2026-08-04/05 KST)
+# ---------------------------------------------------------------------------
+# `actuals` are official quarterly GAAP from EDGAR XBRL companyconcept slices
+# for CIK 0002023554 (Revenues / NetIncomeLoss / OperatingIncomeLoss /
+# WeightedAverageNumberOfDilutedSharesOutstanding), fetched with the WebFetch
+# tool (sandbox httpx is 403-blocked to data.sec.gov). Whole-blob companyfacts
+# capture + byte SHA-256 is a HOST follow-up (00-COMMON.md §7 sandbox clause).
+# Q4 rows are restored as FY(10-K) − 9M(Q3 10-Q); FY2024 Q1 as H1 − Q2 inside
+# the same accession. All four FY sum identities tie EXACTLY (see notes).
+# EPS is NOT stored: it is DERIVED at load from net_profit and the as-filed
+# per-quarter diluted share count (no splits) — schemas/generic.py.
+#
+# ⚠️ STRUCTURAL CAVEAT: SanDisk was spun off from Western Digital on 2025-02-21,
+# mid-FY2025-Q3. Rows before 2025Q3 are SanDisk's own as-filed carve-out /
+# combined comparatives (its own accessions, not third-party reconstruction),
+# analogous to GEV 2024Q1. regime_break_quarter = 2025Q3 = first quarter as a
+# standalone SEC registrant. Only 5 fully standalone quarters exist
+# (2025Q3..2026Q3) -> skill metrics are LOW-CONFIDENCE. See notes.
+name: "Sandisk Corporation"
+name_kr: "샌디스크"
+ticker: "SNDK"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 6
+weighted_avg_diluted: 158000000    # company FQ4 FY26 guidance "~158" diluted
+
+# Spin-off 2025-02-21 (completed mid-FY25Q3). 2025Q3 is the first quarter filed
+# as a standalone registrant.
+regime_break_quarter: "2025Q3"
+
+# No stock splits since listing (2025-02-24 when-issued / regular-way).
+split_history: []
+
+# ---------------------------------------------------------------------------
+# Historical one-step backtest methodology — FISCAL-quarter slots [FQ1..FQ4].
+# Deliberately ex-ante-blind and mechanical: median of the realised history in
+# the actuals block, NOT the forward view. This is what an analyst with only
+# SanDisk's own filings and no cycle judgement would have used.
+#   revenue_growth_qoq: per-slot MEDIAN QoQ growth over the 10 one-step
+#     transitions (FQ1 mean of 2 obs 0.0699/0.2141; FQ2 median of
+#     0.0861/-0.0037/0.3107; FQ3 median of 0.0240/-0.0965/0.9669;
+#     FQ4 mean of 2 obs 0.0323/0.1215).
+#   op_margin 0.090 = median GAAP operating margin of the 10 target quarters
+#     (range -111.0% .. +69.1%).
+#   effective_tax_rate 0.14 = median GAAP ETR of the profitable quarters
+#     (FY26Q3 12.0% / FY26Q2 14.3% / FY26Q1 9.7% / FY25Q1 21.0%).
+#   net_interest_pct_of_revenue -0.019 = median (total interest & other, net) /
+#     revenue (FY26Q3 -0.07% / FY26Q2 -4.23% / FY26Q1 -2.25% / FY25Q4 -1.89% /
+#     FY25Q1 -1.27%).
+# ⚠️ EXPECTED TO PERFORM BADLY, AND THAT IS THE POINT: a single median margin
+# cannot track a cycle that moved GAAP op margin from +0.9% to +69.1% in four
+# quarters. Report MASE/Theil honestly even if > 1 (DELTA §2.1).
+# ---------------------------------------------------------------------------
+backtest_methodology:
+  revenue_growth_qoq: [0.142, 0.0861, 0.024, 0.0769]
+  op_margin: 0.090
+  effective_tax_rate: 0.14
+  net_interest_pct_of_revenue: -0.019
+
+seed:
+  quarter_label: "2026Q3"          # FY2026 Q3, ended 2026-04-03
+  revenue_total: 5950
+  net_profit: 3615
+
+# Contiguous fiscal quarters FY2024Q1 .. FY2026Q3 (11 rows -> 10 one-step
+# backtest transitions). revenue/net_profit in USD_million; diluted_shares
+# absolute (as-filed weighted-average diluted for that quarter).
+actuals:
+  - { quarter_label: "2024Q1", period_end: 2023-09-29, revenue_total: 1533, net_profit: -518, diluted_shares: 145000000, source: "EDGAR XBRL CIK 0002023554 10-Q 0002023554-25-000004 filed 2025-03-07 (pre-spin carve-out; revenue DERIVED H1 3,198 − Q2 1,665 in the same accession; NetIncomeLoss as-filed -518; diluted 145 per FY24 10-K)" }
+  - { quarter_label: "2024Q2", period_end: 2023-12-29, revenue_total: 1665, net_profit: -301, diluted_shares: 145000000, source: "EDGAR XBRL 10-Q 0002023554-25-000004 filed 2025-03-07 (pre-spin carve-out; as-filed frame CY2023Q4)" }
+  - { quarter_label: "2024Q3", period_end: 2024-03-29, revenue_total: 1705, net_profit: 27, diluted_shares: 145000000, source: "EDGAR XBRL 10-Q 0002023554-25-000027 filed 2025-05-12 (pre-spin carve-out; as-filed frame CY2024Q1)" }
+  - { quarter_label: "2024Q4", period_end: 2024-06-28, revenue_total: 1760, net_profit: 120, diluted_shares: 145000000, source: "EDGAR XBRL DERIVED Q4 = FY2024 10-K 0002023554-25-000034 (rev 6,663 / NI -672) − 9M 10-Q 0002023554-25-000027 (rev 4,903 / NI -792); cross-accession derivation, both SanDisk as-filed (pre-spin carve-out)" }
+  - { quarter_label: "2025Q1", period_end: 2024-09-27, revenue_total: 1883, net_profit: 211, diluted_shares: 145000000, source: "EDGAR XBRL 10-Q 0001628280-25-050698 filed 2025-11-06/07 comparative (pre-spin carve-out; as-filed diluted EPS 1.46, derived 1.455)" }
+  - { quarter_label: "2025Q2", period_end: 2024-12-27, revenue_total: 1876, net_profit: 104, diluted_shares: 145000000, source: "EDGAR XBRL 10-Q 0002023554-25-000004 filed 2025-03-07 (pre-spin carve-out; as-filed frame CY2024Q4; derived EPS 0.717)" }
+  - { quarter_label: "2025Q3", period_end: 2025-03-28, revenue_total: 1695, net_profit: -1933, diluted_shares: 145000000, source: "EDGAR XBRL 10-Q 0002023554-25-000027 filed 2025-05-12 (FIRST standalone quarter, spin 2025-02-21; incl. 1,830 goodwill impairment; as-filed diluted EPS -13.33, derived -13.331)" }
+  - { quarter_label: "2025Q4", period_end: 2025-06-27, revenue_total: 1901, net_profit: -23, diluted_shares: 145000000, source: "EDGAR XBRL DERIVED Q4 = FY2025 10-K 0002023554-25-000034 (rev 7,355 / NI -1,641) − 9M 10-Q 0002023554-25-000027 (rev 5,454 / NI -1,618); ties to the 2025-08-14 8-K EX-99.1 print (rev 1,901 / GAAP diluted EPS -0.16)" }
+  - { quarter_label: "2026Q1", period_end: 2025-10-03, revenue_total: 2308, net_profit: 112, diluted_shares: 149000000, source: "EDGAR XBRL 10-Q 0001628280-25-050698 filed 2025-11-07 (as-filed diluted EPS 0.75, derived 0.752)" }
+  - { quarter_label: "2026Q2", period_end: 2026-01-02, revenue_total: 3025, net_profit: 803, diluted_shares: 156000000, source: "EDGAR XBRL 10-Q 0001628280-26-004407 filed 2026-01-30 (as-filed diluted EPS 5.15, derived 5.147)" }
+  - { quarter_label: "2026Q3", period_end: 2026-04-03, revenue_total: 5950, net_profit: 3615, diluted_shares: 157000000, source: "EDGAR XBRL 10-Q 0001628280-26-029401 filed 2026-05-01 (as-filed diluted EPS 23.03, derived 23.025)" }
+
+window:
+  start_quarter: "2026Q4"          # FY2026 Q4 — the frozen target
+  n_quarters: 4                    # FY26Q4, FY27Q1, FY27Q2, FY27Q3
+
+# ---------------------------------------------------------------------------
+# Forward scenarios — POSITIONAL from the seed: [FY26Q4, FY27Q1, FY27Q2, FY27Q3]
+#
+# R1 ANCHOR RULE, APPLIED IN THE *UPWARD* DIRECTION (DELTA §R1 반전 경고):
+#   level  = latest actual (FY26Q3) and company guidance (2026-04-30), never a
+#            historical average. The 8-quarter mean GAAP op margin is ~ -0.7%;
+#            using it would understate FY26Q4 operating income by ~100%.
+#   shape  = seasonal vector, DOWN-WEIGHTED to ~zero. SanDisk's realised
+#            per-slot QoQ dispersion (FQ3: -9.7% .. +96.7%) is cycle, not
+#            season; there is no stable seasonal signal to carry. The seasonal
+#            vector is therefore kept ONLY in backtest_methodology and is NOT
+#            reused forward. This judgement is recorded here rather than as a
+#            YAML weight parameter — see notes / Codex question §6.
+#
+# GUIDANCE (FQ4 FY26, 8-K EX-99.1 2026-04-30): revenue $7,750-8,250M;
+#   GAAP GM 78.9-80.9%; GAAP opex $523-558M; GAAP interest & other net
+#   +$12 to +$32M; non-GAAP tax $775-875M; NON-GAAP diluted EPS $30.00-33.00;
+#   diluted shares ~158M. No GAAP EPS guidance was given.
+#
+# GUIDANCE-BEAT TRACK RECORD (4/4, escalating; actual vs guidance MIDPOINT):
+#   FQ4'25 +5.6% · FQ1'26 +7.3% · FQ2'26 +16.3% · FQ3'26 +29.3% (revenue)
+#   and vs guidance HIGH end: +2.8% · +4.9% · +14.2% · +24.0%.
+#   Non-GAAP EPS beat the guidance HIGH end all four quarters.
+#
+# EXTERNAL READ-THROUGH (published BEFORE this freeze):
+#   Kioxia (Flash Ventures JV partner, same fabs, near-identical window)
+#   reported 2026-07-31: Apr-Jun 2026 net sales Y1,767.1B, +76.2% QoQ, blended
+#   ASP +70% QoQ, bit shipments +1-3% QoQ, non-GAAP OP margin 75.0%.
+#   Jan-Mar 2026 Kioxia was +84.5% QoQ vs SanDisk FY26Q3 +97% QoQ -> the two
+#   did NOT diverge in the prior quarter, so Kioxia's +76% is a genuine SECOND
+#   leg, not delayed catch-up. TrendForce 2026-07-03: 3Q26 NAND contract prices
+#   decelerate to +10-15% QoQ from +70-75% in 2Q26.
+# ---------------------------------------------------------------------------
+base:
+  probability: 0.50
+  rationale: "FY26Q4 매출 $9,044M(+52.0% QoQ) — 가이던스 중간값 $8,000M 대비 +13.1%, 컨센 $8.35B 대비 +8.3%. 근거: ①동일 팹 파트너 키옥시아가 사실상 같은 창(4~6월)에 +76.2% QoQ·ASP +70%·비트 +1~3%를 실제로 찍었고, 직전 분기(1~3월)에 두 회사가 벌어지지 않았으므로 이는 지연 캐치업이 아니라 2차 상승 레그다. ②SNDK는 4/4 분기 가이던스 상단을 상회했고 상회폭이 단조 확대(+2.8→+4.9→+14.2→+24.0%). ③경영진 스스로 '초기이고 매우 역동적이라 보수적으로 잡는 게 낫다'고 발언. 다만 컨슈머(FQ3 $820M, 매출의 14%, QoQ −10%)가 가격저항 구간이고 SNDK의 FQ3 ASP(+~140%)가 키옥시아(+~105%)보다 이미 앞서 나가 헤드룸이 작다는 점을 반영해 키옥시아 패리티(+68%)보다 낮춰 잡았다. GAAP GM 84.0%(매출은 ASP, COGS는 비트로 움직여 오퍼레이팅 레버리지가 GM을 가이던스 78.9~80.9% 위로 밀어올림; FQ3에도 가이던스 대비 +12.5%p 상회), GAAP opex $555M(가이던스 $523~558M 상단, 주가 급등에 따른 SBC), GAAP 영업이익률 77.9%. 세율 13.5%(가이던스 함의 비GAAP 13.9%와 정합). below-OP는 R2에 따라 base 0."
+  revenue_growth_qoq: [0.520, 0.180, 0.080, 0.000]
+  op_margin: [0.779, 0.785, 0.780, 0.760]
+  effective_tax_rate: [0.135, 0.150, 0.150, 0.150]
+  net_interest_pct_of_revenue: [0.0, 0.0, 0.0, 0.0]
+bear:
+  probability: 0.25
+  rationale: "'비트가 소멸하는' 시나리오: FY26Q4 매출 $8,092M(+36.0% QoQ)로 가이던스 레인지 안($7,750~8,250M)에 착지, 4분기 연속 상회 행진이 끝난다. 트리거 — ①컨슈머·클라이언트 SSD·eMMC/UFS의 가격 수용 한계(TrendForce 2026-07-03: 3Q26 NAND +10~15%로 급감속, '컨슈머 고객의 가격 감내가 한계에 도달'), ②SNDK 매출의 14%인 컨슈머가 FQ3에 이미 QoQ −10%, ③FQ3에 ASP를 너무 앞서 올려 4~6월 증분이 작음. 마진도 함께 눌림: GAAP GM 79.5%(가이던스 중간값 수준), opex $570M(SBC·분사비용 초과), 영업이익률 72.5%. 세율 17.0%(지역믹스·밸류에이션 얼라운스 재설정, R3). below-OP −1.0% of revenue(−$81M): 플래시벤처스 지분법 손실·FX·재고평가 — FY26Q2에 실제로 −$128M(매출의 −4.2%)을 찍은 블록이다."
+  revenue_growth_qoq: [0.360, 0.020, -0.080, -0.180]
+  op_margin: [0.725, 0.690, 0.620, 0.520]
+  effective_tax_rate: [0.170, 0.180, 0.180, 0.180]
+  net_interest_pct_of_revenue: [-0.010, -0.008, -0.008, -0.008]
+bull:
+  probability: 0.25
+  rationale: "키옥시아 패리티 시나리오: FY26Q4 매출 $9,996M(+68.0% QoQ) — 키옥시아 +76.2%에 컨슈머 믹스 드래그만 차감. 누적 ASP·비트 레벨 정합 계산(키옥시아 1~3월 ASP ×2.05 → 4~6월 ×1.70 = 3.49배 / SNDK 1~3월 ×2.40 → 잔여 1.45배, 비트는 키옥시아 0.90×1.02=0.918 vs SNDK 0.82×1.12)이 대략 +62%를 시사하고, 여기에 데이터센터 eSSD 부족(TrendForce: 2027년 말~2028년까지 유의미한 증설 어려움)과 NBM 5건($42B 최소 계약매출·$11B+ 금융보증·$400M 선수금)의 물량 확정 효과를 더한다. GAAP GM 85.2%(COGS는 비트로만 증가), opex $545M(가이던스 하단), 영업이익률 79.8% — 키옥시아 비GAAP 영업이익률 75.0%·마이크론 FQ4 가이던스 GM 86%와 정합. 세율 11.5%(FDII·지역믹스 우호, FY26Q3 실적 12.0%). below-OP +0.6%(제로부채·현금 $3.7B+ 선수금에서 나오는 이자수익; 가이던스 +$12~32M 상단 초과)."
+  revenue_growth_qoq: [0.680, 0.300, 0.160, 0.100]
+  op_margin: [0.798, 0.815, 0.820, 0.815]
+  effective_tax_rate: [0.115, 0.130, 0.130, 0.130]
+  net_interest_pct_of_revenue: [0.006, 0.008, 0.008, 0.008]
+
+notes:
+  - "라벨 계약: 6월(52/53주) 결산 → 모델 라벨 NQq = 회계 FY(N)Q(q). 동결 대상 2026Q4 = FY2026 Q4 = 2026-04-04~2026-07-03 ≈ 달력 2026 Q2. 컨센서스·리포트·테스트 모두 회계기준 라벨로 통일(NVDA/MSFT/AAPL형 조인 오프셋 리스크). tests/test_sndk_profile.py에서 명시 검증."
+  - "actuals = EDGAR XBRL companyconcept as-filed (CIK 0002023554). Q4는 FY(10-K) − 9M(Q3 10-Q)로 복원, FY2024Q1은 같은 accession 내 H1 − Q2. WebFetch 수집(샌드박스 httpx는 data.sec.gov 403). 화이트블롭 companyfacts + 바이트 SHA-256은 호스트 후속(00-COMMON.md §7)."
+  - "FY 합 항등식 4건 모두 정확 일치: FY2024 매출 1533+1665+1705+1760=6,663 / NI −518−301+27+120=−672 / OP −487−245+65+199=−468. FY2025 매출 1883+1876+1695+1901=7,355 / NI 211+104−1933−23=−1,641 / OP 291+195−1881+18=−1,377. 9M FY2026 매출 2308+3025+5950=11,283 / NI 112+803+3615=4,530."
+  - "EPS는 저장하지 않고 로드 시 파생(net_profit ÷ as-filed 희석주식수, 분할 없음). 파생값이 as-filed와 전 분기 일치: 2026Q3 23.025≈23.03 · 2026Q2 5.147≈5.15 · 2026Q1 0.752≈0.75 · 2025Q4 −0.159≈−0.16 · 2025Q3 −13.331≈−13.33 · 2025Q1 1.455≈1.46."
+  - "⚠️ 표본 부족 + 레짐 브레이크: 2025-02-21 WDC 분사. 완전 독립 분기는 2025Q3~2026Q3의 5개뿐(regime_break_quarter=2025Q3). 2025Q2 이전은 SNDK 자체 accession의 카브아웃/결합 비교치다(제3자 재구성 아님). 1-step 백테스트의 나이브 RW·계절 슬롯이 빈약 → MASE/Theil은 방향 참고용, LOW_SKILL 표기 대상."
+  - "⚠️ 하이퍼사이클에서 나이브 RW는 강한 벤치마크다(DELTA §2.1). backtest_methodology는 의도적으로 사후지식 없는 중앙값 앵커라 GAAP 영업이익률이 4분기 만에 +0.9%→+69.1%로 움직인 구간을 추종할 수 없다. MASE/Theil이 1을 넘으면 숨기지 말고 기록한다."
+  - "⚠️ backtest↔forward 결합: backtest_methodology 블록이 있으므로 backtest_generic은 base가 아니라 이 블록을 소비한다(generic_cli.py:135-145). 따라서 forward 시나리오를 고쳐도 백테스트는 움직이지 않는다 — GEV/TXN에서 발화한 _slot 계절 오정렬의 구조적 차단."
+  - "shape(계절 벡터) 가중치를 사실상 0으로 낮춘 판단은 YAML 파라미터가 아니라 이 주석과 FROZEN §(f)에만 존재한다. 종목 고유 하드코딩으로 흐를 위험이 있어 Codex 6축 §6에 정면으로 부친다(프로파일 레벨 `seasonality_weight` 파라미터로 표현 가능한가)."
+  - "below-OP = Flash Ventures(키옥시아 합작 팹) 지분법 손익 + FX + 평가손익. ⚠️ 별도 지분법 손익계산서 라인은 존재하지 않는다 — 10-Q 확인 결과 SanDisk는 Kioxia Holdings 지분을 직접 보유하지 않고, Flash Ventures(Flash Partners/Alliance/Forward) 지분 $201M + 대여금 $483M을 보유하며 지분법 손실은 'Other income (expense), net'에 섞여 들어간다(현금흐름표 add-back 'Equity loss in investees, net of dividends received' 9M $58M). 리스 보증 ¥158B(≈$993M)은 부외. R2에 따라 base 0 · 광폭 밴드."
+  - "가이던스(2026-04-30 8-K EX-99.1): 매출 $7,750~8,250M · GAAP GM 78.9~80.9% · GAAP opex $523~558M · GAAP 이자·기타순 +$12~32M · 비GAAP 세금 $775~875M · 비GAAP 희석 EPS $30.00~33.00 · 희석주식수 ~158M. GAAP EPS 가이던스는 제시되지 않았다(N/A)."
+  - "컨센서스(비GAAP 기준, as-of 2026-07-30~08-03): 매출 $8.30B(Zacks, 2026-08-03) ~ $8.42B(TipRanks, 애널리스트 17인, 2026-07-31); 비GAAP 희석 EPS $34.24(Zacks, 2026-08-03, 30일간 +2.8% 상향) ~ $34.67(FactSet/TipRanks) ~ $34.80(TipRanks 2026-08-04). 유일한 GAAP 컨센은 Hudson Labs $33.17(2026-07-13). 전년동기(FY25Q4) 매출 $1,901M · GAAP EPS −$0.16 · 비GAAP EPS $0.29."
+  - "R5 브릿지: 본 엔진 산출은 GAAP. FQ4 비GAAP 제외항목은 가이던스 각주 기준 SBC(GM $4~6M + opex $43~58M) + 종속기업 지분매각 대가 현재가치 할인 상각 $2M = 합계 $45~62M(세전, 중간 ~$53.5M) → 희석 158M주 기준 약 +$0.34/주. 즉 비GAAP EPS ≈ GAAP EPS + $0.30~0.35 (FQ3 실측 갭 $0.38, FQ2 $1.05)."
+  - "weighted_avg_diluted 158M은 회사 가이던스치. $6B 자사주(2026-04-30 이사회 승인, 만료 없음)는 집행 실적이 아직 공시된 바 없어 감소 효과를 반영하지 않았다. 실제 희석주식수는 145→149→156→157로 계속 상승 중이라 자사주 효과가 나타나도 상쇄될 수 있다."

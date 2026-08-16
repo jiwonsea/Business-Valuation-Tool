@@ -1,0 +1,18 @@
+# Q2 2026 ACTUAL — Tesla shareholder deck / press (2026-07-22 after close).
+quarter_label: "2026Q2"
+provenance:
+  source: "Tesla IR Q2 2026 shareholder deck + Electrek/StockTitan/Basenor (2026-07-22). Diluted shares = frozen basis (exact weighted avg pending 10-Q); SBC est."
+  as_of: "2026-07-22"
+revenue_total: 28240
+gaap_eps_diluted: 0.32
+diluted_shares: 3538000000
+operating_income: 398
+net_income: 1110
+automotive_revenue: 20516
+energy_revenue: 3139
+services_revenue: 4581
+automotive_gross_margin_ex_credits: 0.163
+regulatory_credits: 146
+other_income_expense: 590
+non_gaap_eps: 0.33
+stock_based_compensation: 580

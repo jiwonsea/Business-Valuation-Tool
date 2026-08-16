@@ -1,0 +1,55 @@
+# {{ company_name_kr }} ({{ company_ticker }}) — 실적 예측 리포트
+
+**As of**: {{ as_of_date }}
+**Scope**: 4Q forward (분기) + FY{{ fy_first }}~FY{{ fy_last }} (연간), Bear/Base/Bull 시나리오
+
+---
+
+## Headline
+
+| Metric | Value |
+|--------|------:|
+| Weighted FY{{ fy_first }} EPS | {{ weighted_fy1_eps }} |
+| Consensus FY{{ fy_first }} EPS | {{ consensus_fy1_eps }} |
+| Gap (model − consensus) | {{ fy1_gap_pct }} |
+| Backtest revenue MAPE (8Q) | {{ backtest_revenue_mape }} |
+| Backtest EPS MAPE (8Q) | {{ backtest_eps_mape }} |
+| Hit ratio (direction) | {{ backtest_hit_ratio }} |
+
+![Forecast fan chart]({{ png_fan_path }})
+
+## Scenario Quarterly Revenue (KRW bn)
+
+| Quarter | Bear | Base | Bull | Weighted |
+|---------|-----:|-----:|-----:|---------:|
+{% for row in scenario_quarterly_rows -%}
+| {{ row.quarter }} | {{ row.bear }} | {{ row.base }} | {{ row.bull }} | {{ row.weighted }} |
+{% endfor %}
+
+## Consensus Gap
+
+| Period | Metric | Model | Consensus | Gap % | Direction |
+|--------|--------|------:|----------:|------:|-----------|
+{% for row in consensus_gap_rows -%}
+| {{ row.period }} | {{ row.metric }} | {{ row.model }} | {{ row.consensus }} | {{ row.gap_pct }} | {{ row.direction }} |
+{% endfor %}
+
+> Gap 해석은 본인이 직접 작성 — `docs/sk_hynix_thesis.md` 참고.
+
+## Backtest (직전 8Q)
+
+![Beat/miss bar]({{ png_beat_miss_path }})
+
+| Quarter | Actual Rev | Model Rev | Rev Err % | Actual EPS | Model EPS | EPS Err % | Direction |
+|---------|-----------:|----------:|----------:|-----------:|----------:|----------:|-----------|
+{% for row in backtest_rows -%}
+| {{ row.quarter }} | {{ row.actual_rev }} | {{ row.model_rev }} | {{ row.rev_err }} | {{ row.actual_eps }} | {{ row.model_eps }} | {{ row.eps_err }} | {{ "✓" if row.dir_match else "✗" }} |
+{% endfor %}
+
+## AI Collaboration
+
+본 분석의 방법론 선정, 시나리오 축, 가정 수치, 결과 해석은 본인이 직접 수행했고, Python 코드 구현·리팩토링·테스트는 Codex CLI와 협업하여 작성했습니다. 자세한 분업은 [docs/ai_collaboration.md](../docs/ai_collaboration.md) 참고.
+
+---
+
+*인터랙티브 버전: [reports/{{ html_filename }}](./{{ html_filename }}) — 브라우저로 열어 Plotly hover · scenario 토글 · sortable table 사용 가능.*

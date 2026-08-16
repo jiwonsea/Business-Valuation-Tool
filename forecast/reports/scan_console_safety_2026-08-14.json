@@ -1,0 +1,21 @@
+{"scanned_py": 139, "scan_cmd": "os.walk('.') exclude __pycache__/_to_delete/.git; flags: print( with non-ASCII, open(...,'w') without newline=, guard=reconfigure/errors-replace, VERBOSE",
+"findings": [
+{"f": "generic_cli.py", "na_print": 4, "na_first": [347, 352, 354], "w_no_newline": 0, "guard": false, "verbose": false},
+{"f": "ai/extractor.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [102], "guard": false, "verbose": false},
+{"f": "output/html_builder.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [342], "guard": false, "verbose": false},
+{"f": "output/md_builder.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [279], "guard": false, "verbose": false},
+{"f": "pipeline/dart_fetcher.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [82], "guard": false, "verbose": false},
+{"f": "pipeline/disclosure_loader.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [181], "guard": false, "verbose": false},
+{"f": "pipeline/edgar_fetcher.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [105], "guard": false, "verbose": false},
+{"f": "pipeline/yahoo_fetcher.py", "na_print": 0, "na_first": [], "w_no_newline": 3, "w_first": [73, 101, 129], "guard": false, "verbose": false},
+{"f": "scripts/diagnose_opex.py", "na_print": 2, "na_first": [108, 126], "w_no_newline": 0, "guard": false, "verbose": false},
+{"f": "scripts/nvda_2026q2_freeze_a_candidate.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [72], "guard": false, "verbose": false},
+{"f": "scripts/nvda_2026q2_freeze_a_candidate_v2.py", "na_print": 0, "na_first": [], "w_no_newline": 1, "w_first": [93], "guard": false, "verbose": false},
+{"f": "scripts/score_amd_q2_2026.py", "na_print": 1, "na_first": [677], "w_no_newline": 0, "guard": false, "verbose": false},
+{"f": "scripts/score_txn_q2_2026.py", "na_print": 6, "na_first": [291, 304, 305], "w_no_newline": 0, "guard": false, "verbose": false},
+{"f": "scripts/verify_9q_sha.py", "na_print": 2, "na_first": [98, 99], "w_no_newline": 0, "guard": false, "verbose": false},
+{"f": "scripts/t3/gen_freeze_a.py", "na_print": 1, "na_first": [116], "w_no_newline": 0, "guard": true, "verbose": true},
+{"f": "scripts/t3/gen_handoff_t4.py", "na_print": 1, "na_first": [131], "w_no_newline": 0, "guard": true, "verbose": true},
+{"f": "scripts/t3/t3_reverse_dcf.py", "na_print": 11, "na_first": [193, 199, 201], "w_no_newline": 1, "w_first": [280], "guard": false, "verbose": false},
+{"f": "tests/test_frozen_integrity.py", "na_print": 2, "na_first": [100, 170], "w_no_newline": 0, "guard": false, "verbose": false}
+]}

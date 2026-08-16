@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>SK Hynix report</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>body{font-family:Arial,sans-serif;margin:24px;color:#111827}table{border-collapse:collapse;width:100%;margin:16px 0}td,th{border:1px solid #d1d5db;padding:6px;text-align:right}td:first-child,th:first-child{text-align:left}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{border:1px solid #d1d5db;padding:12px;border-radius:6px}pre{white-space:pre-wrap;background:#f3f4f6;padding:12px}</style>
+</head><body>
+<h1>SK하이닉스 (000660.KS)</h1>
+<div class="grid">
+<div class="card"><b>Weighted FY EPS</b><br>68,121</div>
+<div class="card"><b>Revenue MAPE</b><br>0.0%</div>
+<div class="card"><b>EPS MAPE</b><br></div>
+<div class="card"><b>Hit Ratio</b><br>0.0%</div>
+<div class="card"><b>EPS MASE (vs RW)</b><br>—</div>
+</div>
+<div class="card"><b>Data warning</b><ul><li>yfinance .KS consensus unreliable: implied net margin &gt;60%</li></ul></div>
+<h2>Forecast</h2><div id="fan"></div><div id="compare"></div>
+<h2>Below-OP 리스크 밴드 (EPS)</h2>
+<p><small>below-OP 블록(순금융손익·FX 평가·일회성)의 구조적 변동성을 EPS 점추정에 넣지 않고 별도 ±밴드로 표현
+(method=mad, k=1.5, ±22.8%).
+bear/bull 시나리오 범위와 다른 불확실성 — 합치지 않음.</small></p>
+<div id="epsband"></div>
+<table><thead><tr><th>분기</th><th>하한</th><th>점추정</th><th>상한</th></tr></thead><tbody><tr><td>2025Q1</td><td>11,341</td><td>14,689</td><td>18,036</td></tr>
+<tr><td>2025Q2</td><td>12,481</td><td>16,165</td><td>19,850</td></tr>
+<tr><td>2025Q3</td><td>13,766</td><td>17,830</td><td>21,893</td></tr>
+<tr><td>2025Q4</td><td>15,008</td><td>19,437</td><td>23,867</td></tr></tbody></table>
+<h3>Overlays (밸류에이션·리스크 레이어 — EPS 점추정 불반영)</h3><table><thead><tr><th>As-of</th><th>Target</th><th>Driver</th><th>Direction</th><th>Magnitude</th><th>Confidence</th></tr></thead><tbody><tr><td>2026-05-15</td><td>2026Q2</td><td>USD/KRW 환율 평가손실 (below-OP FX)</td><td>risk_down</td><td>+0.03</td><td>40%</td></tr>
+<tr><td>2026-06-10</td><td>2026Q3</td><td>UST 10Y/30Y 금리 급등 → 밸류에이션 할인율 상승</td><td>risk_down</td><td>+0.05</td><td>30%</td></tr>
+<tr><td>2026-06-01</td><td>2026Q4</td><td>Nvidia HBM 파트너 의존도 (집중 리스크)</td><td>risk_down</td><td>+0.04</td><td>35%</td></tr></tbody></table><p><small>Overlays are surfaced as risk annotations only; fair-value/DCF consumption is delegated to engine/valuation_bridge.py (PLAN_tax_finance_overlay.md §3.0/§5).</small></p>
+<h2>밸류에이션 브리지 (FY25)</h2>
+<p><small>EPS gap(모델 vs 컨센) × 탄력도 1.2 → 공정가치 delta. overlay 매크로 리스크는 별도 레이어 — EPS·공정가치 delta 점값에 미반영. 탄력도는 BVT sensitivity로 확정할 draft.</small></p>
+<table><thead><tr><th>지표</th><th>값</th></tr></thead><tbody>
+<tr><td>모델 FY EPS</td><td>68,121</td></tr>
+<tr><td>컨센서스 FY EPS</td><td>—</td></tr>
+<tr><td>EPS gap</td><td>—</td></tr>
+<tr><td>공정가치 delta (탄력도 1.2)</td><td>—</td></tr>
+<tr><td>overlay 리스크 점수 (매크로, 별도)</td><td>-0.041 (n=3)</td></tr>
+</tbody></table>
+<p><small>컨센서스 FY EPS 부재 — fair-value delta 보류.</small></p>
+<h2>Consensus Gap</h2><table><thead><tr><th>Period</th><th>Metric</th><th>Model</th><th>Consensus</th><th>Gap</th><th>Direction</th><th>Interpretation</th></tr></thead><tbody><tr><td>2025Q1</td><td>revenue</td><td>20,982.4</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q1</td><td>eps</td><td>14,837.9</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q2</td><td>revenue</td><td>22,598.2</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q2</td><td>eps</td><td>16,361.2</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q3</td><td>revenue</td><td>24,264.8</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q3</td><td>eps</td><td>17,926.4</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q4</td><td>revenue</td><td>25,679.8</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>2025Q4</td><td>eps</td><td>19,291.7</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>FY25</td><td>revenue</td><td>93,525.2</td><td></td><td></td><td>n_a</td><td></td></tr>
+<tr><td>FY25</td><td>eps</td><td>68,417.2</td><td></td><td></td><td>n_a</td><td></td></tr></tbody></table>
+<h2>Backtest</h2><div id="beat"></div><table><thead><tr><th>Quarter</th><th>Actual Rev</th><th>Model Rev</th><th>Rev Err</th><th>Actual EPS</th><th>Model EPS</th><th>EPS Err</th><th>Direction</th></tr></thead><tbody></tbody></table>
+
+<h2>Assumptions</h2><pre>company:
+  name: SK Hynix
+  name_kr: SK하이닉스
+  ticker_yahoo: 000660.KS
+  corp_code_dart: 00164779
+  currency: KRW
+  fiscal_year_end_month: 12
+  reporting_unit: KRW_billion
+segments:
+- id: dram
+  name: DRAM (HBM + DDR)
+  sub_components:
+  - HBM
+  - DDR
+- id: nand
+  name: NAND
+- id: other
+  name: Other
+segment_revenue_split:
+  dram: 0.7
+  nand: 0.25
+  other: 0.05
+forecast_window:
+  start_quarter: 2026Q1
+  n_quarters: 4
+  annual_horizon_years: 2
+backtest_window:
+  start_quarter: 2024Q1
+  end_quarter: 2025Q4
+  lookback_quarters: 8
+historical_drivers:
+  2024Q1:
+    hbm_share: 0.2
+    hbm_asp_qoq: 0.05
+    ddr_asp_qoq: 0.05
+    nand_asp_qoq: 0.08
+  2024Q2:
+    hbm_share: 0.25
+    hbm_asp_qoq: 0.05
+    ddr_asp_qoq: 0.13
+    nand_asp_qoq: 0.1
+  2024Q3:
+    hbm_share: 0.3
+    hbm_asp_qoq: 0.05
+    ddr_asp_qoq: 0.08
+    nand_asp_qoq: 0.05
+  2024Q4:
+    hbm_share: 0.4
+    hbm_asp_qoq: 0.05
+    ddr_asp_qoq: 0.05
+    nand_asp_qoq: -0.03
+  2025Q1:
+    hbm_share: 0.45
+    hbm_asp_qoq: 0.03
+    ddr_asp_qoq: -0.05
+    nand_asp_qoq: -0.05
+  2025Q2:
+    hbm_share: 0.5
+    hbm_asp_qoq: 0.05
+    ddr_asp_qoq: 0.03
+    nand_asp_qoq: 0.12
+  2025Q3:
+    hbm_share: 0.53
+    hbm_asp_qoq: 0.1
+    ddr_asp_qoq: 0.47
+    nand_asp_qoq: 0.08
+  2025Q4:
+    hbm_share: 0.55
+    hbm_asp_qoq: 0.1
+    ddr_asp_qoq: 0.2
+    nand_asp_qoq: 0.08
+anchor_margins:
+  gm_hbm: 0.6
+  gm_ddr: 0.46
+  gm_nand: 0.15
+  gm_other: 0.1
+  cost_decline_qoq_hbm: 0.03
+  cost_decline_qoq_ddr: 0.04
+  cost_decline_qoq_nand: 0.04
+share_count:
+  weighted_avg_basic: 689000000
+  weighted_avg_diluted: 689000000
+  treasury_shares: 10000000
+  source: DART quarterly EPS-derived share count draft
+assumptions:
+  bear:
+    probability: 0.25
+    rationale: Memory cycle softening, weaker HBM competition, conservative ASP and
+      bit growth.
+    dram:
+      bit_growth_qoq:
+      - 0.0
+      - 0.02
+      - 0.03
+      - 0.03
+      hbm_share_qoq:
+      - 0.32
+      - 0.34
+      - 0.36
+      - 0.38
+      hbm_asp_yoy: 0.0
+      ddr_asp_qoq:
+      - -0.03
+      - -0.02
+      - 0.0
+      - 0.01
+    nand:
+      bit_growth_qoq:
+      - 0.02
+      - 0.03
+      - 0.04
+      - 0.04
+      asp_qoq:
+      - -0.05
+      - -0.03
+      - -0.02
+      - 0.0
+    other:
+      revenue_growth_qoq:
+      - 0.0
+      - 0.0
+      - 0.01
+      - 0.01
+    margins:
+      sga_pct_of_revenue: 0.06
+      rnd_pct_of_revenue: 0.1
+    finance:
+      effective_tax_rate: 0.184
+      net_interest_pct_of_revenue: -0.01
+  base:
+    probability: 0.5
+    rationale: Consensus-like HBM3E ramp and NAND recovery.
+    dram:
+      bit_growth_qoq:
+      - 0.05
+      - 0.06
+      - 0.06
+      - 0.05
+      hbm_share_qoq:
+      - 0.35
+      - 0.4
+      - 0.44
+      - 0.47
+      hbm_asp_yoy: 0.1
+      ddr_asp_qoq:
+      - 0.02
+      - 0.02
+      - 0.01
+      - 0.0
+    nand:
+      bit_growth_qoq:
+      - 0.04
+      - 0.05
+      - 0.05
+      - 0.04
+      asp_qoq:
+      - 0.0
+      - 0.02
+      - 0.02
+      - 0.01
+    other:
+      revenue_growth_qoq:
+      - 0.01
+      - 0.01
+      - 0.02
+      - 0.02
+    margins:
+      sga_pct_of_revenue: 0.055
+      rnd_pct_of_revenue: 0.095
+    finance:
+      effective_tax_rate: 0.164
+      net_interest_pct_of_revenue: -0.008
+  bull:
+    probability: 0.25
+    rationale: HBM ASP upside, sustained AI capex cycle, and tight leading-edge supply.
+    dram:
+      bit_growth_qoq:
+      - 0.08
+      - 0.09
+      - 0.09
+      - 0.08
+      hbm_share_qoq:
+      - 0.38
+      - 0.44
+      - 0.5
+      - 0.54
+      hbm_asp_yoy: 0.2
+      ddr_asp_qoq:
+      - 0.05
+      - 0.04
+      - 0.03
+      - 0.02
+    nand:
+      bit_growth_qoq:
+      - 0.06
+      - 0.07
+      - 0.07
+      - 0.06
+      asp_qoq:
+      - 0.03
+      - 0.05
+      - 0.05
+      - 0.03
+    other:
+      revenue_growth_qoq:
+      - 0.02
+      - 0.03
+      - 0.03
+      - 0.03
+    margins:
+      sga_pct_of_revenue: 0.052
+      rnd_pct_of_revenue: 0.09
+    finance:
+      effective_tax_rate: 0.154
+      net_interest_pct_of_revenue: -0.005
+baselines:
+  prior_4q_avg_margins:
+    gp_margin: null
+    op_margin: null
+    np_margin: null
+  prior_4q_avg_asp:
+    dram_blended: null
+    nand_blended: null
+  prior_4q_capex_krw_bn: null
+risk_band:
+  method: mad
+  k: 1.5
+  half_width_pct: 0.2279
+overlays:
+- as_of_date: &#x27;2026-05-15&#x27;
+  target_period_label: 2026Q2
+  driver: USD/KRW 환율 평가손실 (below-OP FX)
+  direction: risk_down
+  magnitude: 0.03
+  confidence: 0.4
+- as_of_date: &#x27;2026-06-10&#x27;
+  target_period_label: 2026Q3
+  driver: UST 10Y/30Y 금리 급등 → 밸류에이션 할인율 상승
+  direction: risk_down
+  magnitude: 0.05
+  confidence: 0.3
+- as_of_date: &#x27;2026-06-01&#x27;
+  target_period_label: 2026Q4
+  driver: Nvidia HBM 파트너 의존도 (집중 리스크)
+  direction: risk_down
+  magnitude: 0.04
+  confidence: 0.35
+valuation:
+  fair_value_elasticity: 1.2
+  overlay_weight: 1.0
+consensus_notes:
+- &#x27;yfinance .KS consensus unreliable: implied net margin &gt;60%&#x27;
+</pre>
+<script>const fan={"data": [{"type": "scatter", "name": "Bear-Bull band lower", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [19331.567218950004, 19426.107392818165, 19951.81625878166, 20682.20843040559], "mode": "lines", "line": {"color": "rgba(0, 0, 0, 0)", "width": 0}, "hoverinfo": "skip", "showlegend": false}, {"type": "scatter", "name": "Bear-Bull band", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [22094.603371250003, 24962.761995419052, 28141.554115560928, 31242.731850282147], "mode": "lines", "fill": "tonexty", "fillcolor": "rgba(65, 130, 165, 0.18)", "line": {"color": "rgba(0, 0, 0, 0)", "width": 0}, "hoverinfo": "skip", "showlegend": false}, {"type": "scatter", "name": "Bear", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [19331.567218950004, 19426.107392818165, 19951.81625878166, 20682.20843040559], "mode": "lines", "line": {"color": "#b65f3a", "width": 2}}, {"type": "scatter", "name": "Weighted", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [20847.76057543438, 22396.32297951109, 24155.727947648564, 25821.14511405063], "mode": "lines+markers", "line": {"color": "#222222", "width": 3}}, {"type": "scatter", "name": "Bull", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [22094.603371250003, 24962.761995419052, 28141.554115560928, 31242.731850282147], "mode": "lines", "line": {"color": "#4182a5", "width": 2}}], "layout": {"title": "Revenue forecast fan", "yaxis": {"title": "KRW bn", "range": [18140.45075581679, 32433.84831341536]}}};const beat={"data": [{"type": "bar", "name": "Revenue error", "x": [], "y": []}], "layout": {"title": "Backtest revenue error", "yaxis": {"title": "%"}}};const compare={"data": [{"type": "bar", "name": "Bear", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [19331.567218950004, 19426.107392818165, 19951.81625878166, 20682.20843040559]}, {"type": "bar", "name": "Base", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [20982.435855768752, 22598.21126490357, 24264.77070812583, 25679.82008775739]}, {"type": "bar", "name": "Bull", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [22094.603371250003, 24962.761995419052, 28141.554115560928, 31242.731850282147]}], "layout": {"title": "Scenario revenue", "barmode": "group", "yaxis": {"title": "KRW bn"}}};Plotly.newPlot('fan',fan.data,fan.layout);Plotly.newPlot('beat',beat.data,beat.layout);Plotly.newPlot('compare',compare.data,compare.layout);const epsband={"data": [{"type": "scatter", "name": "\ubc34\ub4dc \ud558\ud55c", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [11341.230669076454, 12481.340893646402, 13766.368660324604, 15007.53115892853], "mode": "lines", "line": {"color": "rgba(0, 0, 0, 0)", "width": 0}, "hoverinfo": "skip", "showlegend": false}, {"type": "scatter", "name": "below-OP \ub9ac\uc2a4\ud06c \ubc34\ub4dc", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [18036.39054339979, 19849.551202316303, 21893.17974098249, 23867.04767523422], "mode": "lines", "fill": "tonexty", "fillcolor": "rgba(182, 95, 58, 0.16)", "line": {"color": "rgba(0, 0, 0, 0)", "width": 0}, "hoverinfo": "skip"}, {"type": "scatter", "name": "EPS \uc810\ucd94\uc815 (weighted)", "x": ["2025Q1", "2025Q2", "2025Q3", "2025Q4"], "y": [14688.810606238123, 16165.446047981352, 17829.774200653548, 19437.289417081374], "mode": "lines+markers", "line": {"color": "#222222", "width": 3}}], "layout": {"title": "EPS \uc810\ucd94\uc815 + below-OP \ub9ac\uc2a4\ud06c \ubc34\ub4dc (\u00b122.8%, mad k=1.5)", "yaxis": {"title": "EPS (KRW)"}}};Plotly.newPlot('epsband',epsband.data,epsband.layout);</script>
+</body></html>

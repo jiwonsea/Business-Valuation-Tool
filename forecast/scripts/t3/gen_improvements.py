@@ -1,0 +1,138 @@
+"""HANDOFF — Codex 반영 판단 요청: 2026-08-13~14 세션 발(發) 프로젝트 개선 제안 8건
+
+규격: efe-hardening-2026-08 선례를 따라 **실제 발생 결함만** 근거로 제시 (추측성 개선 배제).
+각 항목에 근거(본 세션 증거·해시)·제안·적용 경계·리스크를 붙이고, Codex 에 ADOPT/DEFER/REJECT
+판단을 요청한다. 증거 해시는 전부 파일에서 계산 — 손타이핑 0. LF 고정, 콘솔 비의존.
+
+적용 경계 원칙 (전 항목 공통): 계획서 rev-3b·동결 후보 v1/v2·해시 고정 산출물·검증 통과 생성기는
+**무수정**. 개선은 ⑴ 신규 문서/규약 ⑵ 비동결 스크립트 ⑶ 차기 계획 템플릿에만 적용한다.
+"""
+from __future__ import annotations
+import hashlib, os, sys
+
+O = []
+VERBOSE = os.environ.get("T3_VERBOSE", "") == "1" or "--print" in sys.argv
+if VERBOSE:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        VERBOSE = False
+
+
+def w(s=""):
+    O.append(s)
+    if VERBOSE:
+        try:
+            print(s)
+        except Exception:
+            pass
+
+
+def locate(*cands):
+    for c in cands:
+        if os.path.exists(c):
+            return c
+    return None
+
+
+def sha16(path):
+    p = locate(*path) if isinstance(path, tuple) else locate(path)
+    if p is None:
+        return "(파일 없음)"
+    return hashlib.sha256(open(p, "rb").read()).hexdigest()[:16] + "…"
+
+
+# 증거 파일 (해시는 계산)
+EV = {
+    "t4":      sha16(("../../reports/T4_verdict_draft_nvda_2026-08-13.md", "T4_verdict_draft_nvda_2026-08-13.md")),
+    "t4r1":    sha16(("../../reports/T4_verdict_draft_nvda_2026-08-13_rev1_superseded.md", "T4_verdict_draft_nvda_2026-08-13_rev1_superseded.md")),
+    "t4r2":    sha16(("../../reports/T4_verdict_draft_nvda_2026-08-13_rev2_superseded.md", "T4_verdict_draft_nvda_2026-08-13_rev2_superseded.md")),
+    "t4r3":    sha16(("../../reports/T4_verdict_draft_nvda_2026-08-13_rev3_superseded.md", "T4_verdict_draft_nvda_2026-08-13_rev3_superseded.md")),
+    "fa":      sha16(("../../reports/FREEZE_A_verification_nvda_2026-08-14.md", "FREEZE_A_verification_nvda_2026-08-14.md")),
+    "m13":     sha16(("../../MANIFEST_ADDENDUM_nvda_2026-08-13_t4.md", "MANIFEST_ADDENDUM_nvda_2026-08-13_t4.md")),
+    "m14":     sha16(("../../MANIFEST_ADDENDUM_nvda_2026-08-14_freeze_a.md", "MANIFEST_ADDENDUM_nvda_2026-08-14_freeze_a.md")),
+    "ho4":     sha16(("../../HANDOFF_CODEX_nvda_2026-08_t4_verdict_rev4.md", "HANDOFF_CODEX_nvda_2026-08_t4_verdict_rev4.md")),
+    "fagen":   sha16(("../../scripts/nvda_2026q2_freeze_a_candidate_v2.py", "../nvda_2026q2_freeze_a_candidate_v2.py", "nvda_2026q2_freeze_a_candidate_v2.py")),
+}
+
+w("# HANDOFF — Codex 반영 판단 요청: 세션 발 개선 제안 8건 (2026-08-14)")
+w("")
+w("> 근거 범위: 2026-08-13~14 세션 (T-4 초안 rev-1→rev-4 PASS · T-2 ①③ · Freeze-A PASS). "
+  "**실제 발생 결함·교훈만** 항목화했다 — 추측성 개선 없음.")
+w("> 요청: 항목별 **ADOPT / DEFER / REJECT** + 우선순위 + 적용 경계 위반 여부 점검. "
+  "채택 항목은 별도 승인 후 구현한다 (본 핸드오프는 판단 요청이지 구현 아님).")
+w("> **적용 경계 (전 항목):** 계획 rev-3b·동결 후보·해시 고정 산출물·검증 통과 생성기 무수정. "
+  "적용처는 ⑴ 신규 규약 문서 ⑵ 비동결 스크립트 ⑶ **차기** 계획 템플릿뿐이다. "
+  "계획 rev-3b 자체 개정이 필요한 부분은 명시적으로 표기하고 사용자 승인 대상으로 분리했다.")
+w("")
+w("## §1. 증거 앵커 (해시는 본 생성기가 파일에서 계산)")
+w("")
+w("| 증거 | sha256(16) |")
+w("|---|---|")
+w(f"| T-4 rev-4 (최종 PASS) | `{EV['t4']}` |")
+w(f"| T-4 rev-1/2/3 superseded (Codex CONDITIONAL 3회의 대상판) | `{EV['t4r1']}` · `{EV['t4r2']}` · `{EV['t4r3']}` |")
+w(f"| 핸드오프 rev-4 (정정 이력 §0 C-①~⑤) | `{EV['ho4']}` |")
+w(f"| Freeze-A 검증 보고서 (관찰 1건 포함) | `{EV['fa']}` |")
+w(f"| 매니페스트 부록 08-13 / 08-14 | `{EV['m13']}` · `{EV['m14']}` |")
+w(f"| 후보 v2 생성기 (콘솔 의존 관찰 대상, 무수정) | `{EV['fagen']}` |")
+w("")
+w("## §2. 제안 8건")
+w("")
+w("| # | 제안 | 실제 발생 근거 (본 세션) | 적용처 | 리스크/비용 |")
+w("|---|---|---|---|---|")
+w("| **P-1** | **반증조건(RC) 등록 규격 확장** — 필수 필드를 `관측원 + 수치 임계값(사전등록) + "
+  "층 라벨(판정 트리거/서술 신호)` 3요소로. 임계값을 정당화할 분포가 없으면 등록 시점에 서술 층으로 "
+  "강등을 강제 | C-④: RC-3′ 가 관측원만 갖고 임계값이 없어 \"라인이 공시돼도 기계 판정 불가\" → "
+  "사후 강등으로 1왕복 소요 | T-4 최종(08-28) RC 재확인 시 + **차기** 종목 계획 템플릿. "
+  "rev-3b §0.4-4 자체 개정은 사용자 승인 분리 | 낮음 — 등록 양식 강화뿐 |")
+w("| **P-2** | **역산 결과 서술 규약** — 단일-변수 조건부 해는 \"OR·조합 비식별\"로만 서술, "
+  "\"동시/그리고 …필요\" 금지. 역할 변경(강등·승격·정의 교체) 시 총칭 표현(\"RC 전부\", \"3개 모두\", "
+  "\"~들\") **전수 grep** 을 절차화 | C-①(동시 성립 오서술) + C-⑤(강등 후 \"RC 전부\" 잔존). "
+  "T-3 rev-6 정의 혼재와 **동일 패턴 3번째 재발** | 저술 pre-flight 체크(P-4) + 생성기 표층 lint | "
+  "낮음 |")
+w("| **P-3** | **모델 상대 명제 라벨 규약** — 밸류에이션 결론 문장은 앵커를 문장 안에 명시"
+  "(\"X 기준 …\")하고 절대 명제 금지 | C-②: \"안전마진 부재 확정\"이 절대 명제로 읽혀 재라벨 | "
+  "문서 템플릿·pre-flight | 낮음 |")
+w("| **P-4** | **저술 pre-flight self-lint** — 검증 발주 전 자체 점검 목록 고정: ⑴ 금지 토큰"
+  "(정량 절의 UNVERIFIABLE 계열) ⑵ 총칭 표현 grep ⑶ 앵커 라벨 누락 ⑷ 결합/단일축 서술 ⑸ 트리거 "
+  "임계값 유무. 기계화 가능한 ⑴⑵⑶은 생성기 검사로(기존 F-5 15건 검사의 확장) | T-4 가 PASS 까지 "
+  "4왕복(rev-1~4) — 5건 전부 사전 검출 가능했던 유형 | 신규 공용 검사 모듈(P-7) + 체크리스트 문서 | "
+  "중간 — 검사 자체의 오탐 관리 필요 |")
+w("| **P-5** | **rev 갱신·감사 규약 문서화** — `_revN_superseded.md` 보존 → 동일 파일명 덮어쓰기 → "
+  "매니페스트 supersede 기록 → 핸드오프 §0 정정 이력 표 + 직전 사본 diff 국한성 검증 요청. "
+  "이번 세션에서 검증된 절차를 CONVENTIONS 문서로 승격 | rev-2~4 가 각 1왕복으로 완결 — Codex 가 "
+  "diff 국한성·수치 불변을 기계 확인 가능했음 | 신규 `docs/CONVENTIONS_rev_audit.md` (비동결) | 낮음 |")
+w("| **P-6** | **콘솔 비의존 전수 감사** — 리포 스크립트에서 비ASCII print·newline 미고정을 스캔해 "
+  "목록화. 동결/검증 통과 생성기는 **무수정·관찰만 기록**, 활성 비동결 스크립트만 수정 후보로 분류 | "
+  "Freeze-A 관찰: 후보 v2 생성기가 ASCII 콘솔에서 종료 1 (08-12 바이트 결정성 규약 **이전** 작성분이 "
+  "리포에 잔존함을 실증) | 스캔 스크립트 1개 + 목록 문서 | 낮음 — 스캔은 읽기 전용 |")
+w("| **P-7** | **gen 스크립트 공용 모듈 `scripts/t3/genlib.py` (신규부터)** — w/VERBOSE/locate/sha/"
+  "LF-write 보일러플레이트가 t3 생성기 9개에 복붙돼 있음. 기존 해시 고정 스크립트는 무수정, "
+  "**신규 생성기부터** 공용화. f-string 백슬래시 등 버전 함정 회피 코드도 여기 집약 | 이번 세션에만 "
+  "동일 보일러플레이트 5회 재복사 + gen_manifest_t4 f-string SyntaxError 1회(디바이스 python<3.12) | "
+  "신규 모듈 (비동결) | 중간 — 기존/신규 이중 체계 기간 발생 |")
+w("| **P-8** | **크로스 환경 재생성 게이트 명문화** — \"샌드박스 ×2 + 디바이스 ×1 비트 동일 + CRLF 0\"을 "
+  "산출물 완료 조건으로 규약화 (현재는 관행) | 이 게이트가 실제로 잡은 결함: f-string SyntaxError"
+  "(디바이스), 과거 CRLF·cp949 결함 동일 경로 검출. 규약 부재 시 생략 위험 | P-5 와 같은 CONVENTIONS "
+  "문서에 1절 | 낮음 |")
+w("")
+w("## §3. 판단 요청 양식")
+w("")
+w("항목별로: **ADOPT / DEFER / REJECT** · 우선순위(P0~P2) · 적용 경계 위반 여부(동결물 접촉 없는지) · "
+  "구현 순서 제안. 특히 다음 2건은 의견을 구체적으로 요청한다:")
+w("")
+w("1. **P-4 lint 의 기계화 범위** — 표층 토큰 검사는 의미 수준 유입을 못 잡는다(기존 F-5 자가 신고와 "
+  "동일 한계). 기계 검사를 어디까지 늘리고 어디부터 Codex 왕복에 맡길지의 경계.")
+w("2. **P-1 의 rev-3b 개정 여부** — 08-27 프린트 전에 §0.4-4 를 개정할 가치가 있는지, 아니면 T-4 최종 "
+  "문서 안에서 로컬 규약으로 처리하고 차기 계획부터 반영할지 (개정 시 사용자 승인 필요).")
+w("")
+w("**비포함 (별도 미결 유지, 사용자 지시):** ERP 갱신 · NVDA 산출물 git 커밋 결정 · T-2 ②(새 세션).")
+w("")
+w("---")
+w("")
+w("*본 문서는 투자 자문이 아니며, 프로세스 개선 판단 목적의 내부 문서이다.*")
+
+OUTP = "HANDOFF_CODEX_efe_improvements_2026-08-14.md"
+with open(OUTP, "w", encoding="utf-8", newline="\n") as f:
+    f.write("\n".join(O))
+print("sha256", hashlib.sha256(open(OUTP, "rb").read()).hexdigest(), OUTP)

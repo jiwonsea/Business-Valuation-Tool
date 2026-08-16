@@ -7,9 +7,9 @@ from calendar import monthrange
 from datetime import date
 from typing import Any
 
-from pipeline.edgar_fetcher import model_label_for_period
-from schemas.generic import GenericProfile
-from schemas.models import ConsensusRecord
+from forecast.pipeline.edgar_fetcher import model_label_for_period
+from forecast.schemas.generic import GenericProfile
+from forecast.schemas.models import ConsensusRecord
 
 _FORWARD_QUARTERS = ("0q", "+1q")
 _FORWARD_YEARS = ("0y", "+1y")

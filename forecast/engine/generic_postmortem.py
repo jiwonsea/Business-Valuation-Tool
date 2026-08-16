@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from engine.skill_metrics import SkillRow, compute_skill
-from schemas.postmortem import (
+from forecast.engine.skill_metrics import SkillRow, compute_skill
+from forecast.schemas.postmortem import (
     FourLeverAttribution,
     FrozenPoint,
     GenericActualRelease,

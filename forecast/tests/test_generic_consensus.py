@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from engine.generic_forecast import run_generic_forecast
-from generic_cli import backtest_generic, render_markdown
-from pipeline import yahoo_fetcher
-from pipeline.generic_consensus import to_generic_consensus_record
-from schemas.generic import GenericProfile
+from forecast.engine.generic_forecast import run_generic_forecast
+from forecast.generic_cli import backtest_generic, render_markdown
+from forecast.pipeline import yahoo_fetcher
+from forecast.pipeline.generic_consensus import to_generic_consensus_record
+from forecast.schemas.generic import GenericProfile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

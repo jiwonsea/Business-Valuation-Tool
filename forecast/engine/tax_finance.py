@@ -6,7 +6,7 @@ net_interest = revenue × net_interest_pct_of_revenue (typically slightly negati
 
 from __future__ import annotations
 
-from schemas.models import FinanceAssumptions, QuarterlyForecast
+from forecast.schemas.models import FinanceAssumptions, QuarterlyForecast
 
 
 def apply_taxes_and_finance(

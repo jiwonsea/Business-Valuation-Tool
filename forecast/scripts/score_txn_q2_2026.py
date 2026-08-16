@@ -26,11 +26,11 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO.parent))
 
-from generic_cli import load_generic_profile  # noqa: E402
-from engine.generic_forecast import run_generic_forecast  # noqa: E402
-from engine.scoring_basis import compare_bases, format_gap_of_gap  # noqa: E402
+from forecast.generic_cli import load_generic_profile  # noqa: E402
+from forecast.engine.generic_forecast import run_generic_forecast  # noqa: E402
+from forecast.engine.scoring_basis import compare_bases, format_gap_of_gap  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────
 # ACTUALS — 프린트 시 채운다 (USD_million; EPS는 USD/주; 마진·세율은 소수, 예: 0.585).

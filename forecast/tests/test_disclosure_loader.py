@@ -6,7 +6,7 @@ from datetime import date
 
 import pytest
 
-from pipeline.disclosure_loader import count_kr_chars, fetch_dart_mdna, load_ir_decks
+from forecast.pipeline.disclosure_loader import count_kr_chars, fetch_dart_mdna, load_ir_decks
 
 
 def test_count_kr_chars_counts_only_hangul():

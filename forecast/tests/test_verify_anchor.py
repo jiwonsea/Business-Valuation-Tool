@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 from pydantic import ValidationError
 
-from scripts.verify_anchor import (
+from forecast.scripts.verify_anchor import (
     ANCHOR_REGISTRY_DATA,
     AnchorEntry,
     SupersededBy,
@@ -31,7 +31,7 @@ def test_registry_requires_all_provenance_metadata() -> None:
 
 
 def test_reproduction_uses_cache_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
-    import pipeline.dart_fetcher as dart_fetcher
+    import forecast.pipeline.dart_fetcher as dart_fetcher
 
     calls = 0
 
@@ -75,7 +75,9 @@ def test_anchor_drift_prints_required_remediation(
     entry = load_registry()[0]
     drifted = entry.expected.model_dump()
     drifted["weighted_eps"] += 1.0
-    monkeypatch.setattr("scripts.verify_anchor.reproduce_anchor", lambda _: drifted)
+    monkeypatch.setattr(
+        "forecast.scripts.verify_anchor.reproduce_anchor", lambda _: drifted
+    )
 
     assert verify_entry(entry) is False
     output = capsys.readouterr().out

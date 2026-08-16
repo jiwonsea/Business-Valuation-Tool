@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from schemas.models import (
+from forecast.schemas.models import (
     ScenarioProbabilities,
     SegmentAssumptions,
 )

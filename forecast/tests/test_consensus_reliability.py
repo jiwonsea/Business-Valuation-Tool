@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from pipeline.consensus_loader import to_consensus_record
+from forecast.pipeline.consensus_loader import to_consensus_record
 
 
 def test_quality_notes_empty_on_mere_absence() -> None:

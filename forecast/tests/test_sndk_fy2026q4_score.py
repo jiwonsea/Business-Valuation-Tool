@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.score_sndk_fy2026q4 import ACTUAL, SCALE, _eps_from, load_frozen
+from forecast.scripts.score_sndk_fy2026q4 import ACTUAL, SCALE, _eps_from, load_frozen
 
 
 def test_actual_income_statement_identities() -> None:

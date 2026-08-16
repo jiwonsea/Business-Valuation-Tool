@@ -42,7 +42,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-from pipeline._ssl_setup import ensure_ssl_env
+from forecast.pipeline._ssl_setup import ensure_ssl_env
 
 ensure_ssl_env()
 
@@ -57,7 +57,7 @@ import httpx  # noqa: E402
 
 logger = logging.getLogger("earnings-forecast")
 
-CACHE_DIR = Path("reports/.cache")
+CACHE_DIR = Path(__file__).resolve().parents[1] / "reports" / ".cache"
 COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:0>10}.json"
 
 # SEC fair-access policy requires a User-Agent with contact information.

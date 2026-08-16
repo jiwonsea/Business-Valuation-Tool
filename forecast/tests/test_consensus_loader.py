@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from pipeline.consensus_loader import to_consensus_record
+from forecast.pipeline.consensus_loader import to_consensus_record
 
 
 def test_quarterly_consensus_labels_derive_from_as_of_when_history_period_is_null(

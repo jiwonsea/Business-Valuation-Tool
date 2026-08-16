@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-from engine import generic_signal
-from engine.generic_signal import _extract_aligned_annual_eps, fetch_consensus_fy1_eps
+from forecast.engine import generic_signal
+from forecast.engine.generic_signal import _extract_aligned_annual_eps, fetch_consensus_fy1_eps
 
 
 def test_extracts_aligned_current_year_from_list_shape() -> None:
@@ -64,7 +64,9 @@ def test_fetch_consensus_uses_pipeline_fetch_and_aligns_year(monkeypatch) -> Non
             ]
         }
 
-    monkeypatch.setattr("pipeline.yahoo_fetcher.fetch_consensus", fake_fetch_consensus)
+    monkeypatch.setattr(
+        "forecast.pipeline.yahoo_fetcher.fetch_consensus", fake_fetch_consensus
+    )
     monkeypatch.setattr(generic_signal, "date", FakeDate)
 
     assert fetch_consensus_fy1_eps("NVDA", 2027) == pytest.approx(9.50)
@@ -74,6 +76,8 @@ def test_fetch_consensus_returns_none_on_fetch_failure(monkeypatch) -> None:
     def broken_fetch_consensus(ticker: str):
         raise RuntimeError("offline")
 
-    monkeypatch.setattr("pipeline.yahoo_fetcher.fetch_consensus", broken_fetch_consensus)
+    monkeypatch.setattr(
+        "forecast.pipeline.yahoo_fetcher.fetch_consensus", broken_fetch_consensus
+    )
 
     assert fetch_consensus_fy1_eps("NVDA", 2026) is None

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from schemas.models import (
+from forecast.schemas.models import (
     BacktestResult,
     BacktestSkill,
     BelowOpEventScenario,

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from engine.skill_metrics import SkillRow, compute_skill
+from forecast.engine.skill_metrics import SkillRow, compute_skill
 
 
 def _row(label, actual_rev, model_rev, rw_rev, actual_eps=None, model_eps=None, rw_eps=None):

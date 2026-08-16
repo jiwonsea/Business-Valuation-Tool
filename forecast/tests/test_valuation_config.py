@@ -14,8 +14,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from pipeline.ir_loader import load_profile
-from schemas.models import ValuationConfig
+from forecast.pipeline.ir_loader import load_profile
+from forecast.schemas.models import ValuationConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

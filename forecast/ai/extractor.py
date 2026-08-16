@@ -31,16 +31,16 @@ import logging
 import os
 from pathlib import Path
 
-from pipeline._ssl_setup import ensure_ssl_env
-from schemas.models import DisclosureDocument
-from ai.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_message
+from forecast.pipeline._ssl_setup import ensure_ssl_env
+from forecast.schemas.models import DisclosureDocument
+from forecast.ai.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_message
 
 ensure_ssl_env()
 
 logger = logging.getLogger(__name__)
 
 MODEL_ID = "claude-haiku-4-5-20251001"
-CACHE_DIR = Path("reports/.cache")
+CACHE_DIR = Path(__file__).resolve().parents[1] / "reports" / ".cache"
 MAX_TOKENS = 1536
 
 

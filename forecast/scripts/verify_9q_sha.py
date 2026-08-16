@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO.parent))
 
 KNOWN_GOOD = {
     # Cowork sandbox baseline (EFE-1 exit 2026-07-10; re-verified post-2a).
@@ -42,10 +42,10 @@ KNOWN_GOOD = {
 
 
 def main() -> int:
-    from engine.backtest import run_backtest
-    from pipeline.consensus_loader import to_consensus_record
-    from pipeline.dart_fetcher import fetch_quarterly_actuals_series
-    from pipeline.ir_loader import load_profile
+    from forecast.engine.backtest import run_backtest
+    from forecast.pipeline.consensus_loader import to_consensus_record
+    from forecast.pipeline.dart_fetcher import fetch_quarterly_actuals_series
+    from forecast.pipeline.ir_loader import load_profile
 
     profile = load_profile(REPO / "profiles" / "sk_hynix.yaml")
     start_year = int(str(profile["backtest_window"]["start_quarter"])[:4]) - 1

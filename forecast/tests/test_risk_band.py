@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from engine.risk_band import build_eps_risk_band, robust_half_width
-from schemas.models import EpsRiskBand, Overlay
+from forecast.engine.risk_band import build_eps_risk_band, robust_half_width
+from forecast.schemas.models import EpsRiskBand, Overlay
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

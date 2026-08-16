@@ -19,10 +19,10 @@ from datetime import date
 
 import pytest
 
-from engine.below_op_events import build_event_adjusted_eps
-from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-from engine.valuation_bridge import sensitivity_to_dcf
-from schemas.models import (
+from forecast.engine.below_op_events import build_event_adjusted_eps
+from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+from forecast.engine.valuation_bridge import sensitivity_to_dcf
+from forecast.schemas.models import (
     BelowOpEvent,
     CompanyMeta,
     Overlay,
@@ -172,7 +172,7 @@ def test_bridge_does_not_mutate_tree() -> None:
 def test_docstring_forbids_event_adjusted_eps_input() -> None:
     """P2 contract is explicit at the valuation API boundary."""
     doc = sensitivity_to_dcf.__module__
-    assert doc == "engine.valuation_bridge"
+    assert doc == "forecast.engine.valuation_bridge"
     module_doc = __import__(doc, fromlist=["__doc__"]).__doc__ or ""
     assert "event-adjusted EPS" in module_doc
     assert "never be injected" in module_doc

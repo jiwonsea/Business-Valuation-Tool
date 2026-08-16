@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 from openpyxl import load_workbook
 
-from engine.scoring_basis import compare_bases, format_gap_of_gap
+from forecast.engine.scoring_basis import compare_bases, format_gap_of_gap
 
 logger = logging.getLogger(__name__)
 

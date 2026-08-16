@@ -24,7 +24,7 @@ import statistics
 from collections.abc import Sequence
 from typing import Literal
 
-from schemas.models import EpsRiskBand, EpsRiskBandQuarter, Overlay
+from forecast.schemas.models import EpsRiskBand, EpsRiskBandQuarter, Overlay
 
 # The 1.4826 factor rescales the median absolute deviation to a standard-deviation
 # equivalent under normality, giving an outlier-resistant ~1-sigma scale.

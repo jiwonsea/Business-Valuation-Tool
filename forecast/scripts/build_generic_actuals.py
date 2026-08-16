@@ -22,9 +22,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT.parent))
 
-from pipeline.edgar_fetcher import (  # noqa: E402
+from forecast.pipeline.edgar_fetcher import (  # noqa: E402
     build_standalone_quarters,
     fetch_companyfacts,
     iter_facts,

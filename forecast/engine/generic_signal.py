@@ -324,7 +324,7 @@ def fetch_consensus_fy1_eps(
     block always builds.
     """
     try:
-        from pipeline.yahoo_fetcher import fetch_consensus  # native EFE fetcher
+        from forecast.pipeline.yahoo_fetcher import fetch_consensus  # native EFE fetcher
 
         raw = fetch_consensus(ticker_yahoo)
         return _extract_aligned_annual_eps(raw, target_fiscal_year)

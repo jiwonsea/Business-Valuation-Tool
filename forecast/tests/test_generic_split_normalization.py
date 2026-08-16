@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from schemas.generic import GenericProfile
+from forecast.schemas.generic import GenericProfile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -130,7 +130,7 @@ def test_no_implied_share_seams_in_committed_profiles(profile_name, low, high):
 
 
 def test_committed_profiles_are_contiguous():
-    from generic_cli import backtest_generic
+    from forecast.generic_cli import backtest_generic
 
     for name in ("nvda.generic.yaml", "tsla.generic.yaml"):
         bt = backtest_generic(_load(name))

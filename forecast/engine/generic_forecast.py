@@ -15,10 +15,10 @@ Per-quarter recursion (see module docstring in schemas/generic.py):
 
 from __future__ import annotations
 
-from schemas.generic import GenericProfile, GenericScenarioAssumptions
-from schemas.models import AnnualForecast, QuarterlyForecast, SegmentForecast
-from engine.scenario import aggregate_quarterly_to_annual
-from engine.segment_revenue import _next_quarter_label
+from forecast.schemas.generic import GenericProfile, GenericScenarioAssumptions
+from forecast.schemas.models import AnnualForecast, QuarterlyForecast, SegmentForecast
+from forecast.engine.scenario import aggregate_quarterly_to_annual
+from forecast.engine.segment_revenue import _next_quarter_label
 
 
 def project_scenario(

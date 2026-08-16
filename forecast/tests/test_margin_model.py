@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from engine.margin_model import project_margins
-from schemas.models import (
+from forecast.engine.margin_model import project_margins
+from forecast.schemas.models import (
     AnchorMargins,
     MarginAssumptions,
     MarginBaseline,

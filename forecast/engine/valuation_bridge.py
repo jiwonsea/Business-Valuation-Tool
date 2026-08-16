@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from schemas.models import Overlay, ScenarioTree, ValuationBridgeResult
+from forecast.schemas.models import Overlay, ScenarioTree, ValuationBridgeResult
 
 # Risk direction -> sign on the macro overlay score (risk to value, not EPS sign).
 _DIRECTION_SIGN: dict[str, float] = {"risk_up": 1.0, "neutral": 0.0, "risk_down": -1.0}

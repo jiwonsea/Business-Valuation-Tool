@@ -6,9 +6,9 @@ import json
 from datetime import date
 from pathlib import Path
 
-from engine.signal_extractor import build_extracted_signal
-from engine.signal_predictor import build_call_brief
-from schemas.models import ConsensusRecord, DisclosureDocument
+from forecast.engine.signal_extractor import build_extracted_signal
+from forecast.engine.signal_predictor import build_call_brief
+from forecast.schemas.models import ConsensusRecord, DisclosureDocument
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -18,15 +18,16 @@ These tests pin, in order:
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 import yaml
 
-from engine.generic_forecast import run_generic_forecast
-from generic_cli import backtest_generic
-from schemas.generic import GenericProfile
+from forecast.engine.generic_forecast import run_generic_forecast
+from forecast.generic_cli import backtest_generic
+from forecast.schemas.generic import GenericProfile
 
-PROFILE_PATH = "profiles/sndk.generic.yaml"
+PROFILE_PATH = Path(__file__).resolve().parents[1] / "profiles" / "sndk.generic.yaml"
 
 
 @pytest.fixture(scope="module")

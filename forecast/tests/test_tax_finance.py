@@ -13,8 +13,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pipeline.ir_loader import load_profile
-from scripts.diagnose_tax_finance import (
+from forecast.pipeline.ir_loader import load_profile
+from forecast.scripts.diagnose_tax_finance import (
     ID_NI,
     ID_OP,
     ID_PRETAX,

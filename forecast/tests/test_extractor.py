@@ -5,8 +5,8 @@ The Anthropic call itself (_call_anthropic) is Codex's; not exercised here.
 
 from __future__ import annotations
 
-from ai.extractor import MODEL_ID, _cache_key
-from ai.prompts import PROMPT_VERSION
+from forecast.ai.extractor import MODEL_ID, _cache_key
+from forecast.ai.prompts import PROMPT_VERSION
 
 
 def test_cache_key_is_deterministic_and_text_sensitive():

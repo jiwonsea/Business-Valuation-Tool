@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import date
 import math
 
-from schemas.models import ConsensusRecord
+from forecast.schemas.models import ConsensusRecord
 
 
 def _clean(value: object) -> float | None:

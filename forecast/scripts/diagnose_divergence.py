@@ -19,12 +19,12 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT.parent))
 
-from engine.attribution import attribute_eps_error  # noqa: E402
-from engine.backtest import implied_basic_shares, iter_backtest_forecasts  # noqa: E402
-from pipeline.dart_fetcher import fetch_quarterly_actuals_series  # noqa: E402
-from pipeline.ir_loader import load_profile  # noqa: E402
+from forecast.engine.attribution import attribute_eps_error  # noqa: E402
+from forecast.engine.backtest import implied_basic_shares, iter_backtest_forecasts  # noqa: E402
+from forecast.pipeline.dart_fetcher import fetch_quarterly_actuals_series  # noqa: E402
+from forecast.pipeline.ir_loader import load_profile  # noqa: E402
 
 
 def _quarter_sort_key(label: str) -> tuple[int, int]:

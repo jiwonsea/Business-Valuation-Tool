@@ -125,25 +125,25 @@ def main(argv: list[str] | None = None) -> int:
 
     from dotenv import load_dotenv
 
-    from engine.backtest import run_backtest
-    from engine.below_op_events import build_event_adjusted_eps
-    from engine.consensus_diff import compute_consensus_gap
-    from engine.eps_bridge import project_eps
-    from engine.margin_model import project_margins
-    from engine.risk_band import build_eps_risk_band
-    from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-    from engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
-    from engine.tax_finance import apply_taxes_and_finance
-    from engine.valuation_bridge import sensitivity_to_dcf
-    from output.html_builder import render_html_report
-    from output.md_builder import render_md_report
-    from output.static_charts import save_beat_miss_png, save_fan_chart_png
-    from output.xlsx_writer import write_xlsx
-    from pipeline.consensus_loader import to_consensus_record
-    from pipeline.dart_fetcher import extract_quarterly_actual, fetch_quarterly_actuals_series
-    from pipeline.ir_loader import load_profile
-    from pipeline.yahoo_fetcher import fetch_consensus
-    from schemas.models import BacktestResult, MarginBaseline, QuarterlyActual, ScenarioCase
+    from forecast.engine.backtest import run_backtest
+    from forecast.engine.below_op_events import build_event_adjusted_eps
+    from forecast.engine.consensus_diff import compute_consensus_gap
+    from forecast.engine.eps_bridge import project_eps
+    from forecast.engine.margin_model import project_margins
+    from forecast.engine.risk_band import build_eps_risk_band
+    from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+    from forecast.engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
+    from forecast.engine.tax_finance import apply_taxes_and_finance
+    from forecast.engine.valuation_bridge import sensitivity_to_dcf
+    from forecast.output.html_builder import render_html_report
+    from forecast.output.md_builder import render_md_report
+    from forecast.output.static_charts import save_beat_miss_png, save_fan_chart_png
+    from forecast.output.xlsx_writer import write_xlsx
+    from forecast.pipeline.consensus_loader import to_consensus_record
+    from forecast.pipeline.dart_fetcher import extract_quarterly_actual, fetch_quarterly_actuals_series
+    from forecast.pipeline.ir_loader import load_profile
+    from forecast.pipeline.yahoo_fetcher import fetch_consensus
+    from forecast.schemas.models import BacktestResult, MarginBaseline, QuarterlyActual, ScenarioCase
 
     load_dotenv(REPO_ROOT / ".env")
     profile = load_profile(profile_path)
@@ -276,8 +276,8 @@ def main(argv: list[str] | None = None) -> int:
     # forecasts or the backtest, and BacktestResult itself is untouched.
     attributions = None
     if backtest.quarters:
-        from engine.attribution import attribute_eps_error
-        from engine.backtest import implied_basic_shares, iter_backtest_forecasts
+        from forecast.engine.attribution import attribute_eps_error
+        from forecast.engine.backtest import implied_basic_shares, iter_backtest_forecasts
 
         try:
             attributions = [
@@ -356,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("Wrote %s", xlsx_path)
     if not args.skip_pdf:
         try:
-            from output.pdf_export import html_to_pdf
+            from forecast.output.pdf_export import html_to_pdf
 
             html_to_pdf(html_path, pdf_path)
             logger.info("Wrote %s", pdf_path)
@@ -419,12 +419,12 @@ def run_signal_backtest_mode(args: argparse.Namespace, profile_path: Path) -> in
     """
     from datetime import date as date_
 
-    from ai.extractor import MODEL_ID, extract_signal
-    from engine.signal_backtest import run_signal_backtest
-    from engine.signal_extractor import build_extracted_signal
-    from output.call_brief_builder import render_signal_backtest_html, render_signal_backtest_md
-    from pipeline.disclosure_loader import load_ir_decks
-    from pipeline.ir_loader import load_profile
+    from forecast.ai.extractor import MODEL_ID, extract_signal
+    from forecast.engine.signal_backtest import run_signal_backtest
+    from forecast.engine.signal_extractor import build_extracted_signal
+    from forecast.output.call_brief_builder import render_signal_backtest_html, render_signal_backtest_md
+    from forecast.pipeline.disclosure_loader import load_ir_decks
+    from forecast.pipeline.ir_loader import load_profile
 
     profile = load_profile(profile_path)
     signal_cfg = profile["raw"].get("signal_layer")
@@ -443,7 +443,7 @@ def run_signal_backtest_mode(args: argparse.Namespace, profile_path: Path) -> in
     if args.dry_run:
         signals, event_dates, stock_closes, market_closes = _load_signal_backtest_fixtures(today)
     else:
-        from pipeline.yahoo_fetcher import fetch_earnings_dates, fetch_price_history
+        from forecast.pipeline.yahoo_fetcher import fetch_earnings_dates, fetch_price_history
 
         decks_dir = Path(signal_cfg.get("decks_dir", r"C:/temp/earnings_forecast/decks"))
         documents = load_ir_decks(signal_cfg.get("decks", []), decks_dir)
@@ -483,11 +483,11 @@ def run_call_brief_mode(args: argparse.Namespace, profile_path: Path) -> int:
     """
     from datetime import date as date_
 
-    from ai.extractor import MODEL_ID, extract_signal
-    from engine.signal_extractor import build_extracted_signal
-    from engine.signal_predictor import build_call_brief
-    from output.call_brief_builder import render_call_brief_html, render_call_brief_md
-    from pipeline.ir_loader import load_profile
+    from forecast.ai.extractor import MODEL_ID, extract_signal
+    from forecast.engine.signal_extractor import build_extracted_signal
+    from forecast.engine.signal_predictor import build_call_brief
+    from forecast.output.call_brief_builder import render_call_brief_html, render_call_brief_md
+    from forecast.pipeline.ir_loader import load_profile
 
     profile = load_profile(profile_path)
     signal_cfg = profile["raw"].get("signal_layer")
@@ -503,9 +503,9 @@ def run_call_brief_mode(args: argparse.Namespace, profile_path: Path) -> int:
     if args.dry_run:
         signal, consensus = _load_call_brief_fixtures(profile, today)
     else:
-        from pipeline.consensus_loader import to_consensus_record
-        from pipeline.disclosure_loader import fetch_dart_mdna
-        from pipeline.yahoo_fetcher import fetch_consensus
+        from forecast.pipeline.consensus_loader import to_consensus_record
+        from forecast.pipeline.disclosure_loader import fetch_dart_mdna
+        from forecast.pipeline.yahoo_fetcher import fetch_consensus
 
         mdna = brief_cfg["mdna"]
         document = fetch_dart_mdna(
@@ -537,8 +537,8 @@ def _load_signal_backtest_fixtures(as_of: "date") -> tuple[dict, dict, dict, dic
     """
     from datetime import date as date_
 
-    from engine.signal_extractor import build_extracted_signal
-    from schemas.models import DisclosureDocument
+    from forecast.engine.signal_extractor import build_extracted_signal
+    from forecast.schemas.models import DisclosureDocument
 
     with open(FIXTURES_DIR / "signal_backtest_fixture.json", encoding="utf-8") as f:
         fx = json.load(f)
@@ -556,9 +556,9 @@ def _load_signal_backtest_fixtures(as_of: "date") -> tuple[dict, dict, dict, dic
 
 def _load_call_brief_fixtures(profile: dict, as_of: "date") -> tuple:
     """Load call-brief fixtures (one extraction + a consensus record)."""
-    from engine.signal_extractor import build_extracted_signal
-    from pipeline.consensus_loader import to_consensus_record
-    from schemas.models import DisclosureDocument
+    from forecast.engine.signal_extractor import build_extracted_signal
+    from forecast.pipeline.consensus_loader import to_consensus_record
+    from forecast.schemas.models import DisclosureDocument
 
     with open(FIXTURES_DIR / "call_brief_fixture.json", encoding="utf-8") as f:
         fx = json.load(f)

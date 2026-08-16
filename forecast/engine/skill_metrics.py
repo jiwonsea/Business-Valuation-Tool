@@ -30,7 +30,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import sqrt
 
-from schemas.models import BacktestSkill
+from forecast.schemas.models import BacktestSkill
 
 
 @dataclass(frozen=True)

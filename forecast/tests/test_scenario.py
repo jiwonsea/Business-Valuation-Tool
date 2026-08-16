@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-from schemas.models import (
+from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+from forecast.schemas.models import (
     CompanyMeta,
     QuarterlyForecast,
     ScenarioCase,

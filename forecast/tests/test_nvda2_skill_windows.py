@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from engine.generic_forecast import run_generic_forecast
-from engine.generic_signal import build_signal_block
-from generic_cli import backtest_generic, load_generic_profile, render_markdown
-from schemas.generic import GenericProfile
+from forecast.engine.generic_forecast import run_generic_forecast
+from forecast.engine.generic_signal import build_signal_block
+from forecast.generic_cli import backtest_generic, load_generic_profile, render_markdown
+from forecast.schemas.generic import GenericProfile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

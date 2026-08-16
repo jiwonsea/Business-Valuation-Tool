@@ -17,8 +17,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from engine.signal_extractor import signal_score, tone_to_sign
-from schemas.models import ExtractedSignal, SignalBacktestResult, SignalEventResult
+from forecast.engine.signal_extractor import signal_score, tone_to_sign
+from forecast.schemas.models import ExtractedSignal, SignalBacktestResult, SignalEventResult
 
 
 def _sign(value: float) -> int:

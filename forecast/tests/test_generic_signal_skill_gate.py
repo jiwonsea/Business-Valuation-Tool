@@ -7,7 +7,7 @@ skill so a regime turn is visible instead of averaged away.
 
 from __future__ import annotations
 
-from engine.generic_signal import MIN_SKILL_N, build_signal_block
+from forecast.engine.generic_signal import MIN_SKILL_N, build_signal_block
 
 
 def _rows(model_errs: list[float], rw_errs: list[float]) -> list[dict]:

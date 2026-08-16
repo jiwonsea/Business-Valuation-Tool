@@ -6,7 +6,7 @@ DRAM_blended_ASP = HBM_share × HBM_ASP + (1 - HBM_share) × DDR_ASP.
 
 from __future__ import annotations
 
-from schemas.models import (
+from forecast.schemas.models import (
     HistoricalDriver,
     MarginBaseline,
     MarginCarryover,

@@ -19,7 +19,7 @@ realized error only — they are never fed back into the no-look-ahead backtest.
 
 from __future__ import annotations
 
-from schemas.models import DriverAttribution, QuarterlyActual, QuarterlyForecast
+from forecast.schemas.models import DriverAttribution, QuarterlyActual, QuarterlyForecast
 
 NI_TO_KRW = 1_000_000_000.0  # net profit is carried in KRW billions
 

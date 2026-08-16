@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from schemas.models import DisclosureDocument, ExtractedSignal, SignalTone, TopicEmphasis
+from forecast.schemas.models import DisclosureDocument, ExtractedSignal, SignalTone, TopicEmphasis
 
 TONE_TO_SIGN: dict[str, int] = {"up": 1, "flat": 0, "down": -1}
 _VALID_POLARITY = {"positive", "neutral", "negative"}

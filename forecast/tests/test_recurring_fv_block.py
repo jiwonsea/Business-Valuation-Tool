@@ -7,8 +7,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from pipeline.ir_loader import load_profile
-from schemas.models import RecurringFairValueBlock
+from forecast.pipeline.ir_loader import load_profile
+from forecast.schemas.models import RecurringFairValueBlock
 
 
 def _block(**updates) -> RecurringFairValueBlock:
@@ -38,7 +38,7 @@ def test_fair_value_amount_and_eps_fields_are_forbidden() -> None:
 
 
 def test_registry_load_does_not_change_base_eps(tmp_path) -> None:
-    profile_path = Path("profiles/sk_hynix.yaml")
+    profile_path = Path(__file__).resolve().parents[1] / "profiles" / "sk_hynix.yaml"
     raw = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
     raw["recurring_fair_value_blocks"] = [_block().model_dump(mode="json")]
     path = tmp_path / "profile.yaml"
@@ -52,7 +52,8 @@ def test_registry_load_does_not_change_base_eps(tmp_path) -> None:
 
 
 def test_same_instrument_cannot_be_event_and_recurring(tmp_path) -> None:
-    raw = yaml.safe_load(Path("profiles/sk_hynix.yaml").read_text(encoding="utf-8"))
+    profile_path = Path(__file__).resolve().parents[1] / "profiles" / "sk_hynix.yaml"
+    raw = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
     raw["below_op_events"][0]["instrument"] = "kioxia_spc2_cb"
     raw["recurring_fair_value_blocks"] = [_block().model_dump(mode="json")]
     path = tmp_path / "profile.yaml"
@@ -63,5 +64,5 @@ def test_same_instrument_cannot_be_event_and_recurring(tmp_path) -> None:
 
 
 def test_pipeline_accepts_no_recurring_amounts() -> None:
-    profile = load_profile(Path("profiles/sk_hynix.yaml"))
+    profile = load_profile(Path(__file__).resolve().parents[1] / "profiles" / "sk_hynix.yaml")
     assert profile["recurring_fair_value_blocks"] == []

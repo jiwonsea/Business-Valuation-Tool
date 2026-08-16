@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from generic_cli import backtest_generic
-from schemas.generic import GenericProfile
+from forecast.generic_cli import backtest_generic
+from forecast.schemas.generic import GenericProfile
 
 
 def _profile(actuals: list[dict]) -> GenericProfile:

@@ -38,8 +38,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from pipeline._ssl_setup import ensure_ssl_env
-from schemas.models import DisclosureDocument
+from forecast.pipeline._ssl_setup import ensure_ssl_env
+from forecast.schemas.models import DisclosureDocument
 
 ensure_ssl_env()
 
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 DART_VIEWER_MAIN = "https://dart.fss.or.kr/dsaf001/main.do"
 DART_VIEWER_BODY = "https://dart.fss.or.kr/report/viewer.do"
-CACHE_DIR = Path("reports/.cache")
+CACHE_DIR = Path(__file__).resolve().parents[1] / "reports" / ".cache"
 MDNA_TITLE = "\uc774\uc0ac\uc758 \uacbd\uc601\uc9c4\ub2e8 \ubc0f \ubd84\uc11d\uc758\uacac"
 
 

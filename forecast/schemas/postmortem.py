@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from schemas.models import BacktestSkill
+from forecast.schemas.models import BacktestSkill
 
 
 class Provenance(BaseModel):

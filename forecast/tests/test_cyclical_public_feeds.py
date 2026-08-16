@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from engine.cyclical_drivers.public_feeds import (
+from forecast.engine.cyclical_drivers.public_feeds import (
     EXPLICIT_GAPS,
     PricePoint,
     fetch_yahoo_monthly,

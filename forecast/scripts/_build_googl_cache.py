@@ -115,7 +115,7 @@ blob = {
     },
 }
 
-path = Path("reports/.cache/edgar_companyfacts_CIK0001652044.json")
+path = Path(__file__).resolve().parents[1] / "reports" / ".cache" / "edgar_companyfacts_CIK0001652044.json"
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps(blob, ensure_ascii=False, indent=1), encoding="utf-8")
 print(f"wrote {path} ({path.stat().st_size} bytes)")

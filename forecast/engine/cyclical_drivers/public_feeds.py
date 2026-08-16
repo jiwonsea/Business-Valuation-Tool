@@ -61,7 +61,7 @@ def fetch_yahoo_monthly(
         # non-ASCII Windows home path (e.g. a Korean username) curl_cffi cannot
         # open certifi's bundle and TLS fails. Every other EFE Yahoo consumer runs
         # this at import; this adapter was missing it (the cyclical-pilot cert error).
-        from pipeline._ssl_setup import ensure_ssl_env
+        from forecast.pipeline._ssl_setup import ensure_ssl_env
 
         ensure_ssl_env()
 

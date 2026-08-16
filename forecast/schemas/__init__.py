@@ -1,6 +1,6 @@
 """Pydantic v2 data models for earnings-forecast-engine."""
 
-from schemas.models import (
+from forecast.schemas.models import (
     AnnualForecast,
     BacktestResult,
     CompanyMeta,

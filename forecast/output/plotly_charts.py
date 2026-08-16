@@ -11,7 +11,7 @@ embeds via `<div id="..."></div>` + `Plotly.newPlot(...)`.
 
 from __future__ import annotations
 
-from schemas.models import BacktestResult, DriverAttribution, EpsRiskBand, ScenarioTree
+from forecast.schemas.models import BacktestResult, DriverAttribution, EpsRiskBand, ScenarioTree
 
 
 def build_fan_chart(tree: ScenarioTree) -> dict:

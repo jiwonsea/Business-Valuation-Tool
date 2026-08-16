@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from engine.backtest import run_backtest
-from engine.eps_bridge import project_eps
-from engine.margin_model import project_margins
-from engine.segment_revenue import project_quarterly_revenue
-from engine.tax_finance import apply_taxes_and_finance
-from schemas.models import (
+from forecast.engine.backtest import run_backtest
+from forecast.engine.eps_bridge import project_eps
+from forecast.engine.margin_model import project_margins
+from forecast.engine.segment_revenue import project_quarterly_revenue
+from forecast.engine.tax_finance import apply_taxes_and_finance
+from forecast.schemas.models import (
     AnchorMargins,
     FinanceAssumptions,
     HistoricalDriver,
@@ -218,9 +218,9 @@ def test_anchor_quarter_reproduces_actual_gross_margin():
     """
     os.environ.setdefault("DART_API_KEY", "cache-only")
     try:
-        from engine.backtest import iter_backtest_forecasts as _iter
-        from pipeline.dart_fetcher import fetch_quarterly_actuals_series
-        from pipeline.ir_loader import load_profile
+        from forecast.engine.backtest import iter_backtest_forecasts as _iter
+        from forecast.pipeline.dart_fetcher import fetch_quarterly_actuals_series
+        from forecast.pipeline.ir_loader import load_profile
     except Exception as exc:  # pragma: no cover - env-dependent (Windows SSL path)
         pytest.skip(f"DART pipeline unavailable: {exc}")
 
@@ -357,7 +357,7 @@ def test_backtest_accumulates_historical_asp_indexes_from_window_anchor():
 
 
 def test_backtest_uses_seed_implied_shares_with_profile_fallback():
-    from engine.backtest import iter_backtest_forecasts
+    from forecast.engine.backtest import iter_backtest_forecasts
 
     history = [_actual(i, 100.0) for i in range(4)] + [_actual(4, 120.0)]
     rows = list(

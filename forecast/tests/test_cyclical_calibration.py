@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from engine.cyclical_drivers.calibration import (
+from forecast.engine.cyclical_drivers.calibration import (
     MIN_SKILL_N,
     calibrate_passthrough,
     expanding_driver_skill,

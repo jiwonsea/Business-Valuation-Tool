@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
-from schemas.models import CallBrief, SignalBacktestResult
+from forecast.schemas.models import CallBrief, SignalBacktestResult
 
 SMALL_SAMPLE_DISCLAIMER = (
     "Small-sample event study (target N 8-12). Treat this as qualitative signal "

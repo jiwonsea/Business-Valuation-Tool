@@ -16,10 +16,10 @@ from pathlib import Path
 import sys
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT.parent))
 
-from engine.cyclical_drivers.calibration import expanding_driver_skill  # noqa: E402
-from engine.cyclical_drivers.public_feeds import fetch_yahoo_monthly  # noqa: E402
+from forecast.engine.cyclical_drivers.calibration import expanding_driver_skill  # noqa: E402
+from forecast.engine.cyclical_drivers.public_feeds import fetch_yahoo_monthly  # noqa: E402
 
 SEC_HEADERS = {"User-Agent": "Portfolio reliability automation contact@example.com"}
 PILOTS = {

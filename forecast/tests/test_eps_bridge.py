@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from engine.eps_bridge import project_eps
-from schemas.models import QuarterlyForecast, SegmentForecast, SharesOutstanding
+from forecast.engine.eps_bridge import project_eps
+from forecast.schemas.models import QuarterlyForecast, SegmentForecast, SharesOutstanding
 
 
 def test_eps_simple_division():

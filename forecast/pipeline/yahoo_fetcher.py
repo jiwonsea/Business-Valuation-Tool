@@ -11,13 +11,13 @@ import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from pipeline._ssl_setup import ensure_ssl_env
+from forecast.pipeline._ssl_setup import ensure_ssl_env
 
 ensure_ssl_env()
 
 import yfinance as yf  # noqa: E402
 
-CACHE_DIR = Path("reports/.cache")
+CACHE_DIR = Path(__file__).resolve().parents[1] / "reports" / ".cache"
 yf.cache.set_cache_location(str(CACHE_DIR))
 
 

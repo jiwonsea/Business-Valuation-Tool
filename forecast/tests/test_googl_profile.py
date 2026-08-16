@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from schemas.generic import GenericProfile
+from forecast.schemas.generic import GenericProfile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -75,7 +75,7 @@ def test_googl_fy2025_sum_identity():
 
 
 def test_googl_backtest_scores_and_beats_naive_revenue():
-    from generic_cli import backtest_generic
+    from forecast.generic_cli import backtest_generic
 
     bt = backtest_generic(_load())
     assert bt.get("revenue_mape") is not None, bt.get("note")

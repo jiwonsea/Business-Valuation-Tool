@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from generic_cli import backtest_generic, load_generic_profile
-from engine.segment_revenue import _next_quarter_label
+from forecast.generic_cli import backtest_generic, load_generic_profile
+from forecast.engine.segment_revenue import _next_quarter_label
 
 PROFILE_PATH = Path(__file__).resolve().parents[1] / "profiles" / "ibm.generic.yaml"
 

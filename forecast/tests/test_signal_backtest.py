@@ -7,9 +7,9 @@ import json
 from datetime import date
 from pathlib import Path
 
-from engine.signal_backtest import run_signal_backtest
-from engine.signal_extractor import build_extracted_signal
-from schemas.models import DisclosureDocument
+from forecast.engine.signal_backtest import run_signal_backtest
+from forecast.engine.signal_extractor import build_extracted_signal
+from forecast.schemas.models import DisclosureDocument
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-from output.plotly_charts import build_attribution_waterfall, build_fan_chart
-from schemas.models import (
+from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+from forecast.output.plotly_charts import build_attribution_waterfall, build_fan_chart
+from forecast.schemas.models import (
     CompanyMeta,
     DriverAttribution,
     QuarterlyForecast,

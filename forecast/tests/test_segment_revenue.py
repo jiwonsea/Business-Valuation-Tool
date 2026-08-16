@@ -12,8 +12,8 @@ import pytest
 
 from datetime import date
 
-from engine.segment_revenue import _next_quarter_label, project_quarterly_revenue
-from schemas.models import MarginBaseline, QuarterlyActual, SegmentAssumptions, SegmentForecast
+from forecast.engine.segment_revenue import _next_quarter_label, project_quarterly_revenue
+from forecast.schemas.models import MarginBaseline, QuarterlyActual, SegmentAssumptions, SegmentForecast
 
 
 def _actual(label: str = "2025Q4") -> QuarterlyActual:

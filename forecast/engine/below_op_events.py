@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date
 
-from schemas.models import BelowOpEvent, BelowOpEventScenario, EventAdjustedEpsQuarter
+from forecast.schemas.models import BelowOpEvent, BelowOpEventScenario, EventAdjustedEpsQuarter
 
 
 def build_event_adjusted_eps(

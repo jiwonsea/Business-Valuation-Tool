@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import date
 import math
 
-from schemas.models import CallBrief, ConsensusRecord, ExtractedSignal
+from forecast.schemas.models import CallBrief, ConsensusRecord, ExtractedSignal
 
 
 def _qna_for_topic(topic: str) -> str:

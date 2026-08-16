@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from schemas.models import (
+from forecast.schemas.models import (
     AnchorMargins,
     MarginAssumptions,
     MarginBaseline,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pipeline.dart_fetcher import extract_quarterly_actual
+from forecast.pipeline.dart_fetcher import extract_quarterly_actual
 
 
 SEGMENT_SPLIT = {"dram": 0.70, "nand": 0.25, "other": 0.05}

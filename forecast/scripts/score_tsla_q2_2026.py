@@ -11,9 +11,9 @@ from pathlib import Path
 
 import yaml
 
-from engine.generic_postmortem import score_generic_release
-from engine.scoring_basis import compare_bases, format_gap_of_gap
-from schemas.postmortem import FrozenPoint, GenericActualRelease, GenericPostmortemResult
+from forecast.engine.generic_postmortem import score_generic_release
+from forecast.engine.scoring_basis import compare_bases, format_gap_of_gap
+from forecast.schemas.postmortem import FrozenPoint, GenericActualRelease, GenericPostmortemResult
 
 logger = logging.getLogger(__name__)
 

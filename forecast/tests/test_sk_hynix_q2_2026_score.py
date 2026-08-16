@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.score_sk_hynix_q2_2026 import (
+from forecast.scripts.score_sk_hynix_q2_2026 import (
     ANCHOR_PATH,
     ANCHOR_SHA256,
     END_MARKER,

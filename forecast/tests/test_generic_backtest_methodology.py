@@ -1,8 +1,8 @@
 """Regression coverage for decoupled generic forward/backtest drivers."""
 
-from generic_cli import _render_window, backtest_generic
-from engine.generic_forecast import run_generic_forecast
-from schemas.generic import GenericProfile
+from forecast.generic_cli import _render_window, backtest_generic
+from forecast.engine.generic_forecast import run_generic_forecast
+from forecast.schemas.generic import GenericProfile
 
 
 def _profile(**overrides) -> GenericProfile:

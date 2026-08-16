@@ -7,7 +7,7 @@ Per-period: model_value, consensus_value, gap_abs, gap_pct, direction.
 
 from __future__ import annotations
 
-from schemas.models import ConsensusGap, ConsensusRecord, ScenarioTree
+from forecast.schemas.models import ConsensusGap, ConsensusRecord, ScenarioTree
 
 
 IN_LINE_THRESHOLD_PCT = 0.02   # within ±2% counted as in-line

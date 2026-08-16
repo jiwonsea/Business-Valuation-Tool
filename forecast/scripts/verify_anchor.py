@@ -25,7 +25,7 @@ from unittest.mock import patch
 from pydantic import BaseModel, ConfigDict, Field
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO.parent))
 
 REL_TOLERANCE = 1e-9
 
@@ -109,14 +109,14 @@ def _previous_quarter_label(label: str) -> str:
 def reproduce_anchor(entry: AnchorEntry) -> dict[str, float]:
     """Run the forward chain directly from committed DART cache data."""
 
-    import pipeline.dart_fetcher as dart_fetcher
-    from engine.eps_bridge import project_eps
-    from engine.margin_model import project_margins
-    from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-    from engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
-    from engine.tax_finance import apply_taxes_and_finance
-    from pipeline.ir_loader import load_profile
-    from schemas.models import MarginBaseline, ScenarioCase
+    import forecast.pipeline.dart_fetcher as dart_fetcher
+    from forecast.engine.eps_bridge import project_eps
+    from forecast.engine.margin_model import project_margins
+    from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+    from forecast.engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
+    from forecast.engine.tax_finance import apply_taxes_and_finance
+    from forecast.pipeline.ir_loader import load_profile
+    from forecast.schemas.models import MarginBaseline, ScenarioCase
 
     profile = load_profile(REPO / "profiles" / f"{entry.company}.yaml")
     start_year = int(str(profile["backtest_window"]["start_quarter"])[:4]) - 1
@@ -140,9 +140,9 @@ def reproduce_anchor(entry: AnchorEntry) -> dict[str, float]:
             return json.load(cache_file)
 
     with (
-        patch("pipeline.dart_fetcher.fetch_quarterly_financials", side_effect=fetch_cached_only),
+        patch("forecast.pipeline.dart_fetcher.fetch_quarterly_financials", side_effect=fetch_cached_only),
         patch(
-            "pipeline.dart_fetcher.httpx.get",
+            "forecast.pipeline.dart_fetcher.httpx.get",
             side_effect=RuntimeError("network access forbidden by verify_anchor.py"),
         ) as guarded_get,
     ):
@@ -293,7 +293,7 @@ def main() -> int:
     if not anchors_ok:
         return 1
 
-    from scripts.verify_9q_sha import main as verify_9q_sha
+    from forecast.scripts.verify_9q_sha import main as verify_9q_sha
 
     print("9Q SHA gate:")
     if verify_9q_sha() != 0:

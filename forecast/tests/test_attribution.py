@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-from engine.attribution import attribute_eps_error
-from schemas.models import QuarterlyActual, QuarterlyForecast, SegmentForecast
+from forecast.engine.attribution import attribute_eps_error
+from forecast.schemas.models import QuarterlyActual, QuarterlyForecast, SegmentForecast
 
 SHARES = 1_000_000_000  # 1e9 → eps = net_profit(KRW bn) × 1e9 / 1e9 = net_profit(KRW bn)
 

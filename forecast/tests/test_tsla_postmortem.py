@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.score_tsla_q2_2026 import (
+from forecast.scripts.score_tsla_q2_2026 import (
     END_MARKER,
     FROZEN_ANCHOR,
     FROZEN_PATH,
@@ -16,7 +16,7 @@ from scripts.score_tsla_q2_2026 import (
     render_postmortem,
     score_tsla,
 )
-from schemas.postmortem import GenericActualRelease
+from forecast.schemas.postmortem import GenericActualRelease
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

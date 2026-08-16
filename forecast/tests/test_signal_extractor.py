@@ -6,8 +6,8 @@ from datetime import date
 
 import pytest
 
-from engine.signal_extractor import TONE_TO_SIGN, build_extracted_signal, signal_score, tone_to_sign
-from schemas.models import DisclosureDocument, ExtractedSignal, TopicEmphasis
+from forecast.engine.signal_extractor import TONE_TO_SIGN, build_extracted_signal, signal_score, tone_to_sign
+from forecast.schemas.models import DisclosureDocument, ExtractedSignal, TopicEmphasis
 
 
 def _doc() -> DisclosureDocument:

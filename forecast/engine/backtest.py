@@ -13,12 +13,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from engine.eps_bridge import project_eps
-from engine.margin_model import project_margins
-from engine.segment_revenue import project_quarterly_revenue
-from engine.skill_metrics import SkillRow, compute_skill
-from engine.tax_finance import apply_taxes_and_finance
-from schemas.models import (
+from forecast.engine.eps_bridge import project_eps
+from forecast.engine.margin_model import project_margins
+from forecast.engine.segment_revenue import project_quarterly_revenue
+from forecast.engine.skill_metrics import SkillRow, compute_skill
+from forecast.engine.tax_finance import apply_taxes_and_finance
+from forecast.schemas.models import (
     AnchorMargins,
     BacktestQuarter,
     BacktestResult,

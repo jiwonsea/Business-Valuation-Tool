@@ -23,9 +23,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-from pipeline.dart_fetcher import extract_quarterly_actual
-from pipeline.ir_loader import load_profile
-from schemas.models import Overlay
+from forecast.pipeline.dart_fetcher import extract_quarterly_actual
+from forecast.pipeline.ir_loader import load_profile
+from forecast.schemas.models import Overlay
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -104,11 +104,11 @@ def _base_forward(profile: dict) -> tuple[list[float | None], list[float]]:
     Mirrors the cli.py forward loop for the base scenario only — overlays are NOT
     an input to any of these functions, which is exactly the property under test.
     """
-    from engine.eps_bridge import project_eps
-    from engine.margin_model import project_margins
-    from engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
-    from engine.tax_finance import apply_taxes_and_finance
-    from schemas.models import MarginBaseline, QuarterlyActual
+    from forecast.engine.eps_bridge import project_eps
+    from forecast.engine.margin_model import project_margins
+    from forecast.engine.segment_revenue import build_margin_carryover, project_quarterly_revenue
+    from forecast.engine.tax_finance import apply_taxes_and_finance
+    from forecast.schemas.models import MarginBaseline, QuarterlyActual
 
     split = profile["segment_revenue_split"]
     import json

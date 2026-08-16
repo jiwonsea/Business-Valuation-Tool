@@ -7,7 +7,7 @@ checks and sanity caps.
 
 from __future__ import annotations
 
-from schemas.models import MarginAssumptions, QuarterlyForecast
+from forecast.schemas.models import MarginAssumptions, QuarterlyForecast
 
 
 def sanity_check_opex(

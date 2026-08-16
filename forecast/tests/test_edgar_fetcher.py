@@ -12,7 +12,7 @@ from datetime import date
 
 import pytest
 
-from pipeline.edgar_fetcher import (
+from forecast.pipeline.edgar_fetcher import (
     Fact,
     build_standalone_quarters,
     iter_facts,

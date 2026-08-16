@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from schemas.models import (
+from forecast.schemas.models import (
     AnnualForecast,
     CompanyMeta,
     QuarterlyForecast,

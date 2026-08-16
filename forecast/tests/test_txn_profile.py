@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from engine.generic_forecast import run_generic_forecast
-from generic_cli import backtest_generic, load_generic_profile
+from forecast.engine.generic_forecast import run_generic_forecast
+from forecast.generic_cli import backtest_generic, load_generic_profile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

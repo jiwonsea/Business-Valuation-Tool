@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from schemas.models import (
+from forecast.schemas.models import (
     AnchorMargins,
     BelowOpEvent,
     RecurringFairValueBlock,

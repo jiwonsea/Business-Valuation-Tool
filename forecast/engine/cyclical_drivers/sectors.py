@@ -8,7 +8,7 @@ carry a public fallback where one exists; where none does, the gap is explicit.
 
 from __future__ import annotations
 
-from engine.cyclical_drivers.base import DataSource, SpreadMarginDriver
+from forecast.engine.cyclical_drivers.base import DataSource, SpreadMarginDriver
 
 # ── reusable source definitions ─────────────────────────────────────────────
 _DRAM_ASP = DataSource("DRAM/NAND contract ASP", "output_price", "TrendForce", True,

@@ -26,16 +26,16 @@ REPORTS_DIR = REPO_ROOT / "reports"
 
 sys.path.insert(0, str(REPO_ROOT))
 
-from engine.generic_forecast import run_generic_forecast  # noqa: E402
-from engine.generic_signal import (  # noqa: E402
+from forecast.engine.generic_forecast import run_generic_forecast  # noqa: E402
+from forecast.engine.generic_signal import (  # noqa: E402
     build_signal_block,
 )
-from engine.segment_revenue import _next_quarter_label  # noqa: E402
-from engine.skill_metrics import SkillRow, compute_skill  # noqa: E402
-from pipeline.generic_consensus import to_generic_consensus_record  # noqa: E402
-from pipeline.yahoo_fetcher import fetch_consensus  # noqa: E402
-from schemas.generic import GenericProfile  # noqa: E402
-from schemas.models import ConsensusRecord  # noqa: E402
+from forecast.engine.segment_revenue import _next_quarter_label  # noqa: E402
+from forecast.engine.skill_metrics import SkillRow, compute_skill  # noqa: E402
+from forecast.pipeline.generic_consensus import to_generic_consensus_record  # noqa: E402
+from forecast.pipeline.yahoo_fetcher import fetch_consensus  # noqa: E402
+from forecast.schemas.generic import GenericProfile  # noqa: E402
+from forecast.schemas.models import ConsensusRecord  # noqa: E402
 
 
 def load_generic_profile(path: Path) -> GenericProfile:

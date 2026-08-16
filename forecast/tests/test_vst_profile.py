@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from generic_cli import backtest_generic, load_generic_profile
+from forecast.generic_cli import backtest_generic, load_generic_profile
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

@@ -13,8 +13,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from pipeline._ssl_setup import ensure_ssl_env
-from schemas.models import QuarterlyActual, SegmentForecast
+from forecast.pipeline._ssl_setup import ensure_ssl_env
+from forecast.schemas.models import QuarterlyActual, SegmentForecast
 
 ensure_ssl_env()
 
@@ -33,7 +33,7 @@ import httpx  # noqa: E402
 
 logger = logging.getLogger("earnings-forecast")
 
-CACHE_DIR = Path("reports/.cache")
+CACHE_DIR = Path(__file__).resolve().parents[1] / "reports" / ".cache"
 API_URL = "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json"
 
 REPRT_CODE_Q1 = "11013"

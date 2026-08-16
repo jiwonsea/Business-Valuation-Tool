@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from schemas.models import BacktestResult, ScenarioTree
+from forecast.schemas.models import BacktestResult, ScenarioTree
 
 
 def write_xlsx(

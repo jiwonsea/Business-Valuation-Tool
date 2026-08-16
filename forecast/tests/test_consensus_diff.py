@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from engine.consensus_diff import compute_consensus_gap
-from engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
-from schemas.models import (
+from forecast.engine.consensus_diff import compute_consensus_gap
+from forecast.engine.scenario import aggregate_quarterly_to_annual, build_scenario_tree
+from forecast.schemas.models import (
     CompanyMeta,
     ConsensusRecord,
     QuarterlyForecast,

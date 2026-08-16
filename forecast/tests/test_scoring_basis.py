@@ -1,4 +1,4 @@
-from engine.scoring_basis import compare_bases, format_gap_of_gap
+from forecast.engine.scoring_basis import compare_bases, format_gap_of_gap
 
 
 def test_comparison_always_labels_both_bases_and_splits_gap_fields() -> None:

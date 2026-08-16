@@ -12,8 +12,8 @@ import math
 import pytest
 from pydantic import ValidationError
 
-from schemas.generic import GenericProfile, GenericScenarioAssumptions
-from engine.generic_forecast import project_scenario, run_generic_forecast
+from forecast.schemas.generic import GenericProfile, GenericScenarioAssumptions
+from forecast.engine.generic_forecast import project_scenario, run_generic_forecast
 
 
 def _profile(**overrides) -> GenericProfile:

@@ -6,7 +6,7 @@ EPS_diluted = NI / weighted_avg_diluted_shares
 
 from __future__ import annotations
 
-from schemas.models import QuarterlyForecast, SharesOutstanding
+from forecast.schemas.models import QuarterlyForecast, SharesOutstanding
 
 
 def project_eps(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from dateutil.relativedelta import relativedelta
 
@@ -118,7 +118,7 @@ def build_backtest_dataset(min_age_days: int = 90) -> list[BacktestRecord]:
                     "date_t3m": prices.get("date_t3m", None),
                     "date_t6m": prices.get("date_t6m", None),
                     "date_t12m": prices.get("date_t12m", None),
-                    "price_fetched_at": datetime.utcnow().isoformat(),
+                    "price_fetched_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
                     "fetch_errors": prices.get("fetch_errors", {}),
                 }
                 # Convert date objects to ISO strings for JSON

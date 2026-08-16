@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from schemas.provenance import LEGACY_VERSION
@@ -230,7 +230,7 @@ def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
     if not client:
         return False
 
-    price_data["price_fetched_at"] = datetime.utcnow().isoformat()
+    price_data["price_fetched_at"] = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
     try:
         resp = (

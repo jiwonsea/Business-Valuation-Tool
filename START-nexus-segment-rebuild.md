@@ -3,7 +3,7 @@
 > **실행 위치**: `F:\dev\Portfolio\business-valuation-tool`
 > **선행 완료**: BVT 엔진·Excel 결함 수정 4라운드 (`BACKLOG_bvt_partB_closure.md`) — 단위·클램프·MC(PBV 포함/결정성)·Peer·Sensitivity·Relative·as-of 가격·역방향 DCF 가드
 > **현재 모델**: `profiles/nexus.yaml` (as-of 2026-07-10, 1,505원) → Base 364원 / 확률가중 394원 / Codex PART A **47/60 CONDITIONAL GO**
-> **필독**: `valuation-results/2026-07-13-nexus-onestore/_DART_FINDINGS_2026-07-13.md` ← **이 세션의 출발점**
+> **필독**: `valuation-results/2026-07-13-nexus-onestore/DART_FINDINGS_2026-07-13.md` ← **이 세션의 출발점**
 
 ---
 

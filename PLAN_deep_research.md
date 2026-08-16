@@ -338,7 +338,7 @@ python -m pytest tests/ -q
 - `tests/test_interim.py` — US **비달력 결산**(NVDA 1월), KR **누적분기 변환**, restatement, accession dedup
 - `tests/test_segments.py` — **L1/L2/L3 판정**, L2에 EBITDA 배수 적용 시 **거부**되는지
 - `tests/test_gate_e2e.py` — 상태 머신 × 소비자 행렬, **배치 일부 차단 시 나머지 진행**
-- `tests/test_beta_policy.py` — 상장/비상장 분기, 관측창 부재 시 차단, 범위 이탈은 **차단하지 않음**
+- `tests/test_beta_policy.py` — 상장/비상장 분기, 관측창 부재 시 차단, 범위 이탈은 **차단하지 않음** (→ 실제 착지: `tests/test_beta.py`)
 - `tests/test_scenario_multiples.py` — Base/Bull/Bear = median/Q3/Q1 결정론, **N<4일 때 시나리오 배수 미생성**, LLM 경로 부재 확인
 - `tests/test_method_selector.py` — L1 집중도 ≥90% → consolidated primary (기존 파일 확장)
 - `tests/fixtures/nvda_q1fy27.json` — SEC 8-K 프로즌 픽스처

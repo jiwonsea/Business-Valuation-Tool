@@ -4,5 +4,42 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.exclude": {
+			"**/.cache": true,
+			"**/.claude-octopus": true,
+			"**/.pytest_cache": true,
+			"**/.ruff_cache": true,
+			"**/__pycache__": true,
+			"**/*.xlsx": true,
+			"logs": true,
+			"output/calibration": true,
+			"test_output": true,
+			"valuation-results": true
+		},
+		"search.exclude": {
+			"**/.cache": true,
+			"**/.claude-octopus": true,
+			"**/.pytest_cache": true,
+			"**/.ruff_cache": true,
+			"**/__pycache__": true,
+			"**/*.xlsx": true,
+			"logs": true,
+			"output/calibration": true,
+			"test_output": true,
+			"valuation-results": true
+		},
+		"files.watcherExclude": {
+			"**/.cache/**": true,
+			"**/.claude-octopus/**": true,
+			"**/.pytest_cache/**": true,
+			"**/.ruff_cache/**": true,
+			"**/__pycache__/**": true,
+			"**/*.xlsx": true,
+			"logs/**": true,
+			"output/calibration/**": true,
+			"test_output/**": true,
+			"valuation-results/**": true
+		}
+	}
 }

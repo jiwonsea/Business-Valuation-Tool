@@ -63,3 +63,11 @@ valuation-results/
 
 # Session/handoff notes (private working artifacts)
 NEXT_SESSION_*.md
+
+# Agent/session scratch dirs (root-anchored; no broad glob patterns — see Codex B-3/B-4)
+/tmp/
+/graphify-out/
+/.playwright-mcp/
+
+# Archived session artifacts (scratch screenshots, old session prompts)
+/docs/archive/

@@ -182,7 +182,7 @@ Python 3.11+ | Pydantic v2 | httpx | NumPy | Pandas | openpyxl | PyYAML | Anthro
 
 ## Data Sources & Disclaimer
 
-Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Any company-specific output (profiles, weekly reports, calibration data) is generated locally and is **not** included in this repository.
+Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Weekly reports, run logs, and calibration outputs are generated locally and are **not** included in this repository. Company profiles under `profiles/` are partially tracked: only profiles serving as validation, research, or release baselines are committed (snapshotted deliberately, e.g. `fd902b1`); the weekly pipeline regenerates them, so tracked copies are point-in-time snapshots, not live data.
 
 This project is for **research and educational purposes only**. It does not constitute investment advice, and the author is not registered as an investment adviser under any jurisdiction. Past valuations or backtested results do not guarantee future returns. Use at your own discretion.
 

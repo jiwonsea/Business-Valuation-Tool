@@ -93,7 +93,7 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 
 - Engine pure function tests: fixed input → exact value assertion OK.
 - Pipeline E2E tests: range-based validation. Avoid exact-value regression since methodology may vary by company type.
-- **`profiles/` is AI-regenerated, not a test fixture**: the weekly pipeline rewrites `profiles/*.yaml` (scenario codes drift Bull/Base/Bear ↔ A/B/C/D), so tests that load from `profiles/` with hardcoded keys break after every run. Fix by moving test-owned YAML into `tests/fixtures/`. Current casualty: `TestScenarioDriverRoundTrip::test_sotp_segment_multiples_differentiate_ev` and `::test_yaml_segment_multiples_round_trip` — deselect with `--deselect tests/test_engine.py::TestScenarioDriverRoundTrip` until fixtures are split.
+- **`profiles/` is AI-regenerated, not a test fixture**: the weekly pipeline rewrites `profiles/*.yaml` (scenario codes drift Bull/Base/Bear ↔ A/B/C/D), so tests that load from `profiles/` with hardcoded keys break after every run. Fix by moving test-owned YAML into `tests/fixtures/` (done for `TestScenarioDriverRoundTrip` in `2203856` via `tests/fixtures/msft_frozen.yaml`/`tsla_frozen.yaml` — no deselect needed; full suite passes). Apply the same fixture split to any new test tempted to load from `profiles/`.
 - **DB repository tests** use a Fake Supabase query builder pattern (`tests/test_backtest_repository.py` — records every chained `.select/.or_/.eq/.upsert/.execute` call, returns fake data). Reuse for new `db/*_repository.py` tests instead of mocking each call site.
 
 ## Session Safety (agent/Cowork edits)

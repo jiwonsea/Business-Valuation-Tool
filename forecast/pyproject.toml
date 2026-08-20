@@ -22,16 +22,5 @@ target-version = "py311"
 select = ["E", "F", "W", "I", "B", "UP"]
 ignore = ["E501"]  # line length is enforced loosely; long string literals OK
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-# `-m "not network"`: network-dependent tests are opt-in. Phase B is DORMANT
-# (no profile carries a signal_layer section), so its live-DART test would
-# otherwise fail for environmental reasons and be misread as a code defect.
-addopts = "-ra --strict-markers -m 'not network'"
-markers = [
-    "network: hits a live external service (DART/EDGAR/Yahoo); excluded by default, run with -m network",
-]
-
 [project.scripts]
 earnings-forecast = "cli:main"

@@ -219,10 +219,13 @@ def test_anchor_quarter_reproduces_actual_gross_margin():
     os.environ.setdefault("DART_API_KEY", "cache-only")
     try:
         from forecast.engine.backtest import iter_backtest_forecasts as _iter
-        from forecast.pipeline.dart_fetcher import fetch_quarterly_actuals_series
+        from forecast.pipeline.dart_fetcher import CACHE_DIR, fetch_quarterly_actuals_series
         from forecast.pipeline.ir_loader import load_profile
     except Exception as exc:  # pragma: no cover - env-dependent (Windows SSL path)
         pytest.skip(f"DART pipeline unavailable: {exc}")
+
+    if not any(CACHE_DIR.glob("dart_*.json")):
+        pytest.skip("derived DART cache absent (gitignored) — rebuild to populate")
 
     profile_path = Path(__file__).resolve().parents[1] / "profiles" / "sk_hynix.yaml"
     profile = load_profile(profile_path)

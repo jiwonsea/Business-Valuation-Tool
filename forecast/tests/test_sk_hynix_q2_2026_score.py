@@ -18,6 +18,11 @@ from forecast.scripts.score_sk_hynix_q2_2026 import (
     render,
 )
 
+pytestmark = pytest.mark.skipif(
+    not ANCHOR_PATH.exists(),
+    reason="derived anchor XLSX absent (gitignored) — rebuild to populate",
+)
+
 
 def test_anchor_hash_and_transcribed_values() -> None:
     assert hashlib.sha256(ANCHOR_PATH.read_bytes()).hexdigest() == ANCHOR_SHA256

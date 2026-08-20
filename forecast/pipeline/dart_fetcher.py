@@ -18,14 +18,13 @@ from forecast.schemas.models import QuarterlyActual, SegmentForecast
 
 ensure_ssl_env()
 
-# Load DART_API_KEY (and peers) from the repo-root .env so ANY entry point that
-# triggers a DART fetch sees the key — including the otherwise-offline generic
-# profile generator, whose CLI does not call load_dotenv itself. Existing env
-# vars win (load_dotenv does not override), so a host-set key is respected.
+# Load DART_API_KEY (and peers) from the BVT repo-root .env so every forecast
+# entry point sees the same environment contract. Existing environment values
+# win (load_dotenv does not override), so a host-set key is respected.
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 except ImportError:  # dotenv optional; host may set the key directly
     pass
 

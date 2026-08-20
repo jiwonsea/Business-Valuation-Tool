@@ -49,7 +49,7 @@ ensure_ssl_env()
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 except ImportError:  # dotenv optional
     pass
 

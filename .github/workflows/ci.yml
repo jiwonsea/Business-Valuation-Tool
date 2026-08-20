@@ -32,3 +32,21 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v --tb=short
+
+  forecast-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install forecast dependencies
+        run: pip install -e ".[dev,forecast]"
+
+      - name: Run forecast tests
+        run: pytest forecast/tests -v --tb=short

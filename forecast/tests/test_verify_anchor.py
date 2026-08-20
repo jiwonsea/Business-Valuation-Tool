@@ -33,6 +33,9 @@ def test_registry_requires_all_provenance_metadata() -> None:
 def test_reproduction_uses_cache_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
     import forecast.pipeline.dart_fetcher as dart_fetcher
 
+    if not any(dart_fetcher.CACHE_DIR.glob("dart_*.json")):
+        pytest.skip("derived DART cache absent (gitignored) — rebuild to populate")
+
     calls = 0
 
     def reject_network(*args: object, **kwargs: object) -> None:

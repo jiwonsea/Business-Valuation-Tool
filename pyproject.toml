@@ -28,16 +28,40 @@ publish = [
 ]
 sentiment = ["transformers>=4.40,<5", "torch>=2.0,<3"]
 dev = ["pytest>=9.0.3,<10", "ruff>=0.4,<1"]
+forecast = [
+    "pydantic>=2.6,<3",
+    "yfinance>=0.2.40,<1",
+    "httpx>=0.27,<1",
+    "pandas>=2.2,<3",
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "plotly>=5.20,<6",
+    "matplotlib>=3.8,<4",
+    "openpyxl>=3.1,<4",
+    "jinja2>=3.1,<4",
+    "pyyaml>=6.0,<7",
+    "python-dotenv>=1.0,<2",
+    "anthropic>=0.40,<1",
+    "pymupdf>=1.24,<2",
+    "pytest>=8.0,<10",
+]
 
 [tool.setuptools]
-packages = ["engine", "schemas", "pipeline", "ai", "db", "output", "discovery", "scheduler"]
 py-modules = ["cli", "orchestrator", "valuation_runner"]
+
+[tool.setuptools.packages.find]
+include = [
+    "engine*", "schemas*", "pipeline*", "ai*", "db*", "output*",
+    "discovery*", "scheduler*", "forecast*",
+]
+exclude = ["forecast.tests*"]
 
 [project.scripts]
 valuation = "cli:main"
+earnings-forecast = "forecast.cli:main"
 
 [tool.ruff]
-exclude = [".claude"]
+exclude = [".claude", "forecast"]
 
 [tool.ruff.lint]
 # E402: conditional imports after sys.stderr/logging setup are intentional (cli.py, valuation_runner.py)
@@ -47,3 +71,11 @@ ignore = ["E402", "E702"]
 [tool.ruff.lint.per-file-ignores]
 # E731: lambda-as-def is acceptable in notebook analysis cells
 "bond-yield-analysis/*.ipynb" = ["E731"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "forecast/tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers -m 'not network'"
+markers = [
+    "network: hits a live external service (DART/EDGAR/Yahoo); excluded by default, run with -m network",
+]

@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     from forecast.pipeline.yahoo_fetcher import fetch_consensus
     from forecast.schemas.models import BacktestResult, MarginBaseline, QuarterlyActual, ScenarioCase
 
-    load_dotenv(REPO_ROOT / ".env")
+    load_dotenv(REPO_ROOT.parent / ".env")
     profile = load_profile(profile_path)
     segment_split = profile["segment_revenue_split"]
 

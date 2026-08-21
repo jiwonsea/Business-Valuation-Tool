@@ -10,12 +10,10 @@
 
 ## Quickstart
 
-```bash
-git clone https://github.com/jiwonsea/earnings-forecast-engine
-cd earnings-forecast-engine
-pip install -r requirements.txt
-cp .env.example .env   # DART_API_KEY 입력
-python cli.py --company sk_hynix
+```powershell
+pip install -e ".[forecast]"
+Copy-Item .env.example .env   # DART_API_KEY 입력; .env는 커밋 금지
+python -m forecast.cli --company sk_hynix
 ```
 
 `reports/sk_hynix_YYYYMMDD.html` (인터랙티브 primary) + `.md` (요약·인용용) + `.xlsx` (raw) 가 생성됩니다.
@@ -76,7 +74,7 @@ flowchart LR
 
 ![9Q backtest revenue error by quarter, 2024Q1–2026Q1](docs/assets/backtest_beat_miss.png)
 
-[**▶ 인터랙티브 HTML 데모**](reports/sk_hynix_20260710.html) — 2026-07-10 실행분, opex leverage 수정 + 2026Q2 forward-roll 반영 (브라우저로 열어주세요 — Plotly hover·scenario 토글·sortable table). 백테스트 표 포함 md: [`reports/sk_hynix_20260710.md`](reports/sk_hynix_20260710.md)
+[**▶ Markdown 리포트 예시**](reports/sk_hynix_20260624.md) — forward forecast, 콘센서스 비교, 백테스트 표를 포함한 보존 실행분입니다.
 
 > `docs/assets/` 이미지는 최신 실행분 PNG의 고정 이름 사본 — 라이브 재실행 후 `reports/sk_hynix_YYYYMMDD_{fan,beat_miss}.png`를 덮어쓰면 갱신.
 

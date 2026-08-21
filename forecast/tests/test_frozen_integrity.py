@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[1]
+FORECAST_ROOT = Path(__file__).resolve().parents[1]
 CONVENTION_DATE = "2026-08-05"
 CONVENTION_PROFILES = {
     "amd_q2_2026_forecast_FROZEN.md": "profiles/amd.generic.yaml",
@@ -28,7 +28,9 @@ class IntegrityResult:
     """Aggregate visible coverage and failures for one repository scan."""
 
     checked: int = 0
+    passed: int = 0
     skipped: int = 0
+    supported_skipped: int = 0
     failures: list[str] = field(default_factory=list)
 
 
@@ -41,19 +43,41 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
     )
 
 
-def _freeze_commit(repo: Path, relative_path: str) -> str | None:
-    history = _git(
-        repo,
-        "log",
-        "--diff-filter=A",
-        "--format=%H",
-        "--",
-        relative_path,
-    )
-    if history.returncode != 0:
+def _git_root(forecast_root: Path) -> Path | None:
+    if shutil.which("git") is None:
         return None
-    commits = [line for line in history.stdout.decode("ascii").splitlines() if line]
-    return commits[-1] if commits else None
+    resolved = _git(forecast_root, "rev-parse", "--show-toplevel")
+    if resolved.returncode != 0:
+        return None
+    output = resolved.stdout.decode("utf-8").strip()
+    return Path(output) if output else None
+
+
+def _freeze_commit(repo: Path, relative_paths: list[str]) -> str | None:
+    for relative_path in relative_paths:
+        history = _git(
+            repo,
+            "log",
+            "--full-history",
+            "--diff-filter=A",
+            "--format=%H",
+            "--",
+            relative_path,
+        )
+        if history.returncode != 0:
+            continue
+        commits = [line for line in history.stdout.decode("ascii").splitlines() if line]
+        if commits:
+            return commits[-1]
+    return None
+
+
+def _first_blob(repo: Path, commit: str, relative_paths: list[str]) -> bytes | None:
+    for relative_path in relative_paths:
+        blob = _git(repo, "show", f"{commit}:{relative_path}")
+        if blob.returncode == 0:
+            return blob.stdout
+    return None
 
 
 def _header_profile_shas(path: Path) -> list[str]:
@@ -79,7 +103,7 @@ def _record_failure(result: IntegrityResult, path: Path, reason: str) -> None:
     print(f"  -> {REMEDIATION}")
 
 
-def verify_frozen_integrity(repo: Path = REPO) -> IntegrityResult:
+def verify_frozen_integrity(forecast_root: Path = FORECAST_ROOT) -> IntegrityResult:
     """Check every FROZEN report and visibly skip unsupported conventions.
 
     Basic Git tracking, ignore, and HEAD-blob checks apply to every report.
@@ -88,21 +112,29 @@ def verify_frozen_integrity(repo: Path = REPO) -> IntegrityResult:
     """
 
     result = IntegrityResult()
-    frozen_files = sorted((repo / "reports").glob("*_FROZEN.md"))
+    frozen_files = sorted((forecast_root / "reports").glob("*_FROZEN.md"))
     if not frozen_files:
-        _record_failure(result, repo / "reports", "no *_FROZEN.md files found")
+        _record_failure(result, forecast_root / "reports", "no *_FROZEN.md files found")
         return result
 
-    if shutil.which("git") is None or not (repo / ".git").exists():
+    repo = _git_root(forecast_root)
+    if repo is None:
         for path in frozen_files:
-            print(f"SKIPPED: {path.relative_to(repo).as_posix()} - git unavailable")
+            relative_path = path.relative_to(forecast_root).as_posix()
+            print(f"SKIPPED: {relative_path} - git unavailable")
             result.skipped += 1
-        print(f"SUMMARY: 검사 {result.checked}건 / SKIP {result.skipped}건")
+            if path.name in CONVENTION_PROFILES:
+                result.supported_skipped += 1
+        print(
+            f"SUMMARY: 검사 {result.checked}건 / PASS {result.passed}건 / "
+            f"SKIP {result.skipped}건 / 지원 SKIP {result.supported_skipped}건"
+        )
         print("HOST REQUIRED: run this gate in the Git checkout on the Windows host.")
         return result
 
     for path in frozen_files:
         relative_path = path.relative_to(repo).as_posix()
+        display_path = path.relative_to(forecast_root).as_posix()
         profile_path = CONVENTION_PROFILES.get(path.name)
         if profile_path is not None:
             result.checked += 1
@@ -129,28 +161,34 @@ def verify_frozen_integrity(repo: Path = REPO) -> IntegrityResult:
             continue
 
         if profile_path is None:
-            print(
-                f"SKIPPED: {relative_path} - "
-                f"convention N/A (frozen before {CONVENTION_DATE})"
-            )
+            print(f"SKIPPED: {display_path} - convention N/A (frozen before {CONVENTION_DATE})")
             result.skipped += 1
             continue
 
-        freeze_commit = _freeze_commit(repo, relative_path)
+        freeze_commit = _freeze_commit(
+            repo,
+            [f"reports/{path.name}", relative_path],
+        )
         if freeze_commit is None:
             print(f"SKIPPED: {relative_path} - freeze commit could not be identified")
             result.skipped += 1
+            result.supported_skipped += 1
             continue
 
-        profile_blob = _git(repo, "show", f"{freeze_commit}:{profile_path}")
-        if profile_blob.returncode != 0:
+        profile_blob = _first_blob(
+            repo,
+            freeze_commit,
+            [f"forecast/{profile_path}", profile_path],
+        )
+        if profile_blob is None:
             _record_failure(
                 result,
                 path.relative_to(repo),
-                f"profile {profile_path} unavailable at freeze commit {freeze_commit[:12]}",
+                f"profile forecast/{profile_path} or {profile_path} unavailable "
+                f"at freeze commit {freeze_commit[:12]}",
             )
             continue
-        expected_sha = hashlib.sha256(profile_blob.stdout).hexdigest()
+        expected_sha = hashlib.sha256(profile_blob).hexdigest()
         header_shas = _header_profile_shas(path)
         if not any(_sha_matches(expected_sha, token) for token in header_shas):
             rendered = ", ".join(header_shas) or "none"
@@ -166,15 +204,21 @@ def verify_frozen_integrity(repo: Path = REPO) -> IntegrityResult:
             f"PASS: {relative_path} - tracked, not ignored, HEAD-clean, "
             f"freeze profile SHA matched at {freeze_commit[:12]}"
         )
+        result.passed += 1
 
-    print(f"SUMMARY: 검사 {result.checked}건 / SKIP {result.skipped}건")
+    print(
+        f"SUMMARY: 검사 {result.checked}건 / PASS {result.passed}건 / "
+        f"SKIP {result.skipped}건 / 지원 SKIP {result.supported_skipped}건"
+    )
     return result
 
 
 def test_frozen_integrity() -> None:
     result = verify_frozen_integrity()
-    if shutil.which("git") is None or not (REPO / ".git").exists():
+    if _git_root(FORECAST_ROOT) is None:
         pytest.skip("git unavailable; FROZEN integrity gate must run on the Windows host")
+    assert result.checked == result.passed == len(CONVENTION_PROFILES) == 4
+    assert result.supported_skipped == 0
     assert not result.failures, "\n".join([*result.failures, REMEDIATION])
 
 
@@ -189,7 +233,9 @@ def test_git_absence_is_a_loud_graceful_skip(
     output = capsys.readouterr().out
     assert not result.failures
     assert result.checked == 0
-    assert result.skipped == len(list((REPO / "reports").glob("*_FROZEN.md")))
+    assert result.passed == 0
+    assert result.skipped == len(list((FORECAST_ROOT / "reports").glob("*_FROZEN.md")))
+    assert result.supported_skipped == len(CONVENTION_PROFILES)
     assert "git unavailable" in output
     assert "HOST REQUIRED" in output
-    assert "SUMMARY: 검사 0건 / SKIP" in output
+    assert "SUMMARY: 검사 0건 / PASS 0건 / SKIP" in output

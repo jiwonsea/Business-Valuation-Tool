@@ -10,12 +10,10 @@ The static valuation tool ([business-valuation-tool](https://github.com/jiwonsea
 
 ## Quickstart
 
-```bash
-git clone https://github.com/jiwonsea/earnings-forecast-engine
-cd earnings-forecast-engine
-pip install -r requirements.txt
-cp .env.example .env   # set DART_API_KEY
-python cli.py --company sk_hynix
+```powershell
+pip install -e ".[forecast]"
+Copy-Item .env.example .env   # set DART_API_KEY; never commit .env
+python -m forecast.cli --company sk_hynix
 ```
 
 Generates `reports/sk_hynix_YYYYMMDD.html` (interactive, primary) + `.md` (summary/quoting) + `.xlsx` (raw).
@@ -76,7 +74,7 @@ See [docs/methodology.md](docs/methodology.md) for the full driver decomposition
 
 ![9Q backtest revenue error by quarter, 2024Q1–2026Q1](docs/assets/backtest_beat_miss.png)
 
-[**▶ Interactive HTML demo**](reports/sk_hynix_20260710.html) — run of 2026-07-10, includes the opex-leverage fix + 2026Q2 forward roll (open in a browser — Plotly hover, scenario toggle, sortable tables). Markdown version with the backtest table: [`reports/sk_hynix_20260710.md`](reports/sk_hynix_20260710.md)
+[**▶ Markdown report example**](reports/sk_hynix_20260624.md) — a preserved run with the forward forecast, consensus comparison, and backtest table.
 
 > Images under `docs/assets/` are stable-named copies of the latest run's PNGs — after a live re-run, overwrite them with `reports/sk_hynix_YYYYMMDD_{fan,beat_miss}.png` to refresh.
 

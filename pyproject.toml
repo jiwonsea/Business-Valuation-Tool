@@ -47,7 +47,7 @@ forecast = [
 ]
 
 [tool.setuptools]
-py-modules = ["cli", "orchestrator", "valuation_runner"]
+py-modules = ["_ssl_fix", "cli", "orchestrator", "valuation_runner"]
 
 [tool.setuptools.packages.find]
 include = [

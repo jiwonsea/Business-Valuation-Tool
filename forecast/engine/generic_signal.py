@@ -1,6 +1,7 @@
 """Forward-EPS signal block for the generic `--json` output (v2).
 
-Consumed by ../investment-orchestrator/adapters/forward_eps.py. The block is
+Consumed by ../../investment-orchestrator/adapters/forward_eps.py (relative to
+forecast/). The block is
 BVT-INDEPENDENT by construction: it uses only the forward trajectory, the
 naive-baseline (Random-Walk) skill, and the Yahoo consensus gap — never
 `valuation_bridge` (the module that feeds BVT DCF).
@@ -69,9 +70,7 @@ def _window_skill(rows: list[dict[str, Any]], window: int | None) -> dict[str, A
     naive_mape = (
         _mape_pct([(row["rw_eps"], row["actual_eps"]) for row in scored]) if have_rw else None
     )
-    beats_naive = (
-        eps_mape is not None and naive_mape is not None and eps_mape < naive_mape
-    )
+    beats_naive = eps_mape is not None and naive_mape is not None and eps_mape < naive_mape
     return {
         "n": n,
         "eps_mape": eps_mape,
@@ -282,7 +281,9 @@ def _earnings_estimate_rows(raw: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _period_for_target_year(target_fiscal_year: int | None, today: date | None = None) -> str | None:
+def _period_for_target_year(
+    target_fiscal_year: int | None, today: date | None = None
+) -> str | None:
     """Map the model's first annual forecast label to Yahoo's 0y/+1y periods."""
     if target_fiscal_year is None:
         target_fiscal_year = (today or date.today()).year

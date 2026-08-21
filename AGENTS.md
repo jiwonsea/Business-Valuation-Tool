@@ -14,6 +14,7 @@ KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML
 - For data collection/API issues, stay inside `pipeline/` and avoid `app.py` unless the bug is UI-specific.
 - For LLM behavior, stay inside `ai/`, `pipeline/profile_generator.py`, and the prompt/validator pair.
 - For weekly automation, stay inside `scheduler/`, `discovery/`, and `db/`.
+- For forward earnings, consensus-gap analysis, and forecast backtests, stay inside `forecast/`; start with `forecast/README.md`.
 
 ## Architecture
 
@@ -31,6 +32,7 @@ ValuationInput (YAML) → run_valuation() → ValuationResult → print_report()
 - `cli.py` — CLI entry point + `run_valuation()` (SOTP/DCF branching).
 - `orchestrator.py` — Profile → valuation → Excel pipeline wrapper.
 - `app.py` — Streamlit web UI.
+- `forecast/` — Forward earnings layer: pure forecast engines, Yahoo/DART collection, consensus comparison, backtests, and report generation.
 
 ## Commands
 
@@ -111,6 +113,7 @@ pytest tests/test_engine.py -k "test_sk_wacc"  # individual
 - Pipeline E2E tests: range-based validation. Avoid exact-value regression since methodology may vary by company type.
 - **`profiles/` is AI-regenerated, not a test fixture**: the weekly pipeline rewrites `profiles/*.yaml` (scenario codes drift Bull/Base/Bear ↔ A/B/C/D), so tests that load from `profiles/` with hardcoded keys break after every run. Fix by moving test-owned YAML into `tests/fixtures/`. Current casualty: `TestScenarioDriverRoundTrip::test_sotp_segment_multiples_differentiate_ev` and `::test_yaml_segment_multiples_round_trip` — deselect with `--deselect tests/test_engine.py::TestScenarioDriverRoundTrip` until fixtures are split.
 - **DB repository tests** use a Fake Supabase query builder pattern (`tests/test_backtest_repository.py` — records every chained `.select/.or_/.eq/.upsert/.execute` call, returns fake data). Reuse for new `db/*_repository.py` tests instead of mocking each call site.
+- Forecast tests run from the repository root: `pytest forecast/tests/ -q`. `*_FROZEN.md` files are immutable; the integrity gate must pass with four supported profiles and zero supported skips.
 
 ## Efficiency
 

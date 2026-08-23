@@ -14,7 +14,7 @@ AI-powered corporate valuation platform supporting Korean (KOSPI/KOSDAQ) and US 
 
 ## Forward Earnings Layer (`forecast/`)
 
-The embedded forward-earnings layer projects quarterly and annual EPS, compares the model with consensus, backtests prior quarters, and produces a sensitivity bridge for the valuation engine. See [`forecast/README.md`](forecast/README.md) for commands, methodology, and report examples.
+The embedded forward-earnings layer projects quarterly and annual EPS, compares the model with consensus, backtests prior quarters, and produces a sensitivity bridge for the valuation engine. See [`forecast/README.md`](forecast/README.md) for commands and methodology, or open the [interactive HTML report example](forecast/reports/sk_hynix_20260624.html) locally.
 
 ## Representative Case: SK Ecoplant
 

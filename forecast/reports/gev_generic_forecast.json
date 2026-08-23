@@ -1,0 +1,323 @@
+{
+  "company": "GE Vernova Inc.",
+  "weighted_annual": [
+    {
+      "fiscal_year": 2026,
+      "scenario": "weighted",
+      "revenue_total": 35678.15526,
+      "operating_profit": 3194.627451675,
+      "net_profit": 2862.9167387535,
+      "eps_basic": 10.525429186593751
+    },
+    {
+      "fiscal_year": 2027,
+      "scenario": "weighted",
+      "revenue_total": 10294.66687425,
+      "operating_profit": 930.6107551702501,
+      "net_profit": 834.0728159478,
+      "eps_basic": 3.0664441762786763
+    }
+  ],
+  "weighted_quarterly": [
+    {
+      "quarter_label": "2026Q2",
+      "scenario": "weighted",
+      "revenue_total": 10716.502499999999,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 10716.502499999999
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 954.7960125,
+      "net_profit": 855.6158325,
+      "gp_margin": 0.0,
+      "op_margin": 0.0890958605664488,
+      "np_margin": 0.0798409586056645,
+      "eps_basic": 3.145646443014706,
+      "eps_diluted": 3.145646443014706
+    },
+    {
+      "quarter_label": "2026Q3",
+      "scenario": "weighted",
+      "revenue_total": 11740.9908,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 11740.9908
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 1051.0157295,
+      "net_profit": 941.8815763499999,
+      "gp_margin": 0.0,
+      "op_margin": 0.08951678332803054,
+      "np_margin": 0.08022164333439388,
+      "eps_basic": 3.4627999130514704,
+      "eps_diluted": 3.4627999130514704
+    },
+    {
+      "quarter_label": "2026Q4",
+      "scenario": "weighted",
+      "revenue_total": 13220.66196,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 13220.66196
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 1188.815709675,
+      "net_profit": 1065.4193299035,
+      "gp_margin": 0.0,
+      "op_margin": 0.08992104277923767,
+      "np_margin": 0.08058744207566897,
+      "eps_basic": 3.9169828305275742,
+      "eps_diluted": 3.9169828305275742
+    },
+    {
+      "quarter_label": "2027Q1",
+      "scenario": "weighted",
+      "revenue_total": 10294.66687425,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 10294.66687425
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 930.6107551702501,
+      "net_profit": 834.0728159478,
+      "gp_margin": 0.0,
+      "op_margin": 0.09039736462944538,
+      "np_margin": 0.08101989371157431,
+      "eps_basic": 3.0664441762786763,
+      "eps_diluted": 3.0664441762786763
+    }
+  ],
+  "backtest": {
+    "n": 8,
+    "revenue_mape": 20.28106544757253,
+    "revenue_bias": 3.0634926864785443,
+    "eps_mape": 190.78052610983187,
+    "eps_bias": -82.25738192439793,
+    "naive_rw_revenue_mape": 14.1605329890576,
+    "naive_rw_eps_mape": 241.03303235959106,
+    "rows": [
+      {
+        "quarter": "2024Q2",
+        "actual_rev": 8204.0,
+        "model_rev": 7986.000000000001,
+        "rw_rev": 7260.0,
+        "model_eps_share_count": 274000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 4.654676258992806,
+        "model_eps": 2.3870562043795625,
+        "rw_eps": -0.4744525547445255
+      },
+      {
+        "quarter": "2024Q3",
+        "actual_rev": 8913.0,
+        "model_rev": 9270.519999999999,
+        "rw_rev": 8204.0,
+        "model_eps_share_count": 278000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": -0.3490909090909091,
+        "model_eps": 2.731135208633093,
+        "rw_eps": 4.654676258992806
+      },
+      {
+        "quarter": "2024Q4",
+        "actual_rev": 10559.0,
+        "model_rev": 6952.14,
+        "rw_rev": 8913.0,
+        "model_eps_share_count": 275000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.7224199288256228,
+        "model_eps": 2.070473694545455,
+        "rw_eps": -0.3490909090909091
+      },
+      {
+        "quarter": "2025Q1",
+        "actual_rev": 8032.0,
+        "model_rev": 12142.849999999999,
+        "rw_rev": 10559.0,
+        "model_eps_share_count": 281000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 0.910394265232975,
+        "model_eps": 3.539143825622775,
+        "rw_eps": 1.7224199288256228
+      },
+      {
+        "quarter": "2025Q2",
+        "actual_rev": 9111.0,
+        "model_rev": 8835.2,
+        "rw_rev": 8032.0,
+        "model_eps_share_count": 279000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.8623188405797102,
+        "model_eps": 2.5935587096774197,
+        "rw_eps": 0.910394265232975
+      },
+      {
+        "quarter": "2025Q3",
+        "actual_rev": 9969.0,
+        "model_rev": 10295.429999999998,
+        "rw_rev": 9111.0,
+        "model_eps_share_count": 276000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 1.6436363636363636,
+        "model_eps": 3.055056945652174,
+        "rw_eps": 1.8623188405797102
+      },
+      {
+        "quarter": "2025Q4",
+        "actual_rev": 10956.0,
+        "model_rev": 7775.820000000001,
+        "rw_rev": 9969.0,
+        "model_eps_share_count": 275000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 13.421245421245422,
+        "model_eps": 2.3157805745454545,
+        "rw_eps": 1.6436363636363636
+      },
+      {
+        "quarter": "2026Q1",
+        "actual_rev": 9339.0,
+        "model_rev": 12599.4,
+        "rw_rev": 10956.0,
+        "model_eps_share_count": 273000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 17.44485294117647,
+        "model_eps": 3.77982,
+        "rw_eps": 13.421245421245422
+      }
+    ],
+    "skill": {
+      "naive_rw_revenue_mape": 0.141605329890576,
+      "naive_rw_eps_mape": 2.4103303235959106,
+      "n": 8,
+      "n_eps": 8,
+      "mase_revenue": 1.479313205363171,
+      "mase_eps": 1.1750535811241336,
+      "theil_u2_revenue": 1.78675828248002,
+      "theil_u2_eps": 1.2552036939548394,
+      "rw_hit_ratio_direction": 0.75,
+      "skill_score_eps_vs_consensus": -0.03184572410871511,
+      "surprise_direction_accuracy": 0.5,
+      "n_surprise_scored": 4,
+      "trailing_8q": null
+    }
+  },
+  "consensus": {
+    "ticker": "GEV",
+    "as_of": "2026-07-22",
+    "revenue_estimate_quarterly": {
+      "2026Q2": 10769.50193,
+      "2026Q3": 11953.19137
+    },
+    "eps_estimate_quarterly": {
+      "2026Q2": 3.18468,
+      "2026Q3": 4.31374
+    },
+    "revenue_estimate_annual": {
+      "2026": 45483.05924,
+      "2027": 51907.36589
+    },
+    "eps_estimate_annual": {
+      "2026": 30.68589,
+      "2027": 24.431
+    },
+    "history": {
+      "2025Q2": {
+        "actual": 1.86,
+        "estimate": 1.6397,
+        "surprise_pct": 0.1344
+      },
+      "2025Q3": {
+        "actual": 1.64,
+        "estimate": 1.85664,
+        "surprise_pct": -0.1167
+      },
+      "2025Q4": {
+        "actual": 13.39,
+        "estimate": 3.21816,
+        "surprise_pct": 3.1608
+      },
+      "2026Q1": {
+        "actual": 17.44,
+        "estimate": 2.00102,
+        "surprise_pct": 7.7156
+      }
+    },
+    "notes": [],
+    "quality_notes": []
+  },
+  "consensus_fetch_timestamp": "2026-07-22T07:02:13.689394+00:00",
+  "signal": {
+    "bvt_independent": true,
+    "skill": {
+      "n": 8,
+      "min_n": 8,
+      "eps_mape": 190.78052610983187,
+      "naive_rw_eps_mape": 241.03303235959106,
+      "skill_pass": true,
+      "reason": "beats_naive & n>=min_n",
+      "primary_window_name": "full",
+      "primary_window": {
+        "n": 8,
+        "eps_mape": 190.78052610983187,
+        "naive_rw_eps_mape": 241.03303235959106,
+        "beats_naive": true
+      },
+      "full_window": {
+        "n": 8,
+        "eps_mape": 190.78052610983187,
+        "naive_rw_eps_mape": 241.03303235959106,
+        "beats_naive": true
+      },
+      "trailing_8q": {
+        "n": 8,
+        "eps_mape": 190.78052610983187,
+        "naive_rw_eps_mape": 241.03303235959106,
+        "beats_naive": true
+      },
+      "regime_shift": false,
+      "full_vs_primary_disagreement": false
+    },
+    "trajectory": {
+      "direction": "flat",
+      "growth_pct": -0.0252,
+      "n_quarters": 4
+    },
+    "consensus": {
+      "metric": "eps_fy1",
+      "model": 10.525429186593751,
+      "consensus": 30.68589,
+      "gap_pct": -0.657,
+      "direction": "below"
+    },
+    "stance": "neutral"
+  }
+}

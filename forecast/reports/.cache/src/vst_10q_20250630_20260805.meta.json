@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://www.sec.gov/Archives/edgar/data/1692819/000169281925000085/vistra-20250630.htm",
+    "accession":  "0001692819-25-000085",
+    "form":  "10-Q",
+    "period_end":  "2025-06-30",
+    "filed":  "2025-08-08",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  3970174,
+    "sha256":  "ee9245af7d47542188397dae3c8103bb64ddc84799c58f0882e37e071eccc69f",
+    "page_count":  null,
+    "page_count_basis":  "SEC inline XBRL HTML has no fixed physical pagination",
+    "visual_verification":  "not_performed_in_app_browser_unavailable"
+}

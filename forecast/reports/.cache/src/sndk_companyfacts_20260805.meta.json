@@ -1,0 +1,8 @@
+{
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0002023554.json",
+  "accession": null,
+  "form": "SEC EDGAR companyfacts whole blob",
+  "retrieved_at": "2026-08-05T01:37:26+09:00",
+  "bytes": 488827,
+  "sha256": "9ba388b4961bce53529f4c68f7e251bc0ee0b2bf3b32cd8842382bce8e367d53"
+}

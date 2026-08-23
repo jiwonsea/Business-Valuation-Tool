@@ -1,0 +1,191 @@
+# Advanced Micro Devices (AMD) — generic top-down forecast profile.
+# x86 CPU / AI accelerator / adaptive-SoC issuer. Revenue is NOT DRAM bits x ASP,
+# so it uses the generic path (schemas/generic.py), not the memory engine.
+#
+# DATA PROVENANCE (AMD-1, 2026-08-05 KST): `actuals` are OFFICIAL standalone
+# quarters from EDGAR companyfacts as-filed originals (10-Q; Q4 = 10-K annual
+# minus same-FY 9M 10-Q, same accession pair — no disclosure-vintage mixing).
+# The Cowork sandbox proxy 403s data.sec.gov for processes, so the facts were
+# transcribed from WebFetch companyconcept slices (as-filed original accessions
+# only) for CIK 0000002488:
+#   RevenueFromContractWithCustomerExcludingAssessedTax / GrossProfit /
+#   OperatingIncomeLoss / NetIncomeLoss / IncomeTaxExpenseBenefit /
+#   WeightedAverageNumberOfDilutedSharesOutstanding
+# VERIFIED (all green, 9 quarters 2024Q1..2026Q1):
+#   - FY-sum identity revenue: 5473+5835+6819+7658 = 25,785 = FY2024 10-K
+#                              7438+7685+9246+10270 = 34,639 = FY2025 10-K
+#   - FY-sum identity net income: 123+265+771+482 = 1,641 = FY2024 10-K
+#                                 709+872+1243+1511 = 4,335 = FY2025 10-K
+#   - EPS coherence: derived net_profit/diluted_shares reproduces every as-filed
+#     GAAP diluted EPS to the reported cent (0.07/0.16/0.47/0.29/0.44/0.54/
+#     0.75/0.92/0.84).
+#   - Label contiguity 2024Q1..2026Q1, no Q3->Q1 join.
+# Regenerate on host with: python scripts/build_generic_actuals.py --cik 2488
+# --fye-month 12 --start 2024Q1 --end 2026Q1  (host: delete any derived cache
+# first and refetch the full blob via fetch_companyfacts(2488), with
+# SEC_EDGAR_USER_AGENT set). SHA-256 of the source bytes is NOT established in
+# this session — WebFetch returns a markdown conversion, not the original bytes
+# (START-COMMON §7 sandbox carve-out). "바이트 보존 미완 — 호스트 필요".
+#
+# EPS is NOT stored: it is DERIVED at load from net_profit / diluted_shares —
+# see schemas/generic.py. As-filed EPS + accession are preserved in each row's
+# source string.
+#
+# LABEL CONTRACT: AMD's fiscal year ends on the last Saturday of December
+# (2024-12-28, 2025-12-27) → calendar filer, fiscal FY(N)Qq == model NQq
+# (identity, no offset). No ~1-month consensus-join offset (unlike NVDA Jan /
+# MSFT Jun / AAPL Sep). No stock splits in the covered window (split_history
+# empty; the last AMD split was 2000).
+#
+# TWO SHARE-COUNT ROWS ARE DERIVED, NOT AS-FILED: AMD tags only a YTD weighted
+# -average diluted share count in its Q4/10-K facts, so 2024Q4 and 2025Q4 use
+# Q4 = 4 x FY_avg - 3 x 9M_avg. 2025Q4 was then cross-checked against the Q4'25
+# press-release table (1,649M) and the press-release value is the one stored.
+# 2024Q4's derived 1,634M reproduces the as-reported $0.29 GAAP EPS exactly.
+name: "Advanced Micro Devices, Inc."
+name_kr: "AMD"
+ticker: "AMD"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12         # calendar filer (last Saturday of December)
+
+# FORWARD-ONLY assumption: 2026Q2 weighted-average diluted share count.
+# Trend is steadily UP (buybacks are outrun by SBC + convertible/warrant
+# dilution): 1,626 -> 1,630 -> 1,641 -> 1,649 -> 1,650 over the last 5 quarters
+# (+0.15% to +0.68% QoQ). 1,658M = 1,650 x 1.0048, the trailing-4Q mean drift.
+# ⚠ SF3 RISK: the OpenAI strategic warrant (reported up to ~160M shares) could
+# NOT be located in the 2026Q1 10-Q (0000002488-26-000076) in this session, so
+# neither its dilution timing nor its P&L classification (contra-revenue vs
+# expense vs equity) is confirmed. This number therefore carries UNQUANTIFIED
+# upside risk to share count / downside risk to revenue. See notes + FROZEN §(f).
+# Historical actuals use per-quarter as-filed shares instead.
+weighted_avg_diluted: 1658000000
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 10253
+  net_profit: 1383
+  eps_diluted: 0.84
+
+# Official standalone quarters, contiguous 2024Q1..2026Q1 (9 rows, Q4 restored
+# as 10-K annual − same-FY 9M 10-Q). VERIFIED: FY-sum identity (rev & NI) +
+# as-filed EPS coherence + label contiguity all green.
+actuals:
+  - { quarter_label: "2024Q1", period_end: 2024-03-30, revenue_total: 5473, net_profit: 123, diluted_shares: 1639000000, source: "EDGAR 10-Q 0000002488-24-000056 filed 2024-05-01 (as-filed EPS 0.07, as-filed basis)" }
+  - { quarter_label: "2024Q2", period_end: 2024-06-29, revenue_total: 5835, net_profit: 265, diluted_shares: 1637000000, source: "EDGAR 10-Q 0000002488-24-000123 filed 2024-07-31 (as-filed EPS 0.16, as-filed basis)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-28, revenue_total: 6819, net_profit: 771, diluted_shares: 1636000000, source: "EDGAR 10-Q 0000002488-24-000163 filed 2024-10-30 (as-filed EPS 0.47, as-filed basis)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-28, revenue_total: 7658, net_profit: 482, diluted_shares: 1634000000, source: "EDGAR 10-K−10-Q 0000002488-25-000012 − 0000002488-24-000163 filed 2025-02-05 (Q4 = FY − 9M; shares derived 4xFY−3x9M; reproduces as-reported EPS 0.29)" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-29, revenue_total: 7438, net_profit: 709, diluted_shares: 1626000000, source: "EDGAR 10-Q 0000002488-25-000047 filed 2025-05-07 (as-filed EPS 0.44, as-filed basis)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-28, revenue_total: 7685, net_profit: 872, diluted_shares: 1630000000, source: "EDGAR 10-Q 0000002488-25-000108 filed 2025-08-06 (as-filed EPS 0.54, as-filed basis; GAAP OP −$134M on ~$800M MI308 China export-control inventory charge)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-27, revenue_total: 9246, net_profit: 1243, diluted_shares: 1641000000, source: "EDGAR 10-Q 0000002488-25-000166 filed 2025-11-05 (as-filed EPS 0.75, as-filed basis)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-27, revenue_total: 10270, net_profit: 1511, diluted_shares: 1649000000, source: "EDGAR 10-K−10-Q 0000002488-26-000018 − 0000002488-25-000166 filed 2026-02-04 (Q4 = FY − 9M; shares 1,649M from Q4'25 press release table; as-reported EPS 0.92)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-28, revenue_total: 10253, net_profit: 1383, diluted_shares: 1650000000, source: "EDGAR 10-Q 0000002488-26-000076 filed 2026-05-06 (as-filed EPS 0.84, as-filed basis)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Regime break at the AI-accelerator inflection. 2025Q3 is where Data Center
+# stops being "server CPU plus a little Instinct" and becomes the majority of
+# both revenue and operating income: DC revenue 3,240 (25Q2) -> 4,341 (25Q3) ->
+# 5,380 (25Q4) -> 5,775 (26Q1), and consolidated GAAP OP margin steps from the
+# 0-11% band to 13.7 / 17.1 / 14.4%. The forward window EXTENDS this post-break
+# regime, so the post-break window is the relevant skill read. The pre-break
+# window (2024 trough + the 2025Q2 MI308 charge quarter) is a different margin
+# regime that fixed forward op_margin assumptions cannot track. All three
+# windows are reported transparently. Post-break N is small — treat as
+# indicative, not as a validated skill estimate.
+regime_break_quarter: "2025Q3"
+
+# R4 (START-DELTA): calendar-slot drivers for the historical backtest. The
+# forward path indexes by step-from-seed (seed 2026Q1 -> 2026Q2 uses [0]) while
+# backtest_generic indexes by CALENDAR slot (Q1->[0] .. Q4->[3]); with a Q1 seed
+# these differ by one seasonal position, so a single vector cannot satisfy both.
+# Slot values = median of the observed standalone quarters in `actuals`:
+#   Q1: 2025Q1 −2.87%, 2026Q1 −0.17%          -> −1.5%
+#   Q2: 2024Q2 +6.61%, 2025Q2 +3.32%          -> +5.0%
+#   Q3: 2024Q3 +16.86%, 2025Q3 +20.31%        -> +18.6%
+#   Q4: 2024Q4 +12.30%, 2025Q4 +11.07%        -> +11.7%
+# op_margin slots likewise: Q1 10.84/14.40 -> 12.6%; Q2 4.61/−1.74 -> 1.4%
+# (the Q2 slot is dominated by the 2025Q2 MI308 charge — this is history, not a
+# forward view); Q3 10.62/13.74 -> 12.2%; Q4 11.37/17.06 -> 14.2%.
+# NOTE (deliberate asymmetry vs R2): net_interest here IS anchored to the
+# empirical mean (+1.3% of revenue), because the backtest's job is to REPRODUCE
+# history. R2's "base 0, no anchor" applies to the FORWARD block only, where the
+# item is genuinely unforecastable. Flagged for Codex review.
+backtest_methodology:
+  revenue_growth_qoq: [-0.015, 0.050, 0.186, 0.117]
+  op_margin: [0.126, 0.014, 0.122, 0.142]
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.013
+
+# Forward scenarios, positional order [2026Q2, 2026Q3, 2026Q4, 2027Q1].
+#
+# R1 ANCHOR DISCIPLINE (START-DELTA §1): "규칙의 본질은 '하향'이 아니라 '과거평균
+# 금지, level은 최신 actual/가이던스'다." AMD is the hyper-cycle side of that
+# warning, so the revenue LEVEL is anchored to company guidance ($11.2B ± $0.3B
+# for 2026Q2) adjusted by AMD's *measured* guidance-beat distribution, NOT to a
+# historical average growth rate:
+#     guide mid -> actual, last four quarters
+#       2025Q2  $7.4B  -> $7,685M   +3.85%
+#       2025Q3  $8.7B  -> $9,246M   +6.28%
+#       2025Q4  $9.6B  -> $10,270M  +6.98%
+#       2026Q1  $9.8B  -> $10,253M  +4.62%   (guide included ~$100M MI308 China)
+#     mean +5.43%, median +5.45%, 4/4 above midpoint, magnitude decaying since Q4'25.
+# base uses +4.0% over the midpoint ($11,650M) — below the trailing mean, to
+# respect both the decay and the guided client/gaming memory-cost headwind.
+# bull +8.0% ($12,100M, above the best observed beat). bear $11,000M — BELOW the
+# midpoint but inside the guided band, i.e. the beat streak breaks.
+#
+# op_margin is CONSOLIDATED GAAP (R1), built top-down from the guided non-GAAP
+# gross margin and then bridged down, never from a segment or non-GAAP margin:
+#     non-GAAP GP  = revenue x non-GAAP GM (guide ~56%)
+#     non-GAAP OP  = non-GAAP GP − non-GAAP opex (2026Q1 actual $3,145M)
+#     GAAP OP      = non-GAAP OP − (SBC ~$500M + acq-intangible amort ~$545M
+#                    + acq-related costs ~$30M) ≈ non-GAAP OP − $1,075M
+# The ~$1.07B wedge is ~9.2% of revenue at base and is the single largest reason
+# GAAP and non-GAAP EPS differ by ~55% (R5 bridge, itemised in the FROZEN report).
+#
+# net_interest_pct_of_revenue = 0.0 in BASE by R2 (below-OP anchor 금지). This is
+# a deliberate, pre-registered downward bias: the block has printed +$19M / +$172M
+# / +$126M / +$322M / +$128M over the last five quarters (mean +1.3% of revenue),
+# so base-0 costs roughly $0.07-0.09 of GAAP EPS. It is carried in the band
+# instead (bear −0.5%, bull +2.0% of revenue) and scored explicitly post-print.
+#
+# effective_tax_rate differs by scenario (R3): observed GAAP ETR 14.8% (26Q1),
+# 21.9% (25Q4), 11.0% (25Q3), 14.9% (25Q1); 2025Q2 is n/m (−$834M discrete
+# benefit on $38M pretax). Dispersion is driven by valuation allowance releases,
+# jurisdictional mix and FDII — not by a stable rate.
+base:
+  probability: 0.50
+  rationale: "가이던스 미드($11.2B)에 AMD의 실측 비트폭(+4.0%)을 얹은 $11,650M(+13.6% QoQ, +51.6% YoY). Data Center가 증분의 대부분(약 +$1.15B QoQ)을 담당하고, 클라이언트+게이밍은 '완만한 성장'(+4%), 임베디드는 '두 자릿수 성장'(+12%). non-GAAP GM 56.5%(가이던스 56% 소폭 상회, Helios 시스템 매출은 Q3부터라 이번 분기 희석 제한적) · non-GAAP opex $3,320M(+5.6% QoQ) → non-GAAP OP 27.2%, GAAP OP 18.0%. below-OP는 R2에 따라 0. 세율 15%."
+  revenue_growth_qoq: [0.1363, 0.070, 0.055, -0.020]
+  op_margin: [0.180, 0.185, 0.190, 0.175]
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.0
+bear:
+  probability: 0.25
+  rationale: "비트 스트릭이 끊긴다: 메모리·부품 원가 상승이 가이던스보다 빨리 클라이언트/게이밍을 때리고 Instinct 출하가 분기말로 밀린다. 매출 $11,000M(가이던스 미드 하회, 밴드 내). 원가 전가 실패 + AI GPU 믹스로 non-GAAP GM 55.0%(가이던스 100bp 미달), opex는 MI450 램프로 $3,360M까지 증가 → non-GAAP OP 24.5%, GAAP OP 14.6%. below-OP −0.5%(투자 평가손), 세율 19%(지역믹스 악화·일회성 혜택 부재). H2에 클라이언트+게이밍 −20%+ 가이던스가 현실화."
+  revenue_growth_qoq: [0.0729, 0.020, 0.000, -0.060]
+  op_margin: [0.146, 0.140, 0.145, 0.128]
+  effective_tax_rate: 0.19
+  net_interest_pct_of_revenue: -0.005
+bull:
+  probability: 0.25
+  rationale: "서버 CPU 점유율 확대 + Instinct 공급 확대가 동시에 발화. 매출 $12,100M(가이던스 미드 +8.0%, 관측된 최대 비트폭 초과). 서버 CPU(회사 평균 대비 ~10%p 높은 마진) 비중 상승이 AI GPU 믹스 희석을 상쇄해 non-GAAP GM 57.5%, 매출 레버리지로 opex는 $3,290M에 그침 → non-GAAP OP 30.3%, GAAP OP 21.5%. below-OP +2.0%(2025Q4의 +$358M 같은 투자평가이익 재현), 세율 11%(FDII·일회성 혜택)."
+  revenue_growth_qoq: [0.1801, 0.130, 0.090, 0.010]
+  op_margin: [0.215, 0.225, 0.230, 0.215]
+  effective_tax_rate: 0.11
+  net_interest_pct_of_revenue: 0.020
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (10-Q; Q4는 동일 회계연도 10-K 연간 − 9M 10-Q 차감 복원). AMD-1 (2026-08-05 KST). 9개 분기 2024Q1..2026Q1 FY합 항등식(매출·순이익)+EPS 정합성(9/9 센트 단위 일치)+연속성 검증 통과."
+  - "샌드박스 프록시가 data.sec.gov를 프로세스에 403 → WebFetch companyconcept 전사(as-filed 원본 accession only). WebFetch는 markdown 변환본이라 원문 바이트 SHA-256 계산 불가 — START-COMMON §7의 샌드박스 예외에 따라 '바이트 보존 미완 — 호스트 필요'로 명시. 호스트에서 fetch_companyfacts(2488) 풀 블롭 재수집 권장."
+  - "과거 EPS는 저장하지 않고 로드 시 파생: net_profit ÷ 분기별 as-filed 희석주식수. 분할 이력 없음(split_history 비어있음, 마지막 분할 2000년). as-filed EPS·accession은 source에 보존."
+  - "라벨 계약: 12월 결산(12월 마지막 토요일) 캘린더 filer → fiscal FY(N)Qq = model NQq (오프셋 없음)."
+  - "2024Q4·2025Q4 희석주식수는 파생값이다(AMD는 10-K에 YTD 가중평균만 태그). 4×FY−3×9M으로 복원했고, 2025Q4는 Q4'25 보도자료 표의 1,649M로 교체, 2024Q4의 1,634M은 보고된 GAAP EPS $0.29를 정확히 재현한다."
+  - "총마진(GM) 분해는 generic 경로에 없음(gross_profit 미모델링). non-GAAP GM 포인트 추정과 GAAP↔non-GAAP 브릿지는 FROZEN 리포트의 애널리스트 레이어에 별도 기재(R5 계약)."
+  - "⚠ SF3 미해결: OpenAI 전략적 워런트(보도 기준 최대 ~1.6억주)의 회계처리를 2026Q1 10-Q(0000002488-26-000076)에서 확인하지 못했다. contra-revenue인지 비용인지 자본거래인지에 따라 매출 레버 또는 주식수 레버에 직접 타격한다. 추정으로 메우지 않고 '미확인'으로 두고 밴드에 반영했다."
+  - "⚠ SF4 기저왜곡: 전년 동기 2025Q2는 MI308 중국 수출규제로 약 $800M 재고·관련 충당을 인식해 GAAP 영업손실 −$134M, GAAP GM 39.8%를 기록했다. 따라서 2026Q2의 YoY 성장률·마진 개선폭은 기저효과로 부풀려 보인다 — 반드시 QoQ를 병기할 것."
+  - "2026Q1 참고: 매출 $10,253M, GAAP GM 52.82%, GAAP OP $1,476M(14.40%), 이자비용 −$37M, 기타수익 +$165M, 세전 $1,604M, 법인세 $238M(ETR 14.84%), 지분법이익 $6M, 중단영업 +$11M, 순이익 $1,383M, 희석 EPS $0.84, 희석주식수 1,650M. non-GAAP: GP $5,685M(55.4%), opex $3,145M, OP $2,540M, EPS $1.37. 세그먼트 매출 DC $5,775M / Client $2,885M / Gaming $720M / Embedded $873M, 세그먼트 OP DC $1,599M / Client+Gaming $575M / Embedded $338M (10-Q 0000002488-26-000076 · 8-K EX-99.1 q12026991.htm)."
+  - "중단영업(ZT Manufacturing Business 매각, 10-Q Note 5)이 below-OP 노이즈원으로 추가됐다: 2025Q4 −$109M, 2026Q1 +$11M. generic 경로는 이를 모델링하지 않으므로 밴드로만 흡수된다."

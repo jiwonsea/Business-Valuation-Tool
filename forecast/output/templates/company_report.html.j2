@@ -1,0 +1,173 @@
+<!--
+  Earnings Forecast Engine — interactive HTML report template.
+  Rendered by output/html_builder.py.
+
+  Template variables (set by html_builder.render_html_report):
+    company_name_kr, company_ticker, as_of_date
+    kpi_cards = [{label, value, sub}, ...]   # 6 cards
+    fan_chart_json, beat_miss_chart_json, scenario_compare_chart_json
+    consensus_gap_rows = [{period, model, consensus, gap_pct, direction, interpretation}, ...]
+    backtest_rows = [{quarter, actual_rev, model_rev, rev_err, actual_eps, model_eps, eps_err, dir_match}, ...]
+    assumptions_yaml_dump (str)
+    ai_collaboration_html (str)
+    plotly_script_tag (str)  # either CDN <script> or inline <script>...</script>
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ company_name_kr }} 실적 예측 리포트 — {{ as_of_date }}</title>
+  <link rel="stylesheet" href="style.css">
+  {{ plotly_script_tag|safe }}
+</head>
+<body>
+
+<header class="report-header">
+  <div class="title-block">
+    <h1>{{ company_name_kr }} <span class="ticker">({{ company_ticker }})</span></h1>
+    <div class="subtitle">분기·연간 EPS Forward Model · Consensus Gap · 8Q Backtest</div>
+    <div class="as-of">As of {{ as_of_date }}</div>
+  </div>
+</header>
+
+<section class="kpi-grid">
+  {% for card in kpi_cards %}
+  <div class="kpi-card">
+    <div class="kpi-label">{{ card.label }}</div>
+    <div class="kpi-value">{{ card.value }}</div>
+    <div class="kpi-sub">{{ card.sub }}</div>
+  </div>
+  {% endfor %}
+</section>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-target="tab-forecast">Forecast</button>
+  <button class="tab-btn" data-target="tab-backtest">Backtest</button>
+  <button class="tab-btn" data-target="tab-gap">Consensus Gap</button>
+</nav>
+
+<section id="tab-forecast" class="tab-panel active">
+  <h2>Forecast — 4Q forward + FY26/FY27</h2>
+  <div id="fan-chart" class="chart-block"></div>
+  <div id="scenario-compare" class="chart-block"></div>
+</section>
+
+<section id="tab-backtest" class="tab-panel">
+  <h2>Backtest — 직전 8Q retrospective</h2>
+  <div id="beat-miss-chart" class="chart-block"></div>
+  <table class="sortable-table" id="backtest-table">
+    <thead>
+      <tr>
+        <th data-sort="str">Quarter</th>
+        <th data-sort="num">Actual Rev</th>
+        <th data-sort="num">Model Rev</th>
+        <th data-sort="num">Rev Err %</th>
+        <th data-sort="num">Actual EPS</th>
+        <th data-sort="num">Model EPS</th>
+        <th data-sort="num">EPS Err %</th>
+        <th>Direction</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in backtest_rows %}
+      <tr>
+        <td>{{ row.quarter }}</td>
+        <td>{{ row.actual_rev }}</td>
+        <td>{{ row.model_rev }}</td>
+        <td>{{ row.rev_err }}</td>
+        <td>{{ row.actual_eps }}</td>
+        <td>{{ row.model_eps }}</td>
+        <td>{{ row.eps_err }}</td>
+        <td>{{ "✓" if row.dir_match else "✗" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section id="tab-gap" class="tab-panel">
+  <h2>Consensus Gap</h2>
+  <p class="hint">
+    interpretation 열은 본인이 직접 채우는 영역입니다 — 모델과 컨센이 왜 다른지 1-2문장 thesis.
+  </p>
+  <table class="sortable-table" id="gap-table">
+    <thead>
+      <tr>
+        <th data-sort="str">Period</th>
+        <th data-sort="num">Model</th>
+        <th data-sort="num">Consensus</th>
+        <th data-sort="num">Gap %</th>
+        <th>Direction</th>
+        <th>Interpretation (본인 작성)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in consensus_gap_rows %}
+      <tr>
+        <td>{{ row.period }}</td>
+        <td>{{ row.model }}</td>
+        <td>{{ row.consensus }}</td>
+        <td>{{ row.gap_pct }}</td>
+        <td>{{ row.direction }}</td>
+        <td class="interp">{{ row.interpretation }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="assumptions">
+  <h2>Assumptions — profile YAML dump</h2>
+  <pre><code>{{ assumptions_yaml_dump }}</code></pre>
+</section>
+
+<footer class="ai-collab">
+  <h3>AI Collaboration</h3>
+  <div>{{ ai_collaboration_html|safe }}</div>
+</footer>
+
+<script>
+  // Tab nav
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(target).classList.add('active');
+    });
+  });
+
+  // Sortable tables (vanilla, < 50 lines)
+  document.querySelectorAll('.sortable-table').forEach(table => {
+    table.querySelectorAll('th[data-sort]').forEach((th, colIdx) => {
+      let asc = true;
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', () => {
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.rows);
+        const sortType = th.dataset.sort;
+        rows.sort((a, b) => {
+          const av = a.cells[colIdx].textContent.trim();
+          const bv = b.cells[colIdx].textContent.trim();
+          if (sortType === 'num') {
+            const an = parseFloat(av.replace(/[^0-9.\-]/g, '')) || 0;
+            const bn = parseFloat(bv.replace(/[^0-9.\-]/g, '')) || 0;
+            return asc ? an - bn : bn - an;
+          }
+          return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        asc = !asc;
+      });
+    });
+  });
+
+  // Plotly figures (JSON injected by html_builder)
+  Plotly.newPlot('fan-chart', {{ fan_chart_json|safe }}.data, {{ fan_chart_json|safe }}.layout);
+  Plotly.newPlot('beat-miss-chart', {{ beat_miss_chart_json|safe }}.data, {{ beat_miss_chart_json|safe }}.layout);
+  Plotly.newPlot('scenario-compare', {{ scenario_compare_chart_json|safe }}.data, {{ scenario_compare_chart_json|safe }}.layout);
+</script>
+
+</body>
+</html>

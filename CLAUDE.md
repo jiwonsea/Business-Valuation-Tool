@@ -14,6 +14,8 @@ KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML
 - For data collection/API issues, stay inside `pipeline/` and avoid `app.py` unless the bug is UI-specific.
 - For LLM behavior, stay inside `ai/`, `pipeline/profile_generator.py`, and the prompt/validator pair.
 - For weekly automation, stay inside `scheduler/`, `discovery/`, and `db/`.
+- For forward earnings, consensus gaps, and forecast backtests, stay inside `forecast/`.
+- Before editing `forecast/**`, read `.claude/rules/forecast.md`; detailed usage lives in `forecast/README.md`.
 
 ## Module Rules (read before editing a module)
 

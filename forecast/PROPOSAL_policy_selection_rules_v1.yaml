@@ -1,0 +1,77 @@
+# PROPOSAL — policy/selection_rules_v1.yaml (사람 승인 대기)
+# 목적: "어떤 XBRL 팩트를 쓸지"의 판단을 에이전트에서 코드로 이관 (P1 §4)
+# 기존 코드 근거: pipeline/edgar_fetcher.py 의 *_CONCEPTS 상수 (아래 ★ 는 신규 추가분)
+rules_version: "v1"
+taxonomy: "us-gaap"
+
+metrics:
+  revenue:
+    tag_priority:                                   # 앞에서부터 최초 매치 채택
+      - RevenueFromContractWithCustomerExcludingAssessedTax   # 기존 코드와 동일
+      - Revenues
+      - RevenueFromContractWithCustomerIncludingAssessedTax
+    min_candidates: 1
+
+  operating_income:                                 # ★ 신규 — R2의 핵심(연결 GAAP OP)
+    tag_priority:
+      - OperatingIncomeLoss
+    min_candidates: 1
+    note: "세그먼트·adjusted EBITDA 금지. 반드시 연결 GAAP OP."
+
+  pretax_income:                                    # ★ 신규 — R3/R4
+    tag_priority:
+      - IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
+      - IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
+      - IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeignAndDomestic
+    min_candidates: 1
+
+  income_tax_expense:                               # ★ 신규 — R3
+    tag_priority:
+      - IncomeTaxExpenseBenefit
+      - IncomeTaxExpenseBenefitContinuingOperations
+    min_candidates: 1
+
+  net_income:
+    tag_priority: [NetIncomeLoss]
+    min_candidates: 1
+
+  diluted_shares:
+    tag_priority: [WeightedAverageNumberOfDilutedSharesOutstanding]
+    min_candidates: 1
+
+  eps_diluted:
+    tag_priority: [EarningsPerShareDiluted]
+    min_candidates: 1
+
+# ── 컨텍스트·중복 선택 규칙 (코드가 실행, 에이전트 재량 없음) ──────────────
+context_rules:
+  consolidated_only: true          # segment_axes 가 비어 있는 컨텍스트만 채택
+  reject_if_any_segment_axis: true
+  duration_windows_days:           # 분기/반기/9M/FY 판별 (기존 _DUR_* 상수와 정합)
+    quarter: [80, 100]
+    fy: [340, 385]
+  forbid_derived_quarters: true    # YTD·10-K 에서 분기 역산 금지 → 없으면 DATA_BLOCKED
+
+duplicate_accession_rule:
+  select: "latest_accepted_at_leq_as_of"   # accepted_at <= as_of 중 가장 늦은 것
+  tiebreak: "accession_lexicographic_desc"
+
+# ── point-in-time 소스 (⚠ 구현 갭: 아래 join 이 없으면 accepted_at 계약 불가) ──
+acceptance_time_source:
+  endpoint: "https://data.sec.gov/submissions/CIK{cik10}.json"
+  field: "filings.recent.acceptanceDateTime"        # ISO8601 UTC, 예: 2026-05-08T20:35:07.000Z
+  join_key: "accessionNumber"
+  older_filings: "filings.files 페이지도 순회할 것(미확인 — 구현 시 검증 필요)"
+  note: >
+    companyfacts 의 fact 에는 filed(date)만 있고 acceptance instant 가 없다.
+    현재 pipeline/edgar_fetcher.py 의 Fact 도 filed: date 뿐이므로,
+    submissions API 를 accession 으로 조인해 accepted_at 을 채워야 한다.
+
+# ── tie-out 허용오차 (초과 시 DATA_BLOCKED, 추정 보정 금지) ────────────────
+tie_out:
+  fy_sum_vs_reported:
+    relative: 0.002              # 0.2%
+    absolute_usd: 1000000
+  eps_identity:                  # net_income / diluted_shares vs reported EPS
+    relative: 0.01
+    absolute_usd: 0.005

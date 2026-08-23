@@ -1,0 +1,297 @@
+{
+  "computed_at_kst": "2026-08-09",
+  "info_cutoff_a": "2026-08-09T23:59+09:00",
+  "inputs": {
+    "guidance": {
+      "china_dc_compute": 0,
+      "gaap_gross_margin": 0.749,
+      "gaap_opex_musd": 8500.0,
+      "nongaap_gross_margin": 0.75,
+      "nongaap_opex_musd": 8300.0,
+      "revenue_mid_musd": 91000.0,
+      "revenue_tol": 0.02,
+      "tax_range": [
+        0.16,
+        0.18
+      ]
+    },
+    "recurring_net_interest_pct_of_rev_q1": 0.005366660540341849,
+    "seed_revenue_musd": 81615.0,
+    "shares_engine_m": 24490.0,
+    "shares_q1_asfiled_m": 24391.0
+  },
+  "lever_decomposition_v1_to_v2b": {
+    "below": {
+      "max": -0.030426498570845117,
+      "min": -0.03171251691197563,
+      "sequential": -0.03158432013066559,
+      "shapley": -0.031064887776163407
+    },
+    "om": {
+      "max": 0.11287565085482365,
+      "min": 0.10829827348457988,
+      "sequential": 0.1124193548387098,
+      "shapley": 0.11057051813955292
+    },
+    "rev": {
+      "max": 0.02837934086433469,
+      "min": 0.025708987341772405,
+      "sequential": 0.02675313393221712,
+      "shapley": 0.02702816937638546
+    },
+    "sh": {
+      "max": 0.008532693238653355,
+      "min": 0.0076568344154750445,
+      "sequential": 0.008206743599523225,
+      "shapley": 0.00808826253715782
+    },
+    "tax": {
+      "max": -0.04545645569620271,
+      "min": -0.049665040383748416,
+      "sequential": -0.04872111065741125,
+      "shapley": -0.04754826069455949
+    }
+  },
+  "notes": [
+    "CANONICAL = variant_2a. 엔진 주식수를 쓰므로 project_scenario 재현 대조가 가능하다.",
+    "variant_2b의 주식수 변경은 별도 레버로 분리 보고한다 (Codex 조건2).",
+    "variant_3: R2의 'base 0'은 예측불가 마크에만 적용하고, 현금 50,335에서 나오는 경상 순이자(+0.5367% of rev)는 앵커한다.",
+    "variant_4: 컨센 기준이 비GAAP일 경우의 동질 비교 대상. GAAP/비GAAP 어느 쪽인지 확정 전까지 둘 다 보유.",
+    "레버 분해는 경로 의존적이다. sequential은 고정 순서(rev→om→below→tax→sh), shapley는 5!=120 순열 평균."
+  ],
+  "schema": "nvda_2026q2_freeze_a_candidate/v2",
+  "supersedes": {
+    "file": "nvda_2026q2_freeze_a_candidate.json",
+    "reason": "Codex REVIEW 조건2(주식수 규약) + R2 세분화(경상 순이자 분리). v1은 수정 없이 보존.",
+    "sha256": "65bfb0a3201f73127c1034780e5eb99bc908ee86aa9d6cbadebd6301f8a4b693"
+  },
+  "target": {
+    "fiscal": "FY2027Q2",
+    "model_label": "2026Q2",
+    "period_end": "2026-07-26",
+    "print_utc": "2026-08-26T21:00:00Z",
+    "ticker": "NVDA"
+  },
+  "variant_1_profile_as_is": {
+    "_label": "현 프로파일 as-is",
+    "_shares_used": 24490.0,
+    "base": {
+      "below_op": 897.765,
+      "eps": 1.9630590342997143,
+      "net_income": 48075.31575,
+      "op": 55661.43,
+      "op_margin": 0.62,
+      "p": 0.5,
+      "pretax": 56559.195,
+      "revenue": 89776.5,
+      "tax_rate": 0.15
+    },
+    "bear": {
+      "below_op": 840.6345,
+      "eps": 1.7011778611678234,
+      "net_income": 41661.845819999995,
+      "op": 48756.80099999999,
+      "op_margin": 0.58,
+      "p": 0.25,
+      "pretax": 49597.43549999999,
+      "revenue": 84063.45,
+      "tax_rate": 0.16
+    },
+    "bull": {
+      "below_op": 938.5725,
+      "eps": 2.1500170375663537,
+      "net_income": 52653.91725,
+      "op": 61007.2125,
+      "op_margin": 0.65,
+      "p": 0.25,
+      "pretax": 61945.785,
+      "revenue": 93857.25,
+      "tax_rate": 0.15
+    },
+    "weighted": {
+      "eps": 1.9443282418334014,
+      "op": 55271.718375,
+      "revenue": 89368.425
+    }
+  },
+  "variant_2a_mechanical_engine_shares": {
+    "_label": "R1/R3 + R2-blunt(below=0), 엔진 주식수 24,490 [CANONICAL]",
+    "_shares_used": 24490.0,
+    "base": {
+      "below_op": 0.0,
+      "eps": 2.0219260922825644,
+      "gross_margin": 0.749,
+      "net_income": 49516.97,
+      "op": 59659.0,
+      "op_margin": 0.6555934065934066,
+      "p": 0.5,
+      "pretax": 59659.0,
+      "revenue": 91000.0,
+      "tax_rate": 0.17
+    },
+    "bear": {
+      "below_op": 0.0,
+      "eps": 1.936992013066558,
+      "gross_margin": 0.744,
+      "net_income": 47436.934400000006,
+      "op": 57849.92,
+      "op_margin": 0.6486871495851088,
+      "p": 0.25,
+      "pretax": 57849.92,
+      "revenue": 89180.0,
+      "tax_rate": 0.18
+    },
+    "bull": {
+      "below_op": 0.0,
+      "eps": 2.1089618293180887,
+      "gross_margin": 0.754,
+      "net_income": 51648.47519999999,
+      "op": 61486.28,
+      "op_margin": 0.6624249084249084,
+      "p": 0.25,
+      "pretax": 61486.28,
+      "revenue": 92820.0,
+      "tax_rate": 0.16
+    },
+    "weighted": {
+      "eps": 2.022451506737444,
+      "op": 59663.549999999996,
+      "revenue": 91000.0
+    }
+  },
+  "variant_2b_mechanical_shares_override": {
+    "_label": "V2a + 주식수 명시적 override 24,391 [OVERRIDE]",
+    "_shares_used": 24391.0,
+    "base": {
+      "below_op": 0.0,
+      "eps": 2.0301328358820876,
+      "gross_margin": 0.749,
+      "net_income": 49516.97,
+      "op": 59659.0,
+      "op_margin": 0.6555934065934066,
+      "p": 0.5,
+      "pretax": 59659.0,
+      "revenue": 91000.0,
+      "tax_rate": 0.17
+    },
+    "bear": {
+      "below_op": 0.0,
+      "eps": 1.9448540199253825,
+      "gross_margin": 0.744,
+      "net_income": 47436.934400000006,
+      "op": 57849.92,
+      "op_margin": 0.6486871495851088,
+      "p": 0.25,
+      "pretax": 57849.92,
+      "revenue": 89180.0,
+      "tax_rate": 0.18
+    },
+    "bull": {
+      "below_op": 0.0,
+      "eps": 2.117521840022959,
+      "gross_margin": 0.754,
+      "net_income": 51648.47519999999,
+      "op": 61486.28,
+      "op_margin": 0.6624249084249084,
+      "p": 0.25,
+      "pretax": 61486.28,
+      "revenue": 92820.0,
+      "tax_rate": 0.16
+    },
+    "weighted": {
+      "eps": 2.0306603829281293,
+      "op": 59663.549999999996,
+      "revenue": 91000.0
+    }
+  },
+  "variant_3_r2_refined": {
+    "_label": "R1/R3 + R2-refined(경상 순이자 앵커 + 마크 0), 엔진 주식수",
+    "_shares_used": 24490.0,
+    "base": {
+      "below_op": 488.3661091711083,
+      "eps": 2.0384774957375265,
+      "gross_margin": 0.749,
+      "net_income": 49922.31387061202,
+      "op": 59659.0,
+      "op_margin": 0.6555934065934066,
+      "p": 0.5,
+      "pretax": 60147.36610917111,
+      "revenue": 91000.0,
+      "tax_rate": 0.17
+    },
+    "bear": {
+      "below_op": 478.5987869876861,
+      "eps": 1.9530169622429523,
+      "gross_margin": 0.744,
+      "net_income": 47829.3854053299,
+      "op": 57849.92,
+      "op_margin": 0.6486871495851088,
+      "p": 0.25,
+      "pretax": 58328.51878698768,
+      "revenue": 89180.0,
+      "tax_rate": 0.18
+    },
+    "bull": {
+      "below_op": 498.13343135453044,
+      "eps": 2.1260476636315966,
+      "gross_margin": 0.754,
+      "net_income": 52066.9072823378,
+      "op": 61486.28,
+      "op_margin": 0.6624249084249084,
+      "p": 0.25,
+      "pretax": 61984.41343135453,
+      "revenue": 92820.0,
+      "tax_rate": 0.16
+    },
+    "weighted": {
+      "eps": 2.039004904337401,
+      "op": 59663.549999999996,
+      "revenue": 91000.0
+    }
+  },
+  "variant_4_nongaap_basis": {
+    "_label": "비GAAP 기준 가이드 직접산출 + 경상 순이자, 엔진 주식수",
+    "_shares_used": 24490.0,
+    "base": {
+      "below_op": 488.3661091711083,
+      "eps": 2.0483398885509194,
+      "gross_margin": 0.75,
+      "net_income": 50163.84387061202,
+      "op": 59950.0,
+      "op_margin": 0.6587912087912088,
+      "p": 0.5,
+      "pretax": 60438.36610917111,
+      "revenue": 91000.0,
+      "tax_rate": 0.17
+    },
+    "bear": {
+      "below_op": 478.5987869876861,
+      "eps": 1.9626995918877055,
+      "gross_margin": 0.745,
+      "net_income": 48066.51300532991,
+      "op": 58139.100000000006,
+      "op_margin": 0.6519298048889887,
+      "p": 0.25,
+      "pretax": 58617.69878698769,
+      "revenue": 89180.0,
+      "tax_rate": 0.18
+    },
+    "bull": {
+      "below_op": 498.13343135453044,
+      "eps": 2.1360913059345776,
+      "gross_margin": 0.755,
+      "net_income": 52312.87608233781,
+      "op": 61779.100000000006,
+      "op_margin": 0.6655796164619695,
+      "p": 0.25,
+      "pretax": 62277.233431354536,
+      "revenue": 92820.0,
+      "tax_rate": 0.16
+    },
+    "weighted": {
+      "eps": 2.0488676687310305,
+      "op": 59954.55,
+      "revenue": 91000.0
+    }
+  }
+}

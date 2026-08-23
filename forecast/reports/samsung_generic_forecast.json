@@ -1,0 +1,338 @@
+{
+  "company": "Samsung Electronics",
+  "weighted_annual": [
+    {
+      "fiscal_year": 2026,
+      "scenario": "weighted",
+      "revenue_total": 421836.4269049959,
+      "operating_profit": 60458.45953443541,
+      "net_profit": 54194.40146036586,
+      "eps_basic": 8402.232784552845
+    },
+    {
+      "fiscal_year": 2027,
+      "scenario": "weighted",
+      "revenue_total": 146918.8997212439,
+      "operating_profit": 21209.369739382004,
+      "net_profit": 19004.382229718503,
+      "eps_basic": 2946.4158495687598
+    }
+  ],
+  "weighted_quarterly": [
+    {
+      "quarter_label": "2026Q2",
+      "scenario": "weighted",
+      "revenue_total": 136550.91288,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 136550.91288
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 19512.054462999997,
+      "net_profit": 17493.242927479998,
+      "gp_margin": 0.0,
+      "op_margin": 0.1428921568627451,
+      "np_margin": 0.1281078431372549,
+      "eps_basic": 2712.1306864310077,
+      "eps_diluted": 2712.1306864310077
+    },
+    {
+      "quarter_label": "2026Q3",
+      "scenario": "weighted",
+      "revenue_total": 140674.21495519998,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 140674.21495519998
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 20155.784918473997,
+      "net_profit": 18067.77152228152,
+      "gp_margin": 0.0,
+      "op_margin": 0.14327988199467073,
+      "np_margin": 0.12843698134754475,
+      "eps_basic": 2801.2048871754296,
+      "eps_diluted": 2801.2048871754296
+    },
+    {
+      "quarter_label": "2026Q4",
+      "scenario": "weighted",
+      "revenue_total": 144611.299069796,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 144611.299069796
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 20790.620152961415,
+      "net_profit": 18633.38701060434,
+      "gp_margin": 0.0,
+      "op_margin": 0.14376898822357523,
+      "np_margin": 0.12885152910223854,
+      "eps_basic": 2888.897210946409,
+      "eps_diluted": 2888.897210946409
+    },
+    {
+      "quarter_label": "2027Q1",
+      "scenario": "weighted",
+      "revenue_total": 146918.8997212439,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 146918.8997212439
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 21209.369739382004,
+      "net_profit": 19004.382229718503,
+      "gp_margin": 0.0,
+      "op_margin": 0.1443610711734401,
+      "np_margin": 0.12935287608181387,
+      "eps_basic": 2946.4158495687598,
+      "eps_diluted": 2946.4158495687598
+    }
+  ],
+  "backtest": {
+    "n": 19,
+    "revenue_mape": 7.096149575313018,
+    "revenue_bias": -0.9621387445150656,
+    "eps_mape": 88.04104394913064,
+    "eps_bias": 65.54439426764903,
+    "naive_rw_revenue_mape": 7.302408279211981,
+    "naive_rw_eps_mape": 109.81092187032908,
+    "rows": [
+      {
+        "quarter": "2021Q3",
+        "actual_rev": 73979.187,
+        "model_rev": 65581.73255,
+        "rw_rev": 63671.585,
+        "actual_eps": 1776.0,
+        "model_eps": 1317.735277283721,
+        "rw_eps": 1391.0
+      },
+      {
+        "quarter": "2021Q4",
+        "actual_rev": 76565.524,
+        "model_rev": 75458.77074,
+        "rw_rev": 73979.187,
+        "actual_eps": 1566.0,
+        "model_eps": 1516.1948353339537,
+        "rw_eps": 1776.0
+      },
+      {
+        "quarter": "2022Q1",
+        "actual_rev": 77781.498,
+        "model_rev": 78096.83448,
+        "rw_rev": 76565.524,
+        "actual_eps": 1638.0,
+        "model_eps": 1569.201511412093,
+        "rw_eps": 1566.0
+      },
+      {
+        "quarter": "2022Q2",
+        "actual_rev": 77203.607,
+        "model_rev": 80114.94294000001,
+        "rw_rev": 77781.498,
+        "actual_eps": 1613.0,
+        "model_eps": 1609.7514116316281,
+        "rw_eps": 1638.0
+      },
+      {
+        "quarter": "2022Q3",
+        "actual_rev": 76781.68,
+        "model_rev": 79519.71521000001,
+        "rw_rev": 77203.607,
+        "actual_eps": 1346.0,
+        "model_eps": 1597.7914870102325,
+        "rw_eps": 1613.0
+      },
+      {
+        "quarter": "2022Q4",
+        "actual_rev": 70464.575,
+        "model_rev": 78317.3136,
+        "rw_rev": 76781.68,
+        "actual_eps": 3460.0,
+        "model_eps": 1573.6316034976744,
+        "rw_eps": 1346.0
+      },
+      {
+        "quarter": "2023Q1",
+        "actual_rev": 63745.371,
+        "model_rev": 71873.8665,
+        "rw_rev": 70464.575,
+        "actual_eps": 206.0,
+        "model_eps": 1444.1632710697675,
+        "rw_eps": 3460.0
+      },
+      {
+        "quarter": "2023Q2",
+        "actual_rev": 60005.533,
+        "model_rev": 65657.73213,
+        "rw_rev": 63745.371,
+        "actual_eps": 228.0,
+        "model_eps": 1319.2623386120931,
+        "rw_eps": 206.0
+      },
+      {
+        "quarter": "2023Q3",
+        "actual_rev": 67404.652,
+        "model_rev": 61805.698990000004,
+        "rw_rev": 60005.533,
+        "actual_eps": 810.0,
+        "model_eps": 1241.8633471479072,
+        "rw_eps": 228.0
+      },
+      {
+        "quarter": "2023Q4",
+        "actual_rev": 67779.938,
+        "model_rev": 68752.74504000001,
+        "rw_rev": 67404.652,
+        "actual_eps": 887.0,
+        "model_eps": 1381.4505049897678,
+        "rw_eps": 810.0
+      },
+      {
+        "quarter": "2024Q1",
+        "actual_rev": 71915.601,
+        "model_rev": 69135.53676,
+        "rw_rev": 67779.938,
+        "actual_eps": 975.0,
+        "model_eps": 1389.1419479218605,
+        "rw_eps": 887.0
+      },
+      {
+        "quarter": "2024Q2",
+        "actual_rev": 74068.302,
+        "model_rev": 74073.06903,
+        "rw_rev": 71915.601,
+        "actual_eps": 1419.0,
+        "model_eps": 1488.3518986493023,
+        "rw_eps": 975.0
+      },
+      {
+        "quarter": "2024Q3",
+        "actual_rev": 79098.731,
+        "model_rev": 76290.35106,
+        "rw_rev": 74068.302,
+        "actual_eps": 1440.0,
+        "model_eps": 1532.9037980427906,
+        "rw_eps": 1419.0
+      },
+      {
+        "quarter": "2024Q4",
+        "actual_rev": 75788.269,
+        "model_rev": 80680.70562000001,
+        "rw_rev": 79098.731,
+        "actual_eps": 1116.0,
+        "model_eps": 1621.1192943181397,
+        "rw_eps": 1440.0
+      },
+      {
+        "quarter": "2025Q1",
+        "actual_rev": 79140.503,
+        "model_rev": 77304.03438,
+        "rw_rev": 75788.269,
+        "actual_eps": 1192.0,
+        "model_eps": 1553.2717605655812,
+        "rw_eps": 1116.0
+      },
+      {
+        "quarter": "2025Q2",
+        "actual_rev": 74566.317,
+        "model_rev": 81514.71809,
+        "rw_rev": 79140.503,
+        "actual_eps": 737.0,
+        "model_eps": 1637.877126273488,
+        "rw_eps": 1192.0
+      },
+      {
+        "quarter": "2025Q3",
+        "actual_rev": 86061.747,
+        "model_rev": 76803.30651,
+        "rw_rev": 74566.317,
+        "actual_eps": 1801.0,
+        "model_eps": 1543.2106238288372,
+        "rw_eps": 737.0
+      },
+      {
+        "quarter": "2025Q4",
+        "actual_rev": 93837.371,
+        "model_rev": 87782.98194,
+        "rw_rev": 86061.747,
+        "actual_eps": 2880.0,
+        "model_eps": 1763.825497585116,
+        "rw_eps": 1801.0
+      },
+      {
+        "quarter": "2026Q1",
+        "actual_rev": 133873.444,
+        "model_rev": 95714.11842,
+        "rw_rev": 93837.371,
+        "actual_eps": 7056.0,
+        "model_eps": 1923.1860073227906,
+        "rw_eps": 2880.0
+      }
+    ]
+  },
+  "signal": {
+    "bvt_independent": true,
+    "skill": {
+      "n": 19,
+      "min_n": 8,
+      "eps_mape": 88.04104394913064,
+      "naive_rw_eps_mape": 109.81092187032908,
+      "skill_pass": false,
+      "reason": "trailing_8q_does_not_beat_naive",
+      "full_window": {
+        "n": 19,
+        "eps_mape": 88.04104394913064,
+        "naive_rw_eps_mape": 109.81092187032908,
+        "beats_naive": true
+      },
+      "trailing_8q": {
+        "n": 8,
+        "eps_mape": 41.86975675009835,
+        "naive_rw_eps_mape": 35.702510336766075,
+        "beats_naive": false
+      },
+      "regime_shift": true
+    },
+    "trajectory": {
+      "direction": "rising",
+      "growth_pct": 0.0864,
+      "n_quarters": 4
+    },
+    "consensus": {
+      "metric": "eps_fy1",
+      "model": 8402.232784552845,
+      "consensus": 47588.07,
+      "gap_pct": -0.8234,
+      "direction": "below"
+    },
+    "stance": "neutral"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_note": "Fixture for --call-brief dry-run and engine.signal_predictor tests. One DART MD&A signal; consensus comes from sk_hynix_yahoo_estimates.json.",
+  "document": {
+    "source": "dart_mdna",
+    "doc_date": "2026-05-15",
+    "period_label": "2026Q1",
+    "raw_text": "2026Q1 사업보고서 MD&A (fixture). HBM 수요 견조, AI 서버 투자 지속. 일반 DRAM 가격 점진 회복, NAND 수급 개선. 하반기 capex 확대 계획.",
+    "char_count_kr": 52,
+    "url_or_path": "https://dart.fss.or.kr/report/viewer.do?rcpNo=fixture"
+  },
+  "extraction": {
+    "topics": [
+      {"topic": "HBM 수요/캐파", "salience": 0.9, "polarity": "positive", "evidence_quote": "HBM 수요 견조"},
+      {"topic": "AI 서버 수요", "salience": 0.8, "polarity": "positive", "evidence_quote": "AI 서버 투자 지속"},
+      {"topic": "DRAM 가격", "salience": 0.6, "polarity": "positive", "evidence_quote": "가격 점진 회복"},
+      {"topic": "capex/투자", "salience": 0.5, "polarity": "neutral", "evidence_quote": "capex 확대 계획"}
+    ],
+    "guidance_tone": "up",
+    "surprise_candidates": ["하반기 capex 확대", "NAND 수급 개선"]
+  }
+}

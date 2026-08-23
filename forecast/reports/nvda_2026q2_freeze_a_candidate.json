@@ -1,0 +1,107 @@
+{
+  "computed_at_kst": "2026-08-09",
+  "info_cutoff_a": "2026-08-09T23:59+09:00",
+  "inputs": {
+    "guidance": {
+      "china_dc_compute": 0,
+      "gaap_gross_margin": 0.749,
+      "gaap_opex_musd": 8500.0,
+      "revenue_mid_musd": 91000.0,
+      "revenue_tol": 0.02,
+      "tax_range": [
+        0.16,
+        0.18
+      ]
+    },
+    "seed_revenue_musd": 81615.0,
+    "shares_forward_m": 24490.0,
+    "shares_q1_asfiled_m": 24391.0
+  },
+  "notes": [
+    "GAAP 기준. below-OP는 variant_2에서 R2에 따라 전 시나리오 0 (지분증권 평가손익 예측 불가).",
+    "variant_2는 판단 개입 0의 기계적 산출이다. 실제 Freeze-A가 이와 다르면 그 차이가 곧 '분석가의 뷰'이며, 항목별로 근거를 대야 한다.",
+    "이 파일의 sha256이 정보 컷오프의 기계적 증빙이다."
+  ],
+  "schema": "nvda_2026q2_freeze_a_candidate/v1",
+  "target": {
+    "fiscal": "FY2027Q2",
+    "model_label": "2026Q2",
+    "period_end": "2026-07-26",
+    "print_utc": "2026-08-26T21:00:00Z",
+    "ticker": "NVDA"
+  },
+  "variant_1_profile_as_is": {
+    "base": {
+      "below_op": 897.765,
+      "eps": 1.9630590342997143,
+      "net_income": 48075.31575,
+      "op": 55661.43,
+      "op_margin": 0.62,
+      "p": 0.5,
+      "pretax": 56559.195,
+      "revenue": 89776.5
+    },
+    "bear": {
+      "below_op": 840.6345,
+      "eps": 1.7011778611678234,
+      "net_income": 41661.845819999995,
+      "op": 48756.80099999999,
+      "op_margin": 0.58,
+      "p": 0.25,
+      "pretax": 49597.43549999999,
+      "revenue": 84063.45
+    },
+    "bull": {
+      "below_op": 938.5725,
+      "eps": 2.1500170375663537,
+      "net_income": 52653.91725,
+      "op": 61007.2125,
+      "op_margin": 0.65,
+      "p": 0.25,
+      "pretax": 61945.785,
+      "revenue": 93857.25
+    },
+    "weighted": {
+      "eps": 1.9443282418334014,
+      "op": 55271.718375,
+      "revenue": 89368.425
+    }
+  },
+  "variant_2_mechanical_r1r2r3": {
+    "base": {
+      "below_op": 0.0,
+      "eps": 2.0301328358820876,
+      "net_income": 49516.97,
+      "op": 59659.0,
+      "op_margin": 0.6555934065934066,
+      "p": 0.5,
+      "pretax": 59659.0,
+      "revenue": 91000.0
+    },
+    "bear": {
+      "below_op": 0.0,
+      "eps": 1.9448540199253825,
+      "net_income": 47436.934400000006,
+      "op": 57849.92,
+      "op_margin": 0.6486871495851088,
+      "p": 0.25,
+      "pretax": 57849.92,
+      "revenue": 89180.0
+    },
+    "bull": {
+      "below_op": 0.0,
+      "eps": 2.117521840022959,
+      "net_income": 51648.47519999999,
+      "op": 61486.28,
+      "op_margin": 0.6624249084249084,
+      "p": 0.25,
+      "pretax": 61486.28,
+      "revenue": 92820.0
+    },
+    "weighted": {
+      "eps": 2.0306603829281293,
+      "op": 59663.549999999996,
+      "revenue": 91000.0
+    }
+  }
+}

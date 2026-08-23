@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://data.sec.gov/api/xbrl/companyconcept/CIK0001692819/us-gaap/EarningsPerShareDiluted.json",
+    "accession":  null,
+    "form":  "SEC EDGAR companyconcept",
+    "taxonomy":  "us-gaap",
+    "concept":  "EarningsPerShareDiluted",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  16572,
+    "sha256":  "5de00c51302cdbd7500a7c4e60c6a0662567b96b4e7672f59821ca1650132d7c",
+    "page_count":  null,
+    "page_count_basis":  "JSON has no physical pagination",
+    "visual_verification":  "not_applicable_json"
+}

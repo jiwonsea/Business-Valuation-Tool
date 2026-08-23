@@ -1,0 +1,69 @@
+# Meta Platforms (META) — generic top-down forecast profile.
+# Social/ads + Reality Labs -> generic path. Reported FY2025: revenue $201.0B
+# (+22%), net income $60.5B (net margin 30.1%), diluted EPS $23.49 (Meta 8-K, 2026).
+name: "Meta Platforms Inc."
+name_kr: "메타"
+ticker: "META"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12
+weighted_avg_diluted: 2575000000        # $60.5B NI / $23.49 EPS
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 56311
+  net_profit: 26773
+  eps_diluted: 10.44
+
+actuals:
+  - { quarter_label: "2019Q3", revenue_total: 17652, net_profit: 6091, eps_diluted: 2.12, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-20-000084 filed 2020-10-30" }
+  - { quarter_label: "2020Q1", revenue_total: 17737, net_profit: 4902, eps_diluted: 1.71, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-21-000033 filed 2021-04-29" }
+  - { quarter_label: "2020Q2", revenue_total: 18687, net_profit: 5178, eps_diluted: 1.8, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-21-000049 filed 2021-07-29" }
+  - { quarter_label: "2020Q3", revenue_total: 21470, net_profit: 7846, eps_diluted: 2.71, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-21-000065 filed 2021-10-26" }
+  - { quarter_label: "2021Q1", revenue_total: 26171, net_profit: 9497, eps_diluted: 3.3, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-22-000057 filed 2022-04-28" }
+  - { quarter_label: "2021Q2", revenue_total: 29077, net_profit: 10394, eps_diluted: 3.61, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-22-000082 filed 2022-07-28" }
+  - { quarter_label: "2021Q3", revenue_total: 29010, net_profit: 9194, eps_diluted: 3.22, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-22-000108 filed 2022-10-27" }
+  - { quarter_label: "2022Q1", revenue_total: 27908, net_profit: 7465, eps_diluted: 2.72, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-23-000067 filed 2023-04-27" }
+  - { quarter_label: "2022Q2", revenue_total: 28822, net_profit: 6687, eps_diluted: 2.46, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-23-000093 filed 2023-07-27" }
+  - { quarter_label: "2022Q3", revenue_total: 27714, net_profit: 4395, eps_diluted: 1.64, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-23-000103 filed 2023-10-26" }
+  - { quarter_label: "2023Q1", revenue_total: 28645, net_profit: 5709, eps_diluted: 2.2, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-24-000049 filed 2024-04-25" }
+  - { quarter_label: "2023Q2", revenue_total: 31999, net_profit: 7788, eps_diluted: 2.98, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-24-000069 filed 2024-08-01" }
+  - { quarter_label: "2023Q3", revenue_total: 34146, net_profit: 11583, eps_diluted: 4.39, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-24-000081 filed 2024-10-31" }
+  - { quarter_label: "2024Q1", revenue_total: 36455, net_profit: 12369, eps_diluted: 4.71, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001326801-25-000054 filed 2025-05-01" }
+  - { quarter_label: "2024Q2", revenue_total: 39071, net_profit: 13465, eps_diluted: 5.16, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-25-036791 filed 2025-07-31" }
+  - { quarter_label: "2024Q3", revenue_total: 40589, net_profit: 15688, eps_diluted: 6.03, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-25-047240 filed 2025-10-30" }
+  - { quarter_label: "2025Q1", revenue_total: 42314, net_profit: 16644, eps_diluted: 6.43, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-26-028526 filed 2026-04-30" }
+  - { quarter_label: "2025Q2", revenue_total: 47516, net_profit: 18337, eps_diluted: 7.14, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-25-036791 filed 2025-07-31" }
+  - { quarter_label: "2025Q3", revenue_total: 51242, net_profit: 2709, eps_diluted: 1.05, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-25-047240 filed 2025-10-30" }
+  - { quarter_label: "2026Q1", revenue_total: 56311, net_profit: 26773, eps_diluted: 10.44, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001628280-26-028526 filed 2026-04-30" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# FoA highly profitable; Reality Labs loses ~$20B/yr. Overall op margin ~40%.
+base:
+  probability: 0.50
+  rationale: "광고 견조(AI 추천/타겟팅), 영업이익률 ~40%. Reality Labs 적자·AI capex가 순증가율 제약. 계절성(Q1 광고 비수기) 반영."
+  revenue_growth_qoq: [-0.16, 0.06, 0.06, 0.17]
+  op_margin: 0.40
+  effective_tax_rate: 0.12
+  net_interest_pct_of_revenue: 0.005
+bear:
+  probability: 0.25
+  rationale: "광고 경기 둔화 + Reality Labs 적자 확대 + AI capex 상각으로 마진 하락."
+  revenue_growth_qoq: [-0.18, 0.04, 0.04, 0.13]
+  op_margin: 0.35
+  effective_tax_rate: 0.14
+  net_interest_pct_of_revenue: 0.005
+bull:
+  probability: 0.25
+  rationale: "AI 광고 수익화 가속 + 오퍼레이팅 레버리지, 마진 확대."
+  revenue_growth_qoq: [-0.14, 0.08, 0.08, 0.20]
+  op_margin: 0.44
+  effective_tax_rate: 0.11
+  net_interest_pct_of_revenue: 0.005
+
+notes:
+  - "FY2025 매출/순이익/EPS는 보고치. 분기 split은 근사 역산(광고 계절성 반영)."
+  - "op_margin ~40%는 FoA 고마진 - Reality Labs 적자 상쇄 후 전사 추정."

@@ -12,6 +12,10 @@ AI-powered corporate valuation platform supporting Korean (KOSPI/KOSDAQ) and US 
 - **Market data calibration**: FRED macro signals, analyst consensus, FinBERT sentiment, and options IV injected into scenario prompts to anchor LLM outputs against observable data
 - **Backtesting infrastructure**: Prediction snapshots at T0 → outcome tracking at T+3m/6m/12m → 6 calibration metrics with A/B comparison
 
+## Forward Earnings Layer (`forecast/`)
+
+The embedded forward-earnings layer projects quarterly and annual EPS, compares the model with consensus, backtests prior quarters, and produces a sensitivity bridge for the valuation engine. See [`forecast/README.md`](forecast/README.md) for commands, methodology, and report examples.
+
 ## Representative Case: SK Ecoplant
 
 `profiles/sk_ecoplant.yaml` — 1조 원 규모 CPS·RCPS 자본조달 구조의 시나리오별 가치 평가 사례. 자본구조 전제와 사업 전제를 한 모델 위에서 함께 다룬다.

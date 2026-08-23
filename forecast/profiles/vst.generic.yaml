@@ -1,0 +1,198 @@
+# Vistra Corp. (VST) — generic top-down forecast profile.
+# Merchant IPP / integrated retail power. Revenue is NOT a physical unit x ASP
+# feed (no verifiable external MWh x price driver at issuer granularity), so it
+# uses the generic path (schemas/generic.py), NOT the memory engine. Bottom-up
+# MW x price is deliberately avoided (PLAN_nvidia_application.md §2 rule).
+#
+# ###########################################################################
+# ⚠️⚠️  T1 — GAAP OPERATING MARGIN IS NOT AN ANCHORABLE QUANTITY FOR THIS
+#            ISSUER.  READ BEFORE USING op_margin.
+# ###########################################################################
+# START-efe-aug2026-00-COMMON-DELTA.md §R1 fixes op_margin = consolidated GAAP
+# operating margin, shape = seasonal vector, level = latest actual/guidance.
+# For VST that rule DEGRADES, and this profile is the counter-example that
+# proves it. Unrealized mark-to-market ("MTM") on the commodity hedge book flows
+# through BOTH operating revenues AND cost of revenues, so quarterly GAAP
+# operating margin is a function of forward-curve marks, not of operations:
+#
+#   as-filed consolidated GAAP OP margin, 13 consecutive quarters (2023Q1..2026Q1)
+#   25.6% 18.5% 20.4%  3.3%  2.8% 21.0% 41.2% 14.8% -3.1% 12.1% 20.9% 10.3% 26.6%
+#   mean 16.5%  ·  stdev 11.5pp  ·  CV 0.70  ·  range 44.3pp  ·  sign flips once
+#
+#   the same 13 quarters, Ongoing Operations Adjusted EBITDA (company basis),
+#   as % of the same revenue, where disclosed (2024Q1..2026Q1):
+#   26.6% 36.8% 23.0% 49.2% 31.5% 31.7% 31.8% 38.0% 26.5%
+#   mean 32.8%  ·  stdev 7.4pp  ·  CV 0.23
+#
+# 2025Q1 GAAP OP was **-$120M on $3,933M revenue** while Ongoing Adjusted EBITDA
+# that quarter was **+$1,240M**. No seasonal vector reconciles those two.
+#
+# VERDICT ADOPTED (see reports/vst_q2_2026_forecast_FROZEN.md §T1): option
+# (C)+(A) — the SCORED forecast target is Ongoing Operations Adjusted EBITDA;
+# GAAP diluted EPS is published as a BAND with a LOW_CONFIDENCE point. The
+# op_margin / net_interest / tax block below is retained so the generic engine
+# still runs end-to-end and so the failure is measurable, NOT because the
+# resulting GAAP EPS point carries forecast conviction. Treat every op_margin
+# number in this file as "the MTM=0 counterfactual margin", not as an anchor.
+#
+# Proposed declarative expression of this (for Codex, HANDOFF §6):
+#   gaap_op_is_noisy: true   +   scored_target: adjusted_ebitda
+# is NOT yet a schema key (schemas/generic.py is extra="forbid"), so it lives in
+# notes here. Do not add it to the YAML until the schema lands.
+#
+# DATA PROVENANCE (EFE-Q2-2026-AUG, frozen 2026-08-04 KST): `actuals` are
+# OFFICIAL standalone quarters from EDGAR companyfacts as-filed originals
+# (10-Q; Q4 = same-FY 10-K annual minus Q3 10-Q 9M — original filings, no
+# disclosure-vintage mixing), CIK 1692819, fetched via the WebFetch tool
+# (sandbox httpx is 403-blocked to data.sec.gov). The whole-blob build
+# (scripts/build_generic_actuals.py --cik 1692819 --fye-month 12
+# --start 2023Q1 --end 2026Q1) is a HOST follow-up. EPS is NOT stored: it is
+# DERIVED at load from net_profit and diluted_shares. As-filed EPS + accession
+# live in each row's source.
+#
+# net_profit CONTRACT: net income attributable to Vistra **common** stock
+# (i.e. AFTER preferred dividends and noncontrolling interests), so that the
+# derived eps = net_profit / diluted_shares reproduces as-filed diluted EPS.
+# Consequence: net_interest_pct_of_revenue in the forward block absorbs
+# interest expense + other income/(expense) + preferred dividends together.
+#
+# LABEL CONTRACT: December fiscal-year filer -> fiscal FY(N)Qq == model NQq
+# (identity, no offset). Consensus alignment uses calendar quarters directly.
+name: "Vistra Corp."
+name_kr: "비스트라"
+ticker: "VST"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 12          # calendar-year filer
+
+# FORWARD-ONLY assumption (fixed forward share count). VST has retired ~30% of
+# its shares since Nov-2021 and deployed $525M in 2026Q1 alone with ~$1.475B
+# authorization remaining (expected complete by YE2027). 2026Q1 as-filed diluted
+# count = 341,856,774; at ~$500M/qtr and ~$165/sh that is ~3M shares/qtr, so the
+# 2026Q2 forward anchor is 338,000,000. T5 (buyback lever) is pre-registered as
+# a swing factor precisely because this number, not operations, carries a
+# material slice of EPS growth.
+weighted_avg_diluted: 338000000
+
+# No regime break inside the window. (Energy Harbor closed 2024-03-01 — inside
+# 2024Q1 — and Cogentrix has NOT closed as of the freeze, see notes.)
+regime_break_quarter: null
+
+# No stock splits.
+split_history: []
+
+# Historical one-step methodology uses TARGET-QUARTER CALENDAR SLOTS [Q1,Q2,Q3,Q4]
+# (DELTA §R4: mandatory for strongly seasonal issuers even on a December FYE).
+# `project_scenario` (forward) is POSITIONAL and lives in base/bear/bull below —
+# one vector cannot satisfy both conventions.
+#
+# ⚠️ These slot values are the honest slot MEANS of a series whose dispersion is
+# larger than its mean (see T1 banner). They exist so the backtest can MEASURE
+# the failure, not because they predict. Expect large MAPE on EPS.
+backtest_methodology:
+  # revenue slot medians, 2023Q1..2026Q1: Q1 -0.8% / Q2 +8.1% / Q3 +28.1% / Q4 -24.7%
+  revenue_growth_qoq: [0.05, 0.08, 0.25, -0.23]
+  # GAAP OP margin slot means: Q1 13.0% / Q2 17.2% / Q3 27.5% / Q4 9.5%
+  op_margin: [0.130, 0.172, 0.275, 0.095]
+  effective_tax_rate: 0.19
+  net_interest_pct_of_revenue: -0.055
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 5640            # 2026Q1 actual (10-Q 0001692819-26-000014)
+  # net_profit/eps intentionally OMITTED: 2026Q1 reported net income to common
+  # ($980M, EPS $2.87) is dominated by a +$723M UNREALIZED MTM gain on hedges.
+  # Forward EPS must not inherit that; project_scenario uses seed.revenue_total.
+
+# Official standalone quarters, contiguous 2023Q1..2026Q1 (13 rows, Q4 restored
+# as annual-minus-9M). Revenue/net_profit in USD_million; diluted_shares absolute.
+actuals:
+  - { quarter_label: "2023Q1", period_end: 2023-03-31, revenue_total: 4425, net_profit: 663, diluted_shares: 387553379, source: "EDGAR 10-Q 0001628280-23-016662 filed 2023-05-09 (as-filed diluted EPS 1.71; OP 1131; net_profit DERIVED = as-filed EPS x as-filed diluted shares, rounded to $1M)" }
+  - { quarter_label: "2023Q2", period_end: 2023-06-30, revenue_total: 3189, net_profit: 441, diluted_shares: 376794258, source: "EDGAR 10-Q 0001628280-23-028436 filed 2023-08-09 (as-filed diluted EPS 1.17; OP 591; net_profit DERIVED = EPS x shares)" }
+  - { quarter_label: "2023Q3", period_end: 2023-09-30, revenue_total: 4086, net_profit: 465, diluted_shares: 372149099, source: "EDGAR 10-Q 0001628280-23-037205 filed 2023-11-07 (as-filed diluted EPS 1.25; as-filed quarterly OP 834 vs 9M-6M derivation 837 = +$3M inter-filing reclass, recorded not resolved; net_profit DERIVED = EPS x shares)" }
+  - { quarter_label: "2023Q4", period_end: 2023-12-31, revenue_total: 3078, net_profit: -226, diluted_shares: 364276000, source: "EDGAR 10-K-10-Q 0001692819-24-000012 - 0001628280-23-037205 (Q4 = FY 14779 - 9M 11701 rev; NI-to-common = FY 1343 - sum(Q1..Q3) 1569; OP = FY 2661 - 9M 2559 = 102; shares = 4xFY - 3xmean(Q1..Q3))" }
+  - { quarter_label: "2024Q1", period_end: 2024-03-31, revenue_total: 3054, net_profit: -84, diluted_shares: 348966197, source: "EDGAR 10-Q 0001692819-24-000033 filed 2024-05-10 (NI-to-common -84 as-filed; OP 86; Energy Harbor closed 2024-03-01, one month in period)" }
+  - { quarter_label: "2024Q2", period_end: 2024-06-30, revenue_total: 3845, net_profit: 318, diluted_shares: 354327393, source: "EDGAR 10-Q 0001692819-24-000061 filed 2024-08-09 (as-filed diluted EPS 0.90; NI-to-common 318 as-filed; OP 808)" }
+  - { quarter_label: "2024Q3", period_end: 2024-09-30, revenue_total: 6288, net_profit: 1840, diluted_shares: 350203692, source: "EDGAR 10-Q 0001692819-24-000069 filed 2024-11-08 (as-filed diluted EPS 5.25; NI-to-common 1840; OP 2588 = 41.2% margin, the MTM extreme: +$1,853M unrealized hedge swing)" }
+  - { quarter_label: "2024Q4", period_end: 2024-12-31, revenue_total: 4037, net_profit: 393, diluted_shares: 356770000, source: "EDGAR 10-K-10-Q 0001692819-25-000013 - 0001692819-24-000069 (Q4 = FY 17224 - 9M 13187 rev; NI-to-common = FY 2467 - 9M 2074; OP = FY 4081 - 9M 3482 = 599; shares = 4xFY - 3xmean(Q1..Q3))" }
+  - { quarter_label: "2025Q1", period_end: 2025-03-31, revenue_total: 3933, net_profit: -317, diluted_shares: 339799989, source: "EDGAR 10-Q 0001692819-25-000035 filed 2025-05-08 (NI-to-common -317 as-filed; OP -120 = NEGATIVE GAAP operating income while Ongoing Adjusted EBITDA was +$1,240M — the T1 exhibit)" }
+  - { quarter_label: "2025Q2", period_end: 2025-06-30, revenue_total: 4250, net_profit: 280, diluted_shares: 345505188, source: "EDGAR 10-Q 0001692819-25-000085 filed 2025-08-08 (as-filed diluted EPS 0.81; NI-to-common 280; OP 515; tax 76 on pretax 403 = 18.9% ETR; interest 303; D&A 541)" }
+  - { quarter_label: "2025Q3", period_end: 2025-09-30, revenue_total: 4971, net_profit: 604, diluted_shares: 345035160, source: "EDGAR 10-Q 0001692819-25-000094 filed 2025-11-07 (as-filed diluted EPS 1.75; NI-to-common 604; OP 1037)" }
+  - { quarter_label: "2025Q4", period_end: 2025-12-31, revenue_total: 4584, net_profit: 185, diluted_shares: 352283000, source: "EDGAR 10-K-10-Q 0001692819-26-000006 - 0001692819-25-000094 (Q4 = FY 17738 - 9M 13154 rev; NI-to-common = FY 752 - 9M 567; OP = FY 1906 - 9M 1432 = 474; shares = 4xFY - 3xmean(Q1..Q3), inflated by 2025Q1 antidilution — see notes)" }
+  - { quarter_label: "2026Q1", period_end: 2026-03-31, revenue_total: 5640, net_profit: 980, diluted_shares: 341856774, source: "EDGAR 10-Q 0001692819-26-000014 filed 2026-05-08 (as-filed diluted EPS 2.87; NI-to-common 980; OP 1499; tax 183 on pretax 1212 = 15.1% ETR; interest 263; D&A 611; includes +$723M UNREALIZED MTM gain)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# ---------------------------------------------------------------------------
+# Forward scenarios (2026Q2..2027Q1). POSITIONAL vector from the 2026Q1 seed.
+#
+# ⚠️ growth[0] IS NOT A SEASONAL NUMBER. The 2026Q1 seed revenue of $5,640M
+# contains a +$723M unrealized MTM gain. Per DELTA §R2 the forward MTM base is
+# ZERO, so growth[0] carries BOTH the de-MTM of the seed AND the underlying
+# physical growth:
+#     ex-MTM 2026Q1 = 5640 - 723 = 4,917   (+10.0% YoY vs ex-MTM 2025Q1 4,468)
+#     ex-MTM 2025Q2 = 4250 + 16  = 4,266
+#     base 2026Q2 target = 4,266 x 1.125 = 4,800  (retail + PJM capacity step-up
+#                                                  + higher realized power prices)
+#     growth[0] = 4800/5640 - 1 = -0.1489
+# Anyone reading -14.9% as "Q2 is seasonally down 15%" has misread the model.
+#
+# ANCHORS (level, per R1's true content = "no historical averages; level = the
+# latest actual or company guidance"):
+#   - FY2026 Ongoing Adjusted EBITDA guidance $6,800-7,600M, REAFFIRMED at Q1
+#     2026 (2026-05-07) and EXCLUDING both Cogentrix (closing H2 2026) and the
+#     Meta PPAs.
+#   - 2026Q1 actual Ongoing Adjusted EBITDA $1,494M = 20.8% of the $7,200M
+#     midpoint; the 2025 quarterly shape was Q1 21.0% / Q2 22.8% / Q3 26.7% /
+#     Q4 29.5%.
+#   - base 2026Q2 Ongoing Adjusted EBITDA = $1,680M (+24.5% YoY, 23.3% of the
+#     $7.2B midpoint) -> OP(MTM=0) = 1680 - D&A 620 - asset closure 20 = $1,040M
+#     -> op_margin = 1040/4800 = 21.7%.
+#   - 96% of expected 2026 generation is hedged: this CAPS weather/price upside
+#     inside 2026 and is the core reason the base sits below the consensus-
+#     implied level (see FROZEN §d).
+#
+# TAX (DELTA §R3 — no single anchor): realized ETR was 18.9% (2025Q2) and 15.1%
+# (2026Q1), depressed by nuclear PTC/ITC. bear/base/bull carry 26%/19%/15%.
+#
+# net_interest_pct_of_revenue absorbs interest expense (~$270-310M/qtr) + other
+# income/(expense) + preferred dividends (~$49M/qtr) — see net_profit CONTRACT.
+# ---------------------------------------------------------------------------
+base:
+  probability: 0.50
+  rationale: "가이던스 앵커: FY26 Ongoing adj EBITDA $6.8-7.6B(Q1에 재확인, Cogentrix·Meta PPA 제외). 2026Q1 실적 $1,494M = 중간값의 20.8%로 2025년 계절 형태(Q1 21.0%)와 일치 → FY 트래킹 ~$7.1-7.2B. 2025년 Q2 비중 22.8%를 적용해 base 2026Q2 Ongoing adj EBITDA $1,680M(+24.5% YoY). 매출은 MTM=0 가정하 물리 매출 $4,800M(ex-MTM 기준 +12.5% YoY: 리테일 + PJM 용량가격 스텝업 + 실현 전력가격). op_margin 21.7%는 'MTM=0 반사실 마진'이지 앵커가 아님(T1). 세율 19%(2025Q2 18.9%·2026Q1 15.1%의 중간). 2026년 발전량 96% 헤지 → 여름 날씨/가격 상방이 당해 P&L로 거의 전달되지 않음이 base가 컨센 함의치를 밑도는 핵심 근거."
+  revenue_growth_qoq: [-0.1489, 0.0800, -0.0700, 0.0500]
+  op_margin: [0.217, 0.240, 0.150, 0.230]
+  effective_tax_rate: 0.19
+  net_interest_pct_of_revenue: -0.065
+bear:
+  probability: 0.25
+  rationale: "선도 커브 상승으로 헤지북에 대규모 미실현 평가손(2025년 FY -$808M, 2024Q3 단일분기 -$1,853M 전례)이 발생해 GAAP 매출·영업이익을 동시에 잠식. 여름 날씨가 정상 이하이고 ERCOT 스파이크 부재 → Ongoing adj EBITDA $1,480M(+9.7% YoY, 가이던스 하단 트래킹). 세율은 크레딧 기여 축소로 26% 상단. 리테일 이탈률 상승·조달원가 상승도 동반 가정."
+  revenue_growth_qoq: [-0.2500, 0.0600, -0.0800, 0.0400]
+  op_margin: [0.120, 0.190, 0.110, 0.190]
+  effective_tax_rate: 0.26
+  net_interest_pct_of_revenue: -0.075
+bull:
+  probability: 0.25
+  rationale: "컨센서스 함의 시나리오. 폭염·ERCOT/PJM 스파이크 + 미헤지 4% 물량의 고가 실현 + 리테일 마진 확대로 Ongoing adj EBITDA $1,950M(+44.6% YoY, FY 중간값의 27.1% — 2024·2025 어느 해에도 없던 Q2 비중). 동시에 커브 하락으로 미실현 MTM 평가익이 매출·OP에 유입. 세율 15%(원전 PTC/ITC 최대 기여). 이 경우 회사는 FY26 가이던스를 상향하거나 상단으로 좁힐 것 — 즉 bull이 맞으면 (c)의 '유지' 예측도 함께 틀린다."
+  revenue_growth_qoq: [-0.0200, 0.1000, -0.0600, 0.0600]
+  op_margin: [0.310, 0.280, 0.190, 0.260]
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: -0.058
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (CIK 1692819; 10-Q, Q4는 동일 회계연도 10-K 연간 − Q3 10-Q 9M 차감 복원). WebFetch로 수집(샌드박스 httpx는 data.sec.gov 403). 화이트블롭 재빌드(scripts/build_generic_actuals.py --cik 1692819)는 호스트 후속."
+  - "FY 합 항등식 검증 — 매출: FY2023 4425+3189+4086+3078=14,778 vs as-filed 14,779 (-$1M, Q3 as-filed 4,086의 반올림). FY2024 3054+3845+6288+4037=17,224 정확. FY2025 3933+4250+4971+4584=17,738 정확. 영업이익: FY2024 86+808+2588+599=4,081 정확. FY2025 -120+515+1037+474=1,906 정확. FY2023 1131+591+834+102=2,658 vs as-filed 2,661 (+$3M = 2023Q3 as-filed 분기 834 ↔ 9M-6M 파생 837 불일치, 기록만)."
+  - "NI-to-common 항등식: FY2024 -84+318+1840+393=2,467 정확. FY2025 -317+280+604+185=752 정확. FY2023 663+441+465-226=1,343 정확(Q1~Q3는 as-filed EPS × as-filed 희석주식수 파생이므로 Q4가 잔차를 흡수 — 파생 표기 유지)."
+  - "파생 EPS ↔ as-filed EPS 대조: 2026Q1 980/341,856,774=2.867≈2.87 ✓ · 2025Q3 604/345,035,160=1.751≈1.75 ✓ · 2025Q2 280/345,505,188=0.810≈0.81 ✓ · 2024Q3 1840/350,203,692=5.254≈5.25 ✓ · 2024Q2 318/354,327,393=0.897≈0.90 ✓. 2023Q1~Q3는 EPS로부터 역산했으므로 항등식이 자명(독립 검증 아님 — 호스트 whole-blob에서 NI-to-common 직접 태그로 교체할 것)."
+  - "⚠️ Q4 희석주식수 = 4×FY − 3×mean(Q1..Q3) 공식(GEV 프로파일과 동일). 2025Q4 352.3M·2024Q4 356.8M이 직전 분기보다 크게 나오는데, 이는 손실 분기(2025Q1)의 반희석 처리로 FY 평균이 왜곡되기 때문. 이 두 행의 파생 EPS는 신뢰도 하 — 호스트 재빌드 대상."
+  - "⚠️⚠️ T1: GAAP OP 마진 13분기 mean 16.5% / stdev 11.5pp / CV 0.70 / 부호반전 1회(2025Q1 -3.1%). 같은 기간 Ongoing adj EBITDA 마진은 CV 0.23. 미실현 파생 MTM이 '매출'과 '매출원가' 양쪽에 비현금으로 유입되므로 op_margin은 헤지북 마킹의 함수다. 이 프로파일의 채점 대상은 Ongoing Operations Adjusted EBITDA이며, GAAP EPS 포인트는 LOW_CONFIDENCE 라벨을 단다."
+  - "⚠️ growth[0] = -14.89%는 계절 수치가 아니다. seed(2026Q1 $5,640M)에 포함된 +$723M 미실현 MTM을 제거하는 조정과 물리 성장(+12.5% YoY)을 함께 담고 있다. backtest_methodology의 캘린더 슬롯 벡터(R4)와 혼동 금지."
+  - "가이던스(2026-05-07 Q1 릴리스에서 재확인): FY2026 Ongoing adj EBITDA $6,800-7,600M · Ongoing adj FCFbG $3,925-4,725M. FY2027 'midpoint opportunity range' $7.4-7.8B. **양쪽 모두 Cogentrix 인수(2026-01-05 발표, $4B, 5.5GW 가스, H2 2026 클로징 예정)와 Meta PPA(~2,600MW, 2026-01-09 발표)를 제외**한다. 회사는 클로징 후 가이던스를 갱신하겠다고 명시 → Q2 콜에서의 상향 확률은 낮다((c) 참조)."
+  - "헤지 커버리지(2025Q3 릴리스 명시): 2025년 ~98% · 2026년 ~96% · 2027년 ~70%. 2026Q1 콜에서는 '2027년 말까지 상당량 헤지, highly hedged'로 재확인(수치 미제시)."
+  - "자사주: 2021-11 이후 누적 ~$6.3B 집행·주식수 ~30% 감소(~1.69억주, 평균 ~$37/주). 2026Q1 단독 $525M. 잔여 승인 ~$1.475B, YE2027까지 완료 예상. 발행주식수 ~337M(2026-05-01)."
+  - "컨센서스(Barchart/Zacks 계열, as-of 2026-08-04경, 애널리스트 수 미표기): 2026Q2 희석 EPS $2.43(전년 동기 $1.01 대비 +140.6%) · FY2026 $9.53 · FY2027 $11.25 · 평균 목표주가 $221.24 · 17인 중 16인 Strong Buy. **기준 경고(R5): 전년 동기 비교치 $1.01은 GAAP이 아니다 — 2025Q2 as-filed GAAP 희석 EPS는 $0.81이다. 따라서 $2.43은 non-GAAP/operating 기준이며 GAAP 예측과 직접 비교하면 채점이 무효가 된다.**"
+  - "라벨 계약: 12월 결산 → fiscal FYNQq = model NQq (오프셋 없음)."
+  - "규제(T3): FERC가 PJM 용량시장 가격 collar 연장 승인 — floor $175/MW-day, cap $325/MW-day, 2028/29·2029/30 인도연도 대상. 머천트 발전사 이익 상단을 직접 제약하는 항목이며 실적보다 주가에 더 영향을 줄 수 있다."

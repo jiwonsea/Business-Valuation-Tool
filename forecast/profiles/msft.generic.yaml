@@ -1,0 +1,69 @@
+# Microsoft (MSFT) — generic top-down forecast profile.
+# Software/cloud company -> generic path (not the DRAM/NAND memory engine).
+# Reported FY2025 (ended Jun 2025): revenue $281.7B, operating income $128.5B
+# (op margin 45.6%), net income $101.8B, diluted EPS $13.64 (MSFT 8-K, 2025).
+name: "Microsoft Corporation"
+name_kr: "마이크로소프트"
+ticker: "MSFT"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 6
+weighted_avg_diluted: 7460000000        # NI $101.8B / EPS $13.64
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 82886
+  net_profit: 31778
+  eps_diluted: 4.27
+
+actuals:
+  - { quarter_label: "2020Q1", revenue_total: 35021, net_profit: 10752, eps_diluted: 1.4, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-21-020891 filed 2021-04-27" }
+  - { quarter_label: "2020Q2", revenue_total: 38033, net_profit: 11202, eps_diluted: 1.46, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-K 0001564590-20-034944 filed 2020-07-30" }
+  - { quarter_label: "2020Q3", revenue_total: 37154, net_profit: 13893, eps_diluted: 1.82, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-21-051992 filed 2021-10-26" }
+  - { quarter_label: "2020Q4", revenue_total: 43076, net_profit: 15463, eps_diluted: 2.03, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-22-002324 filed 2022-01-25" }
+  - { quarter_label: "2021Q1", revenue_total: 41706, net_profit: 15457, eps_diluted: 2.03, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-22-015675 filed 2022-04-26" }
+  - { quarter_label: "2021Q3", revenue_total: 45317, net_profit: 20505, eps_diluted: 2.71, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-22-035087 filed 2022-10-25" }
+  - { quarter_label: "2021Q4", revenue_total: 51728, net_profit: 18765, eps_diluted: 2.48, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001564590-23-000733 filed 2023-01-24" }
+  - { quarter_label: "2022Q1", revenue_total: 49360, net_profit: 16728, eps_diluted: 2.22, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-23-014423 filed 2023-04-25" }
+  - { quarter_label: "2022Q3", revenue_total: 50122, net_profit: 17556, eps_diluted: 2.35, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-23-054855 filed 2023-10-24" }
+  - { quarter_label: "2022Q4", revenue_total: 52747, net_profit: 16425, eps_diluted: 2.2, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-24-008814 filed 2024-01-30" }
+  - { quarter_label: "2023Q1", revenue_total: 52857, net_profit: 18299, eps_diluted: 2.45, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-24-048288 filed 2024-04-25" }
+  - { quarter_label: "2023Q3", revenue_total: 56517, net_profit: 22291, eps_diluted: 2.99, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-24-118967 filed 2024-10-30" }
+  - { quarter_label: "2023Q4", revenue_total: 62020, net_profit: 21870, eps_diluted: 2.93, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-25-010491 filed 2025-01-29" }
+  - { quarter_label: "2024Q1", revenue_total: 61858, net_profit: 21939, eps_diluted: 2.94, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0000950170-25-061046 filed 2025-04-30" }
+  - { quarter_label: "2024Q3", revenue_total: 65585, net_profit: 24667, eps_diluted: 3.3, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-25-256321 filed 2025-10-29" }
+  - { quarter_label: "2024Q4", revenue_total: 69632, net_profit: 24108, eps_diluted: 3.23, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-26-027207 filed 2026-01-28" }
+  - { quarter_label: "2025Q1", revenue_total: 70066, net_profit: 25824, eps_diluted: 3.46, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-26-191507 filed 2026-04-29" }
+  - { quarter_label: "2025Q3", revenue_total: 77673, net_profit: 27747, eps_diluted: 3.72, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-25-256321 filed 2025-10-29" }
+  - { quarter_label: "2025Q4", revenue_total: 81273, net_profit: 38458, eps_diluted: 5.16, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-26-027207 filed 2026-01-28" }
+  - { quarter_label: "2026Q1", revenue_total: 82886, net_profit: 31778, eps_diluted: 4.27, source: "EDGAR companyfacts RevenueFromContractWithCustomerExcludingAssessedTax 10-Q 0001193125-26-191507 filed 2026-04-29" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+base:
+  probability: 0.50
+  rationale: "Azure/AI 클라우드 두 자릿수 성장 지속(QoQ ~4%), 영업이익률 45~46% 유지. Capex 부담이 순증가율 제약."
+  revenue_growth_qoq: [0.03, 0.04, 0.04, 0.05]
+  op_margin: 0.456
+  effective_tax_rate: 0.18
+  net_interest_pct_of_revenue: 0.0
+bear:
+  probability: 0.25
+  rationale: "클라우드 성장 둔화 + AI capex 상각 부담으로 마진 압박."
+  revenue_growth_qoq: [0.015, 0.02, 0.02, 0.025]
+  op_margin: 0.43
+  effective_tax_rate: 0.19
+  net_interest_pct_of_revenue: 0.0
+bull:
+  probability: 0.25
+  rationale: "Copilot/AI 수익화 가속, Azure 재가속, 오퍼레이팅 레버리지로 마진 확대."
+  revenue_growth_qoq: [0.045, 0.055, 0.055, 0.06]
+  op_margin: 0.48
+  effective_tax_rate: 0.17
+  net_interest_pct_of_revenue: 0.0
+
+notes:
+  - "FY2025 실적은 보고치. 분기 actuals(캘린더 2025)는 회계연도(6월 종료) 분기에서 근사 역산 — 백테스트 MAPE 참고용."
+  - "op_margin은 보고된 FY25 영업이익률 45.6%에 고정."

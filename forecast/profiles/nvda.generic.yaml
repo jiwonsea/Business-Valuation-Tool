@@ -1,0 +1,108 @@
+# NVIDIA (NVDA) — generic top-down forecast profile.
+# GPU/accelerated-computing company: revenue is NOT DRAM bits x ASP, so it uses
+# the generic path (schemas/generic.py), not the memory engine.
+#
+# DATA PROVENANCE (NVDA-1, 2026-07-11): `actuals` are OFFICIAL standalone
+# quarters from EDGAR companyfacts as-filed originals (10-Q; Q4 = 10-K annual
+# minus same-FY Q3 10-Q 9M — original filings, no disclosure-vintage mixing).
+# Regenerate with: python scripts/build_generic_actuals.py --cik 1045810
+# --fye-month 1 --start 2019Q3 --end 2026Q1 (cache: reports/.cache/).
+# EPS is NOT stored: it is DERIVED at load from net_profit and split-adjusted
+# per-quarter diluted shares (split_history below) — see schemas/generic.py.
+# As-filed EPS + accession are preserved in each row's source string.
+#
+# LABEL CONTRACT (NVDA-1b): NVDA's fiscal year ends late January; model labels
+# are calendar-quarter approximations keyed to the period END date:
+# fiscal FY(N) Qq -> model (N-1)Qq. The quarter ending late Jan belongs to Q4
+# of the PREVIOUS calendar year (e.g. FY2026Q4 ended 2026-01-25 -> "2025Q4").
+# ~1-month offset vs true calendar quarters; consensus alignment must use this
+# map, never as_of calendar quarters (NVDA-2).
+name: "NVIDIA Corporation"
+name_kr: "엔비디아"
+ticker: "NVDA"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 1          # NVDA fiscal year ends late January
+# FORWARD-ONLY assumption (kept fixed; Codex #6: coherent as the current share
+# count). Historical actuals use per-quarter as-filed shares instead.
+weighted_avg_diluted: 24490000000
+
+# AI-supercycle break; post-break headline starts at 2023Q2 per
+# REVIEW_nvda2_codex.md §1.2 row-partition evidence.
+regime_break_quarter: "2023Q2"
+
+# Stock splits (explicit, auditable — applied to as-filed diluted_shares at
+# load to reach the current basis; period_end < date -> multiply by ratio).
+split_history:
+  - { date: 2021-07-20, ratio: 4 }   # 4:1, trading split-adjusted from 2021-07-20
+  - { date: 2024-06-10, ratio: 10 }  # 10:1, trading split-adjusted from 2024-06-10
+
+seed:
+  quarter_label: "2026Q1"
+  revenue_total: 81615
+  net_profit: 58321
+  eps_diluted: 2.39
+
+# Official standalone quarters, contiguous 2019Q3..2026Q1 (27 rows, Q4 restored).
+actuals:
+  - { quarter_label: "2019Q3", period_end: 2019-10-27, revenue_total: 3014, net_profit: 899, diluted_shares: 618000000, source: "EDGAR 10-Q 0001045810-19-000170 filed 2019-11-14 (as-filed EPS 1.45, as-filed basis)" }
+  - { quarter_label: "2019Q4", period_end: 2020-01-26, revenue_total: 3105, net_profit: 951, diluted_shares: 621000000, source: "EDGAR 10-K−10-Q 0001045810-20-000010 − 0001045810-19-000170 filed 2020-02-20 (as-filed EPS 1.53, as-filed basis)" }
+  - { quarter_label: "2020Q1", period_end: 2020-04-26, revenue_total: 3080, net_profit: 917, diluted_shares: 622000000, source: "EDGAR 10-Q 0001045810-20-000065 filed 2020-05-21 (as-filed EPS 1.47, as-filed basis)" }
+  - { quarter_label: "2020Q2", period_end: 2020-07-26, revenue_total: 3866, net_profit: 622, diluted_shares: 626000000, source: "EDGAR 10-Q 0001045810-20-000147 filed 2020-08-19 (as-filed EPS 0.99, as-filed basis)" }
+  - { quarter_label: "2020Q3", period_end: 2020-10-25, revenue_total: 4726, net_profit: 1336, diluted_shares: 630000000, source: "EDGAR 10-Q 0001045810-20-000189 filed 2020-11-18 (as-filed EPS 2.12, as-filed basis)" }
+  - { quarter_label: "2020Q4", period_end: 2021-01-31, revenue_total: 5003, net_profit: 1457, diluted_shares: 634000000, source: "EDGAR 10-K−10-Q 0001045810-21-000010 − 0001045810-20-000189 filed 2021-02-26 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2021Q1", period_end: 2021-05-02, revenue_total: 5661, net_profit: 1912, diluted_shares: 632000000, source: "EDGAR 10-Q 0001045810-21-000064 filed 2021-05-26 (as-filed EPS 3.03, as-filed basis)" }
+  - { quarter_label: "2021Q2", period_end: 2021-08-01, revenue_total: 6507, net_profit: 2374, diluted_shares: 2532000000, source: "EDGAR 10-Q 0001045810-21-000131 filed 2021-08-20 (as-filed EPS 0.94, as-filed basis)" }
+  - { quarter_label: "2021Q3", period_end: 2021-10-31, revenue_total: 7103, net_profit: 2464, diluted_shares: 2538000000, source: "EDGAR 10-Q 0001045810-21-000163 filed 2021-11-22 (as-filed EPS 0.97, as-filed basis)" }
+  - { quarter_label: "2021Q4", period_end: 2022-01-30, revenue_total: 7643, net_profit: 3003, diluted_shares: 2544000000, source: "EDGAR 10-K−10-Q 0001045810-22-000036 − 0001045810-21-000163 filed 2022-03-18 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2022Q1", period_end: 2022-05-01, revenue_total: 8288, net_profit: 1618, diluted_shares: 2537000000, source: "EDGAR 10-Q 0001045810-22-000079 filed 2022-05-27 (as-filed EPS 0.64, as-filed basis)" }
+  - { quarter_label: "2022Q2", period_end: 2022-07-31, revenue_total: 6704, net_profit: 656, diluted_shares: 2516000000, source: "EDGAR 10-Q 0001045810-22-000147 filed 2022-08-31 (as-filed EPS 0.26, as-filed basis)" }
+  - { quarter_label: "2022Q3", period_end: 2022-10-30, revenue_total: 5931, net_profit: 680, diluted_shares: 2499000000, source: "EDGAR 10-Q 0001045810-22-000166 filed 2022-11-18 (as-filed EPS 0.27, as-filed basis)" }
+  - { quarter_label: "2022Q4", period_end: 2023-01-29, revenue_total: 6051, net_profit: 1414, diluted_shares: 2477000000, source: "EDGAR 10-K−10-Q 0001045810-23-000017 − 0001045810-22-000166 filed 2023-02-24 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2023Q1", period_end: 2023-04-30, revenue_total: 7192, net_profit: 2043, diluted_shares: 2490000000, source: "EDGAR 10-Q 0001045810-23-000093 filed 2023-05-26 (as-filed EPS 0.82, as-filed basis)" }
+  - { quarter_label: "2023Q2", period_end: 2023-07-30, revenue_total: 13507, net_profit: 6188, diluted_shares: 2499000000, source: "EDGAR 10-Q 0001045810-23-000175 filed 2023-08-28 (as-filed EPS 2.48, as-filed basis)" }
+  - { quarter_label: "2023Q3", period_end: 2023-10-29, revenue_total: 18120, net_profit: 9243, diluted_shares: 2494000000, source: "EDGAR 10-Q 0001045810-23-000227 filed 2023-11-21 (as-filed EPS 3.71, as-filed basis)" }
+  - { quarter_label: "2023Q4", period_end: 2024-01-28, revenue_total: 22103, net_profit: 12285, diluted_shares: 2494000000, source: "EDGAR 10-K−10-Q 0001045810-24-000029 − 0001045810-23-000227 filed 2024-02-21 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2024Q1", period_end: 2024-04-28, revenue_total: 26044, net_profit: 14881, diluted_shares: 2489000000, source: "EDGAR 10-Q 0001045810-24-000124 filed 2024-05-29 (as-filed EPS 5.98, as-filed basis)" }
+  - { quarter_label: "2024Q2", period_end: 2024-07-28, revenue_total: 30040, net_profit: 16599, diluted_shares: 24848000000, source: "EDGAR 10-Q 0001045810-24-000264 filed 2024-08-28 (as-filed EPS 0.67, as-filed basis)" }
+  - { quarter_label: "2024Q3", period_end: 2024-10-27, revenue_total: 35082, net_profit: 19309, diluted_shares: 24774000000, source: "EDGAR 10-Q 0001045810-24-000316 filed 2024-11-20 (as-filed EPS 0.78, as-filed basis)" }
+  - { quarter_label: "2024Q4", period_end: 2025-01-26, revenue_total: 39331, net_profit: 22091, diluted_shares: 24705000000, source: "EDGAR 10-K−10-Q 0001045810-25-000023 − 0001045810-24-000316 filed 2025-02-26 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2025Q1", period_end: 2025-04-27, revenue_total: 44062, net_profit: 18775, diluted_shares: 24611000000, source: "EDGAR 10-Q 0001045810-25-000116 filed 2025-05-28 (as-filed EPS 0.76, as-filed basis)" }
+  - { quarter_label: "2025Q2", period_end: 2025-07-27, revenue_total: 46743, net_profit: 26422, diluted_shares: 24532000000, source: "EDGAR 10-Q 0001045810-25-000209 filed 2025-08-27 (as-filed EPS 1.08, as-filed basis)" }
+  - { quarter_label: "2025Q3", period_end: 2025-10-26, revenue_total: 57006, net_profit: 31910, diluted_shares: 24483000000, source: "EDGAR 10-Q 0001045810-25-000230 filed 2025-11-19 (as-filed EPS 1.3, as-filed basis)" }
+  - { quarter_label: "2025Q4", period_end: 2026-01-25, revenue_total: 68127, net_profit: 42960, diluted_shares: 24430000000, source: "EDGAR 10-K−10-Q 0001045810-26-000021 − 0001045810-25-000230 filed 2026-02-25 (as-filed EPS n/a, as-filed basis)" }
+  - { quarter_label: "2026Q1", period_end: 2026-04-26, revenue_total: 81615, net_profit: 58321, diluted_shares: 24391000000, source: "EDGAR 10-Q 0001045810-26-000052 filed 2026-05-20 (as-filed EPS 2.39, as-filed basis)" }
+
+window:
+  start_quarter: "2026Q2"
+  n_quarters: 4
+
+# Forward scenarios: hyper-growth decelerating as hyperscaler capex digests.
+# op_margin anchored to reported FY26 operating margin (~62%); tax ~15%.
+base:
+  probability: 0.50
+  rationale: "AI 데이터센터 수요 지속되나 QoQ 성장률 둔화(선단 GPU 램프+네트워킹). 영업이익률 ~62% 유지, HBM 공급 타이트가 상단 제약."
+  revenue_growth_qoq: [0.10, 0.08, 0.07, 0.06]
+  op_margin: 0.62
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.01
+bear:
+  probability: 0.25
+  rationale: "하이퍼스케일러 capex 소화 국면, 경쟁(ASIC/커스텀 실리콘)·수출규제 리스크로 성장 급감, 마진 소폭 하락."
+  revenue_growth_qoq: [0.03, 0.02, 0.01, 0.00]
+  op_margin: 0.58
+  effective_tax_rate: 0.16
+  net_interest_pct_of_revenue: 0.01
+bull:
+  probability: 0.25
+  rationale: "추론(inference) 수요 폭발 + 신제품(Rubin) 램프로 성장 재가속, 믹스 개선으로 마진 확대."
+  revenue_growth_qoq: [0.15, 0.12, 0.10, 0.08]
+  op_margin: 0.65
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: 0.01
+
+notes:
+  - "actuals는 EDGAR companyfacts as-filed 원본 공시 기준 공식 분기 GAAP (10-Q; Q4는 동일 회계연도 10-K 연간 − Q3 10-Q 9M 차감 복원). NVDA-1 (2026-07-11)."
+  - "과거 EPS는 저장하지 않고 로드 시 파생: net_profit ÷ (as-filed 분기별 희석주식수 × split_history 조정, 현재 기준). as-filed EPS·accession은 source에 보존."
+  - "라벨 계약: 1월 결산 → fiscal FY(N)Qq = model (N-1)Qq (캘린더 분기 근사, ~1개월 오프셋). 1월 종료 분기는 전년 Q4."
+  - "FY2026(2026-01 종료) 검증: 분기 매출 합 = $215,938M, 순이익 합 = $120,067M (10-K 0001045810-26-000021과 일치)."

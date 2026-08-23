@@ -1,0 +1,269 @@
+{
+  "company": "Alphabet Inc.",
+  "weighted_annual": [
+    {
+      "fiscal_year": 2026,
+      "scenario": "weighted",
+      "revenue_total": 367145.22738000005,
+      "operating_profit": 126913.16729106002,
+      "net_profit": 108233.1469637664,
+      "eps_basic": 8.844022468031248
+    },
+    {
+      "fiscal_year": 2027,
+      "scenario": "weighted",
+      "revenue_total": 135026.25652494002,
+      "operating_profit": 46756.9613286387,
+      "net_profit": 39883.410406879855,
+      "eps_basic": 3.2589810759012794
+    }
+  ],
+  "weighted_quarterly": [
+    {
+      "quarter_label": "2026Q2",
+      "scenario": "weighted",
+      "revenue_total": 115940.28,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 115940.28
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 40040.6076,
+      "net_profit": 34143.258552,
+      "gp_margin": 0.0,
+      "op_margin": 0.34535545023696684,
+      "np_margin": 0.29449004739336493,
+      "eps_basic": 2.7899377800294163,
+      "eps_diluted": 2.7899377800294163
+    },
+    {
+      "quarter_label": "2026Q3",
+      "scenario": "weighted",
+      "revenue_total": 121764.76800000001,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 121764.76800000001
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 42086.898594000006,
+      "net_profit": 35891.78193816,
+      "gp_margin": 0.0,
+      "op_margin": 0.3456410198555957,
+      "np_margin": 0.2947632761732852,
+      "eps_basic": 2.9328143436966827,
+      "eps_diluted": 2.9328143436966827
+    },
+    {
+      "quarter_label": "2026Q4",
+      "scenario": "weighted",
+      "revenue_total": 129440.17938000002,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 129440.17938000002
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 44785.66109706,
+      "net_profit": 38198.1064736064,
+      "gp_margin": 0.0,
+      "op_margin": 0.3459950481494767,
+      "np_margin": 0.2951023913638708,
+      "eps_basic": 3.121270344305148,
+      "eps_diluted": 3.121270344305148
+    },
+    {
+      "quarter_label": "2027Q1",
+      "scenario": "weighted",
+      "revenue_total": 135026.25652494002,
+      "revenue_by_segment": [
+        {
+          "segment_id": "total",
+          "revenue": 135026.25652494002
+        }
+      ],
+      "hbm_share": 0.0,
+      "asp_hbm": 1.0,
+      "asp_ddr": 1.0,
+      "asp_nand": 1.0,
+      "margin_periods_since_anchor": 1,
+      "gross_profit": 0.0,
+      "operating_profit": 46756.9613286387,
+      "net_profit": 39883.410406879855,
+      "gp_margin": 0.0,
+      "op_margin": 0.34628051263498116,
+      "np_margin": 0.2953752213334389,
+      "eps_basic": 3.2589810759012794,
+      "eps_diluted": 3.2589810759012794
+    }
+  ],
+  "backtest": {
+    "n": 7,
+    "revenue_mape": 5.161532106722623,
+    "revenue_bias": 1.6473805809038118,
+    "eps_mape": 11.953239002640885,
+    "eps_bias": -11.492905362438849,
+    "naive_rw_revenue_mape": 6.4683157414259425,
+    "naive_rw_eps_mape": 17.615006325087315,
+    "rows": [
+      {
+        "quarter": "2024Q3",
+        "actual_rev": 88268.0,
+        "model_rev": 89826.52,
+        "rw_rev": 84742.0,
+        "model_eps_share_count": 12495000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.1178033658104516,
+        "model_eps": 2.1135651764705883,
+        "rw_eps": 1.8902761104441776
+      },
+      {
+        "quarter": "2024Q4",
+        "actual_rev": 96469.0,
+        "model_rev": 92240.06,
+        "rw_rev": 88268.0,
+        "model_eps_share_count": 12419000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.1490119857466796,
+        "model_eps": 2.1836361736049597,
+        "rw_eps": 2.1178033658104516
+      },
+      {
+        "quarter": "2025Q1",
+        "actual_rev": 90234.0,
+        "model_rev": 101774.795,
+        "rw_rev": 96469.0,
+        "model_eps_share_count": 12348000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.810186315189976,
+        "model_eps": 2.4232094047619044,
+        "rw_eps": 2.1490119857466796
+      },
+      {
+        "quarter": "2025Q2",
+        "actual_rev": 96428.0,
+        "model_rev": 94745.7,
+        "rw_rev": 90234.0,
+        "model_eps_share_count": 12291000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.311526479750779,
+        "model_eps": 2.266311593849158,
+        "rw_eps": 2.810186315189976
+      },
+      {
+        "quarter": "2025Q3",
+        "actual_rev": 102346.0,
+        "model_rev": 102213.68000000001,
+        "rw_rev": 96428.0,
+        "model_eps_share_count": 12198000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.866426288617553,
+        "model_eps": 2.4635859911460893,
+        "rw_eps": 2.311526479750779
+      },
+      {
+        "quarter": "2025Q4",
+        "actual_rev": 113829.0,
+        "model_rev": 106951.56999999999,
+        "rw_rev": 102346.0,
+        "model_eps_share_count": 12203000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 2.8172526573998367,
+        "model_eps": 2.576723885929689,
+        "rw_eps": 2.866426288617553
+      },
+      {
+        "quarter": "2026Q1",
+        "actual_rev": 109896.0,
+        "model_rev": 120089.59499999999,
+        "rw_rev": 113829.0,
+        "model_eps_share_count": 12230000000.0,
+        "model_eps_share_convention": "prior_quarter_split_adjusted",
+        "actual_eps": 5.113417225036771,
+        "model_eps": 2.8868635265739986,
+        "rw_eps": 2.8172526573998367
+      }
+    ],
+    "skill": {
+      "naive_rw_revenue_mape": 0.06468315741425942,
+      "naive_rw_eps_mape": 0.17615006325087315,
+      "n": 7,
+      "n_eps": 7,
+      "mase_revenue": 0.7960848538140249,
+      "mase_eps": 0.7735877362161967,
+      "theil_u2_revenue": 0.9521048128156397,
+      "theil_u2_eps": 0.918311095950995,
+      "rw_hit_ratio_direction": 0.7142857142857143,
+      "skill_score_eps_vs_consensus": null,
+      "surprise_direction_accuracy": null,
+      "n_surprise_scored": 0,
+      "trailing_8q": null
+    }
+  },
+  "consensus": null,
+  "consensus_fetch_timestamp": null,
+  "signal": {
+    "bvt_independent": true,
+    "skill": {
+      "n": 7,
+      "min_n": 8,
+      "eps_mape": 11.953239002640885,
+      "naive_rw_eps_mape": 17.615006325087315,
+      "skill_pass": false,
+      "reason": "n<min_n (skill unknown -> abstain)",
+      "primary_window_name": "full",
+      "primary_window": {
+        "n": 7,
+        "eps_mape": 11.953239002640885,
+        "naive_rw_eps_mape": 17.615006325087315,
+        "beats_naive": true
+      },
+      "full_window": {
+        "n": 7,
+        "eps_mape": 11.953239002640885,
+        "naive_rw_eps_mape": 17.615006325087315,
+        "beats_naive": true
+      },
+      "trailing_8q": {
+        "n": 7,
+        "eps_mape": 11.953239002640885,
+        "naive_rw_eps_mape": 17.615006325087315,
+        "beats_naive": true
+      },
+      "regime_shift": false,
+      "full_vs_primary_disagreement": false
+    },
+    "trajectory": {
+      "direction": "rising",
+      "growth_pct": 0.1681,
+      "n_quarters": 4
+    },
+    "consensus": {
+      "metric": "eps_fy1",
+      "model": 8.844022468031248,
+      "consensus": null,
+      "gap_pct": null,
+      "direction": "n_a"
+    },
+    "stance": "neutral"
+  }
+}

@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://data.sec.gov/api/xbrl/companyconcept/CIK0001692819/us-gaap/NetIncomeLossAvailableToCommonStockholdersDiluted.json",
+    "accession":  null,
+    "form":  "SEC EDGAR companyconcept",
+    "taxonomy":  "us-gaap",
+    "concept":  "NetIncomeLossAvailableToCommonStockholdersDiluted",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  3901,
+    "sha256":  "922274a54fb97bab68b9197dcb1cd8e3353d4718638f02ae0edc7ddcf093be1e",
+    "page_count":  null,
+    "page_count_basis":  "JSON has no physical pagination",
+    "visual_verification":  "not_applicable_json"
+}

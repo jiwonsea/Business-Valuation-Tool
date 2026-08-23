@@ -1,0 +1,13 @@
+﻿{
+    "url":  "https://data.sec.gov/api/xbrl/companyconcept/CIK0001692819/us-gaap/OperatingIncomeLoss.json",
+    "accession":  null,
+    "form":  "SEC EDGAR companyconcept",
+    "taxonomy":  "us-gaap",
+    "concept":  "OperatingIncomeLoss",
+    "retrieved_at":  "2026-08-05T02:26:44+09:00",
+    "bytes":  17361,
+    "sha256":  "2c1d558c21e93e45abef09df64b689b77d1ee0c9436f08167715161341278bd2",
+    "page_count":  null,
+    "page_count_basis":  "JSON has no physical pagination",
+    "visual_verification":  "not_applicable_json"
+}

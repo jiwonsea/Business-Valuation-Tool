@@ -28,13 +28,26 @@ class _Query:
         self.calls.append((name, args, kwargs))
         return self
 
-    def select(self, *a, **kw): return self._call("select", *a, **kw)
-    def order(self, *a, **kw): return self._call("order", *a, **kw)
-    def limit(self, *a, **kw): return self._call("limit", *a, **kw)
-    def eq(self, *a, **kw): return self._call("eq", *a, **kw)
-    def insert(self, *a, **kw): return self._call("insert", *a, **kw)
-    def upsert(self, *a, **kw): return self._call("upsert", *a, **kw)
-    def execute(self): return _Response(self.data)
+    def select(self, *a, **kw):
+        return self._call("select", *a, **kw)
+
+    def order(self, *a, **kw):
+        return self._call("order", *a, **kw)
+
+    def limit(self, *a, **kw):
+        return self._call("limit", *a, **kw)
+
+    def eq(self, *a, **kw):
+        return self._call("eq", *a, **kw)
+
+    def insert(self, *a, **kw):
+        return self._call("insert", *a, **kw)
+
+    def upsert(self, *a, **kw):
+        return self._call("upsert", *a, **kw)
+
+    def execute(self):
+        return _Response(self.data)
 
 
 class _Client:
@@ -47,24 +60,26 @@ class _Client:
 
 
 def test_history_query_uses_ticker_and_market_and_maps_saved_values():
-    client = _Client([
-        {
-            "company_name": "Same Name",
-            "ticker": "AAA",
-            "market": "US",
-            "analysis_date": "2026-07-16",
-            "weighted_value": 120,
-            "market_price": 150,
-            "gap_ratio": -0.2,
-            "wacc_pct": 9.5,
-            "valuation_method": "sotp",
-            "result_data": {
-                "quality": {"grade": "B"},
-                "valuation_bucket": "plain_operating",
-            },
-            "created_at": "2026-07-16T01:00:00Z",
-        }
-    ])
+    client = _Client(
+        [
+            {
+                "company_name": "Same Name",
+                "ticker": "AAA",
+                "market": "US",
+                "analysis_date": "2026-07-16",
+                "weighted_value": 120,
+                "market_price": 150,
+                "gap_ratio": -0.2,
+                "wacc_pct": 9.5,
+                "valuation_method": "sotp",
+                "result_data": {
+                    "quality": {"grade": "B"},
+                    "valuation_bucket": "plain_operating",
+                },
+                "created_at": "2026-07-16T01:00:00Z",
+            }
+        ]
+    )
     with patch.object(repository, "get_client", return_value=client):
         records = repository.list_valuation_history(
             ticker="AAA", market="US", company_name="Same Name"
@@ -84,15 +99,22 @@ def test_save_valuation_is_append_first():
     vi = SimpleNamespace(
         draft=False,
         company=SimpleNamespace(
-            name="Company", ticker="AAA", market="US", legal_status="listed",
+            name="Company",
+            ticker="AAA",
+            market="US",
+            legal_status="listed",
             analysis_date=date(2026, 7, 16),
         ),
         base_year=2025,
         model_dump=lambda **_: {"input": True},
     )
     result = SimpleNamespace(
-        draft=False, primary_method="sotp", total_ev=100, weighted_value=90,
-        wacc=SimpleNamespace(wacc=10.0), market_comparison=None,
+        draft=False,
+        primary_method="sotp",
+        total_ev=100,
+        weighted_value=90,
+        wacc=SimpleNamespace(wacc=10.0),
+        market_comparison=None,
         model_dump=lambda **_: {"result": True},
     )
     with patch.object(repository, "get_client", return_value=client):
@@ -123,9 +145,14 @@ def test_history_sheet_renders_persisted_values_without_engine_calls():
     ctx = _ctx()
     records = [
         ValuationHistoryRecord(
-            ticker="AAA", market="US", company_name="Company",
-            analysis_date=date(2026, 7, 16), weighted_value=120,
-            market_price=150, gap_pct=-20, wacc_pct=9.5,
+            ticker="AAA",
+            market="US",
+            company_name="Company",
+            analysis_date=date(2026, 7, 16),
+            weighted_value=120,
+            market_price=150,
+            gap_pct=-20,
+            wacc_pct=9.5,
         )
     ]
     with patch("db.repository.list_valuation_history", return_value=records):
@@ -144,11 +171,13 @@ def test_all_three_entry_paths_use_shared_save_contract():
     assert "_save_to_db(vi, result, args.profile)" in cli
     assert "_save_to_db(vi, result, profile_path)" in orchestrator
     assert auto.count("_save_to_db(vi, result, yaml_path)") == 2
-    assert orchestrator.index("_save_to_db(vi, result, profile_path)") < orchestrator.index(
-        "excel_path = export(vi, result, output_dir)"
-    )
+    assert orchestrator.index(
+        "_save_to_db(vi, result, profile_path)"
+    ) < orchestrator.index("excel_path = export(vi, result, output_dir)")
     for save_at in [
-        pos for pos in range(len(auto)) if auto.startswith("_save_to_db(vi, result, yaml_path)", pos)
+        pos
+        for pos in range(len(auto))
+        if auto.startswith("_save_to_db(vi, result, yaml_path)", pos)
     ]:
         assert save_at < auto.index("path = export(vi, result, output_dir)", save_at)
 

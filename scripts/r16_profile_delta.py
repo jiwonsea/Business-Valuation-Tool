@@ -87,7 +87,8 @@ def analyze(path: Path) -> dict:
         "yaml_draft": vi.draft,
         "old_draft": old.draft,
         "new_draft": new.draft,
-        "verdict_flipped": (not old.draft) and new.draft,  # text 때문에 새로 draft가 된 경우
+        "verdict_flipped": (not old.draft)
+        and new.draft,  # text 때문에 새로 draft가 된 경우
         "pre_grade": pre_grade,
         "pre_total": pre_total,
         "post_grade": post.grade if post else None,
@@ -102,9 +103,7 @@ def analyze(path: Path) -> dict:
 def main() -> int:
     args = sys.argv[1:]
     paths = (
-        [Path(a) for a in args]
-        if args
-        else sorted((ROOT / "profiles").glob("*.yaml"))
+        [Path(a) for a in args] if args else sorted((ROOT / "profiles").glob("*.yaml"))
     )
 
     rows: list[dict] = []
@@ -117,14 +116,16 @@ def main() -> int:
             traceback.print_exc(limit=1)
 
     print("\n" + "=" * 100)
-    print("R16 — investability gate 출력 델타 (OLD text=\"\"  →  NEW text=profile_text)")
+    print('R16 — investability gate 출력 델타 (OLD text=""  →  NEW text=profile_text)')
     print("=" * 100)
     header = f"{'profile':<22} {'yaml':<6} {'draft(old→new)':<16} {'quality(pre→post)':<20} {'text로 새로 걸린 blocker'}"
     print(header)
     print("-" * 100)
     for r in rows:
         draft_col = f"{str(r['old_draft']):<5} → {str(r['new_draft']):<5}"
-        q_col = f"{r['pre_grade']}/{r['pre_total']} → {r['post_grade']}/{r['post_total']}"
+        q_col = (
+            f"{r['pre_grade']}/{r['pre_total']} → {r['post_grade']}/{r['post_total']}"
+        )
         flag = "🔴 " if r["verdict_flipped"] else "   "
         print(
             f"{flag}{r['file']:<19} {str(r['yaml_draft']):<6} {draft_col:<16} {q_col:<20} "
@@ -137,9 +138,15 @@ def main() -> int:
 
     print("-" * 100)
     print(f"총 프로필                          : {len(rows)}")
-    print(f"R12 이전에도 이미 draft            : {len(already)}  (dcf_vs_peer 등 text 무관 blocker)")
-    print(f"🔴 text 때문에 새로 draft가 된 것   : {len(flipped)}  → {[r['file'] for r in flipped]}")
-    print(f"🔴 quality가 F로 떨어진 것          : {len(newly_f)}  → {[r['file'] for r in newly_f]}")
+    print(
+        f"R12 이전에도 이미 draft            : {len(already)}  (dcf_vs_peer 등 text 무관 blocker)"
+    )
+    print(
+        f"🔴 text 때문에 새로 draft가 된 것   : {len(flipped)}  → {[r['file'] for r in flipped]}"
+    )
+    print(
+        f"🔴 quality가 F로 떨어진 것          : {len(newly_f)}  → {[r['file'] for r in newly_f]}"
+    )
     if failed:
         print(f"\n실행 실패 {len(failed)}건:")
         for name, err in failed:

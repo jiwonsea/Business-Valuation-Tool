@@ -33,7 +33,9 @@ from pydantic import BaseModel, field_validator, model_validator
 ALLOWED_LTM_MULTIPLES: tuple[str, ...] = ("P/B", "P/S")
 
 # Any label matching this is a forward estimate and is forbidden in this scope.
-_FORWARD_LABEL_RE = re.compile(r"forward|fwd|estimate|(?:^|[^A-Za-z0-9])E(?:$|[^A-Za-z0-9])", re.IGNORECASE)
+_FORWARD_LABEL_RE = re.compile(
+    r"forward|fwd|estimate|(?:^|[^A-Za-z0-9])E(?:$|[^A-Za-z0-9])", re.IGNORECASE
+)
 
 
 def require_allowed_multiple_label(label: str) -> str:
@@ -113,7 +115,9 @@ class ReportedFinancialValue(BaseModel):
     @classmethod
     def non_empty(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("ReportedFinancialValue: account / account_nm는 필수입니다.")
+            raise ValueError(
+                "ReportedFinancialValue: account / account_nm는 필수입니다."
+            )
         return v
 
     @model_validator(mode="after")

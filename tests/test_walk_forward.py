@@ -17,9 +17,15 @@ from calibration.walk_forward import (
 
 def _scenarios(bull: int, base: int, bear: int) -> list[ScenarioSnapshot]:
     return [
-        ScenarioSnapshot(code="bull", name="bull", prob=25, pre_dlom=bull, post_dlom=bull),
-        ScenarioSnapshot(code="base", name="base", prob=50, pre_dlom=base, post_dlom=base),
-        ScenarioSnapshot(code="bear", name="bear", prob=25, pre_dlom=bear, post_dlom=bear),
+        ScenarioSnapshot(
+            code="bull", name="bull", prob=25, pre_dlom=bull, post_dlom=bull
+        ),
+        ScenarioSnapshot(
+            code="base", name="base", prob=50, pre_dlom=base, post_dlom=base
+        ),
+        ScenarioSnapshot(
+            code="bear", name="bear", prob=25, pre_dlom=bear, post_dlom=bear
+        ),
     ]
 
 
@@ -142,6 +148,7 @@ def test_tune_walk_forward_overfit_gap():
     slice (later records) shifts toward the bull scenario. A prob mix tuned on
     train will under-predict on test, so test MAPE should exceed train MAPE.
     """
+
     def actual_factory(i: int) -> float:
         return 70.0 if i < 18 else 140.0
 
@@ -308,6 +315,7 @@ def test_cli_runs_per_market_sector_bucket(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(wf, "DEFAULT_REPORT_DIR", tmp_path)
 
     import backtest.dataset as bd
+
     monkeypatch.setattr(bd, "build_backtest_dataset", lambda **kw: dataset)
 
     monkeypatch.setattr(sys, "argv", ["walk_forward", "--n-splits", "5"])
@@ -331,16 +339,29 @@ def test_render_index_report_links_buckets(tmp_path):
     from calibration.walk_forward import render_index_report
 
     result_a = WalkForwardResult(
-        market="US", sector="dcf_primary", horizon="t6m",
-        n_splits_requested=5, n_records=30, folds=[],
-        mean_train_mape=0.10, mean_test_mape=0.12,
-        std_test_mape=0.01, overfitting_gap=0.02, notes=[],
+        market="US",
+        sector="dcf_primary",
+        horizon="t6m",
+        n_splits_requested=5,
+        n_records=30,
+        folds=[],
+        mean_train_mape=0.10,
+        mean_test_mape=0.12,
+        std_test_mape=0.01,
+        overfitting_gap=0.02,
+        notes=[],
     )
     result_b = WalkForwardResult(
-        market="KR", sector="sotp", horizon="t6m",
-        n_splits_requested=5, n_records=15, folds=[],
-        mean_train_mape=None, mean_test_mape=None,
-        std_test_mape=None, overfitting_gap=None,
+        market="KR",
+        sector="sotp",
+        horizon="t6m",
+        n_splits_requested=5,
+        n_records=15,
+        folds=[],
+        mean_train_mape=None,
+        mean_test_mape=None,
+        std_test_mape=None,
+        overfitting_gap=None,
         notes=["insufficient data: 15 records < min_train_size(10) + n_splits(5)"],
     )
     text = render_index_report(

@@ -80,9 +80,7 @@ def save_prediction_snapshot(
         # getattr 기본값: P0 이전에 만들어진 ValuationInput / 테스트 스텁도 통과시킨다.
         "normalization_version": getattr(vi, "normalization_version", LEGACY_VERSION),
         "net_debt_components": (
-            nd_components.model_dump(mode="json")
-            if nd_components is not None
-            else {}
+            nd_components.model_dump(mode="json") if nd_components is not None else {}
         ),
         "segment_disclosure_level": getattr(vi, "segment_disclosure_level", "none"),
         "scenario_multiples_clamped": getattr(
@@ -122,9 +120,7 @@ def save_prediction_snapshot(
                 "42703" in msg or "PGRST204" in msg
             ):
                 legacy_row = {
-                    k: v
-                    for k, v in row.items()
-                    if k not in _P0_NORMALIZATION_COLUMNS
+                    k: v for k, v in row.items() if k not in _P0_NORMALIZATION_COLUMNS
                 }
                 try:
                     resp = (
@@ -230,7 +226,9 @@ def update_backtest_prices(outcome_id: str, price_data: dict) -> bool:
     if not client:
         return False
 
-    price_data["price_fetched_at"] = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    price_data["price_fetched_at"] = (
+        datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    )
 
     try:
         resp = (
@@ -298,9 +296,7 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
             page_resp = (
                 client.table("backtest_outcomes")
                 .select("*, prediction_snapshots!inner(analysis_date)")
-                .or_(
-                    "price_t3m.is.null,price_t6m.is.null,price_t12m.is.null"
-                )
+                .or_("price_t3m.is.null,price_t6m.is.null,price_t12m.is.null")
                 .order("created_at", desc=False)
                 .range(offset, end)
                 .execute()
@@ -331,9 +327,7 @@ def list_outcomes_needing_refresh(today: date) -> list[dict]:
             if isinstance(snap, list):
                 snap = snap[0] if snap else {}
             analysis_date_str = (
-                snap.get("analysis_date")
-                or row.get("analysis_date")
-                or ""
+                snap.get("analysis_date") or row.get("analysis_date") or ""
             )
             try:
                 ad = date.fromisoformat(analysis_date_str)

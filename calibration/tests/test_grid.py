@@ -15,7 +15,9 @@ from calibration.grid import (
 
 
 def _scn(code: str, prob: float, post_dlom: int) -> ScenarioSnapshot:
-    return ScenarioSnapshot(code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom)
+    return ScenarioSnapshot(
+        code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom
+    )
 
 
 def _record(

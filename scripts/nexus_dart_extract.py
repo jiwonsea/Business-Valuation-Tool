@@ -40,10 +40,16 @@ FILINGS = {
 
 # (label, regex) -- searched against the plain-text body
 SECTIONS: list[tuple[str, str]] = [
-    ("01_특수관계자", r"특수관계자|특수 관계자|관계기업|종속기업|Opengame|OGF|오픈게임"),
+    (
+        "01_특수관계자",
+        r"특수관계자|특수 관계자|관계기업|종속기업|Opengame|OGF|오픈게임",
+    ),
     ("02_용역계약", r"용역계약|포괄적\s*용역|계약기간|수익인식|검수|진행률|수행의무"),
     ("03_매출채권", r"매출채권|대손충당금|기대신용손실|연체|회수"),
-    ("04_전환사채", r"전환사채|조기상환청구권|풋옵션|매도청구권|전환가액|리픽싱|최저\s*조정"),
+    (
+        "04_전환사채",
+        r"전환사채|조기상환청구권|풋옵션|매도청구권|전환가액|리픽싱|최저\s*조정",
+    ),
     ("05_스톡옵션", r"주식매수선택권|스톡옵션|행사가격|부여수량"),
     ("06_주식수변동", r"발행주식|주식의\s*총수|증자|전환권행사|제3자배정|자기주식"),
 ]
@@ -122,7 +128,9 @@ def slice_sections(text: str, name: str) -> None:
             f"# {name} / {label}\n# pattern: {pattern}\n# hits(merged): {len(spans)}\n\n{body}",
             encoding="utf-8",
         )
-        print(f"  [{label}] merged_spans={len(spans):3d} chars={len(body):7d} -> {path.name}")
+        print(
+            f"  [{label}] merged_spans={len(spans):3d} chars={len(body):7d} -> {path.name}"
+        )
 
 
 def main() -> None:

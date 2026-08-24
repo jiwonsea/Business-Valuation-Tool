@@ -119,7 +119,10 @@ def collect_driver_observations(
                     logger.warning(
                         "Skipping invalid weight in %s scenario=%s "
                         "driver=%s weight=%s (allowed finite [0.0, 1.0])",
-                        path.name, sc_code, driver_id, weight,
+                        path.name,
+                        sc_code,
+                        driver_id,
+                        weight,
                     )
                     continue
                 observations.append(
@@ -142,7 +145,7 @@ def _std(xs: list[float], mu: float) -> float | None:
     if len(xs) < 2:
         return None
     variance = sum((x - mu) ** 2 for x in xs) / (len(xs) - 1)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def shrink_weights(
@@ -279,15 +282,16 @@ def render_report(
     lines.append("")
 
     if not recs:
-        lines.append("_No observations collected -- profiles/ is empty or no "
-                     "active_drivers defined._")
+        lines.append(
+            "_No observations collected -- profiles/ is empty or no "
+            "active_drivers defined._"
+        )
         return "\n".join(lines) + "\n"
 
     lines.append("## Bucket summary")
     lines.append("")
     lines.append(
-        "| Sector | Driver | N obs | N profiles | Sector mean | "
-        "Sector std | Status |"
+        "| Sector | Driver | N obs | N profiles | Sector mean | Sector std | Status |"
     )
     lines.append("|---|---|---:|---:|---:|---:|---|")
     for rec in recs:
@@ -336,10 +340,7 @@ def render_report(
                 lines.append(f"- {note}")
         lines.append("")
 
-    single_profile = [
-        r for r in recs
-        if not r.eligible and r.n_profiles < MIN_PROFILES
-    ]
+    single_profile = [r for r in recs if not r.eligible and r.n_profiles < MIN_PROFILES]
     if single_profile:
         lines.append("## Suppressed: single-profile buckets")
         lines.append("")
@@ -359,7 +360,8 @@ def render_report(
         lines.append("")
 
     insufficient = [
-        r for r in recs
+        r
+        for r in recs
         if not r.eligible
         and r.n_profiles >= MIN_PROFILES
         and r.n_observations < MIN_OBSERVATIONS
@@ -406,9 +408,7 @@ def write_report(
     text = render_report(recs, tau=tau, report_date=report_date)
     out_path = output_dir / f"driver_shrinkage_{report_date.isoformat()}.md"
     out_path.write_text(text, encoding="utf-8")
-    logger.info(
-        "Wrote driver shrinkage report: %s (%d buckets)", out_path, len(recs)
-    )
+    logger.info("Wrote driver shrinkage report: %s (%d buckets)", out_path, len(recs))
     return out_path
 
 
@@ -416,14 +416,19 @@ def main() -> None:
     """Entry point for ``python -m calibration.driver_shrinkage``."""
     import argparse
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     parser = argparse.ArgumentParser(description="active_drivers shrinkage recommender")
-    parser.add_argument("--tau", type=float, default=DEFAULT_TAU,
-                        help="prior strength (default: 5.0)")
-    parser.add_argument("--profiles-dir", type=Path, default=None,
-                        help="override profiles directory")
-    parser.add_argument("--no-report", action="store_true",
-                        help="skip writing markdown report")
+    parser.add_argument(
+        "--tau", type=float, default=DEFAULT_TAU, help="prior strength (default: 5.0)"
+    )
+    parser.add_argument(
+        "--profiles-dir", type=Path, default=None, help="override profiles directory"
+    )
+    parser.add_argument(
+        "--no-report", action="store_true", help="skip writing markdown report"
+    )
     args = parser.parse_args()
 
     observations = collect_driver_observations(args.profiles_dir)

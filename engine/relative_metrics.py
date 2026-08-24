@@ -25,14 +25,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 # Status vocabulary
-OK = "ok"          # metric is meaningful
+OK = "ok"  # metric is meaningful
 CAUTION = "caution"  # computed, but interpret with care (reason in .note)
-NA = "na"          # not meaningful -- value is None
+NA = "na"  # not meaningful -- value is None
 
 # Default guardrail thresholds
-_MIN_PEG_GROWTH_PCT = 2.0   # below this, PEG denominator is unreliable
-_MIN_KE_G_SPREAD = 0.005    # 0.5% minimum ke-g spread for justified multiples
-_JUSTIFIED_BAND = 0.15      # +/-15% band around fair value for the verdict
+_MIN_PEG_GROWTH_PCT = 2.0  # below this, PEG denominator is unreliable
+_MIN_KE_G_SPREAD = 0.005  # 0.5% minimum ke-g spread for justified multiples
+_JUSTIFIED_BAND = 0.15  # +/-15% band around fair value for the verdict
 
 
 @dataclass
@@ -41,8 +41,8 @@ class RelativeMetric:
 
     name: str
     value: Optional[float]
-    status: str          # OK | CAUTION | NA
-    note: str = ""       # reason for na/caution, growth source, etc.
+    status: str  # OK | CAUTION | NA
+    note: str = ""  # reason for na/caution, growth source, etc.
 
     @property
     def is_meaningful(self) -> bool:
@@ -52,6 +52,7 @@ class RelativeMetric:
 # ─────────────────────────────────────────────────────────────────────────
 # Tier 1 -- current-price diagnostic ratios
 # ─────────────────────────────────────────────────────────────────────────
+
 
 def trailing_pe(price: float, eps: float) -> RelativeMetric:
     """P/E = price / trailing EPS. NA when EPS <= 0 (P/E meaningless)."""
@@ -104,6 +105,7 @@ def dividend_yield(dps: float, price: float) -> RelativeMetric:
 # Tier 2 -- PEG / PEGY with sector guardrails
 # ─────────────────────────────────────────────────────────────────────────
 
+
 def peg(
     pe: Optional[float],
     growth_pct: Optional[float],
@@ -129,14 +131,18 @@ def peg(
         return RelativeMetric("PEG", None, NA, "이익 0 이하 -- PEG 무의미")
     if growth_pct is None or growth_pct <= min_growth_pct:
         return RelativeMetric(
-            "PEG", None, NA,
+            "PEG",
+            None,
+            NA,
             f"성장률 {growth_pct}% <= {min_growth_pct}% -- PEG 부적합{src}",
         )
     value = round(pe / growth_pct, 2)
     if is_financial:
         return RelativeMetric("PEG", value, CAUTION, f"금융업 -- PBR-ROE/RIM 권장{src}")
     if is_cyclical:
-        return RelativeMetric("PEG", value, CAUTION, f"시클리컬 -- through-cycle 이익 확인{src}")
+        return RelativeMetric(
+            "PEG", value, CAUTION, f"시클리컬 -- through-cycle 이익 확인{src}"
+        )
     return RelativeMetric("PEG", value, OK, f"성장률 출처{src}".strip())
 
 
@@ -164,20 +170,27 @@ def pegy(
     denom = g + y
     if denom <= min_growth_pct:
         return RelativeMetric(
-            "PEGY", None, NA,
+            "PEGY",
+            None,
+            NA,
             f"성장률+배당 {denom}% <= {min_growth_pct}% -- PEGY 부적합{src}",
         )
     value = round(pe / denom, 2)
     if is_financial:
-        return RelativeMetric("PEGY", value, CAUTION, f"금융업 -- PBR-ROE/RIM 권장{src}")
+        return RelativeMetric(
+            "PEGY", value, CAUTION, f"금융업 -- PBR-ROE/RIM 권장{src}"
+        )
     if is_cyclical:
-        return RelativeMetric("PEGY", value, CAUTION, f"시클리컬 -- through-cycle 이익 확인{src}")
+        return RelativeMetric(
+            "PEGY", value, CAUTION, f"시클리컬 -- through-cycle 이익 확인{src}"
+        )
     return RelativeMetric("PEGY", value, OK, f"성장률 출처{src}".strip())
 
 
 # ─────────────────────────────────────────────────────────────────────────
 # Tier 3 -- justified (fundamental-consistent) multiples + verdict
 # ─────────────────────────────────────────────────────────────────────────
+
 
 def justified_pe(
     payout_ratio_pct: float,
@@ -227,11 +240,11 @@ def justified_pb(
 class MultipleVerdict:
     """Actual multiple vs its fundamental-justified level."""
 
-    name: str                     # "P/E" | "P/B"
+    name: str  # "P/E" | "P/B"
     actual: Optional[float]
     justified: Optional[float]
-    gap_pct: Optional[float]      # (actual - justified) / justified * 100
-    verdict: str                  # "저평가" | "적정" | "고평가" | "판단불가"
+    gap_pct: Optional[float]  # (actual - justified) / justified * 100
+    verdict: str  # "저평가" | "적정" | "고평가" | "판단불가"
     note: str = ""
 
 
@@ -247,8 +260,9 @@ def multiple_verdict(
     above justified*(1+band) -> 고평가; within band -> 적정.
     """
     if actual is None or justified is None or justified <= 0:
-        return MultipleVerdict(name, actual, justified, None, "판단불가",
-                               "actual/justified 데이터 부족")
+        return MultipleVerdict(
+            name, actual, justified, None, "판단불가", "actual/justified 데이터 부족"
+        )
     gap = (actual - justified) / justified * 100.0
     if actual < justified * (1 - band):
         verdict = "저평가"
@@ -262,6 +276,7 @@ def multiple_verdict(
 # ─────────────────────────────────────────────────────────────────────────
 # Aggregator
 # ─────────────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class RelativeValuationReport:

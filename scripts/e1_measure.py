@@ -23,7 +23,9 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def summarize(path: Path, run_id: str | None = None) -> dict:
     events = []
     if path.exists():
-        events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        events = [
+            json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+        ]
     if run_id is not None:
         events = [event for event in events if event.get("run_id") == run_id]
     attempts = [event for event in events if event.get("event") == "attempt"]
@@ -33,9 +35,15 @@ def summarize(path: Path, run_id: str | None = None) -> dict:
         "blocked": sum(event.get("event") == "blocked" for event in events),
         "cache_hits": sum(event.get("event") == "cache_hit" for event in events),
         "cache_misses": sum(event.get("event") == "cache_miss" for event in events),
-        "attempts_by_step": dict(Counter(event.get("step", "unknown") for event in attempts)),
-        "attempts_by_model": dict(Counter(event.get("model", "unknown") for event in attempts)),
-        "outcomes": dict(Counter(event.get("outcome", "unknown") for event in attempts)),
+        "attempts_by_step": dict(
+            Counter(event.get("step", "unknown") for event in attempts)
+        ),
+        "attempts_by_model": dict(
+            Counter(event.get("model", "unknown") for event in attempts)
+        ),
+        "outcomes": dict(
+            Counter(event.get("outcome", "unknown") for event in attempts)
+        ),
     }
 
 
@@ -79,7 +87,9 @@ def main() -> int:
         return 0
 
     if args.estimated_attempts is None or args.estimated_cost_usd is None:
-        parser.error("a paid command requires --estimated-attempts and --estimated-cost-usd")
+        parser.error(
+            "a paid command requires --estimated-attempts and --estimated-cost-usd"
+        )
     try:
         estimated_cost = Decimal(args.estimated_cost_usd)
     except InvalidOperation:

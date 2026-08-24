@@ -94,7 +94,9 @@ def walk_forward_splits(
         the train/test boundary -- a silent temporal leak where "future" info
         (same-day records already in train) leaks into the test slice.
         """
-        while 0 < idx < n and ordered[idx - 1].analysis_date == ordered[idx].analysis_date:
+        while (
+            0 < idx < n and ordered[idx - 1].analysis_date == ordered[idx].analysis_date
+        ):
             idx += 1
         return idx
 
@@ -162,7 +164,9 @@ def tune_walk_forward(
     else:
         market_label = market or "unknown"
         sector_label = sector or "unknown"
-    splits = walk_forward_splits(records, n_splits=n_splits, min_train_size=min_train_size)
+    splits = walk_forward_splits(
+        records, n_splits=n_splits, min_train_size=min_train_size
+    )
 
     if not splits:
         # Distinguish the two zero-fold causes so the report doesn't lie:
@@ -205,7 +209,9 @@ def tune_walk_forward(
                 fold_index=idx,
                 train_size=len(train),
                 test_size=len(test),
-                train_mape=rec.recommended_mape if rec.recommended else rec.baseline_mape,
+                train_mape=rec.recommended_mape
+                if rec.recommended
+                else rec.baseline_mape,
                 test_mape=test_mape,
                 baseline_test_mape=baseline_test_mape,
                 recommended_probs=rec.recommended,
@@ -309,7 +315,9 @@ def render_report(
     lines.append(f"| Mean train MAPE | {_fmt_pct(result.mean_train_mape)} |")
     lines.append(f"| Mean test MAPE  | {_fmt_pct(result.mean_test_mape)} |")
     lines.append(f"| Test MAPE std   | {_fmt_pct(result.std_test_mape)} |")
-    lines.append(f"| Overfit gap (test - train) | {_fmt_signed_pp(result.overfitting_gap)} |")
+    lines.append(
+        f"| Overfit gap (test - train) | {_fmt_signed_pp(result.overfitting_gap)} |"
+    )
     lines.append("")
 
     lines.append("## Per-fold")
@@ -358,9 +366,7 @@ def write_report(
     text = render_report(result, report_date=report_date)
     out_path = output_dir / f"walk_forward_{report_date.isoformat()}.md"
     out_path.write_text(text, encoding="utf-8")
-    logger.info(
-        "Wrote walk-forward report: %s (%d folds)", out_path, len(result.folds)
-    )
+    logger.info("Wrote walk-forward report: %s (%d folds)", out_path, len(result.folds))
     return out_path
 
 
@@ -411,9 +417,7 @@ def render_index_report(
 
     lines.append(f"Buckets: **{len(bucket_results)}**")
     lines.append("")
-    lines.append(
-        "| Bucket | Records | Folds | Mean Test MAPE | Overfit Gap | Report |"
-    )
+    lines.append("| Bucket | Records | Folds | Mean Test MAPE | Overfit Gap | Report |")
     lines.append("|---|---:|---:|---|---|---|")
     for result, path in bucket_results:
         bucket_label = f"{result.market}/{result.sector}/{result.horizon}"
@@ -461,7 +465,9 @@ def main() -> None:
     import argparse
     import logging
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
 
     parser = argparse.ArgumentParser(description="Walk-forward calibration harness")
     parser.add_argument("--horizon", default="t6m", choices=("t3m", "t6m", "t12m"))
@@ -469,7 +475,8 @@ def main() -> None:
     parser.add_argument("--min-age-days", type=int, default=90)
     parser.add_argument("--min-train-size", type=int, default=10)
     parser.add_argument(
-        "--no-report", action="store_true",
+        "--no-report",
+        action="store_true",
         help="skip writing output/calibration/walk_forward_<date>.md",
     )
     args = parser.parse_args()
@@ -488,9 +495,15 @@ def main() -> None:
         )
         if not args.no_report:
             empty = WalkForwardResult(
-                market="unknown", sector="unknown", horizon=args.horizon,
-                n_splits_requested=args.n_splits, n_records=len(records), folds=[],
-                mean_train_mape=None, mean_test_mape=None, std_test_mape=None,
+                market="unknown",
+                sector="unknown",
+                horizon=args.horizon,
+                n_splits_requested=args.n_splits,
+                n_records=len(records),
+                folds=[],
+                mean_train_mape=None,
+                mean_test_mape=None,
+                std_test_mape=None,
                 overfitting_gap=None,
                 notes=[
                     f"no listed records after min_age_days={args.min_age_days} filter"
@@ -526,7 +539,9 @@ def main() -> None:
             print(f"[WalkForward] Report -> {out}")
         for fold in result.folds:
             train_mape = (
-                f"{fold.train_mape * 100:.2f}%" if fold.train_mape is not None else "n/a"
+                f"{fold.train_mape * 100:.2f}%"
+                if fold.train_mape is not None
+                else "n/a"
             )
             test_mape = (
                 f"{fold.test_mape * 100:.2f}%" if fold.test_mape is not None else "n/a"

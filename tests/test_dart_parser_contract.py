@@ -50,7 +50,8 @@ class TestStatementContract:
         # including a non-controlling-interest-only line of 3,103 MKRW.
         items = payloads["sk_hynix_fy2019"]
         sce_values = {
-            r["thstrm_amount"] for r in items
+            r["thstrm_amount"]
+            for r in items
             if r["sj_div"] == "SCE" and ACCOUNT_MAP.get(r["account_nm"]) == "net_income"
         }
         assert sce_values, "fixture must retain the SCE hazard rows"
@@ -71,10 +72,14 @@ class TestStatementContract:
     def test_row_in_disallowed_statement_is_dropped_not_taken(self):
         # revenue is IS·CIS only — an SCE-only candidate must yield a gap,
         # never a silently accepted number.
-        items = [{
-            "account_nm": "매출액", "sj_div": "SCE",
-            "thstrm_amount": "1,000,000,000", "rcept_no": "20240101000001",
-        }]
+        items = [
+            {
+                "account_nm": "매출액",
+                "sj_div": "SCE",
+                "thstrm_amount": "1,000,000,000",
+                "rcept_no": "20240101000001",
+            }
+        ]
         result = parse_financial_statements(items, 2023)
         assert "revenue" not in result
 
@@ -85,8 +90,16 @@ class TestStatementContract:
 class TestSelectionPriority:
     def test_is_outranks_cis(self):
         items = [
-            {"account_nm": "영업이익", "sj_div": "CIS", "thstrm_amount": "2,000,000,000"},
-            {"account_nm": "영업이익", "sj_div": "IS", "thstrm_amount": "1,000,000,000"},
+            {
+                "account_nm": "영업이익",
+                "sj_div": "CIS",
+                "thstrm_amount": "2,000,000,000",
+            },
+            {
+                "account_nm": "영업이익",
+                "sj_div": "IS",
+                "thstrm_amount": "1,000,000,000",
+            },
         ]
         # Different statements, different values: NOT ambiguous — contract
         # order (IS first) decides deterministically.
@@ -95,26 +108,50 @@ class TestSelectionPriority:
 
     def test_identical_same_statement_duplicates_pass(self):
         items = [
-            {"account_nm": "당기순이익", "sj_div": "CIS", "thstrm_amount": "1,000,000,000"},
-            {"account_nm": "당기순이익(손실)", "sj_div": "CIS", "thstrm_amount": "1,000,000,000"},
+            {
+                "account_nm": "당기순이익",
+                "sj_div": "CIS",
+                "thstrm_amount": "1,000,000,000",
+            },
+            {
+                "account_nm": "당기순이익(손실)",
+                "sj_div": "CIS",
+                "thstrm_amount": "1,000,000,000",
+            },
         ]
         result = parse_financial_statements(items, 2023)
         assert result["net_income"] == 1_000
 
     def test_conflicting_same_statement_candidates_fail_closed(self):
         items = [
-            {"account_nm": "당기순이익", "sj_div": "CIS", "thstrm_amount": "1,000,000,000"},
-            {"account_nm": "당기순이익(손실)", "sj_div": "CIS", "thstrm_amount": "2,000,000,000"},
+            {
+                "account_nm": "당기순이익",
+                "sj_div": "CIS",
+                "thstrm_amount": "1,000,000,000",
+            },
+            {
+                "account_nm": "당기순이익(손실)",
+                "sj_div": "CIS",
+                "thstrm_amount": "2,000,000,000",
+            },
         ]
         with pytest.raises(AmbiguousAccountError):
             parse_financial_statements(items, 2023)
 
     def test_extract_reported_values_is_also_fail_closed(self):
         items = [
-            {"account_nm": "당기순이익", "sj_div": "CIS",
-             "thstrm_amount": "1,000,000,000", "rcept_no": "20240101000001"},
-            {"account_nm": "당기순이익(손실)", "sj_div": "CIS",
-             "thstrm_amount": "2,000,000,000", "rcept_no": "20240101000001"},
+            {
+                "account_nm": "당기순이익",
+                "sj_div": "CIS",
+                "thstrm_amount": "1,000,000,000",
+                "rcept_no": "20240101000001",
+            },
+            {
+                "account_nm": "당기순이익(손실)",
+                "sj_div": "CIS",
+                "thstrm_amount": "2,000,000,000",
+                "rcept_no": "20240101000001",
+            },
         ]
         with pytest.raises(AmbiguousAccountError):
             extract_reported_values(items, 2023)
@@ -156,10 +193,12 @@ class TestBasisSeparation:
         vals_2020 = extract_reported_values(payloads["lg_fy2020"], 2020)
         vals_2021 = extract_reported_values(payloads["lg_fy2021"], 2021)
 
-        original = [v for v in vals_2020
-                    if v.account == "op" and v.fiscal_year == 2020][0]
-        restated = [v for v in vals_2021
-                    if v.account == "op" and v.fiscal_year == 2020][0]
+        original = [
+            v for v in vals_2020 if v.account == "op" and v.fiscal_year == 2020
+        ][0]
+        restated = [
+            v for v in vals_2021 if v.account == "op" and v.fiscal_year == 2020
+        ][0]
 
         assert original.basis == "original"
         assert original.value_mkrw == 3_194_987
@@ -175,7 +214,9 @@ class TestBasisSeparation:
             v.value_mkrw = 0  # Pydantic frozen — mutate via model_copy only
 
     def test_missing_rcept_no_fails_closed(self):
-        items = [{"account_nm": "매출액", "sj_div": "IS", "thstrm_amount": "1,000,000,000"}]
+        items = [
+            {"account_nm": "매출액", "sj_div": "IS", "thstrm_amount": "1,000,000,000"}
+        ]
         with pytest.raises(ValueError):
             extract_reported_values(items, 2023)
 
@@ -202,9 +243,7 @@ class TestPointInTime:
         # FY2020 annual report was received 2021-03-16; before that the value
         # did not exist for any evaluator.
         assert select_point_in_time(series, "op", 2020, date(2021, 3, 15)) is None
-        assert (
-            select_point_in_time(series, "op", 2020, date(2021, 3, 16)) is not None
-        )
+        assert select_point_in_time(series, "op", 2020, date(2021, 3, 16)) is not None
 
     def test_missing_stays_missing(self, series):
         # No FY2019 observation in this set -> None, never interpolated.
@@ -240,8 +279,16 @@ def test_full_snapshot_parity_with_pre_contract_selection():
     """
     from pipeline.dart_parser import _to_millions
 
-    core = ("revenue", "op", "net_income", "interest_expense",
-            "assets", "liabilities", "equity", "capex")
+    core = (
+        "revenue",
+        "op",
+        "net_income",
+        "interest_expense",
+        "assets",
+        "liabilities",
+        "equity",
+        "capex",
+    )
 
     def pre_contract(items):
         res, capex = {}, None

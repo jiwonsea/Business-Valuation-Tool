@@ -154,7 +154,9 @@ def sheet_financials(ctx: Ctx):
                         fill=(
                             None
                             if is_equity_based
-                            else GREEN_FILL if a.ebitda > 0 else RED_FILL
+                            else GREEN_FILL
+                            if a.ebitda > 0
+                            else RED_FILL
                         ),
                     )
                 else:

@@ -144,7 +144,9 @@ def emit_yaml_diff(
 
 def main() -> None:
     """Entry point for ``python -m calibration.report``."""
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     from backtest.dataset import build_backtest_dataset
 
     records = build_backtest_dataset()

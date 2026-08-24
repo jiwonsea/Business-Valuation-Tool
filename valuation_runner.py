@@ -301,7 +301,11 @@ def load_profile(path: str) -> ValuationInput:
     for seg_code, seg_info in segments.items():
         seg_name = getattr(seg_info, "name", "") or ""
         # Index by full name and leading word (e.g. "반도체 (메모리/파운드리)" → "반도체")
-        for variant in {seg_name.lower(), seg_name.split("(")[0].strip().lower(), seg_name.split(" ")[0].lower()}:
+        for variant in {
+            seg_name.lower(),
+            seg_name.split("(")[0].strip().lower(),
+            seg_name.split(" ")[0].lower(),
+        }:
             if variant:
                 _name_to_code[variant] = seg_code
 
@@ -326,8 +330,11 @@ def load_profile(path: str) -> ValuationInput:
                     setattr(sc, attr_name, new_dict)
                     logger.info(
                         "[%s] scenario '%s' %s: remapped keys %s → %s",
-                        company.name, sc_code, attr_name,
-                        list(remapped.keys()), list(remapped.values()),
+                        company.name,
+                        sc_code,
+                        attr_name,
+                        list(remapped.keys()),
+                        list(remapped.values()),
                     )
                 if still_bad:
                     logger.warning(
@@ -345,8 +352,7 @@ def load_profile(path: str) -> ValuationInput:
     # caps any multiple exceeding min × 2.0.
     _SOTP_MAX_RATIO = 2.0
     _allow_wide_spread = bool(
-        raw.get("curated", False)
-        and raw.get("allow_wide_scenario_spread", False)
+        raw.get("curated", False) and raw.get("allow_wide_scenario_spread", False)
     )
     _scenario_spread_warnings: list[str] = []
     _scenario_multiples_clamped = False
@@ -723,7 +729,9 @@ def _raw_profile_for_gate(vi: ValuationInput, result: ValuationResult) -> dict:
     segments = {
         code: {
             **info,
-            "revenue": vi.segment_data.get(vi.base_year, {}).get(code, {}).get("revenue"),
+            "revenue": vi.segment_data.get(vi.base_year, {})
+            .get(code, {})
+            .get("revenue"),
             "multiple": vi.multiples.get(code),
         }
         for code, info in vi.segments.items()
@@ -734,9 +742,12 @@ def _raw_profile_for_gate(vi: ValuationInput, result: ValuationResult) -> dict:
         "generated": vi.generated,
         "curated": vi.curated,
         "segments": segments,
-        "optionality_flag": any(info.get("optionality") for info in vi.segments.values()),
+        "optionality_flag": any(
+            info.get("optionality") for info in vi.segments.values()
+        ),
         "peer_beta_snapshot": vi.peer_beta_snapshot.model_dump(mode="json")
-        if vi.peer_beta_snapshot else None,
+        if vi.peer_beta_snapshot
+        else None,
     }
 
 
@@ -804,11 +815,11 @@ def attach_gap_diagnostic(vi: ValuationInput, result: ValuationResult) -> None:
         return
 
     if result.dcf is None:
-        logger.warning("Reverse DCF diagnostic skipped: engine DCF result is unavailable")
+        logger.warning(
+            "Reverse DCF diagnostic skipped: engine DCF result is unavailable"
+        )
         return
-    if any(
-        info.get("method") in ("pbv", "pe") for info in vi.segments.values()
-    ):
+    if any(info.get("method") in ("pbv", "pe") for info in vi.segments.values()):
         logger.warning("Reverse DCF diagnostic skipped: equity-based SOTP segment")
         return
 
@@ -869,8 +880,7 @@ def _attach_reverse_rnpv(vi: ValuationInput, result: ValuationResult) -> None:
     )
 
     market_cap = (
-        market.market_price * vi.company.shares_outstanding
-        / vi.company.unit_multiplier
+        market.market_price * vi.company.shares_outstanding / vi.company.unit_multiplier
     )
     market_ev = market_cap + max(vi.net_debt, 0)
     model_ev = float(result.rnpv.enterprise_value) if result.rnpv else 0
@@ -997,10 +1007,14 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
 
     market_cap = price * shares / um
     # Trailing EPS: prefer fetched (diluted, continuing-ops) over model-derived.
-    eps = ri.trailing_eps if (ri and ri.trailing_eps is not None) else per_share(net_income, um, shares)
+    eps = (
+        ri.trailing_eps
+        if (ri and ri.trailing_eps is not None)
+        else per_share(net_income, um, shares)
+    )
     bvps = per_share(equity, um, shares)
 
-    industry = (vi.industry or company.industry or "")
+    industry = vi.industry or company.industry or ""
     financial = result.primary_method in ("ddm", "rim") or is_financial(industry)
     cyclical = any(kw in industry.lower() for kw in _CYCLICAL_KEYWORDS)
 
@@ -1032,13 +1046,32 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
     if dps is not None:
         m_dy = rm.dividend_yield(dps, price)
     elif ri and ri.dividend_yield is not None:
-        m_dy = rm.RelativeMetric("Div Yield", round(ri.dividend_yield, 2), rm.OK, "시장 데이터")
+        m_dy = rm.RelativeMetric(
+            "Div Yield", round(ri.dividend_yield, 2), rm.OK, "시장 데이터"
+        )
     if m_dy is not None:
         ratios.append(m_dy)
 
     div_y = m_dy.value if (m_dy and m_dy.value is not None) else 0.0
-    ratios.append(rm.peg(m_pe.value, growth_pct, is_financial=financial, is_cyclical=cyclical, growth_source=growth_source))
-    ratios.append(rm.pegy(m_pe.value, growth_pct, div_y, is_financial=financial, is_cyclical=cyclical, growth_source=growth_source))
+    ratios.append(
+        rm.peg(
+            m_pe.value,
+            growth_pct,
+            is_financial=financial,
+            is_cyclical=cyclical,
+            growth_source=growth_source,
+        )
+    )
+    ratios.append(
+        rm.pegy(
+            m_pe.value,
+            growth_pct,
+            div_y,
+            is_financial=financial,
+            is_cyclical=cyclical,
+            growth_source=growth_source,
+        )
+    )
 
     roe = (net_income / equity * 100) if equity > 0 else None
     payout = vi.rim_params.payout_ratio if vi.rim_params else None
@@ -1048,15 +1081,36 @@ def _build_relative_valuation(vi: ValuationInput, result: ValuationResult, wacc_
         jpe = rm.justified_pe(payout, just_g, ke)
         if jpe.is_meaningful and jpe.value > 0:
             v = rm.multiple_verdict("P/E", m_pe.value, jpe.value)
-            verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
+            verdicts.append(
+                RelVerdict(
+                    name=v.name,
+                    actual=v.actual,
+                    justified=v.justified,
+                    gap_pct=v.gap_pct,
+                    verdict=v.verdict,
+                    note=v.note,
+                )
+            )
     if roe is not None:
         jpb = rm.justified_pb(roe, just_g, ke)
         if jpb.is_meaningful and jpb.value > 0:
             v = rm.multiple_verdict("P/B", m_pb.value, jpb.value)
-            verdicts.append(RelVerdict(name=v.name, actual=v.actual, justified=v.justified, gap_pct=v.gap_pct, verdict=v.verdict, note=v.note))
+            verdicts.append(
+                RelVerdict(
+                    name=v.name,
+                    actual=v.actual,
+                    justified=v.justified,
+                    gap_pct=v.gap_pct,
+                    verdict=v.verdict,
+                    note=v.note,
+                )
+            )
 
     return RelativeValuation(
-        ratios=[RelMetric(name=m.name, value=m.value, status=m.status, note=m.note) for m in ratios],
+        ratios=[
+            RelMetric(name=m.name, value=m.value, status=m.status, note=m.note)
+            for m in ratios
+        ],
         verdicts=verdicts,
         growth_pct=growth_pct,
         growth_source=growth_source,
@@ -1218,8 +1272,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # Pre-resolve news drivers so the differentiation check sees
     # active_drivers contributions to growth_adj_pct / market_sentiment_pct.
     resolved_scenarios = {
-        code: resolve_drivers(sc, vi.news_drivers)
-        for code, sc in vi.scenarios.items()
+        code: resolve_drivers(sc, vi.news_drivers) for code, sc in vi.scenarios.items()
     }
     if _sotp_scenarios_undifferentiated(list(resolved_scenarios.values())):
         logger.warning(
@@ -1234,7 +1287,6 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     scenario_results = {}
     total_weighted = 0
     for code, sc in resolved_scenarios.items():
-
         # Per-scenario SOTP: recalculate if drivers are set
         needs_recalc = (
             sc.segment_ebitda
@@ -1746,9 +1798,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             logger.warning(
                 "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
-            sc_eq = (
-                ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
-            )
+            sc_eq = ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
 
         # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
         # for high-D/E financial companies where equity << net_debt.
@@ -1766,10 +1816,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         total_weighted += r.weighted
 
     # DDM base EV (for cross-validation): DDM equity + net_debt = EV
-    total_ev = (
-        ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
-        + vi.net_debt
-    )
+    total_ev = ddm_raw.equity_per_share * vi.valuation_shares // (um or 1) + vi.net_debt
 
     # Use DDM value directly when no scenarios are set
     if not scenario_results:
@@ -2333,8 +2380,7 @@ def _mc_raw_to_result(mc_raw, mc_input=None, include_dcf_tv: bool = False):
             )
         if include_dcf_tv:
             assumptions["WACC"] = (
-                f"Normal(mean={mc_input.wacc_mean:.1f}%, "
-                f"std={mc_input.wacc_std:.1f}%p)"
+                f"Normal(mean={mc_input.wacc_mean:.1f}%, std={mc_input.wacc_std:.1f}%p)"
             )
         assumptions["DLOM"] = (
             f"Normal(mean={mc_input.dlom_mean:.0f}%, std={mc_input.dlom_std:.0f}%), clipped 0-50%"

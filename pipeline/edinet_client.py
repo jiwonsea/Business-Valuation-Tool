@@ -99,7 +99,9 @@ def find_latest_document(
                 continue
             if doc.doc_type_code not in wanted_types:
                 continue
-            if best is None or (doc.submit_date or date.min) > (best.submit_date or date.min):
+            if best is None or (doc.submit_date or date.min) > (
+                best.submit_date or date.min
+            ):
                 best = doc
         if best is not None and best.doc_type_code == ANNUAL_DOC_TYPE:
             return best
@@ -147,19 +149,27 @@ def parse_xbrl_text(xml_text: str) -> dict[int, dict]:
         row = {
             "revenue": _first_fact(facts, year, FIELD_TAGS["revenue"], "duration"),
             "op": _first_fact(facts, year, FIELD_TAGS["op"], "duration"),
-            "net_income": _first_fact(facts, year, FIELD_TAGS["net_income"], "duration"),
+            "net_income": _first_fact(
+                facts, year, FIELD_TAGS["net_income"], "duration"
+            ),
             "assets": _first_fact(facts, year, FIELD_TAGS["assets"], "instant"),
-            "liabilities": _first_fact(facts, year, FIELD_TAGS["liabilities"], "instant"),
+            "liabilities": _first_fact(
+                facts, year, FIELD_TAGS["liabilities"], "instant"
+            ),
             "equity": _first_fact(facts, year, FIELD_TAGS["equity"], "instant"),
             "dep": _first_fact(facts, year, FIELD_TAGS["dep"], "duration"),
             "amort": _first_fact(facts, year, FIELD_TAGS["amort"], "duration"),
             "gross_borr": _first_fact(facts, year, FIELD_TAGS["gross_borr"], "instant"),
             "cash": _first_fact(facts, year, FIELD_TAGS["cash"], "instant"),
             "capex": abs(_first_fact(facts, year, FIELD_TAGS["capex"], "duration")),
-            "interest_expense": _first_fact(facts, year, FIELD_TAGS["interest_expense"], "duration"),
+            "interest_expense": _first_fact(
+                facts, year, FIELD_TAGS["interest_expense"], "duration"
+            ),
         }
         row["net_borr"] = row["gross_borr"] - row.pop("cash", 0)
-        row["de_ratio"] = round(row["gross_borr"] / row["equity"] * 100, 1) if row["equity"] else 0.0
+        row["de_ratio"] = (
+            round(row["gross_borr"] / row["equity"] * 100, 1) if row["equity"] else 0.0
+        )
         if any(row.get(key, 0) for key in ("revenue", "op", "net_income", "assets")):
             result[year] = row
     return result
@@ -193,11 +203,23 @@ FIELD_TAGS = {
         "NetAssets",
         "ShareholdersEquity",
     ],
-    "dep": ["DepreciationAndAmortisationIFRS", "DepreciationAndAmortization", "Depreciation"],
+    "dep": [
+        "DepreciationAndAmortisationIFRS",
+        "DepreciationAndAmortization",
+        "Depreciation",
+    ],
     "amort": ["AmortisationExpense", "AmortizationOfIntangibleAssets", "Amortization"],
-    "gross_borr": ["BondsAndBorrowingsIFRS", "InterestBearingDebt", "Borrowings", "BondsPayable"],
+    "gross_borr": [
+        "BondsAndBorrowingsIFRS",
+        "InterestBearingDebt",
+        "Borrowings",
+        "BondsPayable",
+    ],
     "cash": ["CashAndCashEquivalentsIFRS", "CashAndCashEquivalents", "CashAndDeposits"],
-    "capex": ["PurchaseOfPropertyPlantAndEquipment", "PaymentsForPurchaseOfPropertyPlantAndEquipment"],
+    "capex": [
+        "PurchaseOfPropertyPlantAndEquipment",
+        "PaymentsForPurchaseOfPropertyPlantAndEquipment",
+    ],
     "interest_expense": ["FinanceCostsIFRS", "InterestExpenses", "InterestExpense"],
 }
 
@@ -281,7 +303,9 @@ def _collect_facts(root, contexts: dict[str, dict[str, Any]]) -> list[dict[str, 
     return facts
 
 
-def _first_fact(facts: list[dict[str, Any]], year: int, tags: list[str], period_type: str) -> int:
+def _first_fact(
+    facts: list[dict[str, Any]], year: int, tags: list[str], period_type: str
+) -> int:
     tag_lowers = [tag.lower() for tag in tags]
     exact_candidates = []
     fuzzy_candidates = []
@@ -298,7 +322,12 @@ def _first_fact(facts: list[dict[str, Any]], year: int, tags: list[str], period_
     candidates = exact_candidates or fuzzy_candidates
     if not candidates:
         return 0
-    candidates.sort(key=lambda fact: (fact["context"].get("has_segment", False), -abs(fact["value"])))
+    candidates.sort(
+        key=lambda fact: (
+            fact["context"].get("has_segment", False),
+            -abs(fact["value"]),
+        )
+    )
     return int(candidates[0]["value"])
 
 

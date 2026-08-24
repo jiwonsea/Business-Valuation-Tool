@@ -88,10 +88,7 @@ def test_shrinkage_pulls_outliers_toward_mean() -> None:
 
 
 def test_shrinkage_zero_when_uniform() -> None:
-    obs = [
-        DriverWeightObservation(f"p{i}", "sotp", "A", "d", 0.5)
-        for i in range(5)
-    ]
+    obs = [DriverWeightObservation(f"p{i}", "sotp", "A", "d", 0.5) for i in range(5)]
     recs = shrink_weights(obs, tau=5.0)
     rec = recs[0]
     assert rec.eligible

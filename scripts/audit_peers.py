@@ -8,6 +8,7 @@ registry, which is a later P1 step).
 
 Usage: python scripts/audit_peers.py [--out docs/PEER_AUDIT_<date>.md]
 """
+
 import argparse
 import datetime as dt
 import glob
@@ -28,12 +29,22 @@ DEFUNCT = {
     "롯데칩스": "실존 반도체 기업 아님 (제과 브랜드 혼동 의심)",
 }
 # Product lines / brands that are not reporting entities.
-PRODUCT_LINE = re.compile(r"(arc graphics|geforce|radeon(?!\s*division)|ryzen|snapdragon(?!\s*ride)|playstation(?!\s*hardware))", re.I)
-DIVISION = re.compile(r"(division|사업부|부문|segment|\(.*(datacenter|data center|gaming|automotive|semiconductor|hardware|soc|graphics).*\))", re.I)
+PRODUCT_LINE = re.compile(
+    r"(arc graphics|geforce|radeon(?!\s*division)|ryzen|snapdragon(?!\s*ride)|playstation(?!\s*hardware))",
+    re.I,
+)
+DIVISION = re.compile(
+    r"(division|사업부|부문|segment|\(.*(datacenter|data center|gaming|automotive|semiconductor|hardware|soc|graphics).*\))",
+    re.I,
+)
 FUSION = re.compile(r"\S\s*/\s*\S")  # "A / B" composite names
 CLASS_SHARE = re.compile(r"class\s+[a-c]\b", re.I)  # legit "X / Class B" pattern
-ODD = re.compile(r"(협회|peers|기타|등\b|외\s*\d|industry average|sector average)", re.I)
-VINTAGE = re.compile(r"(20(1\d|2[0-4]))\D*(consensus|estimate|multiple|기준|추정)", re.I)
+ODD = re.compile(
+    r"(협회|peers|기타|등\b|외\s*\d|industry average|sector average)", re.I
+)
+VINTAGE = re.compile(
+    r"(20(1\d|2[0-4]))\D*(consensus|estimate|multiple|기준|추정)", re.I
+)
 
 
 def classify(name: str, notes: str):
@@ -60,7 +71,9 @@ def classify(name: str, notes: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=f"docs/PEER_AUDIT_{dt.date.today().isoformat()}.md")
+    ap.add_argument(
+        "--out", default=f"docs/PEER_AUDIT_{dt.date.today().isoformat()}.md"
+    )
     args = ap.parse_args()
 
     rows, totals = [], {"profiles": 0, "peers": 0}
@@ -77,9 +90,24 @@ def main():
             name = str(p.get("name", ""))
             flags = classify(name, str(p.get("notes", "")))
             if flags:
-                rows.append((path, name, f"{p.get('ev_ebitda', '?')}x [{p.get('segment_code', '?')}]", flags))
+                rows.append(
+                    (
+                        path,
+                        name,
+                        f"{p.get('ev_ebitda', '?')}x [{p.get('segment_code', '?')}]",
+                        flags,
+                    )
+                )
 
-    sev_order = ["PARSE_ERROR", "DEFUNCT", "NON_ENTITY", "FUSION", "PRODUCT_LINE", "DIVISION_EST", "STALE"]
+    sev_order = [
+        "PARSE_ERROR",
+        "DEFUNCT",
+        "NON_ENTITY",
+        "FUSION",
+        "PRODUCT_LINE",
+        "DIVISION_EST",
+        "STALE",
+    ]
     lines = [
         f"# 피어 전수 감사 리포트 ({dt.date.today().isoformat()})",
         "",
@@ -89,13 +117,19 @@ def main():
         "| 심각도 | 프로파일 | 피어 | 배수[SEG] | 사유 |",
         "|---|---|---|---|---|",
     ]
+
     def sev(r):
         return min(sev_order.index(f[0]) for f in r[3])
+
     for path, name, mult, flags in sorted(rows, key=sev):
         tag = " · ".join(f"**{k}** {v}" for k, v in flags)
         lines.append(f"| {flags[0][0]} | `{path}` | {name} | {mult} | {tag} |")
-    lines += ["", "심각도: DEFUNCT/NON_ENTITY/FUSION = 제거 후보 · PRODUCT_LINE = 제거 또는 모회사 치환 · "
-              "DIVISION_EST = notes 추정 명시 확인 · STALE = 배수 갱신 검토 (표시용, 밸류에이션 무영향).", ""]
+    lines += [
+        "",
+        "심각도: DEFUNCT/NON_ENTITY/FUSION = 제거 후보 · PRODUCT_LINE = 제거 또는 모회사 치환 · "
+        "DIVISION_EST = notes 추정 명시 확인 · STALE = 배수 갱신 검토 (표시용, 밸류에이션 무영향).",
+        "",
+    ]
     open(args.out, "w", encoding="utf-8", newline="").write("\r\n".join(lines))
     print(f"report -> {args.out} | flagged {len(rows)}/{totals['peers']}")
     return 0

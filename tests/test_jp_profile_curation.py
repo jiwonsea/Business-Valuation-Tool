@@ -13,9 +13,7 @@ def test_jp_curated_profiles_are_not_drafts_and_have_sane_dcf_cross_check() -> N
         vi = load_profile(profile)
         result = run_valuation(vi)
         dcf = next(
-            cv.per_share
-            for cv in result.cross_validations
-            if cv.method == "DCF (FCFF)"
+            cv.per_share for cv in result.cross_validations if cv.method == "DCF (FCFF)"
         )
         peer_values = [
             cv.per_share
@@ -36,7 +34,9 @@ def test_explicit_draft_profile_runs_but_is_quality_f(tmp_path: Path) -> None:
     raw = yaml.safe_load(Path("profiles/7203_t.yaml").read_text(encoding="utf-8"))
     raw["draft"] = True
     path = tmp_path / "draft_7203.yaml"
-    path.write_text(yaml.safe_dump(raw, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    path.write_text(
+        yaml.safe_dump(raw, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
 
     vi = load_profile(str(path))
     result = run_valuation(vi)

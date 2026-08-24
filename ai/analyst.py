@@ -573,7 +573,9 @@ class AIAnalyst:
                     prompt, system=SYSTEM_ANALYST, model=MODEL_HEAVY, max_tokens=4096
                 )
                 _set_cached(company_name, "research_note", {"note": note})
-                _save_analysis(company_name, "research_note", {"note": note}, self.model)
+                _save_analysis(
+                    company_name, "research_note", {"note": note}, self.model
+                )
                 emit("step_end", outcome="success")
                 return note
             except Exception:

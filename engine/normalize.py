@@ -234,9 +234,13 @@ class BetaResolution:
 
     def __post_init__(self) -> None:
         if self.status not in BetaStatus.__args__:
-            raise ValueError(f"BetaResolution.status가 계약에 없는 값입니다: {self.status!r}")
+            raise ValueError(
+                f"BetaResolution.status가 계약에 없는 값입니다: {self.status!r}"
+            )
         if self.consumed:
-            if self.normalized_value is None or not math.isfinite(self.normalized_value):
+            if self.normalized_value is None or not math.isfinite(
+                self.normalized_value
+            ):
                 raise ValueError(
                     f"BetaResolution(status={self.status!r}): 소비 상태에는 유한한 "
                     f"normalized_value가 필요합니다 (받은 값: {self.normalized_value!r})."
@@ -246,14 +250,20 @@ class BetaResolution:
                 f"BetaResolution(status={self.status!r}): 차단 상태에는 소비 가능한 값이 "
                 "존재할 수 없습니다. normalized_value는 None이어야 합니다."
             )
-        if self.diagnostic_value is not None and not math.isfinite(self.diagnostic_value):
+        if self.diagnostic_value is not None and not math.isfinite(
+            self.diagnostic_value
+        ):
             raise ValueError(
                 f"BetaResolution.diagnostic_value가 유효한 숫자가 아닙니다: {self.diagnostic_value!r}"
             )
         if self.peer_count < 0:
-            raise ValueError(f"BetaResolution.peer_count는 음수일 수 없습니다: {self.peer_count}")
+            raise ValueError(
+                f"BetaResolution.peer_count는 음수일 수 없습니다: {self.peer_count}"
+            )
         if not self.reason.strip():
-            raise ValueError("BetaResolution.reason은 필수입니다 (판정 근거 없는 판정은 감사 불가).")
+            raise ValueError(
+                "BetaResolution.reason은 필수입니다 (판정 근거 없는 판정은 감사 불가)."
+            )
 
     @property
     def consumed(self) -> bool:
@@ -295,7 +305,9 @@ def valid_capital_structure(de_ratio_pct: float, tax_rate_pct: float) -> bool:
     return hamada_denominator(de_ratio_pct, tax_rate_pct) > 0
 
 
-def unlever_beta(levered_beta: float, de_ratio_pct: float, tax_rate_pct: float) -> float:
+def unlever_beta(
+    levered_beta: float, de_ratio_pct: float, tax_rate_pct: float
+) -> float:
     """Hamada 언레버. **클램프하지 않는다** (§2.3).
 
     engine/wacc.py의 리레버 D/E 200% cap은 별도 방법론 정책이며 여기서 건드리지 않는다.
@@ -447,7 +459,11 @@ def resolve_beta(
         and peer_snapshot.members
     ):
         reference = next(
-            (m.observation for m in peer_snapshot.members if m.included and m.observation),
+            (
+                m.observation
+                for m in peer_snapshot.members
+                if m.included and m.observation
+            ),
             None,
         )
         if reference is not None:
@@ -482,7 +498,10 @@ def resolve_beta(
 
         # 금융업(equity basis): 언레버하지 않는다. wacc.py가 bu를 βL로 직접 쓴다.
         if target_basis == "equity":
-            if credible_peers and raw_bl > peer_median * BETA_REFERENCE_CONFLICT_MULTIPLE:
+            if (
+                credible_peers
+                and raw_bl > peer_median * BETA_REFERENCE_CONFLICT_MULTIPLE
+            ):
                 return blocked(
                     "blocked_reference_conflict",
                     f"raw βL {raw_bl:.3f} > peer median equity beta {peer_median:.3f} × "
@@ -515,7 +534,10 @@ def resolve_beta(
         target_bu = unlever_beta(raw_bl, de_ratio_pct, tax_rate_pct)
 
         # §2.3 중대 불일치 — **같은 basis끼리** 비교한다 (언레버 후 vs peer median unlevered).
-        if credible_peers and target_bu > peer_median * BETA_REFERENCE_CONFLICT_MULTIPLE:
+        if (
+            credible_peers
+            and target_bu > peer_median * BETA_REFERENCE_CONFLICT_MULTIPLE
+        ):
             return blocked(
                 "blocked_reference_conflict",
                 f"언레버 beta {target_bu:.3f} > peer median unlevered {peer_median:.3f} × "

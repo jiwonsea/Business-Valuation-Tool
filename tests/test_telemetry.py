@@ -17,6 +17,7 @@ def _isolate_api_guard_singleton():
     yield
     ApiGuard._reset_singleton()
 
+
 def _emit_many(path: str, count: int) -> None:
     import os
 
@@ -60,9 +61,7 @@ def test_empty_cached_dict_keeps_legacy_cache_miss_behavior(monkeypatch, tmp_pat
         lambda *args, **kwargs: {"fresh": True},
     )
 
-    result = analyst.AIAnalyst()._cached_json_step(
-        "Acme", "classify", lambda: "prompt"
-    )
+    result = analyst.AIAnalyst()._cached_json_step("Acme", "classify", lambda: "prompt")
     assert result == {"fresh": True}
     assert [event["event"] for event in _events(path)] == [
         "step_start",
@@ -134,9 +133,7 @@ def test_peers_batch_coverage_records_partial_response(monkeypatch, tmp_path):
     monkeypatch.setenv("BVT_TELEMETRY", "1")
     monkeypatch.setenv("BVT_TELEMETRY_PATH", str(path))
 
-    _emit_peers_batch_coverage(
-        "Acme", ["SEG1", "SEG2", "SEG3"], {"SEG1"}, False, 2
-    )
+    _emit_peers_batch_coverage("Acme", ["SEG1", "SEG2", "SEG3"], {"SEG1"}, False, 2)
 
     event = _events(path)[0]
     assert event["company"] == "Acme"
@@ -245,10 +242,14 @@ def test_fallback_marker_and_blocked_are_separate(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     monkeypatch.setattr(
-        llm_client, "_ask_openrouter", lambda *a, **k: (_ for _ in ()).throw(ApiGuardError("quota"))
+        llm_client,
+        "_ask_openrouter",
+        lambda *a, **k: (_ for _ in ()).throw(ApiGuardError("quota")),
     )
     monkeypatch.setattr(
-        llm_client, "_ask_anthropic", lambda *a, **k: "fallback" if is_fallback() else "wrong"
+        llm_client,
+        "_ask_anthropic",
+        lambda *a, **k: "fallback" if is_fallback() else "wrong",
     )
 
     with call_context("Acme", "scenarios"):

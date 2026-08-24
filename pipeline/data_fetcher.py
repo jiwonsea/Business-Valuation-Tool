@@ -12,7 +12,14 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from . import dart_client, dart_parser, edgar_client, edgar_parser, edinet_client, yahoo_finance
+from . import (
+    dart_client,
+    dart_parser,
+    edgar_client,
+    edgar_parser,
+    edinet_client,
+    yahoo_finance,
+)
 
 try:
     from . import yfinance_fetcher
@@ -64,7 +71,9 @@ class CompanyIdentity:
                 f"<{self.name} | KR | {self.legal_status} | corp_code={self.corp_code}>"
             )
         if self.market == "JP":
-            return f"<{self.name} | JP | ticker={self.ticker} | EDINET={self.edinet_code}>"
+            return (
+                f"<{self.name} | JP | ticker={self.ticker} | EDINET={self.edinet_code}>"
+            )
         status = " | OTC" if self.legal_status == "OTC" else ""
         return f"<{self.name} | US{status} | ticker={self.ticker} | CIK={self.cik}>"
 
@@ -362,7 +371,11 @@ class DataFetcher:
             try:
                 data = edinet_client.fetch_financials(sec_code, years)
                 if data:
-                    logger.info("EDINET financials fetched: %s (%d years)", identity.name, len(data))
+                    logger.info(
+                        "EDINET financials fetched: %s (%d years)",
+                        identity.name,
+                        len(data),
+                    )
                     return data
             except Exception as e:
                 logger.debug("EDINET financials failed, yfinance fallback: %s", e)
@@ -503,7 +516,9 @@ class DataFetcher:
                     result["shares_ordinary"] = shares
                     result["rel_metrics"] = _extract_rel_metrics(mkt)
             except Exception as e:
-                logger.debug("yfinance JP market data failed (%s): %s", identity.ticker, e)
+                logger.debug(
+                    "yfinance JP market data failed (%s): %s", identity.ticker, e
+                )
         return result
 
     def _fetch_kr_shares(self, identity: CompanyIdentity) -> dict:

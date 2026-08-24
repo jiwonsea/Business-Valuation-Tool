@@ -323,6 +323,7 @@ def valuation_ddm(ctx: Ctx):
         write_cell(ws, r, 3, note)
         r += 1
 
+
 def valuation_rim(ctx: Ctx):
     ws = ctx.wb.create_sheet("RIM Valuation")
     ws.sheet_properties.tabColor = "8E44AD"

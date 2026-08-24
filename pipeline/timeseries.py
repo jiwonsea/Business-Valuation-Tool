@@ -45,7 +45,10 @@ logger = logging.getLogger(__name__)
 # ── Stage-1 pilot scope (snapshot-backed only) ──
 
 PILOT_SNAPSHOT_PATH = (
-    Path(__file__).resolve().parent.parent / "research" / "pilot_v2" / "raw_payloads.json"
+    Path(__file__).resolve().parent.parent
+    / "research"
+    / "pilot_v2"
+    / "raw_payloads.json"
 )
 
 # KR ticker -> (snapshot company key, Yahoo Finance ticker). Stage-1 only:
@@ -147,9 +150,7 @@ def yfinance_price_provider(
     return _parse_history_frame(hist, start, end)
 
 
-def _resolve_price(
-    closes: dict[date, float], t: date
-) -> Optional[tuple[date, float]]:
+def _resolve_price(closes: dict[date, float], t: date) -> Optional[tuple[date, float]]:
     """Latest raw close on a trading day <= t within the 7-calendar-day window.
 
     Post-t prices are look-ahead and never considered (§7-4).
@@ -187,7 +188,10 @@ def load_pilot_snapshot(path: Optional[Path] = None) -> Optional[dict]:
     """
     p = path or PILOT_SNAPSHOT_PATH
     if not p.exists():
-        logger.warning("[band] 스냅샷 없음(%s) — 네트워크 수집은 하지 않습니다(§7-2). 밴드 생략.", p)
+        logger.warning(
+            "[band] 스냅샷 없음(%s) — 네트워크 수집은 하지 않습니다(§7-2). 밴드 생략.",
+            p,
+        )
         return None
     with open(p, encoding="utf-8") as f:
         return json.load(f)
@@ -208,9 +212,9 @@ def resolve_pilot_company(
     return None
 
 
-def extract_company_values(company_payload: dict) -> tuple[
-    list[ReportedFinancialValue], dict[int, tuple[str, date]]
-]:
+def extract_company_values(
+    company_payload: dict,
+) -> tuple[list[ReportedFinancialValue], dict[int, tuple[str, date]]]:
     """All ReportedFinancialValues for a snapshot company + per-FY filing time.
 
     Returns (pool, {fiscal_year: (rcept_no, available_at)}). Years whose

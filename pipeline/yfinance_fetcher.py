@@ -237,7 +237,10 @@ def fetch_financials(ticker: str, market: str = "US") -> dict[int, dict] | None:
         try:
             t = _get_ticker_obj(resolved)
             info = _ticker_info_cache.get(resolved, {})
-            currency = info.get("currency", "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"))
+            currency = info.get(
+                "currency",
+                "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"),
+            )
 
             inc = t.financials  # Income Statement
             bs = t.balance_sheet  # Balance Sheet
@@ -437,7 +440,10 @@ def fetch_market_data(ticker: str, market: str = "US") -> dict | None:
                 _dy_pct = None
             else:
                 _dy_pct = round(_dy * 100, 4) if abs(_dy) < 1 else round(_dy, 4)
-            currency = info.get("currency", "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"))
+            currency = info.get(
+                "currency",
+                "USD" if market == "US" else ("JPY" if market == "JP" else "KRW"),
+            )
             market_cap = round(market_cap_raw / 1_000_000) if market_cap_raw else 0
 
             # KR: yfinance often returns price but omits marketCap/shares.

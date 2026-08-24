@@ -443,8 +443,7 @@ def prompt_scenario_design(
             k: v for k, v in drivers_info.items() if k not in _STRUCTURED_FIELDS
         }
         effect_json = ", ".join(
-            f'"{k}": {example_driver_defaults.get(k, 1)}'
-            for k in scalar_effect_drivers
+            f'"{k}": {example_driver_defaults.get(k, 1)}' for k in scalar_effect_drivers
         )
         # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
         sotp_segment_block = ""

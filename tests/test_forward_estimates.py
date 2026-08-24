@@ -32,7 +32,9 @@ def test_fy27_maps_to_zero_year_not_plus_one(monkeypatch, tmp_path):
     assert len(result.source_hash) == 64
 
 
-def test_plus_one_year_is_not_promoted_to_unverified_fiscal_period(monkeypatch, tmp_path):
+def test_plus_one_year_is_not_promoted_to_unverified_fiscal_period(
+    monkeypatch, tmp_path
+):
     import pipeline.forward_estimates as module
     import yfinance
 

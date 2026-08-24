@@ -114,13 +114,17 @@ def main() -> int:
         if r not in good:
             print(f"      [skip] {r.ticker}: no EV/EBITDA returned")
     if not good:
-        print("[ERROR] no peer returned an EV/EBITDA. Check tickers / network / yfinance version.")
+        print(
+            "[ERROR] no peer returned an EV/EBITDA. Check tickers / network / yfinance version."
+        )
         return 1
 
     print(f"[2/3] Got {len(good)} peers:")
     for r in good:
         pe = r.trailing_pe or 0.0
-        print(f"      {r.ticker:<6} EV/EBITDA {r.ev_ebitda:>6.1f}x  P/E {pe:>6.1f}  EV/Rev {r.ev_revenue or 0:>5.1f}x")
+        print(
+            f"      {r.ticker:<6} EV/EBITDA {r.ev_ebitda:>6.1f}x  P/E {pe:>6.1f}  EV/Rev {r.ev_revenue or 0:>5.1f}x"
+        )
 
     profile["peers"] = [
         {
@@ -174,7 +178,9 @@ def main() -> int:
     backup = path.with_suffix(path.suffix + ".bak")
     shutil.copy2(path, backup)
     path.write_text(
-        yaml.safe_dump(profile, sort_keys=False, allow_unicode=True, default_flow_style=False),
+        yaml.safe_dump(
+            profile, sort_keys=False, allow_unicode=True, default_flow_style=False
+        ),
         encoding="utf-8",
     )
     print(f"\nWrote {path} (backup: {backup.name})")

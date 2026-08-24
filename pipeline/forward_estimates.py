@@ -31,7 +31,11 @@ def _atomic_json(path: Path, payload: dict) -> str:
 def _frame_rows(frame) -> dict[str, dict]:
     return {
         str(index): {
-            str(key): None if value != value else value.item() if hasattr(value, "item") else value
+            str(key): None
+            if value != value
+            else value.item()
+            if hasattr(value, "item")
+            else value
             for key, value in row.items()
         }
         for index, row in frame.iterrows()

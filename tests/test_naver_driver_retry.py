@@ -70,7 +70,9 @@ class TestBuildDriverRetry:
             lambda: pytest.fail("must not be called on clean launch"),
         )
         monkeypatch.setattr(
-            naver_poster.webdriver, "Chrome", lambda options=None, service=None: _FakeDriver()
+            naver_poster.webdriver,
+            "Chrome",
+            lambda options=None, service=None: _FakeDriver(),
         )
 
         driver = naver_poster._build_driver()

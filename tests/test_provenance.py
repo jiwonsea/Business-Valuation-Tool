@@ -91,7 +91,9 @@ def test_fully_provenanced_observation_is_accepted():
 
 def test_assumption_sources_rejects_declared_assumption_method():
     smuggled = {
-        "terminal_growth": Source(value=2.9, method="declared_assumption", source="FRED")
+        "terminal_growth": Source(
+            value=2.9, method="declared_assumption", source="FRED"
+        )
     }
 
     with pytest.raises(ValueError, match="관측치가 아닙니다"):
@@ -180,7 +182,9 @@ def test_fallback_constant_records_why_and_when():
     assert fb.stale is True  # stale until proven otherwise
 
 
-@pytest.mark.parametrize("over", [{"reason": ""}, {"reason": "  "}, {"ttl_days": 0}, {"ttl_days": -1}])
+@pytest.mark.parametrize(
+    "over", [{"reason": ""}, {"reason": "  "}, {"ttl_days": 0}, {"ttl_days": -1}]
+)
 def test_fallback_constant_rejects_undocumented_fallback(over):
     kw = dict(value=4.20, reason="timeout", as_of=date(2026, 7, 5), ttl_days=7)
     kw.update(over)

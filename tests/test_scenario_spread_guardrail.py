@@ -133,6 +133,4 @@ def test_kr_mid_band_profile_matches_explicit_million_unit(tmp_path):
     assert auto_result.weighted_value == explicit_result.weighted_value
     assert {
         code: result.post_dlom for code, result in auto_result.scenarios.items()
-    } == {
-        code: result.post_dlom for code, result in explicit_result.scenarios.items()
-    }
+    } == {code: result.post_dlom for code, result in explicit_result.scenarios.items()}

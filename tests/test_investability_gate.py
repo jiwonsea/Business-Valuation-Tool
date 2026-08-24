@@ -36,16 +36,26 @@ def test_clean_profile_is_investable() -> None:
 
 
 def test_dcf_far_from_peer_blocks() -> None:
-    report = evaluate_investability(_clean_inputs(dcf_value=200.0, peer_median_value=100.0))
+    report = evaluate_investability(
+        _clean_inputs(dcf_value=200.0, peer_median_value=100.0)
+    )
     assert report.investable is False
     assert any("DCF/peer-median" in b for b in report.blockers)
 
 
 def test_dcf_peer_band_edges() -> None:
-    assert evaluate_investability(_clean_inputs(dcf_value=70.0, peer_median_value=100.0)).investable
-    assert evaluate_investability(_clean_inputs(dcf_value=150.0, peer_median_value=100.0)).investable
-    assert not evaluate_investability(_clean_inputs(dcf_value=69.0, peer_median_value=100.0)).investable
-    assert not evaluate_investability(_clean_inputs(dcf_value=151.0, peer_median_value=100.0)).investable
+    assert evaluate_investability(
+        _clean_inputs(dcf_value=70.0, peer_median_value=100.0)
+    ).investable
+    assert evaluate_investability(
+        _clean_inputs(dcf_value=150.0, peer_median_value=100.0)
+    ).investable
+    assert not evaluate_investability(
+        _clean_inputs(dcf_value=69.0, peer_median_value=100.0)
+    ).investable
+    assert not evaluate_investability(
+        _clean_inputs(dcf_value=151.0, peer_median_value=100.0)
+    ).investable
 
 
 def test_optionality_does_not_widen_dcf_peer_band() -> None:
@@ -75,7 +85,9 @@ def test_grade_below_C_blocks() -> None:
 
 
 def test_segments_do_not_reconcile_blocks() -> None:
-    report = evaluate_investability(_clean_inputs(segment_revenues=[60.0, 50.0]))  # sum 110 vs 100
+    report = evaluate_investability(
+        _clean_inputs(segment_revenues=[60.0, 50.0])
+    )  # sum 110 vs 100
     assert report.investable is False
     assert any("segment sum" in b for b in report.blockers)
 
@@ -87,12 +99,16 @@ def test_sotp_without_segments_blocks() -> None:
 
 
 def test_placeholder_multiple_blocks() -> None:
-    report = evaluate_investability(_clean_inputs(placeholder_multiples=["cloud.multiple=10.0(default)"]))
+    report = evaluate_investability(
+        _clean_inputs(placeholder_multiples=["cloud.multiple=10.0(default)"])
+    )
     assert report.investable is False
 
 
 def test_todo_marker_blocks() -> None:
-    report = evaluate_investability(_clean_inputs(text="# TODO: Define business segments"))
+    report = evaluate_investability(
+        _clean_inputs(text="# TODO: Define business segments")
+    )
     assert report.investable is False
     assert any("TODO" in b for b in report.blockers)
 
@@ -148,7 +164,9 @@ def test_peer_beta_outlier_blocks_even_after_blume_consumption() -> None:
 
 
 def test_unavailable_peer_beta_judgement_warns_without_blocking_legacy() -> None:
-    report = evaluate_investability(_clean_inputs(peer_beta_status="insufficient_peers"))
+    report = evaluate_investability(
+        _clean_inputs(peer_beta_status="insufficient_peers")
+    )
     finding = next(f for f in report.findings if f.check == "peer_beta_range")
     assert finding.severity == "warn"
     assert report.investable is True
@@ -164,8 +182,12 @@ def test_from_profile_extracts_segments_and_placeholders() -> None:
     }
     text = "# TODO: Set appropriate EV/EBITDA multiple"
     gi = gate_inputs_from_profile(
-        raw, dcf_value=100.0, peer_median_value=100.0,
-        quality_grade="B", consolidated_revenue=100.0, text=text,
+        raw,
+        dcf_value=100.0,
+        peer_median_value=100.0,
+        quality_grade="B",
+        consolidated_revenue=100.0,
+        text=text,
     )
     assert gi.segment_revenues == [60.0, 40.0]
     assert any("b.multiple=10.0" in p for p in gi.placeholder_multiples)

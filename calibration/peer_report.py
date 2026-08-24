@@ -115,7 +115,9 @@ def emit_peer_report(
     if not peer_tickers:
         # Fallback: older profiles list peers as dicts with inline ev_ebitda. Skip
         # those here — Phase 3 expects explicit ticker symbols under `peer_tickers:`.
-        logger.warning("profile %s has no peer_tickers field — empty peer universe", profile_path)
+        logger.warning(
+            "profile %s has no peer_tickers field — empty peer universe", profile_path
+        )
 
     peers = fetch_peer_multiples(peer_tickers, fetcher=fetcher)
 
@@ -131,7 +133,9 @@ def emit_peer_report(
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / f"peer_deviation_{ticker}_{report_date.isoformat()}.md"
     out_path.write_text(
-        render_peer_report(deviations, ticker=ticker, peers=peers, report_date=report_date),
+        render_peer_report(
+            deviations, ticker=ticker, peers=peers, report_date=report_date
+        ),
         encoding="utf-8",
     )
     logger.info("Wrote peer deviation report: %s", out_path)
@@ -139,7 +143,9 @@ def emit_peer_report(
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     parser = argparse.ArgumentParser(description="Emit peer deviation markdown report.")
     parser.add_argument("--profile", required=True, help="Path to profiles/*.yaml")
     parser.add_argument("--output-dir", default=None)

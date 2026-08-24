@@ -12,10 +12,14 @@ from calibration.tuner import Recommendation
 
 
 def _scn(code: str, prob: float, post_dlom: int) -> ScenarioSnapshot:
-    return ScenarioSnapshot(code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom)
+    return ScenarioSnapshot(
+        code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom
+    )
 
 
-def _record(ticker: str, *, price_t12m: float, true_probs: tuple[int, int, int]) -> BacktestRecord:
+def _record(
+    ticker: str, *, price_t12m: float, true_probs: tuple[int, int, int]
+) -> BacktestRecord:
     bull_v, base_v, bear_v = 200, 100, 50
     p_bull, p_base, p_bear = true_probs
     # Force price to align with a planted prob mix so the search has a real signal.
@@ -30,7 +34,11 @@ def _record(ticker: str, *, price_t12m: float, true_probs: tuple[int, int, int])
         legal_status="listed",
         analysis_date=date(2024, 1, 1),
         predicted_value=100,
-        scenarios=[_scn("BEAR", 25, bear_v), _scn("BASE", 50, base_v), _scn("BULL", 25, bull_v)],
+        scenarios=[
+            _scn("BEAR", 25, bear_v),
+            _scn("BASE", 50, base_v),
+            _scn("BULL", 25, bull_v),
+        ],
         primary_method="dcf_primary",
         price_t12m=price_t12m,
     )
@@ -39,7 +47,10 @@ def _record(ticker: str, *, price_t12m: float, true_probs: tuple[int, int, int])
 def _planted_records(n: int, true_probs: tuple[int, int, int]) -> list[BacktestRecord]:
     p_bull, p_base, p_bear = true_probs
     price = (p_bull * 200 + p_base * 100 + p_bear * 50) / 100.0
-    return [_record(f"T{i}", price_t12m=price + i * 0.1, true_probs=true_probs) for i in range(n)]
+    return [
+        _record(f"T{i}", price_t12m=price + i * 0.1, true_probs=true_probs)
+        for i in range(n)
+    ]
 
 
 class TestEmitYamlDiff:
@@ -72,7 +83,9 @@ class TestEmitYamlDiff:
 
     def test_produces_at_least_one_stable_recommendation(self, tmp_path: Path):
         records = _planted_records(30, (40, 35, 25))
-        out = emit_yaml_diff(records, output_dir=tmp_path, report_date=date(2026, 4, 13))
+        out = emit_yaml_diff(
+            records, output_dir=tmp_path, report_date=date(2026, 4, 13)
+        )
         content = out.read_text(encoding="utf-8")
         # 30 records at t12m → stable bucket
         assert "| stable |" in content

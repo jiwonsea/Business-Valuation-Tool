@@ -69,7 +69,9 @@ def _role_means(record: BacktestRecord) -> dict[str, float | None]:
         if not members:
             out[role] = None
             continue
-        out[role] = sum(s.post_dlom for s in members) / len(members) * record.unit_multiplier
+        out[role] = (
+            sum(s.post_dlom for s in members) / len(members) * record.unit_multiplier
+        )
     return out
 
 
@@ -186,7 +188,9 @@ def search_sc_prob(bucket: Bucket) -> Recommendation:
     baseline_mape, baseline_coverage = _bucket_loss(bucket.records, baseline, horizon)
 
     if tier == "insufficient":
-        notes.append(f"sample size {n} below N≥{N_PRELIMINARY}; recommendation suppressed")
+        notes.append(
+            f"sample size {n} below N≥{N_PRELIMINARY}; recommendation suppressed"
+        )
         return Recommendation(
             bucket_key=(market, sector, horizon),
             n=n,
@@ -227,7 +231,9 @@ def search_sc_prob(bucket: Bucket) -> Recommendation:
 
     triple, best_mape, best_coverage = best
     recommended: dict[str, float] | None = {
-        "bull": float(triple[0]), "base": float(triple[1]), "bear": float(triple[2]),
+        "bull": float(triple[0]),
+        "base": float(triple[1]),
+        "bear": float(triple[2]),
     }
 
     if best_coverage is not None and best_coverage < 0.60:

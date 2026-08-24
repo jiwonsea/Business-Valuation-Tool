@@ -31,8 +31,7 @@ def main() -> int:
             "value": 143451,
             "kind": "company_reported_non_gaap_rollup",
             "formula": (
-                "FY2026 non-GAAP NI - Q1 FY2026 non-GAAP NI "
-                "+ Q1 FY2027 non-GAAP NI"
+                "FY2026 non-GAAP NI - Q1 FY2026 non-GAAP NI + Q1 FY2027 non-GAAP NI"
             ),
             "components": {
                 "annual": 116997,

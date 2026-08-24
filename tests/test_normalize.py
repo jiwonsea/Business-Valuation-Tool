@@ -91,7 +91,9 @@ def test_absent_components_leave_legacy_untouched():
 
 def test_rounding_noise_within_tolerance_still_reconciles():
     """단위 반올림($1M)만으로 전 종목을 차단하면 그건 대조가 아니라 잡음이다."""
-    nd = NetDebtComponents(**NVDA, net_debt=NVDA_NET_DEBT + NET_DEBT_RECONCILE_TOLERANCE)
+    nd = NetDebtComponents(
+        **NVDA, net_debt=NVDA_NET_DEBT + NET_DEBT_RECONCILE_TOLERANCE
+    )
     assert nd.reconciled is True
     assert resolve_net_debt(nd, legacy_net_debt=0).status == "consumed"
 
@@ -187,7 +189,9 @@ def test_edgar_returns_no_total_when_the_company_never_reported_one():
     assert nd.expected_net_debt() == NVDA_NET_DEBT  # 정의값은 계산된다
     assert nd.net_debt is None  # 그러나 독립 합계를 날조하지는 않는다
     assert nd.reconciled is None
-    assert resolve_net_debt(nd, legacy_net_debt=-4_767).status == "blocked_unreconcilable"
+    assert (
+        resolve_net_debt(nd, legacy_net_debt=-4_767).status == "blocked_unreconcilable"
+    )
 
 
 def test_edgar_double_counted_cash_pool_is_caught_by_the_gate():
@@ -314,7 +318,10 @@ def test_dart_restricted_cash_is_recorded_not_deducted():
 
 
 def test_dart_returns_none_when_no_balance_sheet_items():
-    assert dart_parser.extract_net_debt_components([_cf("사채의 발행", 1 * BILLION)]) is None
+    assert (
+        dart_parser.extract_net_debt_components([_cf("사채의 발행", 1 * BILLION)])
+        is None
+    )
 
 
 # ── 직렬화: reconciled는 위조할 수 없다 ──
@@ -369,7 +376,8 @@ def test_e2e_reconciled_components_replace_the_engine_input(tmp_path):
 def test_e2e_blocked_components_leave_the_engine_on_legacy(tmp_path):
     """reconciled is False -> 엔진은 legacy 값을 계속 쓴다 (정규화 미주장)."""
     path = _profile_with_components(
-        tmp_path, {**NVDA, "net_debt": -30_000}  # 정의 불일치
+        tmp_path,
+        {**NVDA, "net_debt": -30_000},  # 정의 불일치
     )
     vi = load_profile(path)
 
@@ -426,7 +434,9 @@ def test_run_valuation_gates_an_input_that_never_passed_load_profile(tmp_path):
 
     # legacy(30,346)와 정규화(-41,865)는 실제로 다른 결과를 낸다 — 대조군.
     legacy_only = ungated.model_copy(update={"net_debt_components": None})
-    assert run_valuation(legacy_only).weighted_value != run_valuation(gated).weighted_value
+    assert (
+        run_valuation(legacy_only).weighted_value != run_valuation(gated).weighted_value
+    )
 
 
 def test_run_valuation_does_not_consume_unreconciled_components(tmp_path):
@@ -501,7 +511,10 @@ def test_removing_the_ledger_after_consumption_rolls_back_to_legacy(tmp_path):
             "normalization_version": LEGACY_VERSION,
         }
     )
-    assert run_valuation(orphaned).weighted_value == run_valuation(legacy_only).weighted_value
+    assert (
+        run_valuation(orphaned).weighted_value
+        == run_valuation(legacy_only).weighted_value
+    )
 
 
 def test_version_claimed_without_a_ledger_is_demoted_to_legacy(tmp_path):
@@ -510,7 +523,9 @@ def test_version_claimed_without_a_ledger_is_demoted_to_legacy(tmp_path):
     raw = yaml.safe_load(src.read_text(encoding="utf-8"))
     raw["normalization_version"] = NORMALIZATION_VERSION  # 원장은 없다
     dst = tmp_path / "msft_forged_version.yaml"
-    dst.write_text(yaml.dump(raw, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    dst.write_text(
+        yaml.dump(raw, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
 
     vi = load_profile(str(dst))
 

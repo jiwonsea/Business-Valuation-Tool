@@ -41,7 +41,9 @@ def print_band_reports(
             verdict = band_verdict(band, cur)
             if cur is not None:
                 rank = percentile_rank(band, cur)
-                rank_txt = f", 역사적 백분위 {rank * 100:.0f}%" if rank is not None else ""
+                rank_txt = (
+                    f", 역사적 백분위 {rank * 100:.0f}%" if rank is not None else ""
+                )
                 print(f"  현재 {_fmt(cur)} → {verdict}{rank_txt}")
             else:
                 print("  현재 배수 없음 — 위치 판정 생략")
@@ -56,4 +58,6 @@ def print_band_reports(
                 )
             )
             print(f"  제외 FY{exc.fiscal_year}: {reason}")
-    print("\n* 최초 공시값·접수일 raw close 기준. 보간·소급 없음. 밸류에이션 입력 아님.")
+    print(
+        "\n* 최초 공시값·접수일 raw close 기준. 보간·소급 없음. 밸류에이션 입력 아님."
+    )

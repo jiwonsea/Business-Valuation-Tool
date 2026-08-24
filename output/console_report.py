@@ -78,10 +78,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     if multiple_changes:
         print("\n[Distress Haircut] 엔진 적용 배수")
         for code, original, applied in multiple_changes:
-            print(
-                f"  {seg_names.get(code, code)}: "
-                f"{original:.4g}x → {applied:.4g}x"
-            )
+            print(f"  {seg_names.get(code, code)}: {original:.4g}x → {applied:.4g}x")
 
     # Mixed SOTP determination (any non-default method: ev_revenue, pbv, pe)
     is_mixed = any(
@@ -203,9 +200,15 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             print(
                 f"  Listed Subsidiary Look-through: {hd.listed_subsidiary_lookthrough_value:>14,}{unit}"
             )
-            print(f"  Parent Access Discount:        -{hd.parent_access_discount:>14,}{unit}")
-            print(f"  Governance Discount:           -{hd.governance_discount:>14,}{unit}")
-            print(f"  Overhang Discount:             -{hd.overhang_discount:>14,}{unit}")
+            print(
+                f"  Parent Access Discount:        -{hd.parent_access_discount:>14,}{unit}"
+            )
+            print(
+                f"  Governance Discount:           -{hd.governance_discount:>14,}{unit}"
+            )
+            print(
+                f"  Overhang Discount:             -{hd.overhang_discount:>14,}{unit}"
+            )
             print(f"  Net Parent Equity:              {hd.net_equity_value:>14,}{unit}")
             for warning in hd.warnings:
                 print(f"  - {warning}")
@@ -224,8 +227,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                         if r.receivable_recovery_value
                         else ""
                     )
-                    +
-                    f"주당(DLOM후)={r.post_dlom:>8,}{currency_sym}, "
+                    + f"주당(DLOM후)={r.post_dlom:>8,}{currency_sym}, "
                     f"가중기여={r.weighted:>6,}{currency_sym}"
                 )
         print(f"\n  >> 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")
@@ -461,7 +463,13 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 shown = f"{m.value:.2f}{unit}"
             else:
                 shown = f"{m.value:.2f}x"
-            flag = "" if m.status == "ok" else f"  ⚠ {m.note}" if m.status == "caution" else f"  – {m.note}"
+            flag = (
+                ""
+                if m.status == "ok"
+                else f"  ⚠ {m.note}"
+                if m.status == "caution"
+                else f"  – {m.note}"
+            )
             print(f"{m.name:<12} {shown:>10}{flag}")
         if rv.verdicts:
             print("\n  [정당배수 대비 판정]")
@@ -469,12 +477,22 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 a = f"{v.actual:.2f}x" if v.actual is not None else "N/A"
                 j = f"{v.justified:.2f}x" if v.justified is not None else "N/A"
                 gap = f"{v.gap_pct:+.1f}%" if v.gap_pct is not None else "—"
-                print(f"  {v.name:<5} 실제 {a:>8} vs 정당 {j:>8} ({gap})  → {v.verdict}")
+                print(
+                    f"  {v.name:<5} 실제 {a:>8} vs 정당 {j:>8} ({gap})  → {v.verdict}"
+                )
         # Peer median comparison (aggregate EV/EBITDA across peer segments)
-        _peer_meds = [ps.ev_ebitda_median for ps in result.peer_stats if getattr(ps, "ev_ebitda_median", 0)]
-        _evb = next((m for m in rv.ratios if m.name == "EV/EBITDA" and m.value is not None), None)
+        _peer_meds = [
+            ps.ev_ebitda_median
+            for ps in result.peer_stats
+            if getattr(ps, "ev_ebitda_median", 0)
+        ]
+        _evb = next(
+            (m for m in rv.ratios if m.name == "EV/EBITDA" and m.value is not None),
+            None,
+        )
         if _peer_meds and _evb is not None:
             from statistics import median as _median
+
             _pm = _median(_peer_meds)
             if _evb.value > _pm * 1.1:
                 _rel = "피어 대비 프리미엄"
@@ -483,4 +501,6 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             else:
                 _rel = "피어 수준"
             # NOTE: 아래 print는 Codex write 시 mid-string truncation → 가시 의도대로 최소 복원 (2026-07-17). 추가 후속 라인이 있었다면 Codex 원자적 재기록 필요.
-            print(f"\n  [피어 median 대비] EV/EBITDA 자사 {_evb.value:.1f}x vs median {_pm:.1f}x → {_rel}")
+            print(
+                f"\n  [피어 median 대비] EV/EBITDA 자사 {_evb.value:.1f}x vs median {_pm:.1f}x → {_rel}"
+            )

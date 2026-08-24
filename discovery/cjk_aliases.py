@@ -50,9 +50,9 @@ CJK_ALIASES: dict[str, list[str]] = {
     "346010": ["에코프로비엠"],
 }
 
-assert all(
-    isinstance(k, str) for k in CJK_ALIASES
-), "CJK_ALIASES ticker keys must be str"
+assert all(isinstance(k, str) for k in CJK_ALIASES), (
+    "CJK_ALIASES ticker keys must be str"
+)
 
 
 def get_aliases(ticker: str | None) -> list[str]:

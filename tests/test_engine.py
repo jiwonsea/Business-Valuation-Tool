@@ -803,9 +803,7 @@ class TestSensitivity:
         assert 0.45 in row_range
         assert 0.70563 in col_range
         assert all(value > 0 for value in row_range + col_range)
-        base_row_values = {
-            row.value for row in rows if row.row_val == 0.45
-        }
+        base_row_values = {row.value for row in rows if row.row_val == 0.45}
         assert len(base_row_values) == len(col_range)
 
     def test_pbv_axis_rejects_legacy_pbv_pe_constant(self):
@@ -831,9 +829,7 @@ class TestSensitivity:
             )
 
     def test_multiples_sensitivity_requires_two_usable_axes(self):
-        alloc = {
-            "ONLY": DAAllocation(asset_share=100, da_allocated=0, ebitda=100)
-        }
+        alloc = {"ONLY": DAAllocation(asset_share=100, da_allocated=0, ebitda=100)}
         rows, row_range, col_range = sensitivity_multiples(
             alloc,
             {"ONLY": 5.0},
@@ -1048,12 +1044,8 @@ class TestPeerAnalysis:
         from schemas.models import PeerCompany
 
         peers = [
-            PeerCompany(
-                name="A", segment_code="GAME", ev_ebitda=8.0, ev_revenue=0.7
-            ),
-            PeerCompany(
-                name="B", segment_code="GAME", ev_ebitda=10.0, ev_revenue=0.5
-            ),
+            PeerCompany(name="A", segment_code="GAME", ev_ebitda=8.0, ev_revenue=0.7),
+            PeerCompany(name="B", segment_code="GAME", ev_ebitda=10.0, ev_revenue=0.5),
             PeerCompany(name="Missing", segment_code="GAME", ev_ebitda=12.0),
         ]
         stats = calc_peer_stats(
@@ -4872,6 +4864,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_equity_bridge_irr_variation_suppresses_warning(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [
             self._base_scenario("A", irr=5.0),
             self._base_scenario("B", irr=10.0),
@@ -4881,6 +4874,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_equity_bridge_cps_irr_variation_suppresses_warning(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [
             self._base_scenario("A", cps_irr=5.0),
             self._base_scenario("B", cps_irr=8.0),
@@ -4889,6 +4883,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_equity_bridge_rcps_irr_variation_suppresses_warning(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [
             self._base_scenario("A", rcps_irr=6.0),
             self._base_scenario("B", rcps_irr=12.0),
@@ -4897,6 +4892,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_segment_method_override_variation_suppresses_warning(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [
             self._base_scenario("A"),
             self._base_scenario("B", segment_method_override={"SEG1": "ev_revenue"}),
@@ -4906,6 +4902,7 @@ class TestSotpScenariosUndifferentiated:
     def test_resolved_active_drivers_suppress_warning(self):
         """active_drivers resolved → growth_adj_pct populated → EV-differentiated."""
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         drivers = [
             NewsDriver(
                 id="tariff",
@@ -4926,6 +4923,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_fully_undifferentiated_scenarios_warn(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [
             self._base_scenario("A"),
             self._base_scenario("B"),
@@ -4935,6 +4933,7 @@ class TestSotpScenariosUndifferentiated:
 
     def test_single_scenario_never_warns(self):
         from valuation_runner import _sotp_scenarios_undifferentiated
+
         scs = [self._base_scenario("A")]
         assert _sotp_scenarios_undifferentiated(scs) is False
 
@@ -4950,7 +4949,8 @@ class TestSotpScenariosUndifferentiated:
         with caplog.at_level(logging.WARNING, logger="valuation_runner"):
             run_valuation(vi)
         offenders = [
-            rec for rec in caplog.records
+            rec
+            for rec in caplog.records
             if "SOTP 시나리오" in rec.getMessage() and "미차등" in rec.getMessage()
         ]
         assert offenders == [], (
@@ -4963,12 +4963,15 @@ class TestInferValuationBucket:
     def test_holding_structure_wins_over_plain_operating(self):
         from engine.method_selector import infer_valuation_bucket
 
-        assert infer_valuation_bucket(
-            primary_method="sotp",
-            industry="holdings",
-            has_holding_structure=True,
-            has_optionality_segments=False,
-        ) == "holding_governance_sensitive"
+        assert (
+            infer_valuation_bucket(
+                primary_method="sotp",
+                industry="holdings",
+                has_holding_structure=True,
+                has_optionality_segments=False,
+            )
+            == "holding_governance_sensitive"
+        )
 
     def test_ddm_and_rim_map_to_financials(self):
         from engine.method_selector import infer_valuation_bucket

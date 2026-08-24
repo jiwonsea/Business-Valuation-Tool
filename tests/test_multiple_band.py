@@ -96,7 +96,9 @@ def _mk_obs(fy: int, multiple: float, label: str = "P/B") -> MultipleObservation
 
 class TestBandMath:
     def test_quantiles_inclusive_exact(self):
-        obs = [_mk_obs(2016 + i, v) for i, v in enumerate([0.8, 1.0, 1.1, 1.2, 1.5, 2.0])]
+        obs = [
+            _mk_obs(2016 + i, v) for i, v in enumerate([0.8, 1.0, 1.1, 1.2, 1.5, 2.0])
+        ]
         b = build_band("P/B", "X", obs)
         assert b.n_obs == 6
         assert b.band_min == 0.8 and b.band_max == 2.0
@@ -131,7 +133,9 @@ class TestBandMath:
         assert band_verdict(build_band("P/B", "X", obs), 1.0).startswith("이력 부족")
 
     def test_verdict_positions(self):
-        obs = [_mk_obs(2016 + i, v) for i, v in enumerate([0.8, 1.0, 1.1, 1.2, 1.5, 2.0])]
+        obs = [
+            _mk_obs(2016 + i, v) for i, v in enumerate([0.8, 1.0, 1.1, 1.2, 1.5, 2.0])
+        ]
         b = build_band("P/B", "X", obs)
         assert band_verdict(b, 0.5) == "역사적 밴드 하단 이탈"
         assert band_verdict(b, 2.5) == "역사적 밴드 상단 이탈"
@@ -155,7 +159,9 @@ class TestModelGuards:
     def test_price_after_t_is_look_ahead(self):
         ok = _mk_obs(2020, 1.0)
         with pytest.raises(ValueError, match="look-ahead"):
-            MultipleObservation(**{**ok.model_dump(), "price_date": ok.t + timedelta(days=1)})
+            MultipleObservation(
+                **{**ok.model_dump(), "price_date": ok.t + timedelta(days=1)}
+            )
 
     def test_price_search_window_is_seven_calendar_days(self):
         ok = _mk_obs(2020, 1.0)
@@ -197,7 +203,9 @@ class TestSnapshotPointInTime:
         restated = [
             v.value_mkrw
             for v in pool
-            if v.account == "revenue" and v.fiscal_year == 2020 and v.basis != "original"
+            if v.account == "revenue"
+            and v.fiscal_year == 2020
+            and v.basis != "original"
         ]
         assert restated == [LG_FY2020_REVENUE_RESTATED]
         assert LG_FY2020_REVENUE_RESTATED not in [o.denominator_mkrw for o in obs]
@@ -216,7 +224,9 @@ class TestSnapshotPointInTime:
         """§4 #6 — observation counts match pilot v2 mapping/missing rates."""
         expected = {"삼성전자": 10, "SK하이닉스": 10, "LG전자": 9}
         for name, n in expected.items():
-            bands = build_band_reports(company_name=name, price_provider=flat_provider())
+            bands = build_band_reports(
+                company_name=name, price_provider=flat_provider()
+            )
             assert bands is not None and len(bands) == 2
             for band in bands:
                 assert band.n_obs == n
@@ -239,7 +249,12 @@ class TestMechanicalExclusions:
         def no_price_provider(ticker, start, end):
             return {}, []
 
-        obs, exc = build_observations("P/B", "SK hynix", _hynix_payload(), pdata(_hynix_payload(), no_price_provider))
+        obs, exc = build_observations(
+            "P/B",
+            "SK hynix",
+            _hynix_payload(),
+            pdata(_hynix_payload(), no_price_provider),
+        )
         assert obs == []
         assert {e.price_reason for e in exc} == {
             PriceExclusionReason.NO_PRICE_WITHIN_WINDOW
@@ -252,7 +267,12 @@ class TestMechanicalExclusions:
             closes = {end + timedelta(days=i): 60_000.0 for i in range(1, 4)}
             return closes, []
 
-        obs, exc = build_observations("P/B", "SK hynix", _hynix_payload(), pdata(_hynix_payload(), post_t_only_provider))
+        obs, exc = build_observations(
+            "P/B",
+            "SK hynix",
+            _hynix_payload(),
+            pdata(_hynix_payload(), post_t_only_provider),
+        )
         assert obs == []
         assert {e.price_reason for e in exc} == {
             PriceExclusionReason.NO_PRICE_WITHIN_WINDOW
@@ -263,7 +283,12 @@ class TestMechanicalExclusions:
             closes, _ = flat_provider()(ticker, start, end)
             return closes, None
 
-        obs, exc = build_observations("P/B", "SK hynix", _hynix_payload(), pdata(_hynix_payload(), splits_unknown_provider))
+        obs, exc = build_observations(
+            "P/B",
+            "SK hynix",
+            _hynix_payload(),
+            pdata(_hynix_payload(), splits_unknown_provider),
+        )
         assert obs == []
         assert {e.price_reason for e in exc} == {
             PriceExclusionReason.SHARES_BASIS_MISMATCH
@@ -283,7 +308,9 @@ class TestMechanicalExclusions:
                 d += timedelta(days=1)
             return closes, [t_2019 - timedelta(days=1)]
 
-        obs, exc = build_observations("P/B", "SK hynix", payload, pdata(payload, split_provider))
+        obs, exc = build_observations(
+            "P/B", "SK hynix", payload, pdata(payload, split_provider)
+        )
         assert (2019, PriceExclusionReason.SPLIT_ADJUSTMENT_DETECTED) in [
             (e.fiscal_year, e.price_reason) for e in exc
         ]
@@ -302,9 +329,7 @@ class TestMechanicalExclusions:
         payload = {
             "financial": {"2020": {"items": items}},
             "stock": {
-                "2020": {
-                    "shares": {"shares_ordinary": 1000, "treasury_ordinary": 0}
-                }
+                "2020": {"shares": {"shares_ordinary": 1000, "treasury_ordinary": 0}}
             },
         }
         obs, exc = build_observations("P/B", "X", payload, pdata(payload))
@@ -470,7 +495,9 @@ class TestProviderContract:
 class TestLabelContract:
     def test_every_generated_label_passes_the_guard(self):
         for name in ("삼성전자", "SK하이닉스", "LG전자"):
-            for band in build_band_reports(company_name=name, price_provider=flat_provider()):
+            for band in build_band_reports(
+                company_name=name, price_provider=flat_provider()
+            ):
                 require_allowed_multiple_label(band.label)
                 for o in band.observations:
                     require_allowed_multiple_label(o.label)
@@ -484,7 +511,9 @@ class TestLabelContract:
     def test_console_output_has_no_forward_labels(self):
         from output.band_report import print_band_reports
 
-        bands = build_band_reports(company_name="SK하이닉스", price_provider=flat_provider())
+        bands = build_band_reports(
+            company_name="SK하이닉스", price_provider=flat_provider()
+        )
         buf = io.StringIO()
         with redirect_stdout(buf):
             print_band_reports(bands, {"P/B": 1.2})
@@ -504,9 +533,9 @@ class TestConsumptionBoundaries:
             p for p in (REPO / "engine").glob("*.py") if p.name != "multiple_band.py"
         ]
         for p in forbidden_consumers:
-            assert "multiple_band" not in p.read_text(encoding="utf-8", errors="ignore"), (
-                f"{p} must not consume the reporting-only band module"
-            )
+            assert "multiple_band" not in p.read_text(
+                encoding="utf-8", errors="ignore"
+            ), f"{p} must not consume the reporting-only band module"
 
     def test_band_engine_module_is_pure(self):
         src = (REPO / "engine" / "multiple_band.py").read_text(encoding="utf-8")
@@ -519,7 +548,11 @@ class TestConsumptionBoundaries:
         import ast as ast_mod
 
         legacy = {"parse_financial_statements", "ACCOUNT_MAP", "CAPEX_MAP"}
-        for rel in ("pipeline/timeseries.py", "output/band_report.py", "output/sheets/band.py"):
+        for rel in (
+            "pipeline/timeseries.py",
+            "output/band_report.py",
+            "output/sheets/band.py",
+        ):
             tree = ast_mod.parse((REPO / rel).read_text(encoding="utf-8"))
             idents: set[str] = set()
             for node in ast_mod.walk(tree):
@@ -554,15 +587,25 @@ class TestExcelOptIn:
 
         wb = Workbook()
         return Ctx(
-            vi=None, result=None, wb=wb, method="dcf", by=2025,
-            seg_names={}, seg_codes=[], cons={}, years=[], unit="백만원",
+            vi=None,
+            result=None,
+            wb=wb,
+            method="dcf",
+            by=2025,
+            seg_names={},
+            seg_codes=[],
+            cons={},
+            years=[],
+            unit="백만원",
             currency_sym="원",
         )
 
     def test_sheet_only_created_when_bands_passed(self):
         from output.sheets.band import sheet_historical_band
 
-        bands = build_band_reports(company_name="SK하이닉스", price_provider=flat_provider())
+        bands = build_band_reports(
+            company_name="SK하이닉스", price_provider=flat_provider()
+        )
         ctx = self._ctx()
         assert "Historical Band" not in ctx.wb.sheetnames
         sheet_historical_band(ctx, bands, {"P/B": 1.2})

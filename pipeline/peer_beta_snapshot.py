@@ -35,37 +35,48 @@ def collect_peer_beta_snapshot(
         elif not candidate.get("qualification_reason"):
             reason = "missing_industry_qualification_basis"
         if reason:
-            entries.append(PeerBetaEntry(
-                name=name, ticker=ticker, segment_code=segment_code,
-                qualified=False, exclusion_reason=reason,
-            ))
+            entries.append(
+                PeerBetaEntry(
+                    name=name,
+                    ticker=ticker,
+                    segment_code=segment_code,
+                    qualified=False,
+                    exclusion_reason=reason,
+                )
+            )
             continue
         try:
             observation, digest, _ = collect_beta_observation(
                 str(ticker), "US", analysis_date, benchmark=benchmark
             )
-            entries.append(PeerBetaEntry(
-                name=name,
-                ticker=str(ticker),
-                segment_code=segment_code,
-                qualified=True,
-                qualification_reason=str(candidate["qualification_reason"]),
-                raw_levered_beta=observation.raw_levered_beta,
-                blume_adjusted=observation.blume(),
-                window_start=observation.window_start,
-                window_end=observation.window_end,
-                frequency=observation.frequency,
-                benchmark=observation.benchmark,
-                observation_count=observation.observation_count,
-                calculation_method=observation.calculation_method,
-                source_hash=digest,
-            ))
+            entries.append(
+                PeerBetaEntry(
+                    name=name,
+                    ticker=str(ticker),
+                    segment_code=segment_code,
+                    qualified=True,
+                    qualification_reason=str(candidate["qualification_reason"]),
+                    raw_levered_beta=observation.raw_levered_beta,
+                    blume_adjusted=observation.blume(),
+                    window_start=observation.window_start,
+                    window_end=observation.window_end,
+                    frequency=observation.frequency,
+                    benchmark=observation.benchmark,
+                    observation_count=observation.observation_count,
+                    calculation_method=observation.calculation_method,
+                    source_hash=digest,
+                )
+            )
         except Exception as exc:
-            entries.append(PeerBetaEntry(
-                name=name, ticker=str(ticker), segment_code=segment_code,
-                qualified=False,
-                exclusion_reason=f"observation_failed:{type(exc).__name__}",
-            ))
+            entries.append(
+                PeerBetaEntry(
+                    name=name,
+                    ticker=str(ticker),
+                    segment_code=segment_code,
+                    qualified=False,
+                    exclusion_reason=f"observation_failed:{type(exc).__name__}",
+                )
+            )
     judgement = judge_company_beta(
         company_raw_bl,
         entries,

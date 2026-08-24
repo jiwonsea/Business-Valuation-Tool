@@ -19,14 +19,68 @@ from pipeline.forward_estimates import collect_forward_anchor
 from pipeline.peer_beta_snapshot import collect_peer_beta_snapshot
 
 PEERS = [
-    {"name": "Advanced Micro Devices", "ticker": "AMD", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "data-center GPU and accelerator competitor"},
-    {"name": "Broadcom", "ticker": "AVGO", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "AI networking and custom accelerator semiconductor peer"},
-    {"name": "Marvell Technology", "ticker": "MRVL", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "data-center networking and custom compute semiconductor peer"},
-    {"name": "Intel", "ticker": "INTC", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "data-center compute and accelerator competitor"},
-    {"name": "Arm Holdings", "ticker": "ARM", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "listed compute-architecture supplier exposed to data-center AI"},
-    {"name": "Qualcomm", "ticker": "QCOM", "market": "US", "segment_code": "MAIN", "core_business_match": True, "qualification_reason": "listed fabless compute semiconductor peer"},
-    {"name": "SK hynix", "ticker": "000660.KS", "market": "KR", "segment_code": "MAIN", "core_business_match": True},
-    {"name": "Samsung Electronics", "ticker": "005930.KS", "market": "KR", "segment_code": "MAIN", "core_business_match": True},
+    {
+        "name": "Advanced Micro Devices",
+        "ticker": "AMD",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "data-center GPU and accelerator competitor",
+    },
+    {
+        "name": "Broadcom",
+        "ticker": "AVGO",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "AI networking and custom accelerator semiconductor peer",
+    },
+    {
+        "name": "Marvell Technology",
+        "ticker": "MRVL",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "data-center networking and custom compute semiconductor peer",
+    },
+    {
+        "name": "Intel",
+        "ticker": "INTC",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "data-center compute and accelerator competitor",
+    },
+    {
+        "name": "Arm Holdings",
+        "ticker": "ARM",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "listed compute-architecture supplier exposed to data-center AI",
+    },
+    {
+        "name": "Qualcomm",
+        "ticker": "QCOM",
+        "market": "US",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+        "qualification_reason": "listed fabless compute semiconductor peer",
+    },
+    {
+        "name": "SK hynix",
+        "ticker": "000660.KS",
+        "market": "KR",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+    },
+    {
+        "name": "Samsung Electronics",
+        "ticker": "005930.KS",
+        "market": "KR",
+        "segment_code": "MAIN",
+        "core_business_match": True,
+    },
 ]
 
 
@@ -67,8 +121,12 @@ def main() -> int:
     temp_path = None
     try:
         with tempfile.NamedTemporaryFile(
-            "w", encoding="utf-8", newline="", suffix=".tmp",
-            dir=path.parent, delete=False,
+            "w",
+            encoding="utf-8",
+            newline="",
+            suffix=".tmp",
+            dir=path.parent,
+            delete=False,
         ) as handle:
             handle.write(refreshed)
             handle.flush()

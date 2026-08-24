@@ -62,9 +62,7 @@ def calc_scenario(
         adjustments.append(AdjustmentItem(name="기타 차감", value=eco_frontier))
     if receivable_recovery_value:
         adjustments.append(
-            AdjustmentItem(
-                name="매출채권 회수가치", value=-receivable_recovery_value
-            )
+            AdjustmentItem(name="매출채권 회수가치", value=-receivable_recovery_value)
         )
 
     # Equity bridge calculation

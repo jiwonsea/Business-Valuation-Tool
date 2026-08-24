@@ -247,8 +247,15 @@ def _cv_convergence_score(
     _MARKET_MULT_METHODS = {"P/E", "EV/Revenue", "P/BV"}
     _dcf_ratio = None
     if not trading:
-        _dcf = next((c for c in cross_vals if c.method == "DCF (FCFF)" and c.per_share > 0), None)
-        _mult_vals = [c.per_share for c in cross_vals if c.method in _MARKET_MULT_METHODS and c.per_share > 0]
+        _dcf = next(
+            (c for c in cross_vals if c.method == "DCF (FCFF)" and c.per_share > 0),
+            None,
+        )
+        _mult_vals = [
+            c.per_share
+            for c in cross_vals
+            if c.method in _MARKET_MULT_METHODS and c.per_share > 0
+        ]
         if _dcf is not None and len(_mult_vals) >= 2:
             _dcf_ratio = _dcf.per_share / statistics.median(_mult_vals)
             if _dcf_ratio < 0.7:
@@ -256,7 +263,13 @@ def _cv_convergence_score(
 
     considered = [cv for cv in cross_vals if cv.method not in exclude]
     if exclude and len(considered) >= 2:
-        _dropped = sorted({cv.method for cv in cross_vals if cv.method in exclude and cv.method not in trading})
+        _dropped = sorted(
+            {
+                cv.method
+                for cv in cross_vals
+                if cv.method in exclude and cv.method not in trading
+            }
+        )
         if trading:
             warnings.append(
                 "시장가 역산(trading) 배수 제외: "
@@ -665,7 +678,9 @@ def _scenario_consistency_score(
         spread_pts = 2
         warnings.append(f"시나리오 간 편차 과대 ({spread_pct:.0f}%)")
 
-    normalized_out = {str(code).lower(): result for code, result in scenarios_out.items()}
+    normalized_out = {
+        str(code).lower(): result for code, result in scenarios_out.items()
+    }
     bull = normalized_out.get("bull")
     base = normalized_out.get("base")
     paired = [
@@ -686,8 +701,7 @@ def _scenario_consistency_score(
         if bull_base_ratio < 1.2:
             spread_pts = min(spread_pts, 6)
             warnings.append(
-                "Bull/Base EV 스프레드 부족 "
-                f"({bull_base_ratio:.2f}x, 최소 1.20x 필요)"
+                f"Bull/Base EV 스프레드 부족 ({bull_base_ratio:.2f}x, 최소 1.20x 필요)"
             )
 
     if multiples_clamped:

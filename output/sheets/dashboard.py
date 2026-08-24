@@ -29,6 +29,7 @@ def _fmt_multiple(value: float) -> str:
         text += "0"
     return f"{text}x"
 
+
 CHART_ROWS = 18
 CHART_GAP = 3
 
@@ -273,7 +274,10 @@ def sheet_dashboard(ctx: Ctx):
                     "ev_revenue": "EV/Revenue",
                 }.get(method, "")
                 write_cell(
-                    ws, r, 1, f"{ctx.seg_names[code]} ({m_label} {_fmt_multiple(s.multiple)})"
+                    ws,
+                    r,
+                    1,
+                    f"{ctx.seg_names[code]} ({m_label} {_fmt_multiple(s.multiple)})",
                 )
                 write_cell(ws, r, 2, s.ev, fmt=NUM_FMT)
                 r += 1

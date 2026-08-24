@@ -110,7 +110,9 @@ def sheet_raw_data(ctx: Ctx):
         price_as_of = (
             mc.price_as_of
             if mc and mc.price_as_of
-            else co.analysis_date if price_source == "profile_as_of" else None
+            else co.analysis_date
+            if price_source == "profile_as_of"
+            else None
         )
         price_row = r
         r = _kv(
@@ -186,10 +188,22 @@ def sheet_raw_data(ctx: Ctx):
         r += 2
         write_cell(ws, r, 1, f"§3. 부문별 원천 ({ctx.by}년)", font=SECTION_FONT)
         write_cell(
-            ws, r, 4, "D&A는 유무형자산 비중으로 배분 → 부문 EBITDA 산출", font=NOTE_FONT
+            ws,
+            r,
+            4,
+            "D&A는 유무형자산 비중으로 배분 → 부문 EBITDA 산출",
+            font=NOTE_FONT,
         )
         r += 1
-        seg_hdr = ["부문", "코드", "매출", "영업이익", "유무형자산", "평가방법", "적용 멀티플"]
+        seg_hdr = [
+            "부문",
+            "코드",
+            "매출",
+            "영업이익",
+            "유무형자산",
+            "평가방법",
+            "적용 멀티플",
+        ]
         for c, h in enumerate(seg_hdr, 1):
             write_cell(ws, r, c, h)
         style_header_row(ws, r, len(seg_hdr))
@@ -219,7 +233,12 @@ def sheet_raw_data(ctx: Ctx):
     r += 1
     nd_row = r
     r = _kv(
-        ws, r, f"순차입금 ({ctx.unit})", ctx.vi.net_debt, fmt=NUM_FMT, note="EV → 지분가치 차감항목"
+        ws,
+        r,
+        f"순차입금 ({ctx.unit})",
+        ctx.vi.net_debt,
+        fmt=NUM_FMT,
+        note="EV → 지분가치 차감항목",
     )
     _add_name(ctx, "RD_NetDebt", nd_row, 2)
     r = _kv(ws, r, "보통주 발행주식수", co.shares_ordinary, fmt=NUM_FMT)
@@ -290,7 +309,11 @@ def sheet_raw_data(ctx: Ctx):
         r += 1
         write_cell(ws, r, 1, "§6. 시장 컨센서스 · 매크로", font=SECTION_FONT)
         write_cell(
-            ws, r, 3, "목표주가 → 역산 멀티플 검증에 사용 (Peer Comparison 참조)", font=NOTE_FONT
+            ws,
+            r,
+            3,
+            "목표주가 → 역산 멀티플 검증에 사용 (Peer Comparison 참조)",
+            font=NOTE_FONT,
         )
         r += 1
         if ms.target_mean:
@@ -331,7 +354,17 @@ def sheet_raw_data(ctx: Ctx):
             font=NOTE_FONT,
         )
         r += 1
-        ph = ["기업명", "티커", "부문코드", "EV/EBITDA", "P/E", "P/BV", "EV/Rev", "Beta", "출처"]
+        ph = [
+            "기업명",
+            "티커",
+            "부문코드",
+            "EV/EBITDA",
+            "P/E",
+            "P/BV",
+            "EV/Rev",
+            "Beta",
+            "출처",
+        ]
         for c, h in enumerate(ph, 1):
             write_cell(ws, r, c, h)
         style_header_row(ws, r, len(ph))
@@ -360,7 +393,7 @@ def sheet_raw_data(ctx: Ctx):
                 r + 1,
                 1,
                 f"이름정의: RD_PeerTable = A{peer_first}:I{r}  "
-                f"예) =MEDIAN(IF(INDEX(RD_PeerTable,0,3)=\"seg\",INDEX(RD_PeerTable,0,4)))",
+                f'예) =MEDIAN(IF(INDEX(RD_PeerTable,0,3)="seg",INDEX(RD_PeerTable,0,4)))',
                 font=NOTE_FONT,
             )
             r += 1

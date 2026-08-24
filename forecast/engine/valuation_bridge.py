@@ -60,9 +60,9 @@ def sensitivity_to_dcf(
     Args:
         model_tree: Full tree — weighted_annual FY1 EPS is used (read-only).
         consensus_eps_fy: Consensus EPS for the same fiscal year (None if absent).
-        fair_value_elasticity: EPS-delta -> fair-value-delta multiplier (YAML draft;
-            1.2 is a placeholder assuming roughly linear DCF response with small
-            terminal-value amplification).
+        fair_value_elasticity: EPS-delta -> fair-value-delta multiplier. The 1.2
+            fallback is a legacy placeholder; profile seeds should be measured from
+            recurring earnings-power shocks against per-share equity value.
         eps_half_width_pct: Below-OP EPS band half-width (EpsRiskBand.half_width_pct);
             when given, projects a fair-value band around the point delta.
         overlays: Date-tagged macro/timing/risk overlays (layer 2 only).
@@ -102,8 +102,12 @@ def sensitivity_to_dcf(
         if eps_half_width_pct is not None:
             low_eps = model_eps * (1 - eps_half_width_pct)
             high_eps = model_eps * (1 + eps_half_width_pct)
-            fair_value_delta_low = fair_value_elasticity * (low_eps - consensus_eps_fy) / consensus_eps_fy
-            fair_value_delta_high = fair_value_elasticity * (high_eps - consensus_eps_fy) / consensus_eps_fy
+            fair_value_delta_low = (
+                fair_value_elasticity * (low_eps - consensus_eps_fy) / consensus_eps_fy
+            )
+            fair_value_delta_high = (
+                fair_value_elasticity * (high_eps - consensus_eps_fy) / consensus_eps_fy
+            )
 
     return ValuationBridgeResult(
         fiscal_year=fy.fiscal_year,

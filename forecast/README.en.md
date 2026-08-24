@@ -76,6 +76,8 @@ See [docs/methodology.md](docs/methodology.md) for the full driver decomposition
 
 [**▶ Markdown report example**](reports/sk_hynix_20260624.md) — a preserved run with the forward forecast, consensus comparison, and backtest table.
 
+[**▶ Interactive HTML report example**](reports/sk_hynix_20260624.html) — download and open it in a local browser.
+
 > Images under `docs/assets/` are stable-named copies of the latest run's PNGs — after a live re-run, overwrite them with `reports/sk_hynix_YYYYMMDD_{fan,beat_miss}.png` to refresh.
 
 ## Backtest Performance

@@ -29,6 +29,18 @@ publish = [
 ]
 sentiment = ["transformers>=4.40,<5", "torch>=2.0,<3"]
 dev = ["pytest>=9.0.3,<10", "ruff>=0.4,<1"]
+# Keep shared requirements synchronized with the pipeline and db extras above.
+test = [
+    "pytest>=9.0.3,<10",
+    "httpx>=0.27,<1",
+    "beautifulsoup4>=4.12,<5",
+    "yfinance>=0.2.30,<1",
+    "defusedxml>=0.7,<1",
+    "portalocker>=2.0,<4",
+    "supabase>=2.0,<3",
+    "selenium>=4.20,<5",
+    "markdown>=3.5,<4",
+]
 forecast = [
     "pydantic>=2.6,<3",
     "yfinance>=0.2.40,<1",

@@ -76,6 +76,8 @@ flowchart LR
 
 [**▶ Markdown 리포트 예시**](reports/sk_hynix_20260624.md) — forward forecast, 콘센서스 비교, 백테스트 표를 포함한 보존 실행분입니다.
 
+[**▶ 인터랙티브 HTML 리포트 예시**](reports/sk_hynix_20260624.html) — 다운로드 후 로컬 브라우저에서 열 수 있습니다.
+
 > `docs/assets/` 이미지는 최신 실행분 PNG의 고정 이름 사본 — 라이브 재실행 후 `reports/sk_hynix_YYYYMMDD_{fan,beat_miss}.png`를 덮어쓰면 갱신.
 
 ## Backtest Performance

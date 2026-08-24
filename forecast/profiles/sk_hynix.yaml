@@ -326,7 +326,6 @@ valuation:
       profile: 962e8ec3651cf506d1bba59c36c8d153da22ac94
       dcf_engine: eda663e43b88e60ae8144f6bebea4e7d2d037e94
       wacc_engine: 35178d7898cefa94563f867043ae7e58838f7c87
-      schemas: eacbdc00ece7e2d52fb8ccd73eeaa538915b148d
     mapping: recurring_ni_level_shock
     measured_on: 2026-08-24
     shock_pcts: [-0.05, 0.05]

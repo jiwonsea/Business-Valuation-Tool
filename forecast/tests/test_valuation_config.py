@@ -73,6 +73,14 @@ def test_rejects_invalid_provenance_identifiers_and_extra_keys() -> None:
         ValuationConfig.model_validate(invalid)
 
 
+def test_rejects_removed_schemas_input_sha_key() -> None:
+    raw = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["raw"]["valuation"]
+    invalid = copy.deepcopy(raw)
+    invalid["elasticity_provenance"]["input_sha"]["schemas"] = "eacbdc00"
+    with pytest.raises(ValidationError):
+        ValuationConfig.model_validate(invalid)
+
+
 def test_rejects_invalid_shock_pair() -> None:
     raw = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["raw"]["valuation"]
     for pair in ([0.0, 0.05], [-0.05, 0.04]):

@@ -724,7 +724,6 @@ class ElasticityInputSha(BaseModel):
     profile: str
     dcf_engine: str
     wacc_engine: str
-    schemas: str
 
 
 class ElasticityProvenance(BaseModel):

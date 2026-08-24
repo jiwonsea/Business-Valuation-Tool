@@ -3,13 +3,24 @@
 import math
 
 from engine.relative_metrics import (
-    OK, CAUTION, NA,
-    trailing_pe, forward_pe, price_to_book, ev_ebitda, ev_sales, dividend_yield,
-    peg, pegy, justified_pe, justified_pb, multiple_verdict,
+    OK,
+    CAUTION,
+    NA,
+    trailing_pe,
+    price_to_book,
+    ev_ebitda,
+    ev_sales,
+    dividend_yield,
+    peg,
+    pegy,
+    justified_pe,
+    justified_pb,
+    multiple_verdict,
 )
 
 
 # ── Tier 1: current-price ratios ──────────────────────────────────────────
+
 
 def test_trailing_pe_basic():
     m = trailing_pe(price=100.0, eps=5.0)
@@ -45,6 +56,7 @@ def test_dividend_yield_zero_dividend_is_ok():
 
 
 # ── Tier 2: PEG / PEGY guardrails ─────────────────────────────────────────
+
 
 def test_peg_basic():
     m = peg(pe=20.0, growth_pct=10.0, growth_source="analyst")
@@ -89,6 +101,7 @@ def test_pegy_low_combined_denominator_na():
 
 # ── Tier 3: justified multiples ───────────────────────────────────────────
 
+
 def test_justified_pe_gordon():
     # payout 50%, g 3%, ke 9% -> 0.5*1.03/(0.09-0.03) = 8.583...
     m = justified_pe(payout_ratio_pct=50.0, growth_pct=3.0, ke_pct=9.0)
@@ -121,6 +134,7 @@ def test_justified_pb_non_positive_is_not_reported():
 
 
 # ── verdict ───────────────────────────────────────────────────────────────
+
 
 def test_verdict_undervalued():
     v = multiple_verdict("P/B", actual=1.0, justified=2.0)

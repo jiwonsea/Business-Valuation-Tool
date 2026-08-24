@@ -37,7 +37,9 @@ class Bucket:
         return len(self.records)
 
 
-def horizon_is_mature(record: BacktestRecord, horizon: str, today: date | None = None) -> bool:
+def horizon_is_mature(
+    record: BacktestRecord, horizon: str, today: date | None = None
+) -> bool:
     """True iff enough calendar time has elapsed for the horizon to be evaluable.
 
     A record is mature even if the price column is None — that signals a fetch
@@ -86,7 +88,9 @@ def bucket_records(
     return dict(buckets)
 
 
-def classify_scenarios(scenarios: list[ScenarioSnapshot]) -> dict[str, list[ScenarioSnapshot]]:
+def classify_scenarios(
+    scenarios: list[ScenarioSnapshot],
+) -> dict[str, list[ScenarioSnapshot]]:
     """Assign each scenario a role (bull/base/bear) by post_dlom value rank.
 
     Rules:

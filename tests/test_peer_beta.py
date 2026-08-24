@@ -80,7 +80,10 @@ def test_method_mismatch_fails_closed():
 
 def test_unqualified_peer_requires_reason():
     entry = PeerBetaEntry(
-        name="SK hynix", ticker="000660.KS", segment_code="SEG1",
-        qualified=False, exclusion_reason="benchmark_mismatch:^KS11",
+        name="SK hynix",
+        ticker="000660.KS",
+        segment_code="SEG1",
+        qualified=False,
+        exclusion_reason="benchmark_mismatch:^KS11",
     )
     assert entry.raw_levered_beta is None

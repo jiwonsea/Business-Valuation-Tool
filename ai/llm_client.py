@@ -319,22 +319,34 @@ def _ask_openrouter(
 
     if "error" in data:
         emit(
-            "attempt", provider="openrouter", model=model, attempt_no=attempt_no,
-            is_fallback=is_fallback(), input_tokens=None, output_tokens=None,
+            "attempt",
+            provider="openrouter",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
             cache_read_tokens=None,
             latency_ms=round((time.perf_counter() - started) * 1000),
-            outcome="http_error", est_cost_usd=None,
+            outcome="http_error",
+            est_cost_usd=None,
         )
         raise RuntimeError(f"OpenRouter error: {data['error']}")
 
     choices = data.get("choices")
     if not choices:
         emit(
-            "attempt", provider="openrouter", model=model, attempt_no=attempt_no,
-            is_fallback=is_fallback(), input_tokens=None, output_tokens=None,
+            "attempt",
+            provider="openrouter",
+            model=model,
+            attempt_no=attempt_no,
+            is_fallback=is_fallback(),
+            input_tokens=None,
+            output_tokens=None,
             cache_read_tokens=None,
             latency_ms=round((time.perf_counter() - started) * 1000),
-            outcome="parse_error", est_cost_usd=None,
+            outcome="parse_error",
+            est_cost_usd=None,
         )
         raise RuntimeError(f"OpenRouter returned empty choices: {data}")
 
@@ -393,7 +405,11 @@ def ask(
             ApiGuardError,
         ) as e:
             if isinstance(e, ApiGuardError):
-                emit_blocked("openrouter", model or _OPENROUTER_DEFAULT_MODEL, _blocked_outcome(e))
+                emit_blocked(
+                    "openrouter",
+                    model or _OPENROUTER_DEFAULT_MODEL,
+                    _blocked_outcome(e),
+                )
             # Fallback to Anthropic when OpenRouter fails or circuit is open
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
@@ -404,7 +420,9 @@ def ask(
                             prompt, system, anthropic_model, max_tokens, temperature
                         )
                 except ApiGuardError as fallback_err:
-                    emit_blocked("anthropic", anthropic_model, _blocked_outcome(fallback_err))
+                    emit_blocked(
+                        "anthropic", anthropic_model, _blocked_outcome(fallback_err)
+                    )
                     raise fallback_err from e
                 except Exception as fallback_err:
                     raise fallback_err from e
@@ -412,7 +430,9 @@ def ask(
     else:
         anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
         try:
-            return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature)
+            return _ask_anthropic(
+                prompt, system, anthropic_model, max_tokens, temperature
+            )
         except ApiGuardError as exc:
             emit_blocked("anthropic", anthropic_model, _blocked_outcome(exc))
             raise
@@ -435,9 +455,18 @@ def ask_structured(
             return _ask_openrouter(
                 prompt, system, model, max_tokens, temperature=0, json_mode=True
             )
-        except (httpx.HTTPError, httpx.TimeoutException, RuntimeError, ApiGuardError) as e:
+        except (
+            httpx.HTTPError,
+            httpx.TimeoutException,
+            RuntimeError,
+            ApiGuardError,
+        ) as e:
             if isinstance(e, ApiGuardError):
-                emit_blocked("openrouter", model or _OPENROUTER_DEFAULT_MODEL, _blocked_outcome(e))
+                emit_blocked(
+                    "openrouter",
+                    model or _OPENROUTER_DEFAULT_MODEL,
+                    _blocked_outcome(e),
+                )
             if os.getenv("ANTHROPIC_API_KEY"):
                 logger.warning("OpenRouter failed (%s) — falling back to Anthropic", e)
                 anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
@@ -447,12 +476,16 @@ def ask_structured(
                             prompt, system, anthropic_model, max_tokens, temperature=0
                         )
                 except ApiGuardError as fallback_err:
-                    emit_blocked("anthropic", anthropic_model, _blocked_outcome(fallback_err))
+                    emit_blocked(
+                        "anthropic", anthropic_model, _blocked_outcome(fallback_err)
+                    )
                     raise fallback_err from e
             raise
     anthropic_model = model or _ANTHROPIC_DEFAULT_MODEL
     try:
-        return _ask_anthropic(prompt, system, anthropic_model, max_tokens, temperature=0)
+        return _ask_anthropic(
+            prompt, system, anthropic_model, max_tokens, temperature=0
+        )
     except ApiGuardError as exc:
         emit_blocked("anthropic", anthropic_model, _blocked_outcome(exc))
         raise

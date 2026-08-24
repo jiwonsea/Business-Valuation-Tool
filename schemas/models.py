@@ -77,9 +77,16 @@ class PeerBetaEntry(BaseModel):
     @model_validator(mode="after")
     def qualification_contract(self):
         observed = (
-            "ticker", "raw_levered_beta", "blume_adjusted", "window_start",
-            "window_end", "frequency", "benchmark", "observation_count",
-            "calculation_method", "source_hash",
+            "ticker",
+            "raw_levered_beta",
+            "blume_adjusted",
+            "window_start",
+            "window_end",
+            "frequency",
+            "benchmark",
+            "observation_count",
+            "calculation_method",
+            "source_hash",
         )
         if self.qualified and any(getattr(self, field) is None for field in observed):
             raise ValueError("qualified peer beta entry has incomplete provenance")
@@ -92,8 +99,11 @@ class PeerBetaEntry(BaseModel):
 
 class PeerBetaJudgement(BaseModel):
     status: Literal[
-        "validated", "outlier_high", "outlier_low",
-        "insufficient_peers", "method_mismatch",
+        "validated",
+        "outlier_high",
+        "outlier_low",
+        "insufficient_peers",
+        "method_mismatch",
         "degenerate_distribution",
     ]
     company_raw_bl: float
@@ -155,7 +165,6 @@ class ShareState(BaseModel):
         return max(self.shares_ordinary - self.treasury_shares, 1)
 
 
-
 class CompanyProfile(BaseModel):
     name: str
     former_name: Optional[str] = None
@@ -194,7 +203,9 @@ class CompanyProfile(BaseModel):
         treasury = self.treasury_shares
         contains_derived = False
 
-        for action in sorted(self.corporate_actions, key=lambda item: item.effective_date):
+        for action in sorted(
+            self.corporate_actions, key=lambda item: item.effective_date
+        ):
             if action.effective_date > as_of:
                 break
             if action.kind in {"split", "reverse_split"}:
@@ -251,9 +262,13 @@ class CompanyProfile(BaseModel):
             )
         state = self.share_state_at(self.analysis_date)
         if state.treasury_shares < 0 or state.treasury_shares > state.shares_ordinary:
-            raise ValueError("corporate actions produce an invalid treasury-share balance")
+            raise ValueError(
+                "corporate actions produce an invalid treasury-share balance"
+            )
         if state.shares_ordinary <= 0 or state.shares_total <= 0:
-            raise ValueError("corporate actions produce a non-positive issued-share balance")
+            raise ValueError(
+                "corporate actions produce a non-positive issued-share balance"
+            )
         expected_multiplier = {
             "원": 1,
             "천원": 1_000,
@@ -264,7 +279,10 @@ class CompanyProfile(BaseModel):
             "$B": 1_000_000_000,
             "百万円": 1_000_000,
         }.get(self.currency_unit)
-        if expected_multiplier is not None and self.unit_multiplier != expected_multiplier:
+        if (
+            expected_multiplier is not None
+            and self.unit_multiplier != expected_multiplier
+        ):
             raise ValueError(
                 f"currency_unit={self.currency_unit!r} requires "
                 f"unit_multiplier={expected_multiplier:,}, got {self.unit_multiplier:,}"
@@ -1009,7 +1027,9 @@ class PeerSegmentStats(BaseModel):
     applied_multiple: float = 0.0  # Actually applied multiple
     # ── Applied-multiple provenance (why THIS multiple) ──
     premium_pct: float = 0.0  # applied vs median, % (+premium / -discount)
-    band_position: str = ""  # "Q1 미만" | "Q1~중앙값" | "중앙값~Q3" | "Q3 초과" | "레인지 밖"
+    band_position: str = (
+        ""  # "Q1 미만" | "Q1~중앙값" | "중앙값~Q3" | "Q3 초과" | "레인지 밖"
+    )
     rationale: str = ""  # Rule-based justification; AI rationale overrides when present
 
 
@@ -1372,7 +1392,9 @@ class ValuationResult(BaseModel):
     rnpv: Optional[RNPVValuationResult] = None
     holding_discount: Optional[HoldingDiscountBridge] = None
     multiples_primary: Optional[MultiplesResult] = None
-    relative_valuation: Optional[RelativeValuation] = None  # Diagnostic ratios (P/E, P/B, PEG, justified)
+    relative_valuation: Optional[RelativeValuation] = (
+        None  # Diagnostic ratios (P/E, P/B, PEG, justified)
+    )
     cross_validations: list[CrossValidationItem] = []
     peer_stats: list[PeerSegmentStats] = []
     monte_carlo: Optional[MonteCarloResult] = None

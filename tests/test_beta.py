@@ -143,7 +143,9 @@ def peer_snapshot(
     return BetaPeerSnapshot(**kw)
 
 
-def industry_entry(unlevered: float = 1.05, as_of: date = date(2026, 1, 5), **over) -> IndustryBetaEntry:
+def industry_entry(
+    unlevered: float = 1.05, as_of: date = date(2026, 1, 5), **over
+) -> IndustryBetaEntry:
     kw = dict(
         source=Source(
             value=unlevered,
@@ -239,7 +241,9 @@ def test_non_finite_peer_beta_never_enters_the_median():
             + [
                 BetaPeerMember.model_construct(
                     legal_entity_id="LEI-NAN",
-                    ticker="NAN", observation=beta_obs(1.0), unlevered_beta=float("nan")
+                    ticker="NAN",
+                    observation=beta_obs(1.0),
+                    unlevered_beta=float("nan"),
                 )
             ]
         }
@@ -254,7 +258,9 @@ def test_non_finite_peer_beta_never_enters_the_median():
 def test_yfinance_info_beta_cannot_be_expressed_as_an_observation():
     with pytest.raises(ValidationError):
         BetaObservation(  # type: ignore[call-arg]
-            equity_beta=Source(value=1.66, source="yfinance", url="https://x", as_of=TODAY)
+            equity_beta=Source(
+                value=1.66, source="yfinance", url="https://x", as_of=TODAY
+            )
         )
 
 
@@ -274,7 +280,9 @@ def test_window_must_be_ordered():
 def test_declared_assumption_cannot_masquerade_as_a_beta_observation():
     with pytest.raises(ValidationError):
         beta_obs(
-            equity_beta=Source(value=1.2, source="yfinance", method="declared_assumption")
+            equity_beta=Source(
+                value=1.2, source="yfinance", method="declared_assumption"
+            )
         )
 
 
@@ -313,7 +321,10 @@ def test_listed_consumes_verified_raw_beta_via_hamada():
 def test_listed_without_provenance_is_blocked_and_never_substituted():
     """default_bu 상수 대체 금지. 차단 결과에는 소비 가능한 값이 아예 없다."""
     res = resolve_beta(
-        evaluation_date=TODAY, is_listed=True, observation=None, legacy_unlevered_beta=0.75
+        evaluation_date=TODAY,
+        is_listed=True,
+        observation=None,
+        legacy_unlevered_beta=0.75,
     )
     assert res.status == "blocked_no_provenance"
     assert res.publishable is False
@@ -340,7 +351,9 @@ def test_conflict_is_judged_on_unlevered_basis_not_levered_vs_unlevered():
     res = resolve_beta(
         evaluation_date=TODAY,
         is_listed=True,
-        observation=beta_obs(1.60),  # 1.60 > 0.925 × 1.5 = 1.3875 (levered 기준이면 충돌)
+        observation=beta_obs(
+            1.60
+        ),  # 1.60 > 0.925 × 1.5 = 1.3875 (levered 기준이면 충돌)
         de_ratio_pct=100.0,
         tax_rate_pct=25.0,
         peer_snapshot=snap,
@@ -417,7 +430,9 @@ def test_financial_conflict_is_judged_against_equity_basis_peers():
         is_listed=True,
         target_basis="equity",
         observation=beta_obs(2.00),
-        peer_snapshot=peer_snapshot([0.9, 1.0, 1.1, 1.2], basis="equity"),  # median 1.05
+        peer_snapshot=peer_snapshot(
+            [0.9, 1.0, 1.1, 1.2], basis="equity"
+        ),  # median 1.05
     )
     assert res.status == "blocked_reference_conflict"  # 2.00 > 1.05 x 1.5
 
@@ -507,7 +522,9 @@ def test_industry_table_without_a_reference_date_is_unusable():
 
 def test_unlisted_with_no_peers_and_no_table_is_blocked_not_defaulted():
     """SK에코플랜트의 현재 상태 — 상수 0.75로 채우지 않는다."""
-    res = resolve_beta(evaluation_date=TODAY, is_listed=False, legacy_unlevered_beta=0.75)
+    res = resolve_beta(
+        evaluation_date=TODAY, is_listed=False, legacy_unlevered_beta=0.75
+    )
     assert res.status == "blocked_no_reference"
     assert res.normalized_value is None
     assert res.diagnostic_value == 0.75
@@ -523,7 +540,9 @@ def test_industry_table_value_has_a_single_source_of_truth():
 
     with pytest.raises(ValidationError):
         industry_entry(
-            source=Source(value="1.05", source="Damodaran", url="https://x", as_of=TODAY)
+            source=Source(
+                value="1.05", source="Damodaran", url="https://x", as_of=TODAY
+            )
         )
 
 
@@ -544,7 +563,9 @@ def test_peer_snapshot_median_is_deterministic_and_derived_not_stored():
 
 def test_excluded_peers_need_a_reason_and_leave_the_median():
     with pytest.raises(ValidationError):
-        BetaPeerMember(legal_entity_id="LEI-X", ticker="X", observation=beta_obs(), included=False)
+        BetaPeerMember(
+            legal_entity_id="LEI-X", ticker="X", observation=beta_obs(), included=False
+        )
 
     snap = peer_snapshot([0.8, 0.9, 1.0, 1.1])
     excluded = snap.model_copy(
@@ -617,7 +638,9 @@ def test_blocked_resolutions_expose_no_publishable_value(res: BetaResolution):
     assert res.publishable is False
     assert res.normalized_value is None
     assert res.value_for("publish") is None  # publish 경계에서는 값이 나오지 않는다
-    assert res.value_for("diagnostic") == 0.7  # 진단 경계에서만 명시적으로 legacy를 고른다
+    assert (
+        res.value_for("diagnostic") == 0.7
+    )  # 진단 경계에서만 명시적으로 legacy를 고른다
     assert res.reason
 
 
@@ -630,7 +653,9 @@ def test_consumed_resolution_serves_the_same_value_to_both_modes():
         tax_rate_pct=25.0,
         legacy_unlevered_beta=0.75,
     )
-    assert res.value_for("publish") == res.value_for("diagnostic") == res.normalized_value
+    assert (
+        res.value_for("publish") == res.value_for("diagnostic") == res.normalized_value
+    )
 
 
 def test_engine_gate_is_pure_no_wall_clock():
@@ -664,7 +689,10 @@ def test_future_dated_peer_snapshot_is_blocked():
     snap = peer_snapshot([0.8, 0.9, 1.0, 1.1], as_of=date(2027, 1, 1))
     assert snap.freshness(TODAY) == "future"
     res = resolve_beta(
-        evaluation_date=TODAY, is_listed=False, peer_snapshot=snap, legacy_unlevered_beta=0.75
+        evaluation_date=TODAY,
+        is_listed=False,
+        peer_snapshot=snap,
+        legacy_unlevered_beta=0.75,
     )
     assert res.status == "blocked_invalid_peer_snapshot"
     assert res.normalized_value is None
@@ -684,26 +712,37 @@ def test_stale_peer_snapshot_is_blocked():
 
 def test_peer_snapshot_at_the_age_limit_is_still_fresh():
     snap = peer_snapshot(
-        [0.8, 0.9, 1.0, 1.1], as_of=TODAY - timedelta(days=BETA_PEER_SNAPSHOT_MAX_AGE_DAYS)
+        [0.8, 0.9, 1.0, 1.1],
+        as_of=TODAY - timedelta(days=BETA_PEER_SNAPSHOT_MAX_AGE_DAYS),
     )
     assert snap.freshness(TODAY) == "fresh"
-    assert resolve_beta(evaluation_date=TODAY, is_listed=False, peer_snapshot=snap).status == (
-        "consumed_peer_median"
-    )
+    assert resolve_beta(
+        evaluation_date=TODAY, is_listed=False, peer_snapshot=snap
+    ).status == ("consumed_peer_median")
 
 
 def test_derived_unlevered_beta_cannot_be_fabricated():
     """블로커 2: unlevered_beta는 저장 필드가 아니다 — 99.0을 써넣을 자리가 없다."""
     assert "unlevered_beta" not in BetaPeerMember.model_fields
     with pytest.raises(ValidationError):
-        BetaPeerMember(legal_entity_id="LEI-X", ticker="X", observation=beta_obs(1.0), unlevered_beta=99.0)
+        BetaPeerMember(
+            legal_entity_id="LEI-X",
+            ticker="X",
+            observation=beta_obs(1.0),
+            unlevered_beta=99.0,
+        )
 
     # D/E·세율 Source 없이 unlevered basis 스냅샷을 만들 수 없다
     with pytest.raises(ValidationError):
         peer_snapshot(
             [0.9] * 4,
             members=[
-                BetaPeerMember(legal_entity_id=f"LEI-P{i}", ticker=f"P{i}", observation=beta_obs(1.0)) for i in range(4)
+                BetaPeerMember(
+                    legal_entity_id=f"LEI-P{i}",
+                    ticker=f"P{i}",
+                    observation=beta_obs(1.0),
+                )
+                for i in range(4)
             ],
         )
 
@@ -718,7 +757,13 @@ def test_members_must_share_the_snapshot_dataset():
     with pytest.raises(ValidationError):
         peer_snapshot(
             [0.9] * 4,
-            members=[peer_member("US", levered=1.2, **{"observation": beta_obs(1.2, benchmark="S&P 500")})]
+            members=[
+                peer_member(
+                    "US",
+                    levered=1.2,
+                    **{"observation": beta_obs(1.2, benchmark="S&P 500")},
+                )
+            ]
             + [peer_member(f"KR{i}", levered=1.1) for i in range(3)],
         )
 
@@ -756,7 +801,10 @@ def test_a_candidate_without_an_observation_can_still_be_recorded_as_excluded():
     )
     snap = peer_snapshot([0.8, 0.9, 1.0, 1.1])
     with_dropped = BetaPeerSnapshot.model_validate(
-        {**snap.model_dump(), "members": snap.model_dump()["members"] + [dropped.model_dump()]}
+        {
+            **snap.model_dump(),
+            "members": snap.model_dump()["members"] + [dropped.model_dump()],
+        }
     )
     assert with_dropped.peer_count == 4  # 제외 후보는 median에 들어가지 않는다
 
@@ -768,7 +816,9 @@ def test_industry_table_source_must_be_damodaran():
     """블로커 6: 문서가 아니라 타입이 강제해야 한다."""
     with pytest.raises(ValidationError):
         industry_entry(
-            source=Source(value=1.05, source="yfinance", url="https://x", as_of=date(2026, 1, 5))
+            source=Source(
+                value=1.05, source="yfinance", url="https://x", as_of=date(2026, 1, 5)
+            )
         )
 
 
@@ -782,10 +832,18 @@ def test_sha256_fields_must_look_like_sha256():
 @pytest.mark.parametrize(
     "kwargs",
     [
-        dict(status="consumed_raw", basis="unlevered", normalized_value=None),  # 소비인데 값 없음
+        dict(
+            status="consumed_raw", basis="unlevered", normalized_value=None
+        ),  # 소비인데 값 없음
         dict(status="consumed_raw", basis="unlevered", normalized_value=float("nan")),
-        dict(status="blocked_no_reference", basis="unlevered", normalized_value=0.9),  # 차단인데 값 있음
-        dict(status="blocked_no_reference", basis="unlevered", diagnostic_value=float("inf")),
+        dict(
+            status="blocked_no_reference", basis="unlevered", normalized_value=0.9
+        ),  # 차단인데 값 있음
+        dict(
+            status="blocked_no_reference",
+            basis="unlevered",
+            diagnostic_value=float("inf"),
+        ),
         dict(status="blocked_no_reference", basis="unlevered", peer_count=-1),
     ],
 )
@@ -814,7 +872,9 @@ def test_target_beta_window_cannot_end_in_the_future():
 
 
 def test_stale_target_beta_is_blocked():
-    stale = beta_obs(1.2, as_of=TODAY - timedelta(days=BETA_OBSERVATION_MAX_AGE_DAYS + 1))
+    stale = beta_obs(
+        1.2, as_of=TODAY - timedelta(days=BETA_OBSERVATION_MAX_AGE_DAYS + 1)
+    )
     assert stale.freshness(TODAY) == "stale"
     res = resolve_beta(
         evaluation_date=TODAY,
@@ -911,7 +971,10 @@ def test_the_same_entity_cannot_be_counted_four_times():
 def test_de_and_tax_sources_must_be_observations():
     """블로커 4: 가정을 Source로 위장해 파생 unlevered beta의 입력으로 쓸 수 없다."""
     assumed_de = Source.model_construct(
-        value=30.0, source="yfinance", url="https://x", as_of=SNAP_AS_OF,
+        value=30.0,
+        source="yfinance",
+        url="https://x",
+        as_of=SNAP_AS_OF,
         method="declared_assumption",
     )
     with pytest.raises(ValidationError):
@@ -959,7 +1022,9 @@ def test_declared_assumption_industry_beta_is_rejected():
 def test_peers_from_a_different_dataset_are_excluded_from_the_cross_check():
     """블로커 2: S&P 500 기준 target을 KOSPI peer median으로 반증할 수 없다."""
     kospi_peers = peer_snapshot([0.5, 0.5, 0.5, 0.5])  # median 0.5 -> 임계 0.75
-    sp500_target = beta_obs(2.00, benchmark="S&P 500")  # 언레버 1.63 > 0.75 (같은 데이터셋이면 충돌)
+    sp500_target = beta_obs(
+        2.00, benchmark="S&P 500"
+    )  # 언레버 1.63 > 0.75 (같은 데이터셋이면 충돌)
 
     res = resolve_beta(
         evaluation_date=TODAY,
@@ -990,7 +1055,10 @@ def test_same_dataset_peers_still_gate_the_cross_check():
     assert res.status == "blocked_reference_conflict"
 
 
-@pytest.mark.parametrize("field,value", [("frequency", "monthly"), ("calculation_method", "OLS on daily returns")])
+@pytest.mark.parametrize(
+    "field,value",
+    [("frequency", "monthly"), ("calculation_method", "OLS on daily returns")],
+)
 def test_dataset_mismatch_covers_frequency_and_method(field, value):
     peers = peer_snapshot([0.5, 0.5, 0.5, 0.5])
     res = resolve_beta(

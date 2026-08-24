@@ -407,14 +407,17 @@ class TestScenarioBridgeAlignment:
         assert actual_rows["(-) CPS Redeem"] == (0, 729_304, 944_112)
         assert actual_rows["(-) RCPS Redeem"] == (0, 490_000, 575_000)
         assert actual_rows["(-) Eco Frontier"] == (94_644, 94_644, 94_644)
-        assert ws.cell(
-            row=next(
-                row
-                for row in range(1, ws.max_row + 1)
-                if ws.cell(row, 1).value == "(+) Receivable Recovery"
-            ),
-            column=2,
-        ).value == 10_000
+        assert (
+            ws.cell(
+                row=next(
+                    row
+                    for row in range(1, ws.max_row + 1)
+                    if ws.cell(row, 1).value == "(+) Receivable Recovery"
+                ),
+                column=2,
+            ).value
+            == 10_000
+        )
 
 
 # ── sensitivity.py: _get_ref_label_value SOTP fix ──

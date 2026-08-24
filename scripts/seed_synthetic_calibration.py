@@ -32,13 +32,13 @@ OUTPUT_PATH = PROJECT_ROOT / "output" / "calibration" / "synthetic_preview.md"
 # true_probs drive the simulated actual price so grid-search has signal
 # to recover. Baseline scenario.prob = 25/50/25 (deliberately off).
 BUCKET_PLAN = [
-    ("US", "sotp",        "t12m", 40, (45, 35, 20)),  # stable
+    ("US", "sotp", "t12m", 40, (45, 35, 20)),  # stable
     ("US", "dcf_primary", "t12m", 35, (30, 40, 30)),  # stable
-    ("US", "ddm",         "t12m", 12, (20, 60, 20)),  # preliminary
-    ("KR", "sotp",        "t12m", 32, (50, 30, 20)),  # stable
-    ("KR", "dcf_primary", "t6m",  18, (25, 50, 25)),  # preliminary (t6m never stable)
-    ("KR", "rnpv",        "t12m",  7, (40, 40, 20)),  # insufficient
-    ("JP", "sotp",        "t12m", 15, (35, 45, 20)),  # preliminary
+    ("US", "ddm", "t12m", 12, (20, 60, 20)),  # preliminary
+    ("KR", "sotp", "t12m", 32, (50, 30, 20)),  # stable
+    ("KR", "dcf_primary", "t6m", 18, (25, 50, 25)),  # preliminary (t6m never stable)
+    ("KR", "rnpv", "t12m", 7, (40, 40, 20)),  # insufficient
+    ("JP", "sotp", "t12m", 15, (35, 45, 20)),  # preliminary
 ]
 
 BASELINE_PROBS = (25.0, 50.0, 25.0)  # bull/base/bear, held constant on records
@@ -48,16 +48,25 @@ def _make_scenarios(bull: int, base: int, bear: int) -> list[ScenarioSnapshot]:
     """Three scenarios with baseline 25/50/25 probs and ordered post_dlom values."""
     return [
         ScenarioSnapshot(
-            code="A", name="Bull",
-            prob=BASELINE_PROBS[0], pre_dlom=bull, post_dlom=bull,
+            code="A",
+            name="Bull",
+            prob=BASELINE_PROBS[0],
+            pre_dlom=bull,
+            post_dlom=bull,
         ),
         ScenarioSnapshot(
-            code="B", name="Base",
-            prob=BASELINE_PROBS[1], pre_dlom=base, post_dlom=base,
+            code="B",
+            name="Base",
+            prob=BASELINE_PROBS[1],
+            pre_dlom=base,
+            post_dlom=base,
         ),
         ScenarioSnapshot(
-            code="C", name="Bear",
-            prob=BASELINE_PROBS[2], pre_dlom=bear, post_dlom=bear,
+            code="C",
+            name="Bear",
+            prob=BASELINE_PROBS[2],
+            pre_dlom=bear,
+            post_dlom=bear,
         ),
     ]
 
@@ -124,7 +133,9 @@ def main() -> None:
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(text, encoding="utf-8")
-    print(f"Wrote {OUTPUT_PATH} ({len(recommendations)} buckets, {len(records)} records)")
+    print(
+        f"Wrote {OUTPUT_PATH} ({len(recommendations)} buckets, {len(records)} records)"
+    )
 
 
 if __name__ == "__main__":

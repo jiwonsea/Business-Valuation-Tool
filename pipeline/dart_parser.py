@@ -236,7 +236,9 @@ def parse_financial_statements(items: list[dict], year: int) -> dict:
     return result
 
 
-def extract_reported_values(items: list[dict], year: int) -> list[ReportedFinancialValue]:
+def extract_reported_values(
+    items: list[dict], year: int
+) -> list[ReportedFinancialValue]:
     """Preserve original filing values and restated comparatives SEPARATELY (§7.2-4).
 
     From one FY`year` annual-report payload this yields, per contract account:
@@ -400,7 +402,13 @@ def estimate_borrowings(items: list[dict]) -> dict[str, int]:
 
 # ── §2.1 순차입금 taxonomy (P0-1) ──
 
-_BS_BORROWING_KEYS = ("단기차입금", "유동성장기부채", "장기차입금", "사채", "유동성사채")
+_BS_BORROWING_KEYS = (
+    "단기차입금",
+    "유동성장기부채",
+    "장기차입금",
+    "사채",
+    "유동성사채",
+)
 _BS_CASH_KEYS = ("현금및현금성자산",)
 _BS_SHORT_TERM_INVESTMENT_KEYS = ("단기금융상품",)
 # 차감하지 '않는' 항목 (기록만 한다)

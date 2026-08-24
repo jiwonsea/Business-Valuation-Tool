@@ -249,8 +249,8 @@ def _make_vi_result(signals_version_attr):
     "attr,expected",
     [
         ("absent", 1),  # no attribute → default 1
-        (None, 1),      # explicit None → default 1
-        (0, 0),         # explicit 0 → preserved (was the bug: coerced to 1)
+        (None, 1),  # explicit None → default 1
+        (0, 0),  # explicit 0 → preserved (was the bug: coerced to 1)
         (1, 1),
         (2, 2),
     ],
@@ -305,6 +305,7 @@ def test_update_backtest_prices_returns_true_when_row_updated():
 
 def test_update_backtest_prices_uses_count_when_data_empty():
     """Some Supabase clients return count separately from data."""
+
     class _Resp:
         def __init__(self):
             self.data = []
@@ -332,9 +333,7 @@ def test_update_backtest_prices_uses_count_when_data_empty():
 
 def test_pagination_fetches_subsequent_pages(today):
     """First page full (200) must trigger a second fetch."""
-    first_page = [
-        _row(snap_date="2024-01-01", t12m=None) for _ in range(200)
-    ]
+    first_page = [_row(snap_date="2024-01-01", t12m=None) for _ in range(200)]
     # Rewrite ids so results remain distinct
     for i, r in enumerate(first_page):
         r["id"] = f"outcome-p1-{i}"
@@ -365,12 +364,12 @@ def test_pagination_stops_when_page_short(today):
 def test_pagination_warns_when_max_rows_reached(today, caplog, monkeypatch):
     """Hitting max_rows without a short page must emit a truncation warning."""
     # Shrink caps so the test runs fast.
-    monkeypatch.setattr(repo, "list_outcomes_needing_refresh", repo.list_outcomes_needing_refresh)
+    monkeypatch.setattr(
+        repo, "list_outcomes_needing_refresh", repo.list_outcomes_needing_refresh
+    )
     # Build pages that always fill page_size; loop will exit via max_rows.
     page_size = 200
-    full_page = [
-        _row(snap_date="2024-01-01", t12m=None) for _ in range(page_size)
-    ]
+    full_page = [_row(snap_date="2024-01-01", t12m=None) for _ in range(page_size)]
     # Enough full pages to blow past max_rows=5000 (25 full pages = 5000).
     pages = [full_page] * 30
     # Also provide a final never-reached page so .data access is safe.
@@ -432,9 +431,7 @@ def test_save_prediction_snapshot_logs_warning_not_traceback(caplog):
 
     assert uid is None
 
-    repo_records = [
-        r for r in caplog.records if r.name == "db.backtest_repository"
-    ]
+    repo_records = [r for r in caplog.records if r.name == "db.backtest_repository"]
     warnings = [r for r in repo_records if r.levelno == logging.WARNING]
     errors = [r for r in repo_records if r.levelno >= logging.ERROR]
 

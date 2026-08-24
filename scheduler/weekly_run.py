@@ -87,6 +87,7 @@ _LOG_DIR.mkdir(exist_ok=True)
 
 WEEKLY_LLM_BUDGET = int(os.getenv("WEEKLY_LLM_BUDGET", "80"))
 
+
 def _setup_logging() -> None:
     """Attach console + dated file handlers to the root logger (idempotent).
 
@@ -129,7 +130,9 @@ def _alert(phase: str, error: str) -> None:
 def _draft_publish_state(summary: dict) -> tuple[bool, str]:
     """Return whether draft gating leaves zero externally publishable results."""
     valuations = summary.get("valuations", [])
-    publishable_count = sum(1 for value in valuations if value.get("status") == "success")
+    publishable_count = sum(
+        1 for value in valuations if value.get("status") == "success"
+    )
     blocked_entries = [
         value for value in valuations if value.get("status") == "draft_blocked"
     ]
@@ -476,16 +479,16 @@ def run_weekly(
         else:
             query = name
         try:
-            logger.info("Valuation start: %s %s (query=%r)", co.get("stars", ""), name, query)
+            logger.info(
+                "Valuation start: %s %s (query=%r)", co.get("stars", ""), name, query
+            )
             analyze_result = auto_analyze(
                 query, output_dir=str(week_dir), scored_data=co
             )
             if analyze_result:
                 vr = getattr(analyze_result, "validation_report", None)
                 valuation_result = getattr(analyze_result, "result", None)
-                is_draft = bool(
-                    valuation_result is not None and valuation_result.draft
-                )
+                is_draft = bool(valuation_result is not None and valuation_result.draft)
                 return {
                     "company": name,
                     "ticker": ticker,
@@ -633,6 +636,7 @@ def _excel_date_tag(week_folder_name: str) -> str:
     e.g. '2026-04-12(Apr 3rd week)' → '04-12'
     """
     import re as _re
+
     m = _re.match(r"\d{4}-(\d{2})-(\d{2})", week_folder_name)
     if m:
         return f"{m.group(1)}-{m.group(2)}"
@@ -649,6 +653,7 @@ def _to_camel(name: str) -> str:
     Strips common legal suffixes and capitalises each word.
     """
     import re as _re
+
     # Remove legal suffixes
     name = _re.sub(
         r"\b(co\.?|corp\.?|inc\.?|ltd\.?|llc\.?|plc\.?|ag\.?|sa\.?|nv\.?|bv\.?)\b",
@@ -687,6 +692,7 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                     if market == "KR" and ticker_str.isdigit():
                         # KR stock code → look up English name from DART corpCode.xml
                         from pipeline.dart_client import get_corp_eng_name_by_stock_code
+
                         eng_name = get_corp_eng_name_by_stock_code(ticker_str)
                         if eng_name:
                             camel = _to_camel(eng_name)
@@ -695,14 +701,18 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                     if remote_filename is None:
                         # US ticker (e.g. AAPL) — use ticker + date
                         if market == "US":
-                            remote_filename = f"{ticker_str}{date_suffix}_valuation.xlsx"
+                            remote_filename = (
+                                f"{ticker_str}{date_suffix}_valuation.xlsx"
+                            )
                         else:
                             # KR fallback: sanitize company name
                             safe = _sk(entry.get("company", ""))
                             if safe and len(safe) >= 2:
                                 remote_filename = f"{safe}{date_suffix}_valuation.xlsx"
                             else:
-                                remote_filename = f"{ticker_str}{date_suffix}_valuation.xlsx"
+                                remote_filename = (
+                                    f"{ticker_str}{date_suffix}_valuation.xlsx"
+                                )
 
                 if remote_filename is None:
                     # No ticker: sanitize company name; fall back to positional index
@@ -898,7 +908,9 @@ def _acquire_lock(force: bool) -> bool:
                 age / 60,
             )
             return False
-    _LOCK_PATH.write_text(f"pid={os.getpid()} ts={datetime.now().isoformat()}\n", encoding="utf-8")
+    _LOCK_PATH.write_text(
+        f"pid={os.getpid()} ts={datetime.now().isoformat()}\n", encoding="utf-8"
+    )
     return True
 
 

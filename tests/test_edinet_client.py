@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from pipeline import edinet_client
-from pipeline.data_fetcher import CompanyIdentity, DataFetcher, _is_jp_ticker
+from pipeline.data_fetcher import DataFetcher, _is_jp_ticker
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -57,9 +57,13 @@ def test_document_lookup_normalizes_five_digit_sec_code(monkeypatch) -> None:
         ]
     }
 
-    monkeypatch.setattr(edinet_client, "_cached_document_list", lambda d: rows_by_date.get(d, []))
+    monkeypatch.setattr(
+        edinet_client, "_cached_document_list", lambda d: rows_by_date.get(d, [])
+    )
 
-    doc = edinet_client.find_latest_document("7203", as_of=date(2026, 6, 21), days_back=3)
+    doc = edinet_client.find_latest_document(
+        "7203", as_of=date(2026, 6, 21), days_back=3
+    )
 
     assert doc is not None
     assert doc.edinet_code == "E02144"
@@ -74,7 +78,16 @@ def test_data_fetcher_routes_jp_to_edinet(monkeypatch) -> None:
     monkeypatch.setattr(
         edinet_client,
         "fetch_financials",
-        lambda code, years=None: {2025: {"revenue": 1, "op": 1, "net_income": 1, "assets": 1, "liabilities": 1, "equity": 1}},
+        lambda code, years=None: {
+            2025: {
+                "revenue": 1,
+                "op": 1,
+                "net_income": 1,
+                "assets": 1,
+                "liabilities": 1,
+                "equity": 1,
+            }
+        },
     )
 
     fetcher = DataFetcher()
@@ -85,7 +98,14 @@ def test_data_fetcher_routes_jp_to_edinet(monkeypatch) -> None:
     assert identity.ticker == "7203.T"
     assert identity.edinet_code == "E02144"
     assert fetcher.fetch_financials(identity) == {
-        2025: {"revenue": 1, "op": 1, "net_income": 1, "assets": 1, "liabilities": 1, "equity": 1}
+        2025: {
+            "revenue": 1,
+            "op": 1,
+            "net_income": 1,
+            "assets": 1,
+            "liabilities": 1,
+            "equity": 1,
+        }
     }
 
 

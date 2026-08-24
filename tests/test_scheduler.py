@@ -209,7 +209,9 @@ class TestWeeklyRun:
     @patch("scheduler.weekly_run._save_run_start", return_value=None)
     @patch("scheduler.weekly_run._finalize_run")
     @patch("scheduler.weekly_run.score_companies")
-    def test_dry_run_skips_valuation(self, mock_score, mock_finalize, mock_save, tmp_path):
+    def test_dry_run_skips_valuation(
+        self, mock_score, mock_finalize, mock_save, tmp_path
+    ):
         """dry_run=True skips valuation execution."""
         mock_score.return_value = [
             {"name": "TestCo", "stars": "★★★☆☆", "score": 50, "news_count": 3},
@@ -218,9 +220,10 @@ class TestWeeklyRun:
         # Redirect week_dir/_weekly_summary.json to tmp_path — without this the
         # test pollutes the real valuation-results/ with mock summaries that
         # masquerade as production weekly runs (observed 2026-07-12..18).
-        with patch("scheduler.weekly_run._RESULTS_BASE", tmp_path), patch(
-            "discovery.discovery_engine.DiscoveryEngine"
-        ) as MockEngine:
+        with (
+            patch("scheduler.weekly_run._RESULTS_BASE", tmp_path),
+            patch("discovery.discovery_engine.DiscoveryEngine") as MockEngine,
+        ):
             instance = MockEngine.return_value
             instance.discover.return_value = {
                 "news_count": 10,
@@ -237,13 +240,16 @@ class TestWeeklyRun:
     @patch("scheduler.weekly_run._save_run_start", return_value=None)
     @patch("scheduler.weekly_run._finalize_run")
     @patch("scheduler.weekly_run.score_companies")
-    def test_discovery_error_isolation(self, mock_score, mock_finalize, mock_save, tmp_path):
+    def test_discovery_error_isolation(
+        self, mock_score, mock_finalize, mock_save, tmp_path
+    ):
         """Per-market error isolation: US continues even if KR fails."""
         mock_score.return_value = []
 
-        with patch("scheduler.weekly_run._RESULTS_BASE", tmp_path), patch(
-            "discovery.discovery_engine.DiscoveryEngine"
-        ) as MockEngine:
+        with (
+            patch("scheduler.weekly_run._RESULTS_BASE", tmp_path),
+            patch("discovery.discovery_engine.DiscoveryEngine") as MockEngine,
+        ):
             instance = MockEngine.return_value
             instance.discover.side_effect = [
                 RuntimeError("KR API 실패"),

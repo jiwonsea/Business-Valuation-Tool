@@ -159,7 +159,11 @@ def collect(snapshot_path: Path) -> int:
     calls_made = 0
 
     for name, corp_code in COMPANIES.items():
-        company: dict[str, dict] = {"corp_code": corp_code, "financial": {}, "stock": {}}
+        company: dict[str, dict] = {
+            "corp_code": corp_code,
+            "financial": {},
+            "stock": {},
+        }
         data[name] = company
         for year in YEARS:
             if calls_made + 2 > CALL_BUDGET:
@@ -171,16 +175,26 @@ def collect(snapshot_path: Path) -> int:
                 items = get_financial_statements(corp_code, year, fs_div="CFS")
                 company["financial"][str(year)] = {"items": items}
                 call_log.append(
-                    {"n": calls_made, "endpoint": "fnlttSinglAcntAll",
-                     "company": name, "year": year, "ok": True,
-                     "rows": len(items)}
+                    {
+                        "n": calls_made,
+                        "endpoint": "fnlttSinglAcntAll",
+                        "company": name,
+                        "year": year,
+                        "ok": True,
+                        "rows": len(items),
+                    }
                 )
             except Exception as exc:  # recorded, never retried here
                 company["financial"][str(year)] = {"error": str(exc)}
                 call_log.append(
-                    {"n": calls_made, "endpoint": "fnlttSinglAcntAll",
-                     "company": name, "year": year, "ok": False,
-                     "error": str(exc)}
+                    {
+                        "n": calls_made,
+                        "endpoint": "fnlttSinglAcntAll",
+                        "company": name,
+                        "year": year,
+                        "ok": False,
+                        "error": str(exc),
+                    }
                 )
 
             calls_made += 1
@@ -188,15 +202,25 @@ def collect(snapshot_path: Path) -> int:
                 shares = get_stock_total_info(corp_code, year)
                 company["stock"][str(year)] = {"shares": shares}
                 call_log.append(
-                    {"n": calls_made, "endpoint": "stockTotqySttus",
-                     "company": name, "year": year, "ok": True}
+                    {
+                        "n": calls_made,
+                        "endpoint": "stockTotqySttus",
+                        "company": name,
+                        "year": year,
+                        "ok": True,
+                    }
                 )
             except Exception as exc:
                 company["stock"][str(year)] = {"error": str(exc)}
                 call_log.append(
-                    {"n": calls_made, "endpoint": "stockTotqySttus",
-                     "company": name, "year": year, "ok": False,
-                     "error": str(exc)}
+                    {
+                        "n": calls_made,
+                        "endpoint": "stockTotqySttus",
+                        "company": name,
+                        "year": year,
+                        "ok": False,
+                        "error": str(exc),
+                    }
                 )
 
     after = guard.get_usage_summary().get("dart", {})
@@ -265,13 +289,13 @@ def _rcept_no(items: list[dict]) -> str:
 def _fmt_candidates(cands: list[dict]) -> str:
     parts = []
     for c in cands:
-        parts.append(
-            f"{c['account_nm']}({c['sj_div']})={c['value_mkrw']:,}"
-        )
+        parts.append(f"{c['account_nm']}({c['sj_div']})={c['value_mkrw']:,}")
     return " | ".join(parts)
 
 
-def _classify(cur: list[dict], nxt: list[dict], cur_val: int, nxt_val: int) -> tuple[str, str]:
+def _classify(
+    cur: list[dict], nxt: list[dict], cur_val: int, nxt_val: int
+) -> tuple[str, str]:
     """Rule-based classification with evidence.  Ambiguity -> unresolved.
 
     Rules (documented for the gate review):
@@ -336,8 +360,7 @@ def _classify(cur: list[dict], nxt: list[dict], cur_val: int, nxt_val: int) -> t
     if shared and pair_diffs:
         # 3. restatement: same-statement pair(s) changed in the later filing.
         pair_txt = "; ".join(
-            f"{s}: {c['value_mkrw']:,} -> {n['value_mkrw']:,}"
-            for s, c, n in pair_diffs
+            f"{s}: {c['value_mkrw']:,} -> {n['value_mkrw']:,}" for s, c, n in pair_diffs
         )
         notes = []
         if cur_chosen["account_nm"] != nxt_chosen["account_nm"]:
@@ -569,7 +592,7 @@ def render_report(results: list[CompanyQuality], meta: dict) -> str:
             "- available_at = DART 접수일(rcept_no 선두 8자리). `available_at <= t` 자료만 사용.",
             "- 유통주식 = 평가일 이전 최신 보고서의 발행주식수 − 자기주식. 현재 snapshot 소급 0.",
             "- LTM 재구성 불가 시 결측 처리. corporate action 복원 불가 시 결측/경고.",
-            "- 멀티플은 LTM P/B·P/S만. \"12M Forward\" 표기 금지.",
+            '- 멀티플은 LTM P/B·P/S만. "12M Forward" 표기 금지.',
             "- 간이 관측 가격 기준일 = 사업보고서 접수일 종가.",
             "",
             "## 승격 게이트",
@@ -586,8 +609,7 @@ def analyze(snapshot_path: Path, report_path: Path) -> int:
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     meta = snapshot.get("meta", {})
     results = [
-        analyze_company(name, blob)
-        for name, blob in snapshot["companies"].items()
+        analyze_company(name, blob) for name, blob in snapshot["companies"].items()
     ]
 
     all_rows: list[dict] = []
@@ -634,8 +656,12 @@ def analyze(snapshot_path: Path, report_path: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--collect", action="store_true", help="fetch 60 DART calls -> snapshot")
-    mode.add_argument("--analyze", action="store_true", help="offline analysis from snapshot")
+    mode.add_argument(
+        "--collect", action="store_true", help="fetch 60 DART calls -> snapshot"
+    )
+    mode.add_argument(
+        "--analyze", action="store_true", help="offline analysis from snapshot"
+    )
     parser.add_argument("--snapshot", default=str(SNAPSHOT_DEFAULT))
     parser.add_argument("--output", default=str(REPORT_DEFAULT))
     args = parser.parse_args()

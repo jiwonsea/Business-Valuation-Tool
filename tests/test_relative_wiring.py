@@ -71,7 +71,9 @@ def test_trailing_pe_prefers_fetched_eps():
 def test_low_growth_makes_peg_na():
     vi = load_profile(_FIXTURE)
     vi = vi.model_copy(
-        update={"relative_inputs": RelativeInputs(trailing_eps=9000.0, earnings_growth=1.0)}
+        update={
+            "relative_inputs": RelativeInputs(trailing_eps=9000.0, earnings_growth=1.0)
+        }
     )
     rv = _build(vi)
     peg = _ratio(rv, "PEG")

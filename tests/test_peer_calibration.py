@@ -118,12 +118,14 @@ def test_tsla_small_peer_group_tier():
 
 def test_insufficient_peers_suppressed():
     peers = [
-        PeerMultiples(ticker="A", ev_ebitda=10, ev_revenue=2, trailing_pe=15, forward_pe=12),
-        PeerMultiples(ticker="B", ev_ebitda=12, ev_revenue=3, trailing_pe=18, forward_pe=14),
+        PeerMultiples(
+            ticker="A", ev_ebitda=10, ev_revenue=2, trailing_pe=15, forward_pe=12
+        ),
+        PeerMultiples(
+            ticker="B", ev_ebitda=12, ev_revenue=3, trailing_pe=18, forward_pe=14
+        ),
     ]
-    rows = compute_profile_deviations(
-        peers, pe_multiple=25.0, ev_revenue_multiple=5.0
-    )
+    rows = compute_profile_deviations(peers, pe_multiple=25.0, ev_revenue_multiple=5.0)
     for r in rows:
         assert r.stats.tier == "insufficient"
         assert r.deviation_pct is None
@@ -156,7 +158,9 @@ def test_emit_peer_report_end_to_end(tmp_path):
                 "ev_revenue_multiple": 9.9,
                 "peer_tickers": list(data.keys()),
                 "scenarios": {
-                    "A": {"segment_multiples": {"SEG1": 28.0, "SEG2": 22.0, "SEG3": 18.0}}
+                    "A": {
+                        "segment_multiples": {"SEG1": 28.0, "SEG2": 22.0, "SEG3": 18.0}
+                    }
                 },
             }
         ),

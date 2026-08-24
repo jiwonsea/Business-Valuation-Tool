@@ -18,7 +18,9 @@ from calibration.tuner import (
 
 
 def _scn(code: str, prob: float, post_dlom: int) -> ScenarioSnapshot:
-    return ScenarioSnapshot(code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom)
+    return ScenarioSnapshot(
+        code=code, name=code, prob=prob, pre_dlom=post_dlom, post_dlom=post_dlom
+    )
 
 
 def _record(
@@ -120,9 +122,7 @@ class TestSearchSCProb:
                 _scn("BASE", 50, base_v),
                 _scn("BULL", 25, bull_v),
             ]
-            true_price = (
-                p_bull * bull_v + p_base * base_v + p_bear * bear_v
-            ) / 100.0
+            true_price = (p_bull * bull_v + p_base * base_v + p_bear * bear_v) / 100.0
             records.append(
                 _record(
                     f"T{i}",

@@ -57,7 +57,9 @@ class InvestabilityReport:
 
     @property
     def blockers(self) -> list[str]:
-        return [f.detail for f in self.findings if f.severity == "block" and not f.passed]
+        return [
+            f.detail for f in self.findings if f.severity == "block" and not f.passed
+        ]
 
 
 @dataclass(frozen=True)
@@ -88,18 +90,24 @@ def _check_dcf_vs_peer(
 ) -> GateFinding:
     if dcf is None:
         return GateFinding(
-            "dcf_vs_peer", False, "block",
+            "dcf_vs_peer",
+            False,
+            "block",
             "no DCF value to cross-check against peer median (cannot confirm value)",
         )
     if peer_median is None or peer_median <= 0:
         return GateFinding(
-            "dcf_vs_peer", False, "block",
+            "dcf_vs_peer",
+            False,
+            "block",
             "no peer-median comp to cross-check DCF (cannot confirm value)",
         )
     ratio = dcf / peer_median
     ok = DCF_PEER_LOW <= ratio <= DCF_PEER_HIGH
     return GateFinding(
-        "dcf_vs_peer", ok, "block",
+        "dcf_vs_peer",
+        ok,
+        "block",
         f"DCF/peer-median = {ratio:.2f} (need [{DCF_PEER_LOW}, {DCF_PEER_HIGH}]"
         + (", optionality not auto-widened" if optionality_flag else "")
         + ")",
@@ -110,7 +118,9 @@ def _check_quality_grade(grade: str | None) -> GateFinding:
     rank = _GRADE_ORDER.get((grade or "").strip().upper())
     ok = rank is not None and rank >= _GRADE_ORDER[MIN_GRADE]
     return GateFinding(
-        "quality_grade", bool(ok), "block",
+        "quality_grade",
+        bool(ok),
+        "block",
         f"quality grade {grade!r} (need >= {MIN_GRADE})",
     )
 
@@ -121,21 +131,30 @@ def _check_segments_reconcile(
     if not segment_revenues:
         if method.lower().startswith("sotp"):
             return GateFinding(
-                "segments_reconcile", False, "block",
+                "segments_reconcile",
+                False,
+                "block",
                 "SOTP method but no segment revenues provided",
             )
         return GateFinding(
-            "segments_reconcile", True, "block", "no segments to reconcile (non-SOTP)",
+            "segments_reconcile",
+            True,
+            "block",
+            "no segments to reconcile (non-SOTP)",
         )
     if not consolidated or consolidated <= 0:
         return GateFinding(
-            "segments_reconcile", False, "block",
+            "segments_reconcile",
+            False,
+            "block",
             "segments present but consolidated revenue missing",
         )
     diff = abs(sum(segment_revenues) - consolidated) / consolidated
     ok = diff <= SEGMENT_RECONCILE_TOL
     return GateFinding(
-        "segments_reconcile", ok, "block",
+        "segments_reconcile",
+        ok,
+        "block",
         f"segment sum vs consolidated off by {diff:.1%} (tol {SEGMENT_RECONCILE_TOL:.0%})",
     )
 
@@ -143,8 +162,11 @@ def _check_segments_reconcile(
 def _check_no_placeholder_multiples(placeholders: list[str]) -> GateFinding:
     ok = not placeholders
     return GateFinding(
-        "no_placeholder_multiples", ok, "block",
-        "placeholder multiples remain: " + ", ".join(placeholders) if placeholders
+        "no_placeholder_multiples",
+        ok,
+        "block",
+        "placeholder multiples remain: " + ", ".join(placeholders)
+        if placeholders
         else "no placeholder multiples",
     )
 
@@ -160,8 +182,12 @@ def _check_no_todo_markers(text: str, curated: bool = False) -> GateFinding:
     )
     ok = not hits or curated
     return GateFinding(
-        "no_todo_markers", ok, "warn" if curated and hits else "block",
-        "legacy TODO markers present: " + ", ".join(hits) if hits else "no TODO markers",
+        "no_todo_markers",
+        ok,
+        "warn" if curated and hits else "block",
+        "legacy TODO markers present: " + ", ".join(hits)
+        if hits
+        else "no TODO markers",
     )
 
 
@@ -176,12 +202,20 @@ def _check_profile_status(inputs: GateInputs) -> GateFinding:
 
 def _check_peer_beta_range(status: str | None) -> GateFinding:
     if status is None:
-        return GateFinding("peer_beta_range", True, "warn", "peer beta snapshot not provided")
+        return GateFinding(
+            "peer_beta_range", True, "warn", "peer beta snapshot not provided"
+        )
     if status == "validated":
-        return GateFinding("peer_beta_range", True, "block", "company raw beta is within peer range")
+        return GateFinding(
+            "peer_beta_range", True, "block", "company raw beta is within peer range"
+        )
     if status in ("outlier_high", "outlier_low"):
-        return GateFinding("peer_beta_range", False, "block", f"company raw beta is {status}")
-    return GateFinding("peer_beta_range", False, "warn", f"peer beta judgement unavailable: {status}")
+        return GateFinding(
+            "peer_beta_range", False, "block", f"company raw beta is {status}"
+        )
+    return GateFinding(
+        "peer_beta_range", False, "warn", f"peer beta judgement unavailable: {status}"
+    )
 
 
 def evaluate_investability(inputs: GateInputs) -> InvestabilityReport:
@@ -202,7 +236,9 @@ def evaluate_investability(inputs: GateInputs) -> InvestabilityReport:
         _check_peer_beta_range(inputs.peer_beta_status),
     ]
     investable = all(f.passed for f in findings if f.severity == "block")
-    return InvestabilityReport(investable=investable, draft=not investable, findings=findings)
+    return InvestabilityReport(
+        investable=investable, draft=not investable, findings=findings
+    )
 
 
 def apply_gate_to_profile(raw: dict, report: InvestabilityReport) -> dict:
@@ -244,7 +280,8 @@ def gate_inputs_from_profile(
     else:
         segments = segments_raw
     segment_revenues = [
-        float(s["revenue"]) for s in segments
+        float(s["revenue"])
+        for s in segments
         if isinstance(s, dict) and isinstance(s.get("revenue"), (int, float))
     ]
     placeholders: list[str] = []
@@ -262,7 +299,9 @@ def gate_inputs_from_profile(
                 if line.lstrip().startswith("#")
             )
         ):
-            placeholders.append(f"{s.get('id', s.get('name', '?'))}.multiple=10.0(default)")
+            placeholders.append(
+                f"{s.get('id', s.get('name', '?'))}.multiple=10.0(default)"
+            )
     method = str(raw.get("primary_method") or raw.get("method") or "dcf")
     optionality_flag = bool(
         raw.get("optionality_flag")
@@ -282,5 +321,7 @@ def gate_inputs_from_profile(
         declared_draft=bool(raw.get("draft", False)),
         generated=str(raw.get("generated", "")),
         curated=bool(raw.get("curated", False)),
-        peer_beta_status=(raw.get("peer_beta_snapshot") or {}).get("judgement", {}).get("status"),
+        peer_beta_status=(raw.get("peer_beta_snapshot") or {})
+        .get("judgement", {})
+        .get("status"),
     )

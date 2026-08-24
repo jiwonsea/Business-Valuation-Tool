@@ -381,7 +381,9 @@ class ApiGuard:
         if provider == "dart" and error is not None:
             msg = str(error)
             if "조회된 데이타가 없습니다" in msg or "no data" in msg.lower():
-                logger.debug("dart: 'no data' response — not counted as circuit failure")
+                logger.debug(
+                    "dart: 'no data' response — not counted as circuit failure"
+                )
                 return
 
         with self._lock:

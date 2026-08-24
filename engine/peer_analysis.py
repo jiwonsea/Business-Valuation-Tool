@@ -164,9 +164,13 @@ def explain_multiple(
     if applied <= 0:
         return 0.0, "", "적용 멀티플 미설정 — 부문 평가방법이 EV/EBITDA가 아닐 수 있음"
     if median <= 0:
-        return 0.0, "", (
-            f"peer 멀티플 없음 (N={n}) — 적용값 {applied:.{precision}f}x는 "
-            "별도 근거 필요"
+        return (
+            0.0,
+            "",
+            (
+                f"peer 멀티플 없음 (N={n}) — 적용값 {applied:.{precision}f}x는 "
+                "별도 근거 필요"
+            ),
         )
 
     premium = round((applied / median - 1) * 100, 1)
@@ -193,8 +197,7 @@ def explain_multiple(
     # 2) inside the band or not — this is what makes it defensible
     if position == "레인지 밖":
         band = (
-            f"peer 레인지({lo:.{precision}f}~{hi:.{precision}f}x) 밖 — "
-            "별도 정당화 필수"
+            f"peer 레인지({lo:.{precision}f}~{hi:.{precision}f}x) 밖 — 별도 정당화 필수"
         )
     elif position in ("Q1 미만", "Q3 초과"):
         band = (
@@ -202,10 +205,7 @@ def explain_multiple(
             "프리미엄/할인 사유 명시 필요"
         )
     else:
-        band = (
-            f"IQR({q1:.{precision}f}~{q3:.{precision}f}x) 내 — "
-            "통계적으로 방어 가능"
-        )
+        band = f"IQR({q1:.{precision}f}~{q3:.{precision}f}x) 내 — 통계적으로 방어 가능"
 
     # 3) sample size caveat
     if n == 1:

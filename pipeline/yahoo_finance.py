@@ -179,7 +179,11 @@ def get_quote_summary(ticker: str) -> dict | None:
         # Relative-valuation diagnostics (Optional)
         "trailing_eps": _raw(stats, "trailingEps"),
         "forward_eps": _raw(stats, "forwardEps"),
-        "dividend_yield": (_dy * 100) if _dy is not None else None,  # fraction -> percent
+        "dividend_yield": (_dy * 100)
+        if _dy is not None
+        else None,  # fraction -> percent
         "price_to_book": _raw(stats, "priceToBook"),
-        "earnings_growth": (_eg * 100) if _eg is not None else None,  # fraction -> percent
+        "earnings_growth": (_eg * 100)
+        if _eg is not None
+        else None,  # fraction -> percent
     }

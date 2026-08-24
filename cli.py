@@ -142,8 +142,7 @@ def _fetch_and_compare_market_price(
             )
         elif use_live_price and explicit_as_of:
             logger.warning(
-                "--live-price: 실시간 %s 사용 — as-of %s "
-                "(analysis_date %s)는 무시됨",
+                "--live-price: 실시간 %s 사용 — as-of %s (analysis_date %s)는 무시됨",
                 live_text,
                 profile_text,
                 vi.price_as_of,
@@ -313,9 +312,7 @@ def main():
     result = run_valuation(vi)
 
     # Listed company market price comparison
-    result = _fetch_and_compare_market_price(
-        vi, result, use_live_price=args.live_price
-    )
+    result = _fetch_and_compare_market_price(vi, result, use_live_price=args.live_price)
 
     # Recompute quality score now that market_comparison is attached
     # (run_valuation computes quality before market price is available)
@@ -361,8 +358,11 @@ def main():
         from output.excel_builder import export
 
         path = export(
-            vi, result, args.output_dir,
-            band_reports=bands, band_current=band_current,
+            vi,
+            result,
+            args.output_dir,
+            band_reports=bands,
+            band_current=band_current,
         )
         print(f"\n[Excel] 저장 완료: {path}")
 

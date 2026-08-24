@@ -85,7 +85,10 @@ def _llm_quota_remaining() -> int:
     from pipeline.api_guard import ApiGuard
 
     usage = ApiGuard.get().get_usage_summary()
-    return max(usage.get("openrouter", {}).get("remaining", 0), usage.get("anthropic", {}).get("remaining", 0))
+    return max(
+        usage.get("openrouter", {}).get("remaining", 0),
+        usage.get("anthropic", {}).get("remaining", 0),
+    )
 
 
 def _atomic_write_yaml(path: str, raw: dict) -> None:
@@ -114,7 +117,9 @@ def _atomic_write_yaml(path: str, raw: dict) -> None:
         temp_path = None
         delivered = Path(destination).read_text(encoding="utf-8")
         if not delivered.strip():
-            raise RuntimeError(f"Atomic YAML write produced an empty file: {destination}")
+            raise RuntimeError(
+                f"Atomic YAML write produced an empty file: {destination}"
+            )
         if yaml.safe_load(delivered) != raw:
             raise RuntimeError(f"Atomic YAML write verification failed: {destination}")
     finally:
@@ -226,21 +231,27 @@ def _compute_scenario_validation(raw: dict, method: str):
             suffix=".yaml",
             delete=False,
         ) as tmp:
-            yaml.dump(raw, tmp, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            yaml.dump(
+                raw, tmp, allow_unicode=True, default_flow_style=False, sort_keys=False
+            )
             temp_path = tmp.name
         vi = load_profile(temp_path)
         result = run_valuation(vi)
         ev_by_scenario = {
             code: scenario.total_ev for code, scenario in result.scenarios.items()
         }
-        report = validate_scenario_differentiation(raw.get("scenarios", {}), method, ev_by_scenario)
+        report = validate_scenario_differentiation(
+            raw.get("scenarios", {}), method, ev_by_scenario
+        )
         return report, ev_by_scenario
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
 
-def _repair_scenarios_with_llm(analyst, original: dict, errors: list, method: str) -> dict:
+def _repair_scenarios_with_llm(
+    analyst, original: dict, errors: list, method: str
+) -> dict:
     import json
 
     from ai.prompts import SYSTEM_ANALYST, SYSTEM_ANALYST_DRIVERS
@@ -323,7 +334,11 @@ def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
     for year, data in sorted(financials.items(), reverse=True):
         rev = data.get("revenue", 0)
         op = data.get("op", 0)
-        unit = "$M" if identity.market == "US" else ("百万円" if identity.market == "JP" else "백만원")
+        unit = (
+            "$M"
+            if identity.market == "US"
+            else ("百万円" if identity.market == "JP" else "백만원")
+        )
         print(f"  {year}: 매출 {rev:,}{unit}, 영업이익 {op:,}{unit}")
 
     # Step 3: Share count / market data
@@ -404,7 +419,9 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
 
     effective_tax = calc_effective_tax_rate({0: cons})  # dummy year key
     analysis_date = getattr(identity, "analysis_date", None) or date.today()
-    tax_snapshot = _load_tax_snapshot(identity.ticker, analysis_date) if identity.ticker else None
+    tax_snapshot = (
+        _load_tax_snapshot(identity.ticker, analysis_date) if identity.ticker else None
+    )
     forward_tax = shares_info.get("forward_tax_rate")
     if forward_tax is None and tax_snapshot:
         forward_tax = tax_snapshot["value_pct"]
@@ -488,7 +505,9 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
                 "calculation_method": observation.calculation_method,
             }
         except Exception as exc:
-            logger.warning("Beta observation unavailable; profile remains draft: %s", exc)
+            logger.warning(
+                "Beta observation unavailable; profile remains draft: %s", exc
+            )
             bu = default_bu
             beta_provenance = {
                 "status": "blocked_no_provenance",
@@ -515,13 +534,17 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
         "eq_w": eq_w,
         "beta_provenance": beta_provenance,
         "erp_provenance": erp_provenance,
-        "tax_provenance": ({
-            "status": "consumed_guidance",
-            "as_of": str(tax_snapshot["as_of"]),
-            "method": tax_snapshot["method"],
-            "provider": tax_snapshot["source"]["provider"],
-            "url": tax_snapshot["source"]["url"],
-        } if tax_snapshot else None),
+        "tax_provenance": (
+            {
+                "status": "consumed_guidance",
+                "as_of": str(tax_snapshot["as_of"]),
+                "method": tax_snapshot["method"],
+                "provider": tax_snapshot["source"]["provider"],
+                "url": tax_snapshot["source"]["url"],
+            }
+            if tax_snapshot
+            else None
+        ),
     }
 
 
@@ -1403,7 +1426,11 @@ def auto_analyze(
             _DEFAULT_SCENARIO_VALIDATION_RETRIES,
             _SCENARIO_VALIDATION_RETRY_CAP,
         )
-        if validation_report.status == "fail" and validation_report.retryable and retry_limit > 0:
+        if (
+            validation_report.status == "fail"
+            and validation_report.retryable
+            and retry_limit > 0
+        ):
             if _llm_quota_remaining() < 1:
                 validation_report = validation_report.model_copy(
                     update={
@@ -1417,7 +1444,9 @@ def auto_analyze(
                         "status": validation_report.status,
                         "retry_attempts": 0,
                         "quota_skip_reason": "llm_quota_exhausted",
-                        "error_codes": [error.code for error in validation_report.errors],
+                        "error_codes": [
+                            error.code for error in validation_report.errors
+                        ],
                     },
                 )
             else:
@@ -1444,7 +1473,9 @@ def auto_analyze(
 
     # Persist market price + relative-valuation inputs so the diagnostic layer
     # (P/E, P/B, PEG/PEGY, justified multiples) is available on profile reruns.
-    _shares_info = fetch_result.get("shares", {}) if isinstance(fetch_result, dict) else {}
+    _shares_info = (
+        fetch_result.get("shares", {}) if isinstance(fetch_result, dict) else {}
+    )
     _mp = _shares_info.get("price")
     if _mp and not raw.get("market_price"):
         raw["market_price"] = _mp

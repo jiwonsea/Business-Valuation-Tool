@@ -126,8 +126,8 @@ def test_gap_diagnostic_market_ev_uses_valuation_shares(monkeypatch):
 
     attach_gap_diagnostic(vi, result)
 
-    expected_market_ev = (
-        10.0 * valuation_shares / vi.company.unit_multiplier + max(vi.net_debt, 0)
+    expected_market_ev = 10.0 * valuation_shares / vi.company.unit_multiplier + max(
+        vi.net_debt, 0
     )
     assert captured["market_ev"] == pytest.approx(expected_market_ev)
     assert result.gap_diagnostic is not None
@@ -186,9 +186,7 @@ def test_raw_data_records_price_source_and_as_of(monkeypatch):
     sheet_raw_data(make_ctx(vi, result, wb))
 
     values = {
-        row[0].value: row[1].value
-        for row in wb["Raw Data"].iter_rows()
-        if row[0].value
+        row[0].value: row[1].value for row in wb["Raw Data"].iter_rows() if row[0].value
     }
     assert values["기준 주가 (원)"] == 1_505
     assert values["주가 출처"] == "프로필 as-of 가격"

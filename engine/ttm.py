@@ -69,7 +69,9 @@ def roll_ttm(
         if prior_fact.period_start != annual_fact.period_start:
             raise ValueError(f"{field}: annual/prior YTD period starts differ")
         if current_fact.period_start == prior_fact.period_start:
-            raise ValueError(f"{field}: current YTD uses the prior fiscal-year boundary")
+            raise ValueError(
+                f"{field}: current YTD uses the prior fiscal-year boundary"
+            )
         result[field] = annual_fact.value - prior_fact.value + current_fact.value
 
     return TTMResult(fields=result)

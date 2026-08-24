@@ -62,7 +62,9 @@ def calc_stats(values: list[float]) -> PeerStats:
         q1, q3 = cleaned[0], cleaned[-1]
     else:
         q1 = q3 = cleaned[0]
-    return PeerStats(n=n, median=round(median, 2), q1=round(q1, 2), q3=round(q3, 2), tier=tier)
+    return PeerStats(
+        n=n, median=round(median, 2), q1=round(q1, 2), q3=round(q3, 2), tier=tier
+    )
 
 
 @dataclass(frozen=True)
@@ -128,7 +130,9 @@ def _compute_one(
     else:
         z = None
 
-    is_flagged = abs(dev_pct) >= DEV_FLAG_PCT or (z is not None and abs(z) >= DEV_FLAG_Z)
+    is_flagged = abs(dev_pct) >= DEV_FLAG_PCT or (
+        z is not None and abs(z) >= DEV_FLAG_Z
+    )
     if stats.tier == "preliminary":
         notes.append("preliminary (N<10) — treat as directional signal")
     flag = "⚠️" if is_flagged else "✓"
@@ -170,9 +174,7 @@ def compute_profile_deviations(
     trailing_pe_vals = [p.trailing_pe for p in peers if p.trailing_pe is not None]
     forward_pe_vals = [p.forward_pe for p in peers if p.forward_pe is not None]
 
-    rows.append(
-        _compute_one("ev_revenue", "profile", ev_revenue_multiple, ev_rev_vals)
-    )
+    rows.append(_compute_one("ev_revenue", "profile", ev_revenue_multiple, ev_rev_vals))
     rows.append(
         _compute_one(
             "trailing_pe",

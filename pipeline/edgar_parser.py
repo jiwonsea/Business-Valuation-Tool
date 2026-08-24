@@ -136,7 +136,9 @@ def _to_millions(val: float | int) -> int:
 def _duration_days(entry: dict) -> int | None:
     if not entry.get("start") or not entry.get("end"):
         return None
-    return (date.fromisoformat(entry["end"]) - date.fromisoformat(entry["start"])).days + 1
+    return (
+        date.fromisoformat(entry["end"]) - date.fromisoformat(entry["start"])
+    ).days + 1
 
 
 def _dedupe_duration_entries(
@@ -226,11 +228,15 @@ def extract_quarterly_facts(
         discrete = [e for e in entries if 77 <= (_duration_days(e) or 0) <= 105]
         if discrete:
             if len({(e["start"], e["end"], e["val"]) for e in discrete}) != 1:
-                raise ValueError(f"ambiguous discrete facts for {concept} {fiscal_year} {fiscal_period}")
+                raise ValueError(
+                    f"ambiguous discrete facts for {concept} {fiscal_year} {fiscal_period}"
+                )
             return _quarter_fact_payload(discrete[0], "reported_discrete")
 
         if fiscal_period == "Q1":
-            raise ValueError(f"Q1 duration is not a supported 13/14-week period: {concept}")
+            raise ValueError(
+                f"Q1 duration is not a supported 13/14-week period: {concept}"
+            )
 
         current = max(entries, key=lambda e: _duration_days(e) or 0)
         previous_fp = f"Q{int(fiscal_period[1]) - 1}"
@@ -281,7 +287,9 @@ def _find_ytd_entry(
             entries.append(entry)
     selected = _dedupe_duration_entries(entries, computed_as_of)
     if len(selected) != 1:
-        raise ValueError(f"missing or ambiguous prior YTD for {concept} {fiscal_period}")
+        raise ValueError(
+            f"missing or ambiguous prior YTD for {concept} {fiscal_period}"
+        )
     return selected[0]
 
 

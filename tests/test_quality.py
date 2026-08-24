@@ -353,7 +353,9 @@ class TestDraftProfileGuard:
             total=0,
             grade="F",
             draft=True,
-            warnings=["Draft profile: TODO/stub assumptions remain; not investable until curated."],
+            warnings=[
+                "Draft profile: TODO/stub assumptions remain; not investable until curated."
+            ],
         )
         report = format_quality_report(q, is_listed=True)
         assert "0/100" in report

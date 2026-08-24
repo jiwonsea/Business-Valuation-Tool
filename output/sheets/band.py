@@ -32,7 +32,9 @@ def sheet_historical_band(
     for c, w in enumerate([14, 10, 10, 10, 10, 10, 12, 26], 1):
         ws.column_dimensions[get_column_letter(c)].width = w
 
-    write_cell(ws, 1, 1, "역사적 배수 밴드 (LTM, point-in-time — 참고용)", font=TITLE_FONT)
+    write_cell(
+        ws, 1, 1, "역사적 배수 밴드 (LTM, point-in-time — 참고용)", font=TITLE_FONT
+    )
     r = 3
 
     # ── Summary table ──
@@ -69,7 +71,16 @@ def sheet_historical_band(
         write_cell(ws, r, 1, f"{band.label} 연도별 관측", font=SECTION_FONT)
         r += 1
         for c, h in enumerate(
-            ["FY", "접수일(t)", "가격일", "raw close", "유통주식수", "분모(백만원)", "배수", "rcept_no"],
+            [
+                "FY",
+                "접수일(t)",
+                "가격일",
+                "raw close",
+                "유통주식수",
+                "분모(백만원)",
+                "배수",
+                "rcept_no",
+            ],
             1,
         ):
             write_cell(ws, r, c, h)
@@ -100,7 +111,9 @@ def sheet_historical_band(
 
     r += 2
     write_cell(
-        ws, r, 1,
+        ws,
+        r,
+        1,
         "* 최초 공시값(basis=original)·접수일 raw close(auto_adjust=False)·당시 유통주식수 기준. "
         "보간·소급·재작성값 소비 없음. 밸류에이션 입력 아님 (참고용).",
     )

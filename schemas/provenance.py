@@ -251,7 +251,9 @@ def require_finite(value: Optional[float], field: str) -> Optional[float]:
         return None
     v = float(value)
     if not math.isfinite(v):
-        raise ValueError(f"{field}: 유효하지 않은 숫자입니다 ({value!r}). NaN/Inf는 관측치가 아닙니다.")
+        raise ValueError(
+            f"{field}: 유효하지 않은 숫자입니다 ({value!r}). NaN/Inf는 관측치가 아닙니다."
+        )
     return v
 
 
@@ -273,7 +275,9 @@ def _numeric_source_value(src: Optional[Source], field: str) -> Optional[float]:
     return require_finite(float(v), field)
 
 
-def _freshness(as_of: Optional[date], evaluation_date: date, max_age_days: int) -> Freshness:
+def _freshness(
+    as_of: Optional[date], evaluation_date: date, max_age_days: int
+) -> Freshness:
     """공통 신선도 판정. 미래 기준일은 look-ahead이므로 fresh가 아니다."""
     if as_of is None:
         return "unknown_as_of"
@@ -284,7 +288,9 @@ def _freshness(as_of: Optional[date], evaluation_date: date, max_age_days: int) 
     return "fresh"
 
 
-def hamada_unlever(levered_beta: float, de_ratio_pct: float, tax_rate_pct: float) -> Optional[float]:
+def hamada_unlever(
+    levered_beta: float, de_ratio_pct: float, tax_rate_pct: float
+) -> Optional[float]:
     """Hamada 언레버. 경제적 정의역 밖이면 None (클램프하지 않는다).
 
     - D/E는 gross debt 기반이므로 음수일 수 없다.
@@ -332,7 +338,9 @@ class BetaObservation(BaseModel):
     @classmethod
     def observation_count_positive(cls, v: int) -> int:
         if v <= 0:
-            raise ValueError(f"BetaObservation.observation_count는 양수여야 합니다: {v}")
+            raise ValueError(
+                f"BetaObservation.observation_count는 양수여야 합니다: {v}"
+            )
         return v
 
     @model_validator(mode="after")
@@ -347,7 +355,9 @@ class BetaObservation(BaseModel):
             )
         v = self.equity_beta.value
         if not isinstance(v, (int, float)):
-            raise ValueError(f"BetaObservation.equity_beta.value는 숫자여야 합니다: {v!r}")
+            raise ValueError(
+                f"BetaObservation.equity_beta.value는 숫자여야 합니다: {v!r}"
+            )
         require_finite(float(v), "BetaObservation.equity_beta.value")
 
         # 관측 기준일은 관측창의 끝이다. 2020년에 끝난 관측창을 오늘 날짜로 포장할 수 없다.
@@ -363,7 +373,9 @@ class BetaObservation(BaseModel):
         """대상 회사 beta에도 시간축을 강제한다 (§2.5 허용 시차 7일, 미래는 look-ahead)."""
         if self.window_end > evaluation_date:
             return "future"
-        return _freshness(self.equity_beta.as_of, evaluation_date, BETA_OBSERVATION_MAX_AGE_DAYS)
+        return _freshness(
+            self.equity_beta.as_of, evaluation_date, BETA_OBSERVATION_MAX_AGE_DAYS
+        )
 
     @property
     def raw_levered_beta(self) -> float:
@@ -389,7 +401,11 @@ class BetaObservation(BaseModel):
                 ("window_end", self.window_end, other.window_end),
                 ("frequency", self.frequency, other.frequency),
                 ("benchmark", self.benchmark, other.benchmark),
-                ("calculation_method", self.calculation_method, other.calculation_method),
+                (
+                    "calculation_method",
+                    self.calculation_method,
+                    other.calculation_method,
+                ),
                 ("as_of", self.as_of, other.as_of),
             )
             if a != b
@@ -460,7 +476,9 @@ class IndustryBetaEntry(BaseModel):
         """수집일도 평가일 이전이어야 한다 — 미래에 수집한 테이블은 look-ahead다."""
         if self.collected_at > evaluation_date:
             return "future"
-        return _freshness(self.source.as_of, evaluation_date, INDUSTRY_BETA_MAX_AGE_DAYS)
+        return _freshness(
+            self.source.as_of, evaluation_date, INDUSTRY_BETA_MAX_AGE_DAYS
+        )
 
 
 class BetaPeerMember(BaseModel):
@@ -472,7 +490,9 @@ class BetaPeerMember(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    legal_entity_id: str  # 법인 식별자 (티커 리네이밍/중복 상장으로 같은 법인을 두 번 세지 않도록)
+    legal_entity_id: (
+        str  # 법인 식별자 (티커 리네이밍/중복 상장으로 같은 법인을 두 번 세지 않도록)
+    )
     ticker: str
     observation: Optional[BetaObservation] = None  # 조회 실패로 제외된 후보는 None
     de_ratio_pct: Optional[Source] = None  # 언레버 입력도 관측치다
@@ -502,7 +522,10 @@ class BetaPeerMember(BaseModel):
                 "관측이 없으면 included=False + exclusion_reason으로 남기십시오."
             )
         # 언레버 입력도 관측치다 — 가정을 Source로 위장해 넣을 수 없다.
-        for name, src in (("de_ratio_pct", self.de_ratio_pct), ("tax_rate_pct", self.tax_rate_pct)):
+        for name, src in (
+            ("de_ratio_pct", self.de_ratio_pct),
+            ("tax_rate_pct", self.tax_rate_pct),
+        ):
             if src is not None and src.method not in OBSERVED_METHODS:
                 raise ValueError(
                     f"BetaPeerMember[{self.ticker}].{name}.method='{src.method}'는 관측치가 아닙니다. "
@@ -515,8 +538,12 @@ class BetaPeerMember(BaseModel):
         """raw βL + D/E + 세율에서 **결정론적으로 계산**한다. 임의 입력 불가."""
         if self.observation is None:
             return None
-        de = _numeric_source_value(self.de_ratio_pct, f"BetaPeerMember[{self.ticker}].de_ratio_pct")
-        tax = _numeric_source_value(self.tax_rate_pct, f"BetaPeerMember[{self.ticker}].tax_rate_pct")
+        de = _numeric_source_value(
+            self.de_ratio_pct, f"BetaPeerMember[{self.ticker}].de_ratio_pct"
+        )
+        tax = _numeric_source_value(
+            self.tax_rate_pct, f"BetaPeerMember[{self.ticker}].tax_rate_pct"
+        )
         if de is None or tax is None:
             return None
         return hamada_unlever(self.observation.raw_levered_beta, de, tax)
@@ -546,11 +573,15 @@ class BetaPeerSnapshot(BaseModel):
     beta_basis: BetaBasis
     members: list[BetaPeerMember] = []
 
-    @field_validator("snapshot_id", "snapshot_version", "benchmark", "calculation_method")
+    @field_validator(
+        "snapshot_id", "snapshot_version", "benchmark", "calculation_method"
+    )
     @classmethod
     def non_empty(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("BetaPeerSnapshot의 식별/벤치마크/계산법 필드는 필수입니다.")
+            raise ValueError(
+                "BetaPeerSnapshot의 식별/벤치마크/계산법 필드는 필수입니다."
+            )
         return v
 
     @field_validator("content_sha256")
@@ -595,7 +626,11 @@ class BetaPeerSnapshot(BaseModel):
                     ("window_end", obs.window_end, self.window_end),
                     ("frequency", obs.frequency, self.frequency),
                     ("benchmark", obs.benchmark, self.benchmark),
-                    ("calculation_method", obs.calculation_method, self.calculation_method),
+                    (
+                        "calculation_method",
+                        obs.calculation_method,
+                        self.calculation_method,
+                    ),
                     ("as_of", obs.as_of, self.as_of),
                 )
                 if a != b
@@ -702,7 +737,9 @@ class NetDebtComponents(BaseModel):
     marketable_debt_securities: Optional[int] = None
     short_term_investments: Optional[int] = None
     restricted_cash_excluded: Optional[int] = None  # 차감하지 '않은' 금액 (기록용)
-    equity_securities_excluded: Optional[int] = None  # 차감하지 '않은' 금액 (상방 브리지)
+    equity_securities_excluded: Optional[int] = (
+        None  # 차감하지 '않은' 금액 (상방 브리지)
+    )
     gross_borrowings: Optional[int] = None
     net_debt: Optional[int] = None  # 독립 관측/보고된 합계. 유도하지 않는다.
 

@@ -57,7 +57,12 @@ def main() -> int:
     check("B-2 GAAP primary", values["net_income"] == auto_values["net_income"])
 
     required_fact_keys = {
-        "concept", "unit", "annual", "prior_ytd", "current_ytd", "result"
+        "concept",
+        "unit",
+        "annual",
+        "prior_ytd",
+        "current_ytd",
+        "result",
     }
     check(
         "B-3 fact-level provenance",
@@ -71,7 +76,9 @@ def main() -> int:
     vi = load_profile(str(ROOT / "profiles" / "nvda.yaml"))
     check("B-4 TTM selected", vi.financial_anchor == "ttm")
     check("B-4 FY preserved", vi.fy_base_financials["revenue"] == 215_938)
-    check("B-4 engine consumes TTM", vi.consolidated[vi.base_year]["revenue"] == 253_491)
+    check(
+        "B-4 engine consumes TTM", vi.consolidated[vi.base_year]["revenue"] == 253_491
+    )
 
     result = run_valuation(vi)
     ttm_base = result.scenarios["Base"].post_dlom

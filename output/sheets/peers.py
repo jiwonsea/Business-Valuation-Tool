@@ -204,9 +204,7 @@ def _implied_multiple_check(ws, r: int, ctx: Ctx) -> int:
     check on the applied multiple, never the source of it. That caveat is printed
     on the sheet.
     """
-    methods = {
-        info.get("method", "ev_ebitda") for info in ctx.vi.segments.values()
-    }
+    methods = {info.get("method", "ev_ebitda") for info in ctx.vi.segments.values()}
     if len(methods) > 1:
         write_cell(ws, r, 1, "적용 멀티플 교차검증 — 역산", font=SECTION_FONT)
         r += 1
@@ -241,7 +239,9 @@ def _implied_multiple_check(ws, r: int, ctx: Ctx) -> int:
     shares = ctx.vi.valuation_shares
     nd = ctx.vi.net_debt
 
-    write_cell(ws, r, 1, "적용 멀티플 교차검증 — 역산 (Implied Multiple)", font=SECTION_FONT)
+    write_cell(
+        ws, r, 1, "적용 멀티플 교차검증 — 역산 (Implied Multiple)", font=SECTION_FONT
+    )
     r += 1
     write_cell(
         ws,

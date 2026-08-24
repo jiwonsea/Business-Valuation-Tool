@@ -57,7 +57,9 @@ def _scenario_lookup(
     scenarios: Mapping[str, dict[str, Any]],
 ) -> tuple[dict[str, dict[str, Any]], list[ValidationError]]:
     errors: list[ValidationError] = []
-    normalized = {str(code).lower(): (str(code), data) for code, data in scenarios.items()}
+    normalized = {
+        str(code).lower(): (str(code), data) for code, data in scenarios.items()
+    }
     resolved: dict[str, dict[str, Any]] = {}
     for required in _REQUIRED_SCENARIOS:
         hit = normalized.get(required.lower())
@@ -109,7 +111,9 @@ def _validate_driver_types(
     method: str,
 ) -> list[ValidationError]:
     errors: list[ValidationError] = []
-    allowed = _METHOD_ALLOWED_DRIVERS.get(method, _METHOD_ALLOWED_DRIVERS.get("dcf_primary", set()))
+    allowed = _METHOD_ALLOWED_DRIVERS.get(
+        method, _METHOD_ALLOWED_DRIVERS.get("dcf_primary", set())
+    )
     known = allowed | _STRUCTURED_DRIVERS | _POSITIVE_DRIVERS | _NEGATIVE_DRIVERS
     for scenario_code, scenario in scenarios.items():
         for driver, value in scenario.items():
@@ -160,7 +164,9 @@ def validate_scenario_differentiation(
     if contract_errors:
         return ValidationReport(status="fail", errors=contract_errors, retryable=False)
 
-    allowed = _METHOD_ALLOWED_DRIVERS.get(method, _METHOD_ALLOWED_DRIVERS.get("dcf_primary", set()))
+    allowed = _METHOD_ALLOWED_DRIVERS.get(
+        method, _METHOD_ALLOWED_DRIVERS.get("dcf_primary", set())
+    )
     quality_errors: list[ValidationError] = []
     warnings: list[ValidationError] = []
 
@@ -220,7 +226,9 @@ def validate_scenario_differentiation(
         bear = resolved["Bear"].get(driver)
         if not all(_is_number(v) for v in (bull, base, bear)):
             continue
-        if driver in _POSITIVE_DRIVERS and not (float(bull) >= float(base) >= float(bear)):
+        if driver in _POSITIVE_DRIVERS and not (
+            float(bull) >= float(base) >= float(bear)
+        ):
             quality_errors.append(
                 ValidationError(
                     path=f"scenarios.{driver}",
@@ -231,7 +239,9 @@ def validate_scenario_differentiation(
                     ),
                 )
             )
-        if driver in _NEGATIVE_DRIVERS and not (float(bull) <= float(base) <= float(bear)):
+        if driver in _NEGATIVE_DRIVERS and not (
+            float(bull) <= float(base) <= float(bear)
+        ):
             quality_errors.append(
                 ValidationError(
                     path=f"scenarios.{driver}",

@@ -23,9 +23,7 @@ def regress_beta(
     variance = sum((b - benchmark_mean) ** 2 for _, b in pairs)
     if variance <= 0:
         raise ValueError("benchmark return variance must be positive")
-    covariance = sum(
-        (s - stock_mean) * (b - benchmark_mean) for s, b in pairs
-    )
+    covariance = sum((s - stock_mean) * (b - benchmark_mean) for s, b in pairs)
     beta = covariance / variance
     if not math.isfinite(beta):
         raise ValueError("regressed beta is not finite")

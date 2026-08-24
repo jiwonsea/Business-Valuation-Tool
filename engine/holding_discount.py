@@ -51,7 +51,9 @@ def build_holding_discount_bridge(
     total_discount = access_discount + governance_discount + overhang_discount
     net_equity_value = gross_equity_value - total_discount
     if total_discount > max(gross_equity_value, 0):
-        warnings.append("holding discount 총액이 gross equity를 초과해 net equity가 음수입니다.")
+        warnings.append(
+            "holding discount 총액이 gross equity를 초과해 net equity가 음수입니다."
+        )
     elif net_equity_value < 0:
         warnings.append(
             "net equity가 음수입니다 — Bear 시나리오에서 gross equity부터 음수인 경우 "

@@ -63,7 +63,7 @@ _MEDIA_BLOCKLIST: frozenset[str] = frozenset(
 
 def _contains_korean(text: str) -> bool:
     """Return True if text contains any Hangul syllable."""
-    return any("\uAC00" <= ch <= "\uD7A3" for ch in text)
+    return any("\uac00" <= ch <= "\ud7a3" for ch in text)
 
 
 def _filter_companies(companies: list[dict], market: str) -> list[dict]:
@@ -347,7 +347,9 @@ class DiscoveryEngine:
                 "news": [],
             }
 
-        summary = "US discovery used SaveTicker ticker-tagged news ranked by mention count."
+        summary = (
+            "US discovery used SaveTicker ticker-tagged news ranked by mention count."
+        )
         _safe_print("\n[Recommended US tickers]")
         for i, co in enumerate(companies, 1):
             _safe_print(f"  {i}. {co.get('ticker', '')} - {co.get('reason', '')}")

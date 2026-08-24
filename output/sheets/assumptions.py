@@ -58,12 +58,16 @@ def sheet_assumptions(ctx: Ctx):
         if forward.revenue:
             write_cell(ws, r, 1, "Forward Revenue")
             write_cell(ws, r, 2, f"{forward.revenue.value:,.0f} {forward.revenue.unit}")
-            write_cell(ws, r, 3, f"{forward.provider}, mean, n={forward.revenue.n_analysts}")
+            write_cell(
+                ws, r, 3, f"{forward.provider}, mean, n={forward.revenue.n_analysts}"
+            )
             r += 1
         if forward.eps:
             write_cell(ws, r, 1, "Forward EPS")
             write_cell(ws, r, 2, f"{forward.eps.value:,.2f} {forward.eps.unit}")
-            write_cell(ws, r, 3, f"{forward.provider}, mean, n={forward.eps.n_analysts}")
+            write_cell(
+                ws, r, 3, f"{forward.provider}, mean, n={forward.eps.n_analysts}"
+            )
             r += 1
         write_cell(ws, r, 1, "예측 기준일")
         write_cell(ws, r, 2, str(forward.as_of))
@@ -77,7 +81,12 @@ def sheet_assumptions(ctx: Ctx):
         r += 1
         write_cell(ws, r, 1, "판정")
         write_cell(ws, r, 2, judgement.status)
-        write_cell(ws, r, 3, f"raw βL {judgement.company_raw_bl:.3f}; n={judgement.n_qualified}; WACC 미변경")
+        write_cell(
+            ws,
+            r,
+            3,
+            f"raw βL {judgement.company_raw_bl:.3f}; n={judgement.n_qualified}; WACC 미변경",
+        )
         r += 2
 
     # ── WACC / Ke (common) ──

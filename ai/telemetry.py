@@ -7,7 +7,7 @@ import os
 import threading
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Literal
@@ -118,7 +118,11 @@ def emit(event: str, **fields: object) -> None:
         **fields,
     }
     configured_path = os.getenv("BVT_TELEMETRY_PATH")
-    path = Path(configured_path) if configured_path else _PROJECT_ROOT / ".cache" / "llm_events.jsonl"
+    path = (
+        Path(configured_path)
+        if configured_path
+        else _PROJECT_ROOT / ".cache" / "llm_events.jsonl"
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(payload, ensure_ascii=False, default=str) + "\n"
     with _write_lock:

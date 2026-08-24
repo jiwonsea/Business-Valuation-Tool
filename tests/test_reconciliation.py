@@ -162,9 +162,7 @@ class TestCheckUnitConsistency:
         assert f.severity == "block"
 
     def test_missing_skips(self):
-        assert (
-            check_unit_consistency(None, 10, "op", 2025, "a", "b") is None
-        )
+        assert check_unit_consistency(None, 10, "op", 2025, "a", "b") is None
 
 
 # ═══════════════════════════════════════════════════════════
@@ -174,7 +172,9 @@ class TestCheckUnitConsistency:
 
 class TestReconcileMarketData:
     def test_consistent_data_is_ok(self):
-        report = reconcile_market_data(make_financials(), make_shares_info(), market="KR")
+        report = reconcile_market_data(
+            make_financials(), make_shares_info(), market="KR"
+        )
         assert report.status == "ok"
         assert not report.blocked
         # Identity checks ran and passed
@@ -185,7 +185,9 @@ class TestReconcileMarketData:
     def test_synthetic_2x_shares_blocks(self):
         """The known bug class: registry shares 2x the market-implied count."""
         report = reconcile_market_data(
-            make_financials(), make_shares_info(shares_total=TRUE_SHARES * 2), market="KR"
+            make_financials(),
+            make_shares_info(shares_total=TRUE_SHARES * 2),
+            market="KR",
         )
         assert report.blocked
         blocked = {f.check for f in report.findings if f.severity == "block"}
@@ -206,7 +208,10 @@ class TestReconcileMarketData:
         info = make_shares_info(price=0, market_cap=0)
         report = reconcile_market_data(make_financials(), info, market="KR")
         assert report.status == "ok"
-        assert {f.check for f in report.findings} & {"share_count", "market_cap"} == set()
+        assert {f.check for f in report.findings} & {
+            "share_count",
+            "market_cap",
+        } == set()
 
     def test_empty_financials_no_crash(self):
         report = reconcile_market_data({}, make_shares_info(), market="KR")
@@ -245,7 +250,10 @@ class TestReconcileMarketData:
     def test_op_exceeds_revenue_warns(self):
         fin = make_financials(op=15_000_000)
         report = reconcile_market_data(fin, make_shares_info(), market="KR")
-        assert any(f.check == "op_exceeds_revenue" and f.severity == "warn" for f in report.findings)
+        assert any(
+            f.check == "op_exceeds_revenue" and f.severity == "warn"
+            for f in report.findings
+        )
         assert not report.blocked  # sanity warns never block
 
     def test_zero_liabilities_warns(self):
@@ -260,7 +268,9 @@ class TestReconcileMarketData:
 
     def test_report_to_dict_yaml_safe(self):
         report = reconcile_market_data(
-            make_financials(), make_shares_info(shares_total=TRUE_SHARES * 2), market="KR"
+            make_financials(),
+            make_shares_info(shares_total=TRUE_SHARES * 2),
+            market="KR",
         )
         d = report.to_dict()
         assert d["status"] == "block"
@@ -311,7 +321,9 @@ def _patch_project_root(monkeypatch, tmp_path):
     import pipeline.macro_data as macro_data
 
     monkeypatch.setattr(macro_data, "get_terminal_growth", lambda market="KR": 2.0)
-    monkeypatch.setattr(macro_data, "get_diluted_shares", lambda ticker, market="US": None)
+    monkeypatch.setattr(
+        macro_data, "get_diluted_shares", lambda ticker, market="US": None
+    )
 
 
 class TestProfileGeneratorGate:

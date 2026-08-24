@@ -48,7 +48,9 @@ def sheet_relative(ctx: Ctx):
     for c, w in enumerate([22, 14, 12, 52], 1):
         ws.column_dimensions[get_column_letter(c)].width = w
 
-    write_cell(ws, 1, 1, "상대가치 진단 (Relative Valuation Diagnostics)", font=TITLE_FONT)
+    write_cell(
+        ws, 1, 1, "상대가치 진단 (Relative Valuation Diagnostics)", font=TITLE_FONT
+    )
 
     if not rv.basis_aligned:
         write_cell(ws, 3, 1, "⚠ 기준일 불일치 — 진단 배수 미출력", font=SECTION_FONT)
@@ -77,7 +79,11 @@ def sheet_relative(ctx: Ctx):
         else:
             write_cell(ws, r, 2, m.value, fmt=MULT_FMT)
         status = (m.status or "").upper()
-        fill = GREEN_FILL if m.status == "ok" else (YELLOW_FILL if m.status == "caution" else RED_FILL)
+        fill = (
+            GREEN_FILL
+            if m.status == "ok"
+            else (YELLOW_FILL if m.status == "caution" else RED_FILL)
+        )
         write_cell(ws, r, 3, status, fill=fill)
         write_cell(ws, r, 4, m.note or "")
 
@@ -114,10 +120,20 @@ def sheet_relative(ctx: Ctx):
         for v in rv.verdicts:
             r += 1
             write_cell(ws, r, 1, v.name)
-            write_cell(ws, r, 2, v.actual if v.actual is not None else "N/A",
-                       fmt=MULT_FMT if v.actual is not None else None)
-            write_cell(ws, r, 3, v.justified if v.justified is not None else "N/A",
-                       fmt=MULT_FMT if v.justified is not None else None)
+            write_cell(
+                ws,
+                r,
+                2,
+                v.actual if v.actual is not None else "N/A",
+                fmt=MULT_FMT if v.actual is not None else None,
+            )
+            write_cell(
+                ws,
+                r,
+                3,
+                v.justified if v.justified is not None else "N/A",
+                fmt=MULT_FMT if v.justified is not None else None,
+            )
             write_cell(ws, r, 4, f"{v.gap_pct:+.1f}%" if v.gap_pct is not None else "—")
             fill = {
                 "저평가": GREEN_FILL,
@@ -130,8 +146,12 @@ def sheet_relative(ctx: Ctx):
     if rv.growth_pct is not None:
         r += 2
         write_cell(
-            ws, r, 1,
+            ws,
+            r,
+            1,
             f"* PEG/정당배수 성장률: {rv.growth_pct:.1f}% ({rv.growth_source})",
         )
     r += 1
-    write_cell(ws, r, 1, "* 진단 레이어 — 주가치 산정의 1차 방법론이 아닌 정합성 점검용")
+    write_cell(
+        ws, r, 1, "* 진단 레이어 — 주가치 산정의 1차 방법론이 아닌 정합성 점검용"
+    )

@@ -68,19 +68,25 @@ def collect_beta_observation(
         payload = json.loads(snapshot.read_text(encoding="utf-8"))
         window_end = date.fromisoformat(payload["window_end"])
         if window_end <= analysis_date and (analysis_date - window_end).days <= 7:
-            encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+            encoded = json.dumps(
+                payload, sort_keys=True, separators=(",", ":")
+            ).encode()
             digest = hashlib.sha256(encoded).hexdigest()
             return _from_payload(payload, digest), digest, str(snapshot)
 
     start = analysis_date - timedelta(days=2 * 365 + 14)
     end = analysis_date + timedelta(days=1)
     stock = yf.Ticker(ticker).history(start=start, end=end, auto_adjust=True)["Close"]
-    index = yf.Ticker(benchmark).history(start=start, end=end, auto_adjust=True)["Close"]
+    index = yf.Ticker(benchmark).history(start=start, end=end, auto_adjust=True)[
+        "Close"
+    ]
     stock_returns = _weekly_log_returns(stock)
     benchmark_returns = _weekly_log_returns(index)
     common = sorted(set(stock_returns) & set(benchmark_returns))
     if len(common) < _MIN_OBSERVATIONS:
-        raise ValueError(f"beta regression requires {_MIN_OBSERVATIONS} observations; got {len(common)}")
+        raise ValueError(
+            f"beta regression requires {_MIN_OBSERVATIONS} observations; got {len(common)}"
+        )
     if (analysis_date - common[-1]).days > 7:
         raise ValueError("beta observation is stale")
     beta, n_obs = regress_beta(
@@ -98,7 +104,12 @@ def collect_beta_observation(
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     digest = hashlib.sha256(encoded).hexdigest()
-    snapshot = _ROOT / ".cache" / "beta_observations" / f"{ticker}_{benchmark}_{common[-1]}.json"
+    snapshot = (
+        _ROOT
+        / ".cache"
+        / "beta_observations"
+        / f"{ticker}_{benchmark}_{common[-1]}.json"
+    )
     snapshot.parent.mkdir(parents=True, exist_ok=True)
     snapshot.write_bytes(encoded)
     observation = _from_payload(payload, digest)

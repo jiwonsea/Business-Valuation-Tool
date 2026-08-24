@@ -54,10 +54,10 @@ def _render_news_links(news: list[dict], limit: int = 2) -> str:
         return ""
     return (
         '<div style="margin-top:8px;font-size:12px;color:#444;">'
-        '<strong>관련 기사</strong>'
+        "<strong>관련 기사</strong>"
         '<ul style="margin:4px 0;padding-left:16px;line-height:1.5;">'
-        f'{"".join(items)}'
-        '</ul></div>'
+        f"{''.join(items)}"
+        "</ul></div>"
     )
 
 
@@ -329,9 +329,9 @@ def build_gmail_html(summary: dict, gamma_urls: dict | None = None) -> str:
                 f'<div style="margin-top:8px;">'
                 f'<a href="{download_url}" '
                 f'style="display:inline-block;background:#1a73e8;color:white;'
-                f'padding:7px 12px;border-radius:6px;text-decoration:none;'
+                f"padding:7px 12px;border-radius:6px;text-decoration:none;"
                 f'font-size:12px;font-weight:bold;">📥 엑셀 다운로드</a>'
-                f'</div>'
+                f"</div>"
             )
 
         reason = _esc(v.get("reason", ""))

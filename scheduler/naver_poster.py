@@ -129,7 +129,11 @@ def _download_logo(domain: str) -> str:
         try:
             resp = requests.get(url, timeout=5)
             content_type = resp.headers.get("content-type", "")
-            if resp.ok and content_type.startswith("image/") and len(resp.content) > 500:
+            if (
+                resp.ok
+                and content_type.startswith("image/")
+                and len(resp.content) > 500
+            ):
                 # Always save as .png after normalization — uniform format
                 # downstream makes SE3 upload behavior deterministic.
                 fd, tmp_path = tempfile.mkstemp(suffix=".png")
@@ -161,9 +165,7 @@ def _download_logo(domain: str) -> str:
         return path
 
     # 3. Google Favicon (128 px last-resort)
-    path = _fetch(
-        f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
-    )
+    path = _fetch(f"https://www.google.com/s2/favicons?domain={domain}&sz=128")
     if path:
         logger.info("Logo downloaded (Google favicon) domain=%s", domain)
         return path
@@ -238,13 +240,16 @@ def _handle_file_dialog_win32(file_path: str, timeout: float = 10.0) -> bool:
                 win32gui.SendMessage(edit, win32con.WM_SETTEXT, 0, file_path)
                 time.sleep(0.15)
                 import win32api as _win32api
+
                 _win32api.SendMessage(hwnd, win32con.WM_COMMAND, win32con.IDOK, 0)
                 logger.debug("SE3 file dialog: path set via win32gui.")
                 return True
             else:
                 logger.debug("SE3 file dialog: Edit control not found (hwnd=%d).", hwnd)
         else:
-            logger.debug("SE3 file dialog: no file-open dialog found within %.1fs.", timeout)
+            logger.debug(
+                "SE3 file dialog: no file-open dialog found within %.1fs.", timeout
+            )
 
     return False
 
@@ -270,9 +275,7 @@ def _insert_logo_se3(driver: webdriver.Chrome, logo_path: str) -> bool:
 
     # Step 1 — click the image insertion button in the toolbar
     try:
-        img_btn = driver.find_element(
-            By.CSS_SELECTOR, "button.se-image-toolbar-button"
-        )
+        img_btn = driver.find_element(By.CSS_SELECTOR, "button.se-image-toolbar-button")
         img_btn.click()
         logger.info("SE3 image toolbar button clicked for %s", abs_path)
     except (NoSuchElementException, WebDriverException) as e:
@@ -473,7 +476,9 @@ def build_blog_sections(summary: dict) -> tuple[str, list[dict]]:
     # ── 기업별 분석 ──
     success_valuations = [v for v in valuations if v.get("status") == "success"]
     if success_valuations:
-        sections.append({"type": _SEC_TEXT, "content": "\n\n■ 기업별 밸류에이션 요약\n"})
+        sections.append(
+            {"type": _SEC_TEXT, "content": "\n\n■ 기업별 밸류에이션 요약\n"}
+        )
         for v in success_valuations:
             name = v.get("company", "")
             sections.append(
@@ -675,7 +680,9 @@ def _dismiss_draft_dialog(driver: webdriver.Chrome) -> None:
     """
     try:
         btn = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.se-popup-button-confirm"))
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, "button.se-popup-button-confirm")
+            )
         )
         btn.click()
         logger.debug("Draft resume dialog dismissed.")
@@ -786,7 +793,9 @@ def _set_content_with_sections(
             return _set_content(driver, wait, body)
 
         # Select-all to clear any existing draft content
-        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+            Keys.CONTROL
+        ).perform()
         time.sleep(0.1)
         ActionChains(driver).send_keys(Keys.DELETE).perform()
         time.sleep(0.1)
@@ -859,7 +868,9 @@ def _set_content(driver: webdriver.Chrome, wait: WebDriverWait, body: str) -> bo
         area.click()
         time.sleep(0.3)
         # Select all existing content and replace
-        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+            Keys.CONTROL
+        ).perform()
         ActionChains(driver).send_keys(body).perform()
         logger.debug("Content set via SE3 se-body click.")
         return True
@@ -975,9 +986,18 @@ def _publish(driver: webdriver.Chrome, wait: WebDriverWait) -> bool:
     # ── Step 2: click confirm inside the publish-settings layer ──────────────
     # Layer has class 'layer_publish__*' and the confirm button 'confirm_btn__*'
     confirm_selectors = [
-        (By.XPATH, "//div[contains(@class,'layer_publish')]//button[contains(@class,'confirm_btn')]"),
-        (By.XPATH, "//div[contains(@class,'layer_popup')]//button[contains(@class,'confirm_btn')]"),
-        (By.XPATH, "//div[contains(@class,'layer_btn_area')]//button[contains(@class,'confirm_btn')]"),
+        (
+            By.XPATH,
+            "//div[contains(@class,'layer_publish')]//button[contains(@class,'confirm_btn')]",
+        ),
+        (
+            By.XPATH,
+            "//div[contains(@class,'layer_popup')]//button[contains(@class,'confirm_btn')]",
+        ),
+        (
+            By.XPATH,
+            "//div[contains(@class,'layer_btn_area')]//button[contains(@class,'confirm_btn')]",
+        ),
         (By.CSS_SELECTOR, "div[class*='layer_publish'] button[class*='confirm_btn']"),
         (By.CSS_SELECTOR, "div[class*='layer_popup'] button[class*='confirm_btn']"),
     ]
@@ -1029,9 +1049,7 @@ def _get_published_url(
     """Wait for navigation to a published post URL and return it."""
     try:
         # postview/logNo appear only after the compose page transitions to the published post
-        wait.until(
-            lambda d: "postview" in d.current_url or "logNo" in d.current_url
-        )
+        wait.until(lambda d: "postview" in d.current_url or "logNo" in d.current_url)
         return driver.current_url
     except TimeoutException:
         pass
@@ -1098,7 +1116,9 @@ def post_to_naver(summary: dict) -> str | None:
         ActionChains(driver).send_keys(Keys.TAB).perform()
         time.sleep(0.5)
 
-        if not _set_content_with_sections(driver, WebDriverWait(driver, _SHORT), sections):
+        if not _set_content_with_sections(
+            driver, WebDriverWait(driver, _SHORT), sections
+        ):
             logger.error("Content injection failed — aborting post.")
             return None
 
@@ -1188,7 +1208,9 @@ def _run_image_diagnostics(driver: webdriver.Chrome, wait: WebDriverWait) -> Non
         .map(el => ({tag: el.tagName, cls: el.className.substring(0,120), type: el.type||'', id: el.id||''}));
         """
     )
-    _safe_print(f"\n[Diagnostic] Visible image-related elements after click ({len(visible)}):")
+    _safe_print(
+        f"\n[Diagnostic] Visible image-related elements after click ({len(visible)}):"
+    )
     _safe_print(json.dumps(visible, ensure_ascii=False, indent=2))
 
     # Hidden file inputs (the actual upload target in SE3)
@@ -1196,19 +1218,27 @@ def _run_image_diagnostics(driver: webdriver.Chrome, wait: WebDriverWait) -> Non
         "return Array.from(document.querySelectorAll('input[type=\"file\"]'))"
         ".map(el => ({tag: el.tagName, cls: el.className.substring(0,120), id: el.id||'', hidden: el.offsetParent===null}));"
     )
-    _safe_print(f"\n[Diagnostic] All input[type='file'] in DOM (including hidden) ({len(hidden_file_inputs)}):")
+    _safe_print(
+        f"\n[Diagnostic] All input[type='file'] in DOM (including hidden) ({len(hidden_file_inputs)}):"
+    )
     _safe_print(json.dumps(hidden_file_inputs, ensure_ascii=False, indent=2))
 
     if hidden_file_inputs:
-        _safe_print("\n  ✓ Hidden file input found — send_keys on hidden input should work (Selenium standard).")
+        _safe_print(
+            "\n  ✓ Hidden file input found — send_keys on hidden input should work (Selenium standard)."
+        )
     else:
-        _safe_print("\n  ✗ No input[type='file'] anywhere in DOM — SE3 upload flow is non-standard.")
+        _safe_print(
+            "\n  ✗ No input[type='file'] anywhere in DOM — SE3 upload flow is non-standard."
+        )
 
 
 def main() -> None:
     """CLI entry point for standalone testing."""
     parser = argparse.ArgumentParser(description="Post weekly report to Naver Blog")
-    parser.add_argument("--test", action="store_true", help="Dry run: print content only")
+    parser.add_argument(
+        "--test", action="store_true", help="Dry run: print content only"
+    )
     parser.add_argument(
         "--diagnose-image",
         action="store_true",
@@ -1258,7 +1288,9 @@ def main() -> None:
             _focus_body(driver, WebDriverWait(driver, _SHORT))
             time.sleep(0.5)
             _run_image_diagnostics(driver, wait)
-            _safe_print("\n[Diagnostic] Done. Browser stays open for 30s for manual inspection.")
+            _safe_print(
+                "\n[Diagnostic] Done. Browser stays open for 30s for manual inspection."
+            )
             time.sleep(30)
         finally:
             if driver:

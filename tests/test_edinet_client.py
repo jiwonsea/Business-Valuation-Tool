@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from pipeline import edinet_client
-from pipeline.data_fetcher import CompanyIdentity, DataFetcher, _is_jp_ticker
+from pipeline.data_fetcher import DataFetcher, _is_jp_ticker
 
 
 FIXTURES = Path(__file__).parent / "fixtures"

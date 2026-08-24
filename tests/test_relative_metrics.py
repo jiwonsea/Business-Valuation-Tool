@@ -4,7 +4,7 @@ import math
 
 from engine.relative_metrics import (
     OK, CAUTION, NA,
-    trailing_pe, forward_pe, price_to_book, ev_ebitda, ev_sales, dividend_yield,
+    trailing_pe, price_to_book, ev_ebitda, ev_sales, dividend_yield,
     peg, pegy, justified_pe, justified_pb, multiple_verdict,
 )
 

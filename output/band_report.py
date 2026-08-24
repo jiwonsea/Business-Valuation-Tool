@@ -29,7 +29,7 @@ def print_band_reports(
         cur = current.get(band.label)
         print(f"\n[{band.label}] {band.company} — 관측 {band.n_obs}건")
         if band.n_obs == 0:
-            print(f"  이력 부족(N=0) — 밴드 미산출")
+            print("  이력 부족(N=0) — 밴드 미산출")
         else:
             print(
                 f"  min {_fmt(band.band_min)} | p25 {_fmt(band.p25)} | "
@@ -44,7 +44,7 @@ def print_band_reports(
                 rank_txt = f", 역사적 백분위 {rank * 100:.0f}%" if rank is not None else ""
                 print(f"  현재 {_fmt(cur)} → {verdict}{rank_txt}")
             else:
-                print(f"  현재 배수 없음 — 위치 판정 생략")
+                print("  현재 배수 없음 — 위치 판정 생략")
         for exc in band.excluded:
             reason = (
                 exc.price_reason.value

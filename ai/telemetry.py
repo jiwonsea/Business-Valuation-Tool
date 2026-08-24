@@ -7,7 +7,7 @@ import os
 import threading
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Literal

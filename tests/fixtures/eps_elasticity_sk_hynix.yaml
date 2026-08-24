@@ -1,0 +1,18 @@
+base_year: 2025
+ebitda_base: 61595819
+da_base: 14389500
+revenue_base: 97146675
+net_income_base: 42919287
+wacc_pct: 10.64
+net_debt: 9834082
+shares: 701691520
+unit_multiplier: 1000000
+dcf_params:
+  ebitda_growth_rates: [0.10, 0.0825, 0.065, 0.0475, 0.03]
+  tax_rate: 9.1
+  capex_to_da: 1.34
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 2.0
+  actual_capex: 28579343
+  capex_fade_to: 1.3
+  da_to_ebitda_override: null

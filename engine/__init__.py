@@ -21,6 +21,7 @@ from .market_comparison import compare_to_market
 from .growth import linear_fade, calc_ebitda_growth, generate_growth_rates
 from .drivers import resolve_drivers
 from .rnpv import calc_rnpv, PHASE_POS
+from .eps_elasticity import measure_eps_elasticity
 
 __all__ = [
     "calc_wacc",
@@ -52,4 +53,5 @@ __all__ = [
     "resolve_drivers",
     "calc_rnpv",
     "PHASE_POS",
+    "measure_eps_elasticity",
 ]

@@ -34,6 +34,7 @@ def quarter_period_end(label: str) -> date:
 # Company meta
 # ---------------------------------------------------------------------------
 
+
 class CompanyMeta(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -58,6 +59,7 @@ class SharesOutstanding(BaseModel):
 # ---------------------------------------------------------------------------
 # Assumptions (input to engine)
 # ---------------------------------------------------------------------------
+
 
 class SegmentAssumptions(BaseModel):
     """Single-scenario segment-level driver assumptions for N quarters."""
@@ -175,6 +177,7 @@ class MarginBaseline(BaseModel):
 # Quarterly data (actual + forecast share the same shape)
 # ---------------------------------------------------------------------------
 
+
 class SegmentForecast(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -244,6 +247,7 @@ class AnnualForecast(BaseModel):
 # Scenario tree
 # ---------------------------------------------------------------------------
 
+
 class ScenarioProbabilities(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -290,6 +294,7 @@ class ScenarioTree(BaseModel):
 # Consensus
 # ---------------------------------------------------------------------------
 
+
 class ConsensusRecord(BaseModel):
     """Snapshot of analyst consensus from yfinance."""
 
@@ -301,7 +306,7 @@ class ConsensusRecord(BaseModel):
     # quarter_label -> consensus value
     revenue_estimate_quarterly: dict[str, float | None]
     eps_estimate_quarterly: dict[str, float | None]
-    revenue_estimate_annual: dict[int, float | None]   # fiscal_year -> value
+    revenue_estimate_annual: dict[int, float | None]  # fiscal_year -> value
     eps_estimate_annual: dict[int, float | None]
 
     # Historical (prior 4Q): {quarter_label: {actual, estimate, surprise_pct}}
@@ -319,7 +324,7 @@ class ConsensusGap(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    period_label: str        # "2026Q1" or "FY26"
+    period_label: str  # "2026Q1" or "FY26"
     metric: Literal["revenue", "eps"]
 
     model_value: float
@@ -335,6 +340,7 @@ class ConsensusGap(BaseModel):
 # Backtest
 # ---------------------------------------------------------------------------
 
+
 class BacktestQuarter(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -347,7 +353,7 @@ class BacktestQuarter(BaseModel):
     model_eps: float | None
     eps_error_pct: float | None
 
-    direction_match: bool   # model predicted same sign of QoQ change as actual
+    direction_match: bool  # model predicted same sign of QoQ change as actual
 
 
 class BacktestSkill(BaseModel):
@@ -363,17 +369,17 @@ class BacktestSkill(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     naive_rw_revenue_mape: float | None  # RW absolute revenue MAPE (reference)
-    naive_rw_eps_mape: float | None      # RW absolute EPS MAPE (reference)
-    n: int = 0                            # quarters scored for revenue metrics
-    n_eps: int = 0                        # quarters scored for EPS metrics
-    mase_revenue: float | None           # model MAE / RW MAE; < 1 -> skill
+    naive_rw_eps_mape: float | None  # RW absolute EPS MAPE (reference)
+    n: int = 0  # quarters scored for revenue metrics
+    n_eps: int = 0  # quarters scored for EPS metrics
+    mase_revenue: float | None  # model MAE / RW MAE; < 1 -> skill
     mase_eps: float | None
-    theil_u2_revenue: float | None       # model RMSE / RW RMSE; < 1 -> skill
+    theil_u2_revenue: float | None  # model RMSE / RW RMSE; < 1 -> skill
     theil_u2_eps: float | None
     rw_hit_ratio_direction: float | None  # RW's own direction hit-ratio (vs model's)
     skill_score_eps_vs_consensus: float | None  # 1 - model MAE / consensus MAE; > 0 -> skill
-    surprise_direction_accuracy: float | None   # sign(model-est) == sign(actual-est)
-    n_surprise_scored: int               # quarters with usable vintage consensus
+    surprise_direction_accuracy: float | None  # sign(model-est) == sign(actual-est)
+    n_surprise_scored: int  # quarters with usable vintage consensus
     trailing_8q: BacktestSkill | None = None
 
 
@@ -386,15 +392,16 @@ class BacktestResult(BaseModel):
     revenue_mape: float
     eps_mape: float | None
     hit_ratio_direction: float
-    bias_revenue: float   # avg signed error %
+    bias_revenue: float  # avg signed error %
     bias_eps: float | None
 
-    skill: BacktestSkill | None = None   # additive; None on legacy / un-wired paths
+    skill: BacktestSkill | None = None  # additive; None on legacy / un-wired paths
 
 
 # ---------------------------------------------------------------------------
 # Divergence diagnosis (workstream ①, PLAN_backtest_honesty.md)
 # ---------------------------------------------------------------------------
+
 
 class DriverAttribution(BaseModel):
     """Post-mortem attribution of one quarter's model-vs-actual EPS error.
@@ -417,7 +424,7 @@ class DriverAttribution(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     quarter_label: str
-    eps_error_total: float          # (model_eps − actual_eps) / actual_eps
+    eps_error_total: float  # (model_eps − actual_eps) / actual_eps
 
     contrib_revenue: float
     contrib_gross_margin: float
@@ -426,7 +433,7 @@ class DriverAttribution(BaseModel):
     contrib_shares: float
 
     model_basic_shares: int
-    actual_implied_basic_shares: float   # NI_actual × 1e9 / eps_actual
+    actual_implied_basic_shares: float  # NI_actual × 1e9 / eps_actual
 
 
 # ---------------------------------------------------------------------------
@@ -447,11 +454,11 @@ class DisclosureDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source: DisclosureSource
-    doc_date: date           # publication date (used for look-ahead checks)
-    period_label: str        # reporting period the text describes, e.g. "2025Q4"
+    doc_date: date  # publication date (used for look-ahead checks)
+    period_label: str  # reporting period the text describes, e.g. "2025Q4"
     raw_text: str
-    char_count_kr: int = 0   # Korean-character count (sanity check, not OCR scan)
-    url_or_path: str = ""    # DART rcpNo URL or local deck PDF path
+    char_count_kr: int = 0  # Korean-character count (sanity check, not OCR scan)
+    url_or_path: str = ""  # DART rcpNo URL or local deck PDF path
 
 
 class TopicEmphasis(BaseModel):
@@ -489,14 +496,14 @@ class CallBrief(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     as_of: date
-    target_event_label: str           # the upcoming event, e.g. "2026Q2"
+    target_event_label: str  # the upcoming event, e.g. "2026Q2"
     top_topics: list[TopicEmphasis]
     expected_qna: list[str] = Field(default_factory=list)
     dispersion_flags: list[str] = Field(default_factory=list)
     predicted_revision_direction: Literal["up", "flat", "down", "n_a"] = "n_a"
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    interpretation: str = ""          # user fills in; engine leaves empty
+    interpretation: str = ""  # user fills in; engine leaves empty
 
 
 class SignalEventResult(BaseModel):
@@ -507,14 +514,14 @@ class SignalEventResult(BaseModel):
     event_label: str
     t0: date
 
-    car_t1: float | None = None       # CAR[T0 -> T+1d], market-adjusted
-    car_t5: float | None = None       # CAR[T0 -> T+5d], secondary
+    car_t1: float | None = None  # CAR[T0 -> T+1d], market-adjusted
+    car_t5: float | None = None  # CAR[T0 -> T+5d], secondary
 
     signal_tone: SignalTone
-    signal_score: float               # salience-weighted tone, continuous (for IC)
-    predicted_sign: int               # +1 / 0 / -1 from signal_tone
+    signal_score: float  # salience-weighted tone, continuous (for IC)
+    predicted_sign: int  # +1 / 0 / -1 from signal_tone
 
-    realized_sign_t1: int | None = None   # sign(car_t1)
+    realized_sign_t1: int | None = None  # sign(car_t1)
     direction_match_t1: bool | None = None
 
 
@@ -526,7 +533,7 @@ class SignalBacktestResult(BaseModel):
     events: list[SignalEventResult]
     sample_n: int
     directional_hit_ratio: float
-    information_coefficient: float | None = None   # Spearman rank corr (signal vs CAR)
+    information_coefficient: float | None = None  # Spearman rank corr (signal vs CAR)
     calibration: dict[str, float] = Field(default_factory=dict)
     window_primary: str = "T+1d"
 
@@ -550,11 +557,11 @@ class Overlay(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    as_of_date: date                 # when the factor became public knowledge
-    target_period_label: str         # quarter it informs, e.g. "2026Q2"
-    driver: str                      # e.g. "USD/KRW FX valuation loss"
+    as_of_date: date  # when the factor became public knowledge
+    target_period_label: str  # quarter it informs, e.g. "2026Q2"
+    driver: str  # e.g. "USD/KRW FX valuation loss"
     direction: Literal["risk_up", "neutral", "risk_down"]  # risk to value, not EPS sign
-    magnitude: float                 # valuation/risk-layer units (NOT EPS fraction)
+    magnitude: float  # valuation/risk-layer units (NOT EPS fraction)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="after")
@@ -574,7 +581,7 @@ class EpsRiskBandQuarter(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     period_label: str
-    eps_point: float                 # echoed from QuarterlyForecast, never recomputed
+    eps_point: float  # echoed from QuarterlyForecast, never recomputed
     eps_lower: float
     eps_upper: float
 
@@ -596,7 +603,7 @@ class EpsRiskBand(BaseModel):
     half_width_pct: float = Field(..., ge=0.0)
     quarters: list[EpsRiskBandQuarter]
     overlays: list[Overlay] = Field(default_factory=list)
-    seam_note: str = ""              # documents the overlay -> valuation/DCF seam
+    seam_note: str = ""  # documents the overlay -> valuation/DCF seam
 
 
 class BelowOpEvent(BaseModel):
@@ -701,14 +708,50 @@ class ValuationBridgeResult(BaseModel):
     fiscal_year: int
     model_eps_fy: float
     consensus_eps_fy: float | None
-    eps_delta_pct: float | None          # (model - consensus) / consensus
+    eps_delta_pct: float | None  # (model - consensus) / consensus
     elasticity: float
-    fair_value_delta_pct: float | None   # elasticity × eps_delta_pct (layer 1)
-    fair_value_delta_low: float | None = None   # band lower projection
+    fair_value_delta_pct: float | None  # elasticity × eps_delta_pct (layer 1)
+    fair_value_delta_low: float | None = None  # band lower projection
     fair_value_delta_high: float | None = None  # band upper projection
-    overlay_risk_score: float = 0.0      # layer 2 — macro, NOT in fair_value_delta
+    overlay_risk_score: float = 0.0  # layer 2 — macro, NOT in fair_value_delta
     overlays: list[Overlay] = Field(default_factory=list)
     note: str = ""
+
+
+class ElasticityInputSha(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile: str
+    dcf_engine: str
+    wacc_engine: str
+    schemas: str
+
+
+class ElasticityProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["bvt_dcf", "manual", "placeholder"]
+    bvt_profile: str
+    bvt_commit: str
+    input_sha: ElasticityInputSha
+    mapping: Literal["recurring_ni_level_shock"]
+    measured_on: date
+    shock_pcts: tuple[float, float]
+    measured_elast_ev: float = Field(ge=0.0)
+    measured_elast_fv: float = Field(ge=0.0)
+    measured_elast_fv_profile_as_is: float = Field(ge=0.0)
+    fv_base_normalized: int
+    fv_base_profile_as_is: int
+    tax_rate_pct: float = Field(ge=0.0, lt=100.0)
+    tax_rate_basis: Literal["profile_as_is", "normalized"]
+    tax_rate_source: str
+
+    @model_validator(mode="after")
+    def validate_shock_pair(self) -> ElasticityProvenance:
+        low, high = self.shock_pcts
+        if low >= 0 or high <= 0 or low != -high:
+            raise ValueError("shock_pcts must be a non-zero symmetric [negative, positive] pair")
+        return self
 
 
 class ValuationConfig(BaseModel):
@@ -723,3 +766,4 @@ class ValuationConfig(BaseModel):
 
     fair_value_elasticity: float = Field(default=1.2, ge=0.0)
     overlay_weight: float = Field(default=1.0, ge=0.0)
+    elasticity_provenance: ElasticityProvenance | None = None

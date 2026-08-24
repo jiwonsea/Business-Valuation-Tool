@@ -15,7 +15,7 @@ import yaml
 from pydantic import ValidationError
 
 from forecast.pipeline.ir_loader import load_profile
-from forecast.schemas.models import ValuationConfig
+from forecast.schemas.models import ElasticityProvenance, ValuationConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,6 +46,52 @@ def test_ir_loader_returns_validated_config() -> None:
     assert cfg.overlay_weight >= 0.0
 
 
+def test_parses_full_elasticity_provenance() -> None:
+    cfg = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["valuation"]
+    provenance = cfg.elasticity_provenance
+    assert isinstance(provenance, ElasticityProvenance)
+    assert provenance.measured_elast_fv == 1.3047
+    assert provenance.measured_elast_fv_profile_as_is == 1.1009
+    assert provenance.fv_base_normalized == 673116
+    assert provenance.fv_base_profile_as_is == 797721
+
+
+def test_provenance_is_optional() -> None:
+    assert ValuationConfig().elasticity_provenance is None
+
+
+def test_rejects_invalid_provenance_identifiers_and_extra_keys() -> None:
+    raw = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["raw"]["valuation"]
+    for field, value in (("source", "unknown"), ("mapping", "unknown")):
+        invalid = copy.deepcopy(raw)
+        invalid["elasticity_provenance"][field] = value
+        with pytest.raises(ValidationError):
+            ValuationConfig.model_validate(invalid)
+    invalid = copy.deepcopy(raw)
+    invalid["elasticity_provenance"]["unexpected"] = True
+    with pytest.raises(ValidationError):
+        ValuationConfig.model_validate(invalid)
+
+
+def test_rejects_invalid_shock_pair() -> None:
+    raw = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["raw"]["valuation"]
+    for pair in ([0.0, 0.05], [-0.05, 0.04]):
+        invalid = copy.deepcopy(raw)
+        invalid["elasticity_provenance"]["shock_pcts"] = pair
+        with pytest.raises(ValidationError, match="symmetric"):
+            ValuationConfig.model_validate(invalid)
+
+
+def test_normalized_tax_provenance_round_trip() -> None:
+    cfg = load_profile(REPO_ROOT / "profiles" / "sk_hynix.yaml")["valuation"]
+    restored = ValuationConfig.model_validate(cfg.model_dump(mode="json"))
+    provenance = restored.elasticity_provenance
+    assert provenance is not None
+    assert provenance.tax_rate_pct == 22.0
+    assert provenance.tax_rate_basis == "normalized"
+    assert "single-year 1 - net_income/op" in provenance.tax_rate_source
+
+
 def test_load_profile_rejects_malformed_valuation_yaml(tmp_path) -> None:
     """A bad valuation: block in a real profile must fail at load_profile().
 
@@ -58,13 +104,17 @@ def test_load_profile_rejects_malformed_valuation_yaml(tmp_path) -> None:
     negative = copy.deepcopy(full["raw"])
     negative["valuation"] = {"fair_value_elasticity": -0.5, "overlay_weight": 1.0}
     neg_path = tmp_path / "negative_elasticity.yaml"
-    neg_path.write_text(yaml.safe_dump(negative, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    neg_path.write_text(
+        yaml.safe_dump(negative, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
     with pytest.raises(ValidationError):
         load_profile(neg_path)
 
     typo = copy.deepcopy(full["raw"])
     typo["valuation"] = {"elasticty": 1.2}  # unknown key -> extra=forbid
     typo_path = tmp_path / "typo_key.yaml"
-    typo_path.write_text(yaml.safe_dump(typo, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    typo_path.write_text(
+        yaml.safe_dump(typo, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
     with pytest.raises(ValidationError):
         load_profile(typo_path)

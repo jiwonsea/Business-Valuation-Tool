@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from schemas.provenance import (
     LEGACY_VERSION,
@@ -982,6 +982,23 @@ class DCFResult(BaseModel):
     ev_dcf_exit: Optional[int] = None  # DCF EV using exit multiple TV
     terminal_ev_ebitda: Optional[float] = None  # Applied exit multiple
     tv_ev_ratio: float = 0.0  # TV/EV ratio (Gordon Growth) for transparency
+
+
+class EpsElasticityResult(BaseModel):
+    """DCF response to a recurring reported-net-income level shock."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    elasticity_fv: float
+    elasticity_ev: float
+    fv_base: float
+    fv_shocked: float
+    ev_base: int
+    ev_shocked: int
+    shock_pct: float
+    mapping: Literal["recurring_ni_level_shock"]
+    tax_rate_pct: float
+    tax_rate_basis: Literal["profile_as_is", "normalized"]
 
 
 # ── Peer ──

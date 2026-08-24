@@ -54,8 +54,16 @@ def measure_eps_elasticity(
     )
     equity_base = base.ev_dcf - net_debt
     equity_shocked = shocked.ev_dcf - net_debt
-    if equity_base == 0:
-        raise ValueError("base equity value must be non-zero")
+    if base.ev_dcf <= 0:
+        raise ValueError(
+            f"base enterprise value must be positive (ev_base={base.ev_dcf:,})"
+        )
+    if equity_base <= 0:
+        raise ValueError(
+            "base equity value must be positive "
+            f"(ev_base={base.ev_dcf:,}; net_debt={net_debt:,}; "
+            f"equity_base={equity_base:,})"
+        )
 
     fv_base = equity_base * unit_multiplier / shares
     fv_shocked = equity_shocked * unit_multiplier / shares

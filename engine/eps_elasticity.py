@@ -19,21 +19,23 @@ def measure_eps_elasticity(
     shock_pct: float,
     base_year: int = 2025,
     tax_rate_pct: float | None = None,
-    tax_rate_basis: str = "profile_as_is",
 ) -> EpsElasticityResult:
     """Measure recurring reported-NI shock elasticity on per-share equity value.
 
     A tax override applies both to the NI-to-OP gross-up and to the DCF itself.
-    Revenue, D&A, net debt, and shares remain fixed.
+    Revenue, D&A, net debt, and shares remain fixed. ``tax_rate_basis`` is
+    derived, never accepted: an explicit ``tax_rate_pct`` -- even one equal to
+    ``dcf_params.tax_rate`` -- records that the operator made a normalization
+    decision (``"normalized"``); ``None`` means the profile rate was used as-is
+    (``"profile_as_is"``). The label can therefore never contradict
+    ``tax_rate_pct``.
     """
     if shock_pct == 0:
         raise ValueError("shock_pct must be non-zero")
     if shares <= 0:
         raise ValueError("shares must be positive")
-    if tax_rate_basis not in {"profile_as_is", "normalized"}:
-        raise ValueError("tax_rate_basis must be 'profile_as_is' or 'normalized'")
-
     effective_tax_rate = dcf_params.tax_rate if tax_rate_pct is None else tax_rate_pct
+    tax_rate_basis = "profile_as_is" if tax_rate_pct is None else "normalized"
     if not 0 <= effective_tax_rate < 100:
         raise ValueError("tax_rate_pct must be in [0, 100)")
     effective_params = dcf_params.model_copy(update={"tax_rate": effective_tax_rate})

@@ -21,7 +21,6 @@ def measure(inputs: dict, shock_pct: float, **overrides):
         **inputs,
         shock_pct=shock_pct,
         tax_rate_pct=overrides.pop("tax_rate_pct", 22.0),
-        tax_rate_basis=overrides.pop("tax_rate_basis", "normalized"),
         **overrides,
     )
 
@@ -69,3 +68,18 @@ def test_invalid_wacc_terminal_spread_is_propagated(inputs) -> None:
     invalid = {**inputs, "wacc_pct": 2.0}
     with pytest.raises(ValueError, match="WACC"):
         measure(invalid, 0.05)
+
+
+def test_tax_rate_basis_is_derived_from_override_presence(inputs) -> None:
+    normalized = measure(inputs, 0.05, tax_rate_pct=22.0)
+    profile_as_is = measure(inputs, 0.05, tax_rate_pct=None)
+
+    assert normalized.tax_rate_basis == "normalized"
+    assert profile_as_is.tax_rate_basis == "profile_as_is"
+    assert profile_as_is.tax_rate_pct == 9.1
+
+
+def test_explicit_override_equal_to_profile_rate_is_still_normalized(inputs) -> None:
+    result = measure(inputs, 0.05, tax_rate_pct=9.1)
+
+    assert result.tax_rate_basis == "normalized"

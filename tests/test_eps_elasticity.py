@@ -1,8 +1,10 @@
+import math
 from pathlib import Path
 
 import pytest
 import yaml
 
+from engine.dcf import calc_dcf
 from engine.eps_elasticity import measure_eps_elasticity
 from schemas.models import DCFParams
 
@@ -83,3 +85,66 @@ def test_explicit_override_equal_to_profile_rate_is_still_normalized(inputs) -> 
     result = measure(inputs, 0.05, tax_rate_pct=9.1)
 
     assert result.tax_rate_basis == "normalized"
+
+
+def test_nonpositive_base_equity_is_rejected(inputs) -> None:
+    ev_base = measure(inputs, 0.05).ev_base
+
+    with pytest.raises(
+        ValueError, match="base equity value must be positive"
+    ) as exc_info:
+        measure({**inputs, "net_debt": ev_base + 1}, 0.05)
+
+    message = str(exc_info.value)
+    assert "ev_base=" in message
+    assert "net_debt=" in message
+    assert "equity_base=" in message
+
+
+def test_zero_base_equity_is_rejected(inputs) -> None:
+    ev_base = measure(inputs, 0.05).ev_base
+
+    with pytest.raises(ValueError, match="base equity value must be positive"):
+        measure({**inputs, "net_debt": ev_base}, 0.05)
+
+
+def test_nonpositive_base_ev_is_rejected(inputs) -> None:
+    da_base = 70_000_000
+    params = inputs["dcf_params"].model_copy(update={"tax_rate": 22.0})
+    base = calc_dcf(
+        inputs["ebitda_base"],
+        da_base,
+        inputs["revenue_base"],
+        inputs["wacc_pct"],
+        params,
+        inputs["base_year"],
+    )
+    assert da_base > inputs["ebitda_base"]
+    assert base.ev_dcf <= 0
+
+    with pytest.raises(ValueError, match="base enterprise value must be positive"):
+        measure({**inputs, "da_base": da_base}, 0.05)
+
+
+def test_negative_shocked_equity_is_allowed(inputs) -> None:
+    shock_pct = -0.02
+    base = measure(inputs, shock_pct)
+    net_debt = base.ev_base - 1
+    ebitda_shocked = round(
+        inputs["ebitda_base"] + inputs["net_income_base"] * shock_pct / (1 - 22.0 / 100)
+    )
+    assert ebitda_shocked > 0
+
+    result = measure({**inputs, "net_debt": net_debt}, shock_pct)
+
+    assert result.ev_base - net_debt > 0
+    assert result.ev_shocked - net_debt < 0
+    assert math.isfinite(result.elasticity_fv)
+    assert result.fv_shocked < result.fv_base
+
+
+def test_positive_shock_never_yields_negative_fv_elasticity(inputs) -> None:
+    ev_base = measure(inputs, 0.05).ev_base
+
+    with pytest.raises(ValueError, match="base equity value must be positive"):
+        measure({**inputs, "net_debt": ev_base + 1}, 0.05)

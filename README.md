@@ -2,7 +2,7 @@
 
 AI-powered corporate valuation platform supporting Korean (KOSPI/KOSDAQ) and US (NYSE/NASDAQ) markets. Combines quantitative financial modeling with LLM-driven scenario analysis to produce institutional-grade valuation reports.
 
-**22,000+ lines of Python** | **365 tests** | **6 valuation methods** | **21 company profiles**
+**63,700 lines of Python + 17,400 lines of tests** | **1,070 test functions** | **6 valuation methods** | **41 companies profiled**
 
 ## Highlights
 
@@ -156,7 +156,7 @@ python cli.py --backtest --backtest-min-age 90
 streamlit run app.py
 
 # Tests
-pytest tests/  # 365 tests
+pytest tests/  # 1,070 test functions across 49 modules
 ```
 
 ## Environment Variables
@@ -170,11 +170,11 @@ pytest tests/  # 365 tests
 
 ## Company Profiles
 
-21 pre-built profiles spanning Korean and US markets:
+`profiles/` holds **48 tracked YAML files**, which break down as **41 distinct companies**, four alternate-methodology variants of companies already counted (NVDA at FY27E and TTM anchors, KB Financial under RIM, Novo Nordisk under SOTP), and three template/test fixtures.
 
-**Korea**: SK Ecoplant, Samsung Electronics (005930), Hyundai Motor (005380), SK Hynix (000660), Naver (035420), LG Energy Solution (051910), Curocell (346010), KB Financial
+By listing market: **18 Korea** (KOSPI/KOSDAQ), **21 US-listed**, **2 Japan**.
 
-**US**: Apple, Amazon, Microsoft, Nvidia, Tesla, Google, Johnson & Johnson, Chevron, Pfizer
+Representative names — **Korea**: SK Ecoplant, Samsung Electronics (005930), SK Hynix (000660), Hyundai Motor (005380), Kia (000270), LG Chem (051910), Naver (035420), Krafton (259960), Hanwha Aerospace (012450), KB Financial. **US-listed**: Apple, Microsoft, Alphabet, Amazon, Meta, Nvidia, Broadcom, ASML, Tesla, Novo Nordisk, UnitedHealth, Chevron, Johnson & Johnson. **Japan**: Sony (6758.T), Toyota (7203.T).
 
 ## Tech Stack
 
@@ -182,7 +182,7 @@ Python 3.11+ | Pydantic v2 | httpx | NumPy | Pandas | openpyxl | PyYAML | Anthro
 
 ## Testing
 
-365 tests covering engine calculations, pipeline data fetching, AI prompt/validator logic, backtest metrics, market signals integration, and scheduler workflows. All external API calls are mocked in tests.
+**1,070 test functions across 49 test modules** (17,400 lines) covering engine calculations, pipeline data fetching, AI prompt/validator logic, backtest metrics, market signals integration, quality scoring, provenance and scheduler workflows. All external API calls are mocked in tests.
 
 ## Data Sources & Disclaimer
 
@@ -191,14 +191,17 @@ Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finan
 This project is for **research and educational purposes only**. It does not constitute investment advice, and the author is not registered as an investment adviser under any jurisdiction. Past valuations or backtested results do not guarantee future returns. Use at your own discretion.
 
 ```
-tests/test_engine.py            88 tests  — pure calculation correctness
-tests/test_validators.py        38 tests  — AI output validation rules
-tests/test_backtest.py          28 tests  — calibration metrics
-tests/test_market_signals.py    25 tests  — Phase 4 market data integration
-tests/test_pipeline.py          24 tests  — data fetching logic
-tests/test_api_guard.py         24 tests  — rate limiting / circuit breaker
-tests/test_scheduler.py         24 tests  — weekly automation
-tests/test_quality.py           31 tests  — quality scoring
-tests/test_ai.py                15 tests  — prompt generation / LLM client
-tests/test_pipeline_integration.py  15 tests  — end-to-end pipeline
+tests/test_engine.py                293  — pure calculation correctness
+tests/test_quality.py                66  — quality scoring
+tests/test_beta.py                   66  — beta estimation / regression
+tests/test_validators.py             38  — AI output validation rules
+tests/test_multiple_band.py          38  — trading-multiple band construction
+tests/test_scheduler.py              35  — weekly automation
+tests/test_reconciliation.py         35  — cross-method reconciliation
+tests/test_backtest.py               35  — calibration metrics
+tests/test_normalize.py              32  — input normalisation
+tests/test_output.py                 30  — report/sheet output layer
+... 39 further modules                402
+--------------------------------------------------
+total                              1,070  test functions in 49 modules
 ```

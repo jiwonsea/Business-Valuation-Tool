@@ -22,9 +22,9 @@ The embedded forward-earnings layer projects quarterly and annual EPS, compares 
 
 - **Capital structure**: CPS 6,000억 + RCPS 4,000억 (총 1조 원, FI 보유)
 - **Three scenarios** (probability-weighted):
-  - A. IPO 성공 — 전액 상환 경로 (prob 20%)
-  - B. IPO 실패 + FI 우호 — 부분 전환 협상 (prob 45%)
-  - C. IPO 실패 + FI 분쟁 — 전액 전환 강제 (prob 35%)
+  - A. IPO 성공 — 우선주 전환, 상환 없음 (prob 20%)
+  - B. IPO 실패 + FI 우호 — 전액 상환, FI IRR 5% (prob 45%)
+  - C. IPO 실패 + FI 분쟁 — 전액 상환, FI IRR 12% (prob 35%)
 - **Cross-validation**: Segment-level SOTP (HI 8.0× / GAS 10.0× / ALC 13.0× / SOL 5.0×) vs DCF
 - **Adjustments**: DLOM 20%/±5% (Monte Carlo), small-cap premium, holding-company discount
 - **Output**: Excel report with scenario tables, sensitivity, Monte Carlo (10K runs), reconciliation notes
@@ -205,3 +205,4 @@ tests/test_output.py                 30  — report/sheet output layer
 --------------------------------------------------
 total                              1,070  test functions in 49 modules
 ```
+

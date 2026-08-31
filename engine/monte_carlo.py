@@ -218,7 +218,11 @@ def run_monte_carlo(
 
     if shares > 0:
         ps = equity * (unit_multiplier / shares)
-        ps *= 1 - dlom_samples / 100
+        # DLOM is not applied to negative equity — mirrors engine/scenario.py::
+        # calc_scenario and the repo-wide policy in .claude/rules/engine.md.
+        # Discounting a negative per-share value shrinks the loss and upward-biases
+        # the left tail, the same defect the no-clamping rule exists to prevent.
+        ps = np.where(ps > 0, ps * (1 - dlom_samples / 100), ps)
         results = ps  # preserve negatives — clipping upward-biases mean/percentiles
     else:
         results = np.zeros(n)

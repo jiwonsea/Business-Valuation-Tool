@@ -2189,6 +2189,56 @@ class TestMonteCarloEdgeCases:
         assert r.pct_negative == 100.0
         assert r.histogram_bins == []  # histogram empty when all negative
 
+    def test_dlom_not_applied_to_negative_equity(self):
+        """DLOM must not shrink negative per-share values (calc_scenario parity).
+
+        Discounting a negative value moves it toward zero and upward-biases the
+        left tail — the same defect the no-clamping rule exists to prevent.
+        `.claude/rules/engine.md`: "DLOM is not applied to negative equity."
+        The sibling negative-equity test runs with dlom_mean=0 and therefore
+        cannot detect a DLOM that is applied unconditionally.
+        """
+
+        def _run(dlom_mean: float, net_debt: int):
+            mc = MCInput(
+                multiple_params={"A": (2.0, 0.1)},
+                wacc_mean=8.0,
+                wacc_std=0.5,
+                dlom_mean=dlom_mean,
+                dlom_std=0.0,
+                tg_mean=2.0,
+                tg_std=0.3,
+                n_sims=1000,
+                seed=42,
+            )
+            return run_monte_carlo(
+                mc,
+                {"A": 10_000},
+                net_debt=net_debt,
+                eco_frontier=0,
+                cps_principal=0,
+                cps_years=0,
+                rcps_repay=0,
+                buyback=0,
+                shares=1_000_000,
+                unit_multiplier=1_000_000,
+            )
+
+        # Every simulation is negative -> DLOM must be inert.
+        no_dlom = _run(0.0, 500_000)
+        with_dlom = _run(40.0, 500_000)
+        assert no_dlom.pct_negative == 100.0
+        assert with_dlom.pct_negative == 100.0
+        assert with_dlom.min_val == no_dlom.min_val
+        assert with_dlom.median == no_dlom.median
+        assert with_dlom.p5 == no_dlom.p5
+
+        # Control: on positive equity DLOM still bites.
+        pos_no_dlom = _run(0.0, 0)
+        pos_with_dlom = _run(40.0, 0)
+        assert pos_no_dlom.median > 0
+        assert pos_with_dlom.median < pos_no_dlom.median
+
     def test_dlom_clipped_to_50(self):
         """DLOM mean 45%, std 10%: 50% upper-bound clipping"""
         mc = MCInput(

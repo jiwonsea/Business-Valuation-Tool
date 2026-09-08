@@ -65,9 +65,9 @@ py-modules = ["_ssl_fix", "cli", "orchestrator", "valuation_runner"]
 [tool.setuptools.packages.find]
 include = [
     "engine*", "schemas*", "pipeline*", "ai*", "db*", "output*",
-    "discovery*", "scheduler*", "forecast*",
+    "discovery*", "scheduler*", "forecast*", "backtest*", "calibration*",
 ]
-exclude = ["forecast.tests*"]
+exclude = ["forecast.tests*", "calibration.tests*"]
 
 [project.scripts]
 valuation = "cli:main"
@@ -86,7 +86,7 @@ ignore = ["E402", "E702"]
 "bond-yield-analysis/*.ipynb" = ["E731"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "forecast/tests"]
+testpaths = ["tests", "forecast/tests", "calibration/tests"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers -m 'not network'"
 markers = [

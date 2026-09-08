@@ -2,7 +2,9 @@
 
 AI-powered corporate valuation platform supporting Korean (KOSPI/KOSDAQ) and US (NYSE/NASDAQ) markets. Combines quantitative financial modeling with LLM-driven scenario analysis to produce institutional-grade valuation reports.
 
-**63,700 lines of Python + 17,400 lines of tests** | **1,070 test functions** | **6 valuation methods** | **41 companies profiled**
+**7 valuation methods** | **48 tracked root YAML profiles** | **BVT, forecast, and calibration test suites**
+
+See [TODO.md](TODO.md) for verified completion status, pending work, and review evidence.
 
 ## Highlights
 
@@ -40,19 +42,23 @@ Reproduce: `python cli.py --profile profiles/sk_ecoplant.yaml --excel`
 | **DDM** (Dividend Discount Model) | Banks, insurance, mature dividend payers | DPS + growth rate, Total Payout variant for US financials |
 | **RIM** (Residual Income Model) | BV-based financial sector valuation | ROE forecasts, book value, cost of equity |
 | **NAV** (Net Asset Value) | Holding companies, REITs, asset-heavy | Revaluation adjustments, holding company discount |
+| **rNPV** (Risk-adjusted NPV) | Pharma/biotech pipelines | Drug revenue curves, success probabilities, margins, and discount rate; see [engine/rnpv.py](engine/rnpv.py) |
 | **Multiples** (Relative Valuation) | Quick comparable analysis | EV/EBITDA, P/E, P/BV, EV/Revenue, P/S, P/FFO |
 
-Auto-selection via `engine/method_selector.py`: multi-segment → SOTP, financials → DDM/RIM, single-segment → DCF.
+Selection rules in [engine/method_selector.py](engine/method_selector.py) include explicit rNPV parameters for rNPV, mixed financial/non-financial segments for SOTP, financials for DDM/RIM, and real-estate/asset-centric cases for NAV. [valuation_runner.py](valuation_runner.py) dispatches the selected method and supports manual overrides.
 
 ## Architecture
+
+Selected files are shown below. Counts are tracked Python files, including
+`__init__.py`, measured with `git ls-files` on 2026-09-07 (HEAD `6634c1f`).
 
 ```
 cli.py                CLI entry point (5 modes: profile, company, discover, weekly, backtest)
 app.py                Streamlit web UI (8 tabs)
 orchestrator.py       Profile → valuation → Excel pipeline
-valuation_runner.py   Method dispatch (SOTP/DCF/DDM/RIM/NAV/Multiples)
+valuation_runner.py   Method dispatch (SOTP/DCF/DDM/RIM/NAV/Multiples/rNPV)
 
-engine/          19 modules — pure calculation (no IO, no state)
+engine/          32 Python files — pure calculation (no IO, no state)
 ├── wacc.py              CAPM with Hamada beta unlevering, size premium
 ├── sotp.py              D&A allocation + segment EV aggregation
 ├── dcf.py               FCFF projection + dual terminal value (Gordon + Exit Multiple)
@@ -76,7 +82,7 @@ engine/          19 modules — pure calculation (no IO, no state)
 schemas/         Pydantic v2 models (ValuationInput ↔ ValuationResult)
 ├── models.py            30+ models including MarketSignals, NewsDriver, ScenarioParams
 
-pipeline/        15 modules — external data collection and processing
+pipeline/        21 Python files — external data collection and processing
 ├── data_fetcher.py      Unified multi-market data adapter
 ├── dart_client.py       DART OpenAPI client (KR financials)
 ├── edgar_client.py      SEC EDGAR XBRL client (US financials)
@@ -91,14 +97,14 @@ pipeline/        15 modules — external data collection and processing
 ├── api_guard.py         Rate limiting + circuit breaker + exp backoff
 └── ...
 
-ai/              5 modules — LLM orchestration
+ai/              6 Python files — LLM orchestration
 ├── analyst.py           6-step AI analyst (identify → classify → peers → WACC → scenarios → note)
 ├── prompts.py           Structured prompts with market signals injection
 ├── validators.py        Deterministic post-LLM validation (ranges, consistency, signals cross-check)
 ├── llm_client.py        Anthropic/OpenRouter dual-model client with caching
 └── __init__.py
 
-backtest/        6 modules — calibration infrastructure
+backtest/        7 Python files — calibration infrastructure
 ├── metrics.py           Forecast Error (MAPE), Gap Closure, Interval Score, Calibration Curve
 ├── price_tracker.py     Outcome price fetching at T+3m/6m/12m
 ├── dataset.py           Build BacktestRecord from Supabase snapshots
@@ -129,6 +135,11 @@ Every external data source is wrapped with `api_guard` (rate limiting + circuit 
 
 ## Quick Start
 
+Supported setup: keep a local checkout of this repository, install it in editable
+mode (`pip install -e ...`), and run commands from the repository root. The tools
+use profiles and other files from that checkout. Standalone wheel installation
+without the checkout is not supported.
+
 ```bash
 # Install
 pip install -e ".[dev,pipeline,ai]"
@@ -156,7 +167,7 @@ python cli.py --backtest --backtest-min-age 90
 streamlit run app.py
 
 # Tests
-pytest tests/  # 1,070 test functions across 49 modules
+python -m pytest  # BVT + forecast + calibration; network tests excluded by default
 ```
 
 ## Environment Variables
@@ -182,27 +193,20 @@ Python 3.11+ | Pydantic v2 | httpx | NumPy | Pandas | openpyxl | PyYAML | Anthro
 
 ## Testing
 
-**1,070 test functions across 49 test modules** (17,400 lines) covering engine calculations, pipeline data fetching, AI prompt/validator logic, backtest metrics, market signals integration, quality scoring, provenance and scheduler workflows. All external API calls are mocked in tests.
+Default collection is configured in [pyproject.toml](pyproject.toml); CI runs BVT/calibration and forecast in separate jobs in [.github/workflows/ci.yml](.github/workflows/ci.yml). Network-marked tests are excluded by default.
+
+Tracked test files measured by Python AST on 2026-09-07 (working tree, including I-1):
+
+| Suite | Test files | Test function definitions |
+|-------|-----------:|--------------------------:|
+| `tests/` | 49 | 1,071 |
+| `forecast/tests/` | 54 | 348 |
+| `calibration/tests/` | 3 | 34 |
+
+These are `test_` function definitions, including class methods, rather than parametrized pytest execution counts. The last recorded local run passed 1,510 tests with 3 skipped and 1 deselected; see [the validation record](PLAN_project_improvements_2026-09-07.md) section 14 for environment and limitations.
 
 ## Data Sources & Disclaimer
 
 Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Weekly reports, run logs, and calibration outputs are generated locally and are **not** included in this repository. Company profiles under `profiles/` are partially tracked: only profiles serving as validation, research, or release baselines are committed (snapshotted deliberately, e.g. `fd902b1`); the weekly pipeline regenerates them, so tracked copies are point-in-time snapshots, not live data.
 
 This project is for **research and educational purposes only**. It does not constitute investment advice, and the author is not registered as an investment adviser under any jurisdiction. Past valuations or backtested results do not guarantee future returns. Use at your own discretion.
-
-```
-tests/test_engine.py                293  — pure calculation correctness
-tests/test_quality.py                66  — quality scoring
-tests/test_beta.py                   66  — beta estimation / regression
-tests/test_validators.py             38  — AI output validation rules
-tests/test_multiple_band.py          38  — trading-multiple band construction
-tests/test_scheduler.py              35  — weekly automation
-tests/test_reconciliation.py         35  — cross-method reconciliation
-tests/test_backtest.py               35  — calibration metrics
-tests/test_normalize.py              32  — input normalisation
-tests/test_output.py                 30  — report/sheet output layer
-... 39 further modules                402
---------------------------------------------------
-total                              1,070  test functions in 49 modules
-```
-

@@ -65,9 +65,9 @@ py-modules = ["_ssl_fix", "cli", "orchestrator", "valuation_runner"]
 [tool.setuptools.packages.find]
 include = [
     "engine*", "schemas*", "pipeline*", "ai*", "db*", "output*",
-    "discovery*", "scheduler*", "forecast*",
+    "discovery*", "scheduler*", "forecast*", "backtest*", "calibration*",
 ]
-exclude = ["forecast.tests*"]
+exclude = ["forecast.tests*", "calibration.tests*"]
 
 [project.scripts]
 valuation = "cli:main"

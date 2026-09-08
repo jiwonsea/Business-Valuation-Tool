@@ -129,6 +129,11 @@ Every external data source is wrapped with `api_guard` (rate limiting + circuit 
 
 ## Quick Start
 
+Supported setup: keep a local checkout of this repository, install it in editable
+mode (`pip install -e ...`), and run commands from the repository root. The tools
+use profiles and other files from that checkout. Standalone wheel installation
+without the checkout is not supported.
+
 ```bash
 # Install
 pip install -e ".[dev,pipeline,ai]"

@@ -8,15 +8,21 @@ D10 다종목 확장은 두 번째 ``valuation:`` 블록을 추가하는 순간
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import pytest
 import yaml
 
 from forecast.tests.test_frozen_integrity import CONVENTION_PROFILES
 
 FORECAST_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_SUFFIXES = (".yaml", ".yml")
+# New ticker characters or period formats require an explicit convention entry.
+FROZEN_REPORT = re.compile(
+    r"^(?P<ticker>[a-z0-9]+)_(?P<period>q[1-4]_\d{4}|fy\d{4}q[1-4])_forecast_FROZEN\.md$"
+)
 VALUATION_ALLOWLIST = frozenset({"sk_hynix.yaml"})
 REMEDIATION = (
     "valuation: 보유 집합은 VALUATION_ALLOWLIST와 정확히 일치해야 한다(부분집합 아님). "
@@ -35,7 +41,8 @@ class AllowlistResult:
 
     scanned: int = 0
     holders: set[str] = field(default_factory=set)
-    frozen_profiles: dict[str, str] = field(default_factory=dict)  # report -> profile filename
+    # report -> profile filename; None means the name cannot be resolved.
+    frozen_profiles: dict[str, str | None] = field(default_factory=dict)
     failures: list[str] = field(default_factory=list)
 
 
@@ -59,13 +66,15 @@ def _has_valuation_key(path: Path) -> tuple[bool, str | None]:
     return "valuation" in raw, None
 
 
-def _frozen_profile_names(forecast_root: Path) -> dict[str, str]:
+def _frozen_profile_names(forecast_root: Path) -> dict[str, str | None]:
     frozen_profiles = {}
     for report in sorted((forecast_root / "reports").glob("*_FROZEN.md")):
         configured = CONVENTION_PROFILES.get(report.name)
-        profile_name = (
-            Path(configured).name if configured else f"{report.name.split('_')[0]}.generic.yaml"
-        )
+        if configured:
+            profile_name = Path(configured).name
+        else:
+            match = FROZEN_REPORT.fullmatch(report.name)
+            profile_name = f"{match['ticker']}.generic.yaml" if match else None
         frozen_profiles[report.name] = profile_name
     return frozen_profiles
 
@@ -88,10 +97,15 @@ def verify_valuation_allowlist(forecast_root: Path = FORECAST_ROOT) -> Allowlist
 
     existing_profiles = {path.name for path in profile_files}
     for report_name, profile_name in result.frozen_profiles.items():
-        if profile_name not in existing_profiles:
+        if profile_name is None:
+            result.failures.append(
+                f"UNRESOLVED: {report_name} - 규약 비대상 파일명 "
+                "(CONVENTION_PROFILES에 명시 등재하라)"
+            )
+        elif profile_name not in existing_profiles:
             result.failures.append(
                 f"UNRESOLVED: {report_name} -> {profile_name} 이 존재하지 않는다 "
-                "(규약 유도 실패 — CONVENTION_PROFILES에 명시 등재하라)"
+                "(유도 프로필 부재 — 파일 생성 또는 CONVENTION_PROFILES 명시 등재 필요)"
             )
         elif profile_name in result.holders:
             result.failures.append(
@@ -242,7 +256,97 @@ def test_unresolvable_frozen_report_is_rejected(tmp_path: Path) -> None:
 
     result = verify_valuation_allowlist(root)
 
+    assert result.frozen_profiles == {report_name: None}
     assert any(
-        failure.startswith(f"UNRESOLVED: {report_name} -> sk.generic.yaml")
+        failure.startswith(f"UNRESOLVED: {report_name} - 규약 비대상 파일명")
+        for failure in result.failures
+    )
+
+
+def test_underscore_report_does_not_resolve_to_existing_prefix(tmp_path: Path) -> None:
+    report_name = "vst_v2_q2_2026_forecast_FROZEN.md"
+    root = _make_repo(
+        tmp_path,
+        profiles={"sk_hynix.yaml": True, "vst.generic.yaml": True, "vst_v2.generic.yaml": False},
+        reports=[report_name],
+    )
+
+    result = verify_valuation_allowlist(root)
+
+    assert result.frozen_profiles == {report_name: None}
+    assert any(failure.startswith("UNRESOLVED:") for failure in result.failures)
+    assert not any(failure.startswith("FROZEN CONTAMINATED:") for failure in result.failures)
+    assert "UNEXPECTED HOLDER: vst.generic.yaml" in result.failures
+
+
+def test_explicit_underscore_mapping_resolves(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    report_name = "vst_v2_q2_2026_forecast_FROZEN.md"
+    monkeypatch.setitem(CONVENTION_PROFILES, report_name, "profiles/vst_v2.generic.yaml")
+    root = _make_repo(
+        tmp_path,
+        profiles={"sk_hynix.yaml": True, "vst.generic.yaml": False, "vst_v2.generic.yaml": False},
+        reports=[report_name],
+    )
+
+    result = verify_valuation_allowlist(root)
+
+    assert result.frozen_profiles == {report_name: "vst_v2.generic.yaml"}
+    assert result.failures == []
+
+
+@pytest.mark.parametrize("period", ["q2_2026", "fy2026q4"])
+def test_single_token_report_resolves_by_convention(tmp_path: Path, period: str) -> None:
+    report_name = f"abc123_{period}_forecast_FROZEN.md"
+    root = _make_repo(
+        tmp_path,
+        profiles={"sk_hynix.yaml": True, "abc123.generic.yaml": False},
+        reports=[report_name],
+    )
+
+    result = verify_valuation_allowlist(root)
+
+    assert result.frozen_profiles == {report_name: "abc123.generic.yaml"}
+    assert result.failures == []
+
+
+def test_missing_derived_profile_is_rejected(tmp_path: Path) -> None:
+    report_name = "absent_q2_2026_forecast_FROZEN.md"
+    root = _make_repo(tmp_path, profiles={"sk_hynix.yaml": True}, reports=[report_name])
+
+    result = verify_valuation_allowlist(root)
+
+    assert result.frozen_profiles == {report_name: "absent.generic.yaml"}
+    assert any(
+        failure.startswith(f"UNRESOLVED: {report_name} -> absent.generic.yaml")
+        and "유도 프로필 부재" in failure
+        for failure in result.failures
+    )
+
+
+@pytest.mark.parametrize(
+    "report_name",
+    [
+        "vst_q2_2026_FROZEN.md",
+        "vst_2026_forecast_FROZEN.md",
+        "vst_h1_2026_forecast_FROZEN.md",
+        "vst_q5_2026_forecast_FROZEN.md",
+        "VST_q2_2026_forecast_FROZEN.md",
+        "vst.a_q2_2026_forecast_FROZEN.md",
+    ],
+)
+def test_nonconforming_report_is_rejected(tmp_path: Path, report_name: str) -> None:
+    root = _make_repo(
+        tmp_path,
+        profiles={"sk_hynix.yaml": True, "vst.generic.yaml": False},
+        reports=[report_name],
+    )
+
+    result = verify_valuation_allowlist(root)
+
+    assert result.frozen_profiles == {report_name: None}
+    assert any(
+        failure.startswith(f"UNRESOLVED: {report_name} - 규약 비대상 파일명")
         for failure in result.failures
     )

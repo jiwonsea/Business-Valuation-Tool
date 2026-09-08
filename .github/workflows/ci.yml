@@ -31,7 +31,7 @@ jobs:
         run: ruff format --check .
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short
+        run: pytest tests/ calibration/tests/ -v --tb=short
 
   forecast-test:
     runs-on: ubuntu-latest

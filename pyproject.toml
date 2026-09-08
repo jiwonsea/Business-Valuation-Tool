@@ -86,7 +86,7 @@ ignore = ["E402", "E702"]
 "bond-yield-analysis/*.ipynb" = ["E731"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "forecast/tests"]
+testpaths = ["tests", "forecast/tests", "calibration/tests"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers -m 'not network'"
 markers = [

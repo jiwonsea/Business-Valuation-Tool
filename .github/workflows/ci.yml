@@ -48,5 +48,12 @@ jobs:
       - name: Install forecast dependencies
         run: pip install -e ".[dev,forecast]"
 
+      - name: Install pinned Ruff
+        run: pip install ruff==0.15.8
+
+      - name: Ruff forecast error checks
+        working-directory: forecast
+        run: ruff check . --select E9,F63,F7,F82
+
       - name: Run forecast tests
         run: pytest forecast/tests -v --tb=short

@@ -37,6 +37,10 @@ import logging
 import sys
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from forecast.schemas.models import QuarterlyActual
 
 REPO_ROOT = Path(__file__).resolve().parent
 PROFILES_DIR = REPO_ROOT / "profiles"

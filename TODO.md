@@ -1,14 +1,14 @@
 # Project backlog
 
-기준: 2026-09-07, HEAD `6634c1f` 및 현재 작업 트리. 과거 인수인계는 이력으로 보존하며, 아래 항목을 재개할 때 최신 코드와 Git 이력을 다시 대조한다. 검토·검증 상세는 [개선 계획서](PLAN_project_improvements_2026-09-07.md)에 기록한다.
+기준: 2026-09-08, PR #28의 검증 head `7f676bf`. 과거 인수인계는 이력으로 보존하며, 아래 항목을 재개할 때 최신 코드와 Git 이력을 다시 대조한다. 검토·검증 상세는 [개선 계획서](PLAN_project_improvements_2026-09-07.md)에 기록한다.
 
 ## 완료
 
 | 항목 | 근거와 완료 범위 |
 |---|---|
-| I-1 FROZEN 파일명 해석 보호 | [테스트 및 검사 함수](forecast/tests/test_valuation_allowlist.py): 명시 매핑 우선, 비규약 이름은 UNRESOLVED. 계획서 §11~12 구현·검증 및 사후 GO. 미커밋. |
-| I-2 calibration 기본 검증 편입 | [pytest 설정](pyproject.toml), [CI](.github/workflows/ci.yml): 기본 수집과 BVT CI에 calibration 포함. 계획서 §12~13 수집 +34 및 사후 GO. 미커밋. |
-| I-3 checkout/editable 설치 계약 | [패키지 설정](pyproject.toml), [README](README.md): backtest/calibration 포함, calibration.tests 제외. 계획서 §14~15 탐색 검증 및 사후 GO. 미커밋. |
+| I-1 FROZEN 파일명 해석 보호 | [테스트 및 검사 함수](forecast/tests/test_valuation_allowlist.py): 명시 매핑 우선, 비규약 이름은 UNRESOLVED. 계획서 §11~12 구현·검증 및 사후 GO. PR #28, `87d69c3`. |
+| I-2 calibration 기본 검증 편입 | [pytest 설정](pyproject.toml), [CI](.github/workflows/ci.yml): 기본 수집과 BVT CI에 calibration 포함. 계획서 §12~13 수집 +34 및 사후 GO. PR #28, `86b0a6e`. |
+| I-3 checkout/editable 설치 계약 | [패키지 설정](pyproject.toml), [README](README.md): backtest/calibration 포함, calibration.tests 제외. 계획서 §14~15 탐색 검증 및 사후 GO. PR #28, `8e4935a`. |
 | 자동 분석 DB 저장 호출 연결 | [profile_generator.py](pipeline/profile_generator.py)의 두 `_save_to_db` 호출 확인. 호출 연결은 존재하며 운영 DB 스키마 적용·실제 저장 성공은 별도 확인 대상. |
 | 시나리오 차별화 검사 | [scenario_validator.py](engine/scenario_validator.py)의 `validate_scenario_differentiation` 및 [profile_generator.py](pipeline/profile_generator.py)의 호출 확인. 재구현 대상 아님. |
 | 변동 프로필에서 테스트 fixture 분리 | `2203856`, [msft_frozen.yaml](tests/fixtures/msft_frozen.yaml), [tsla_frozen.yaml](tests/fixtures/tsla_frozen.yaml). 기존 round-trip 테스트에 대한 완료이며 모든 프로필 사용 테스트의 포괄 감사는 아님. |
@@ -20,19 +20,19 @@
 
 ## I-4 사후 검토 반영 완료
 
-- [x] I-4 문서 정합: 본 TODO 작성, README의 방법·파일·테스트 수와 실행 범위 교정. 이번 변경은 문서 3개뿐이며 검증 결과와 검토용 프롬프트는 계획서 §16 참조.
+- [x] I-4 문서 정합: PR #28, `543fe3a`. 본 TODO 작성, README의 방법·파일·테스트 수와 실행 범위 교정. 검증 결과와 검토용 프롬프트는 계획서 §16 참조.
 - [x] I-4 CLAUDE 읽기 전용 사후 검토: 필수 교정 후 2026-09-08 사용자 전달 최종 GO로 확정. 코드 변경 0, 근거 대조 통과. 계획서 §17 참조.
 
 ## 미완료
 
 | 항목 | 다음 작업과 완료 기준 | 근거 |
 |---|---|---|
-| I-1~I-5 커밋·PR | 사용자 승인으로 5개 커밋 분리 진행. I-1 87d69c3, I-2 86b0a6e, I-3 8e4935a. 공유 파일은 git add -p로 분리했고 일반/CR 무시 staged stat이 동일함을 확인. 원격 CI 결과 확인 필요. | 계획서 §20 |
+| I-1~I-5 PR 병합 | PR #27 병합 완료. PR #28의 기존 5개 커밋 분리와 두 CI job 성공을 확인했다. 사용자 승인으로 문서 기록 커밋 1개를 추가하며, 새 head의 CI 재실행 통과 후 merge commit으로 병합한다. | 계획서 §20 |
 | I-4 링크 의존성 | 사용자 승인: TODO·PLAN 추적, 그 밖의 미추적 참조는 파일명 코드 표기. 실제 7개 파일·8개 링크를 변환했다. 추적 대상만으로 링크 해소되는지 커밋 검증에 포함. | README·본 문서의 상대 링크, 계획서 §20 |
-| I-5 잔여 부채·원격 검증 | (b) 부분 차단은 2026-09-08 사후 GO로 확정, 미커밋. 전체 1,510 passed, FROZEN 지원 4/4. 잔여 lint 215건·format 99파일은 미차단이며 기계적 정리는 별도 PR 범위. 첫 push의 Python 3.11 CI 실패 시 원인을 단정하지 않고 로그부터 기록·확인. | [CI](.github/workflows/ci.yml), [forecast CLI](forecast/cli.py), 계획서 §19~20 |
+| I-5 잔여 부채 | 부분 차단은 PR #28, `7f676bf`. 로컬 전체 1,510 passed, FROZEN 지원 4/4 및 Ubuntu/Python 3.11 CI 두 job 성공. 잔여 lint 215건·format 99파일은 미차단이며 기계적 정리는 별도 PR 범위. | [CI](.github/workflows/ci.yml), [forecast CLI](forecast/cli.py), 계획서 §19~20 |
 | I-6 D10 다종목 측정 | §13의 P-1~P-6을 최신 코드·커밋으로 재검증한 후 §15의 offline 구현 범위를 확정. provenance, 입력 SHA, tax_rate_basis, 실패 계약과 기준선 보호. | `SPEC_d10a_batch_runner.md`, `HANDOFF_CODEX_d10p1_v1_derivation_2026-08-30.md` |
 
-D10 P-1 상태는 문서 간 차이가 있다. 명세 §13은 `36ca806`으로 완료 표기하지만, I-1 조사에서는 현재 작업 트리의 기존 `split('_')[0]` 결함을 재현하고 수정했다. 현재 수정은 사후 GO·미커밋 상태다. 과거 완료 표기만으로 전제조건 전체를 통과 처리하지 않는다(계획서 §6·§11).
+D10 P-1 상태는 문서 간 차이가 있다. 명세 §13은 `36ca806`으로 완료 표기하지만, I-1 조사에서는 기존 `split('_')[0]` 결함을 재현하고 수정했다(PR #28, `87d69c3`). 과거 완료 표기만으로 전제조건 전체를 통과 처리하지 않는다(계획서 §6·§11).
 
 ## 정책 대기 · 운영 상태 미검증
 

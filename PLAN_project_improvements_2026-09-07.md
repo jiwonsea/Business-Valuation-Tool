@@ -415,3 +415,18 @@ CLAUDE I-5 사후 검토용:
 브랜치 chore/verified-quality-gates를 검증 기준 6634c1f에서 생성했다. 호스트에서 git add -p로 hunk 분리 후 각 staged stat을 CR 무시 유무 양쪽으로 비교했다. I-1 87d69c3(112+/8-), I-2 86b0a6e(2+/2-), I-3 8e4935a(7+/2-) 완료. 사용자 CLAUDE.md는 stage하지 않았다.
 
 원격 확인 시 main은 552453c이며 선행 6634c1f는 main 미포함·기존 PR 없음이었다. 기존 fix/mc-negative-dlom을 base로 하는 PR과 main에 선행 커밋까지 포함하는 PR 중 사용자에게 확인을 요청했다. PR 생성·CI 결과는 확인 후 이 절에 기록한다.
+
+### PR #28 원격 CI 결과 및 기록 커밋
+
+사용자가 두 PR 모두 main을 base로 생성하고 A를 먼저 병합하도록 승인했다. [PR #27](https://github.com/jiwonsea/Business-Valuation-Tool/pull/27)은 두 CI job 통과 후 merge commit `4f6312e`로 병합됐으며 선행 `6634c1f` SHA를 보존했다. 이후 로컬 Git 및 GitHub compare API에서 main 대비 [PR #28](https://github.com/jiwonsea/Business-Valuation-Tool/pull/28)의 범위가 기존 I-1~I-5 **5개 커밋·7개 파일**임을 확인했다. PR 메타데이터의 base OID는 직후 이전 값을 표시했지만 실제 main 비교 결과는 일치했다.
+
+검증된 PR #28 head: **7f676bf28120ef4ed98e54a76fb5c9cbc4e7afbc**. 환경: GitHub Actions **ubuntu-latest / Python 3.11**.
+
+| Job | 결과 | Actions 실행 |
+|---|---|---|
+| lint-and-test | SUCCESS. 루트 Ruff lint/format 및 BVT+calibration 테스트 단계 성공 | [run 34214600145 / BVT job](https://github.com/jiwonsea/Business-Valuation-Tool/actions/runs/34214600145/job/102023274365) |
+| forecast-test | SUCCESS. Ruff 0.15.8 설치, E9/F63/F7/F82 검사 및 forecast 테스트 단계 성공 | [run 34214600145 / forecast job](https://github.com/jiwonsea/Business-Valuation-Tool/actions/runs/34214600145/job/102023274185) |
+
+선행 PR #27의 검증 실행은 [run 34214516059](https://github.com/jiwonsea/Business-Valuation-Tool/actions/runs/34214516059)이며 두 job 모두 SUCCESS다. 원격 CI 실패 및 그에 따른 제품 코드 수정은 없었다.
+
+사용자가 기존 5개 커밋을 amend/rebase하지 않고 **문서 전용 6번째 커밋**을 추가하도록 승인했다. 이 기록 커밋 자체는 PLAN §20과 TODO 상태만 변경하며 CI가 재실행된다. 위 성공 결과는 기록 전 head 7f676bf의 결과이고 기록 커밋의 결과를 미리 주장하지 않는다. 새 head의 CI 통과 후 merge commit으로 병합하며, 재실행 URL은 PR과 merge commit 본문에 기록한다. 로컬 브랜치는 삭제하지 않고 사용자 결정으로 남긴다.

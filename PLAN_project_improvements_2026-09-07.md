@@ -398,7 +398,9 @@ CLAUDE I-5 사후 검토용:
 파일 수정·커밋·규칙 확대·autofix는 하지 마.
 ```
 
-## 20. I-5 최종 GO 및 커밋 결정 대기
+## 20. I-5 최종 GO 및 커밋·병합 기록
+
+**2026-09-09 상태 보충:** 로컬 origin/main `a092c07`의 merge 기록에서 PR #27(`4f6312e`)과 PR #28(`a092c07`) 병합 완료를 확인했다. 아래 미래형 문구는 당시 진행 기록이다. PR #28 merge 본문은 기록 head `5b6f9db`의 Ubuntu/Python 3.11 두 job 통과와 Actions run `34230586258`을 기록한다. 이번 세션에서 원격 CI를 다시 조회하지 않았다. TODO의 병합 대기 항목은 완료로 옮겼다.
 
 2026-09-08 사용자 전달 CLAUDE 사후 검토: **GO / 남은 필수 수정 0건**. 검토 VM(Python 3.10)에서 pytest·Ruff를 재실행하지 않았으며 diff·설정·import 구조·무결성을 직접 확인했다. I-1~I-5 구현 및 교차검토 완료, 전부 미커밋이다.
 
@@ -430,3 +432,50 @@ CLAUDE I-5 사후 검토용:
 선행 PR #27의 검증 실행은 [run 34214516059](https://github.com/jiwonsea/Business-Valuation-Tool/actions/runs/34214516059)이며 두 job 모두 SUCCESS다. 원격 CI 실패 및 그에 따른 제품 코드 수정은 없었다.
 
 사용자가 기존 5개 커밋을 amend/rebase하지 않고 **문서 전용 6번째 커밋**을 추가하도록 승인했다. 이 기록 커밋 자체는 PLAN §20과 TODO 상태만 변경하며 CI가 재실행된다. 위 성공 결과는 기록 전 head 7f676bf의 결과이고 기록 커밋의 결과를 미리 주장하지 않는다. 새 head의 CI 통과 후 merge commit으로 병합하며, 재실행 URL은 PR과 merge commit 본문에 기록한다. 로컬 브랜치는 삭제하지 않고 사용자 결정으로 남긴다.
+
+## 21. I-6 P-2 기계화 및 P-6 회귀 (2026-09-09)
+
+사용자가 권고 3건을 포함한 5파일 구현 범위를 승인했다. 기준은 로컬 HEAD `5b6f9db`, 로컬 origin/main `a092c07`이며 두 트리의 파일 내용은 동일했다. fetch 없이 확인했다. 선재 CLAUDE.md +2줄과 미추적 자료는 작업 대상에서 제외했다.
+
+- `scripts/d10_measure_elasticity.py`: Git 조회 함수만 추가. `collect_provenance`는 현재 HEAD 전체 40-hex와 입력 blob 세 값을 기록한다. `resolve_commit`은 기존 7~40 hex를 실제 커밋으로 해소한다. `input_blob_shas`는 역사 조회용이며 과거 checkout을 요구하지 않는다. 실제 측정용 함수는 현재 HEAD의 추적·clean 입력만 허용한다.
+- dirty 검사는 캡처한 HEAD에 대한 `git diff --quiet --no-ext-diff <commit> -- <path>`로 staged/unstaged 변경을 모두 차단한다. CRLF 정규화는 Git에 맡기며 hash-object 또는 워킹트리 해시를 기록하는 경로는 없다. 입력 외 dirty 파일은 차단하지 않는다. literal pathspec을 사용한다.
+- `git branch -r --contains`가 비어 있으면 로그 경고만 남긴다. 로컬 원격 참조 기준이며 실제 서버 도달성의 증명은 아니다. 네트워크 조회와 출력 데이터의 경고 필드 추가는 없다.
+- `tests/test_d10_provenance.py`: 임시 Git 저장소에서 CRLF, staged/unstaged 변경, 추적 해제, 미존재 커밋·경로, 역사 조회와 경고를 검증한다. AC-5 AST 테스트는 표준 라이브러리 직접 의존만 허용하므로 forecast 전이 의존도 차단한다. 미래 AC-1 대상인 `tests/test_d10_runner_contract.py`는 만들지 않았다.
+- 역사 회귀는 현재 커밋에 저장된 sk_hynix provenance에서 `5d5f9de`와 입력 blob 세 값을 읽어 Git과 대조한다. 첫 테스트에서 `5d5f9de` 자체에는 아직 provenance 기록이 없음을 확인하고 조회 시점을 교정했다. 현재 HEAD와 과거 커밋이 반드시 다르다고 단언하지 않는다. shallow checkout에서는 역사 대조 1건을 명시 skip하며 fetch하지 않는다. 전체 이력이 있는 로컬에서는 실행한다.
+- `tests/test_eps_elasticity.py`: 기존 내용은 보존하고 2케이스만 추가했다. 정규화 EV 탄력도 1.2781, as-is FV 탄력도 1.1009·EV 탄력도 1.0819·FV 797721을 엔진 재실행으로 단언한다. 표시 정밀도에 맞춰 절대 오차는 탄력도 0.00005, FV 0.5이며 상대 오차는 0이다.
+- `tax_rate_basis`는 엔진 유도값이라는 기존 계약을 유지한다. pair의 필수 입력은 tax_rate_pct/tax_rate_source다. P-3/P-4 결정, P-5 등록, SPEC §15 배치·매니페스트 생성은 이번 범위 밖이다. 함수는 checkout을 잠그지 않으므로 측정 호출자가 동시 편집을 방지해야 한다.
+- TODO에는 실제 P-1 규칙(`87d69c3` 앵커 정규식)과 SPEC:1021의 오래된 방법·커밋 표기를 명시했다. 미추적 SPEC 자체는 수정하지 않았다.
+
+검증: 변경 전 기본 수집 1,513건(별도 network 1건 deselected). 신규 provenance 20건 + P-6 2건이다. 관련 테스트 36 passed. 첫 전체 검사는 stdin 기반 래퍼 때문에 Windows multiprocessing 자식이 시작하지 못해 1 failed / 1,531 passed였다. 파일 기반 외부 임시 래퍼로 해당 테스트를 재실행해 1 passed를 확인했으며 제품 코드는 수정하지 않았다. 최종 전체 결과와 무결성 검사는 아래에 기록한다. 구현은 미커밋이며 사용자 전달 사후 검토 대기다.
+
+최종 검증 (Windows / Python 3.14):
+
+- 전체 기본 스위트 **1,532 passed / 3 skipped / 1 deselected**, 83.79초. 기존 1,510 passed 대비 **+22**. skip 3건은 Windows symlink 권한·process-group 미지원 및 미생성 EDGAR 캐시이며 신규 provenance skip은 0이다. 기존 gotrue deprecation warning 1건이 있다.
+- 실행은 저장소 밖 임시 파일 `bvt_p2_offline_verify.py`에서 `pytest.main(['-q', '-p', 'no:cacheprovider'])`를 호출했다. `PYTHONUTF8=1`을 적용하고 Python audit hook으로 socket connect/getaddrinfo/sendto를 차단했다. 네트워크 시도 10건을 차단했으며 외부 API·유료 API 호출은 수행하지 않았다. Git은 로컬 명령만 사용했다.
+- FROZEN **지원 4/4 PASS / 지원 SKIP 0**(규약 비대상 5건 skip), allowlist **17개 스캔 / 보유 1 / FROZEN 대응 9 / 실패 0**.
+- 변경 Python 3파일 Ruff lint·format check, AST 파싱, 5파일 UTF-8/NUL/U+FFFD 검사, `git diff --check` 통과. 신규 파일·문서는 LF, 기존 P-6 테스트는 CRLF 유지. P-6 기존 바이트 접두부의 SHA-256이 작업 전과 일치한다.
+- 작업 전 SHA-256 기준으로 대상 외 추적 파일 **869개 불변**. 기존 CLAUDE.md 변경과 입력 프로필·엔진·FROZEN 자료를 보존했다. 실제 변경 범위는 승인된 5파일이며 commit/stage/push는 수행하지 않았다.
+
+사후 검토 요청: 승인된 5파일 diff와 본 절을 읽기 전용으로 대조해 GO 또는 필수 수정사항을 회신한다. 중점은 Git 정규화·staged/unstaged 차단, 기존 7자리 provenance 호환, AC-5, P-6 추가만 유지, shallow checkout의 역사 검사 skip 한계다. 배치 실행·매니페스트·pair 등록은 검토 범위에 추가하지 않는다.
+
+## 22. P-2/P-6 사후 검토 마무리 (2026-09-12)
+
+`HANDOFF_CODEX_d10_p2_provenance_finalize_2026-09-12.md`의 CONDITIONAL GO와 커밋·push·PR 승인을 적용했다. 최근 15개 커밋 및 해당 구현을 대조해 미커밋 상태임을 확인했다. BVT `lint-and-test` checkout에 `fetch-depth: 0` 두 줄을 추가했다. forecast job은 그대로다. dirty 검사 오류에는 커밋 접두어와 입력 경로를 표시하고 원인 예외를 보존한다. Git 실행 오류도 가능하므로 문구는 `dirty input or diff failure`로 명시했다. import 경로 의존은 TODO에 기록했으며 importlib 모드 실패를 직접 재현했다고 주장하지 않는다.
+
+Windows/Python 3.14.3 검증 원출력:
+
+```text
+1532 passed, 3 skipped, 1 deselected, 1 warning in 90.45s (0:01:30)
+NETWORK_GUARD_BLOCKED_EVENTS= 9
+SUMMARY: 검사 4건 / PASS 4건 / SKIP 5건 / 지원 SKIP 0건
+SUMMARY: 스캔 17건 / 보유 1건 / FROZEN 대응 9건 / 실패 0건
+tests/test_d10_provenance.py::test_historical_hynix_record_matches_commit_blobs PASSED
+All checks passed!
+3 files already formatted
+```
+
+전체 테스트는 기존 외부 임시 파일 `bvt_p2_offline_verify.py`의 audit hook으로 네트워크를 차단하고 `pytest.main`에 `-q -p no:cacheprovider`를 전달했다. 전체 로그는 호스트 임시 폴더의 `d10_finalize_pytest.log`에 보관한다. skip 3건은 Windows symlink 권한·process-group 미지원·EDGAR 캐시 부재이며 기존 gotrue 경고 1건이다. FROZEN/allowlist 및 역사 테스트는 별도 `python -m pytest ... -v -s -p no:cacheprovider`에서도 통과했다.
+
+변경 Python 3파일 Ruff lint/format·AST, 대상 6파일 UTF-8/NUL/U+FFFD 검사 및 `git diff --check`를 통과했다. 신규 Python·문서는 LF, 기존 P-6 테스트와 CI는 CRLF를 유지했다. 시작 시 해시와 비교한 대상 외 추적 파일 868개는 불변이다. 사용자 CLAUDE.md와 다수의 선재 미추적 자료를 보존했다. 따라서 핸드오프의 잔여 상태 “CLAUDE.md뿐”은 **추적 파일 변경 기준**으로 해석하며, 미추적 자료는 삭제하지 않는다.
+
+커밋은 provenance `32d9447`(2파일 +198), P-6 `24085d0`(1파일 +12), CI `e4cd3a1`(1파일 +2), 본 문서/TODO 기록 순서로 분리한다. 각 커밋 전 staged stat을 확인했으며 파일 전체 줄바꿈 변경은 없었다. 작업 브랜치는 `feat/d10-p2-provenance-finalize`, PR base는 `main`이다. 원격 CI는 이 기록 시점에 아직 실행 전이다. 최종 네 번째 SHA·PR·CI URL과 역사 테스트 PASSED 로그는 미추적 `REPORT_CODEX_d10_p2_provenance_result.md`에 기록한다. squash하지 않으며 이번 핸드오프의 명시 범위인 PR 생성·검증까지 진행한다. P-3/P-4 결정 및 P-5/배치 러너는 다음 세션 범위다.

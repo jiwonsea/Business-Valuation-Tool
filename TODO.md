@@ -1,6 +1,6 @@
 # Project backlog
 
-기준: 2026-09-08, PR #28의 검증 head `7f676bf`. 과거 인수인계는 이력으로 보존하며, 아래 항목을 재개할 때 최신 코드와 Git 이력을 다시 대조한다. 검토·검증 상세는 [개선 계획서](PLAN_project_improvements_2026-09-07.md)에 기록한다.
+기준: 2026-09-12, 병합된 origin/main `a092c07` 및 P-2/P-6 사후 검토 반영(계획서 §22). 과거 인수인계는 이력으로 보존하며, 아래 항목을 재개할 때 최신 코드와 Git 이력을 다시 대조한다. 검토·검증 상세는 [개선 계획서](PLAN_project_improvements_2026-09-07.md)에 기록한다.
 
 ## 완료
 
@@ -15,6 +15,7 @@
 | 탄력도 비양수 base EV/equity 거부 | `1de124a`, [eps_elasticity.py](engine/eps_elasticity.py). 시나리오 가치를 0원으로 하한 처리하는 정책과 구분. |
 | MC 음수 equity의 DLOM 제외 | `6634c1f`, [monte_carlo.py](engine/monte_carlo.py). 음수 equity 자체는 보존. |
 | D10 rev-8 명세 검토 종결 | `REPLY_CODEX_d10a_spec_review_r8.md`, `SPEC_d10a_batch_runner.md`. 명세 종결이며 배치 구현 완료를 의미하지 않음. |
+| I-1~I-5 PR 병합 | PR #27 `4f6312e`, PR #28 `a092c07`로 병합 완료. 기록 head `5b6f9db`의 CI 결과는 계획서 §20 참조. |
 
 패키지 포함 회귀 검사는 setuptools 일반/namespace-aware **탐색 결과**와 테스트 패키지 제외를 기준으로 삼는다. Flat-layout editable import는 저장소 루트 노출 때문에 include 누락 상태에서도 성공할 수 있다. I-3 smoke는 기존 의존성을 공유했으며 신규 PC의 의존성 해석이나 standalone wheel 지원을 검증하지 않았다(계획서 §14~15).
 
@@ -27,12 +28,12 @@
 
 | 항목 | 다음 작업과 완료 기준 | 근거 |
 |---|---|---|
-| I-1~I-5 PR 병합 | PR #27 병합 완료. PR #28의 기존 5개 커밋 분리와 두 CI job 성공을 확인했다. 사용자 승인으로 문서 기록 커밋 1개를 추가하며, 새 head의 CI 재실행 통과 후 merge commit으로 병합한다. | 계획서 §20 |
 | I-4 링크 의존성 | 사용자 승인: TODO·PLAN 추적, 그 밖의 미추적 참조는 파일명 코드 표기. 실제 7개 파일·8개 링크를 변환했다. 추적 대상만으로 링크 해소되는지 커밋 검증에 포함. | README·본 문서의 상대 링크, 계획서 §20 |
 | I-5 잔여 부채 | 부분 차단은 PR #28, `7f676bf`. 로컬 전체 1,510 passed, FROZEN 지원 4/4 및 Ubuntu/Python 3.11 CI 두 job 성공. 잔여 lint 215건·format 99파일은 미차단이며 기계적 정리는 별도 PR 범위. | [CI](.github/workflows/ci.yml), [forecast CLI](forecast/cli.py), 계획서 §19~20 |
-| I-6 D10 다종목 측정 | §13의 P-1~P-6을 최신 코드·커밋으로 재검증한 후 §15의 offline 구현 범위를 확정. provenance, 입력 SHA, tax_rate_basis, 실패 계약과 기준선 보호. | `SPEC_d10a_batch_runner.md`, `HANDOFF_CODEX_d10p1_v1_derivation_2026-08-30.md` |
+| D10 테스트 import 경로 의존 | `scripts/`는 `__init__.py`가 없는 checkout 전용 namespace다. pytest import 모드 또는 루트 경로 설정 변경 시 import를 재검증한다. | [provenance 테스트](tests/test_d10_provenance.py) |
+| I-6 D10 다종목 측정 | P-1 충족. P-2 Git provenance 기계화·P-6 회귀 추가 및 사후 검토 필수 CI 수정 반영(계획서 §21~22). P-3 세율·P-4 NVDA 정본은 미결정. P-5 Samsung 대응 확인, 등록은 세율 결정 이후. §15 배치 러너·매니페스트·pair 등록은 미구현. | `SPEC_d10a_batch_runner.md`, `HANDOFF_CODEX_d10p1_v1_derivation_2026-08-30.md` |
 
-D10 P-1 상태는 문서 간 차이가 있다. 명세 §13은 `36ca806`으로 완료 표기하지만, I-1 조사에서는 기존 `split('_')[0]` 결함을 재현하고 수정했다(PR #28, `87d69c3`). 과거 완료 표기만으로 전제조건 전체를 통과 처리하지 않는다(계획서 §6·§11).
+D10 P-1 상태는 문서 간 차이가 있다. 명세 §13은 `36ca806`으로 완료 표기하지만, I-1 조사에서는 기존 `split('_')[0]` 결함을 재현하고 수정했다(PR #28, `87d69c3`). SPEC:1021의 방법 서술도 현행과 다르다: stem 접두어 검증이 아니라 `87d69c3`의 앵커 정규식이다. 과거 완료 표기만으로 전제조건 전체를 통과 처리하지 않는다(계획서 §6·§11).
 
 ## 정책 대기 · 운영 상태 미검증
 

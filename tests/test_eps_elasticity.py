@@ -148,3 +148,15 @@ def test_positive_shock_never_yields_negative_fv_elasticity(inputs) -> None:
 
     with pytest.raises(ValueError, match="base equity value must be positive"):
         measure({**inputs, "net_debt": ev_base + 1}, 0.05)
+
+
+def test_normalized_ev_elasticity_regression(inputs) -> None:
+    result = measure(inputs, 0.05)
+    assert result.elasticity_ev == pytest.approx(1.2781, rel=0, abs=0.00005)
+
+
+def test_profile_as_is_elasticity_regression(inputs) -> None:
+    result = measure(inputs, 0.05, tax_rate_pct=None)
+    assert result.elasticity_fv == pytest.approx(1.1009, rel=0, abs=0.00005)
+    assert result.elasticity_ev == pytest.approx(1.0819, rel=0, abs=0.00005)
+    assert result.fv_base == pytest.approx(797721, rel=0, abs=0.5)

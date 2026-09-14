@@ -39,7 +39,8 @@ pytest forecast/tests/test_frozen_integrity.py -q -s
 ## Verification and integrity
 
 - `*_FROZEN.md` reports are immutable. Corrections go in sibling `*_errata.md` files.
-- The FROZEN gate must run from a Git checkout and must satisfy `checked == passed == 4`, `supported_skipped == 0`, and `failures == []`.
+- The FROZEN gate must run from a Git checkout and must satisfy `checked == passed == len(CONVENTION_PROFILES)`, `supported_skipped == 0`, and `failures == []`.
+- Coverage maps report filenames to profiles; each A/B report needs its own entry. Unregistered reports may skip only when the first commit committer date (%cI, converted to KST) precedes 2026-08-05, or matches the exact GEV/TSLA filename + full commit SHA boundary exceptions in the gate. Unknown history/dates and all other unregistered reports on/after that date fail closed. Registered reports always require the freeze-commit profile SHA check.
 - `python forecast/scripts/verify_anchor.py` is the offline anchor gate.
 - Backtests must beat a naive baseline, not merely match direction. Revisit assumptions when revenue MAPE exceeds 10% or EPS MAPE exceeds 25%.
 - Preserve the separation between forward EPS assumptions and the root valuation engine; do not silently wire forecast outputs into valuation inputs.

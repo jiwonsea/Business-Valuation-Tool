@@ -23,15 +23,17 @@ The embedded forward-earnings layer projects quarterly and annual EPS, compares 
 `profiles/sk_ecoplant.yaml` — 1조 원 규모 CPS·RCPS 자본조달 구조의 시나리오별 가치 평가 사례. 자본구조 전제와 사업 전제를 한 모델 위에서 함께 다룬다.
 
 - **Capital structure**: CPS 6,000억 + RCPS 4,000억 (총 1조 원, FI 보유)
-- **Three scenarios** (probability-weighted):
-  - A. IPO 성공 — 우선주 전환, 상환 없음 (prob 20%)
-  - B. IPO 실패 + FI 우호 — 전액 상환, FI IRR 5% (prob 45%)
-  - C. IPO 실패 + FI 분쟁 — 전액 상환, FI IRR 12% (prob 35%)
+- **Three scenarios** (probability-weighted; IPO withdrawn in all three):
+  - Base. 자력 상환 — CPS 질서있는 상환, FI IRR 5%, DLOM 15% (prob 65%)
+  - Bull. 상환 + 하이테크 마진 정착 — 세그먼트 EBITDA +15%, DLOM 12% (prob 20%)
+  - Bear. 상환 지연·분쟁 잔존 — FI IRR 12%, 세그먼트 EBITDA −10%, DLOM 25% (prob 15%)
 - **Cross-validation**: Segment-level SOTP (HI 8.0× / GAS 10.0× / ALC 13.0× / SOL 5.0×) vs DCF
-- **Adjustments**: DLOM 20%/±5% (Monte Carlo), small-cap premium, holding-company discount
+- **Adjustments**: scenario DLOM as above (Monte Carlo mean 17%, σ 5%), small-cap premium, holding-company discount
 - **Output**: Excel report with scenario tables, sensitivity, Monte Carlo (10K runs), reconciliation notes
 
 Reproduce: `python cli.py --profile profiles/sk_ecoplant.yaml --excel`
+
+> **Superseded conclusion (Sep 2026).** This profile is the July 2026 snapshot and has not been updated. A later review (R10, Sep 4, 2026) floored equity value at zero, used a fully diluted share count, re-treated non-controlling interests in proportion to EV, fixed DLOM at 15% across scenarios and capped the bull-case Asset Lifecycle multiple at 6.0×. That moved the probability-weighted value to ₩42,098 per share, 9.5% below the ₩46,500 OTC price. The revision has not yet been ported to `profiles/sk_ecoplant.yaml`.
 
 ## Valuation Methods
 

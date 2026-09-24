@@ -1,0 +1,169 @@
+# Micron Technology (MU) — generic top-down forecast profile · EFE 2026-09 batch
+# Target: FQ4 FY2026 (fiscal) = calendar 2026 Q3 · 14-WEEK quarter (53-week FY2026)
+# Governing docs: forecast/PLAN_efe_2026sep_mu.md rev-7 · PREREG ..._G0H_2026-09-16.md rev-16 (LOCK d5918c8)
+#                 · PANEL ..._G0H_2026-09-25.md (7d68cf4 + rev-1)
+# 본 문서는 투자 자문이 아니다.
+#
+# ---------------------------------------------------------------------------
+# LABEL CONTRACT (PREREG §5-b) — model label "NQq" = FISCAL FY(N) Q(q).
+# FY ends on the Thursday closest to Aug 31 (can fall in early September).
+#   model 2024Q1 = FY2024 Q1 = ends 2023-11-30   <- regime break (B-3)
+#   model 2026Q3 = FY2026 Q3 = ends 2026-05-28   <- seed
+#   model 2026Q4 = FY2026 Q4 = ends 2026-09-03   <- TARGET (14 weeks)
+# 🔴 forecast/pipeline/edgar_fetcher.model_label_for_period() does NOT implement
+# this contract for FYE-August issuers (Q1 labelled one year early; ValueError
+# on early-September year ends). NOTICED BUT NOT TOUCHING — see PANEL §6/§8-5.
+# The consensus path (generic_consensus.to_generic_consensus_record) must be
+# fixed or explicitly refused BEFORE it is used for (d)/SF8/skill.
+#
+# Label digit = fiscal quarter, so generic_cli _slot() selects the FISCAL slot:
+# backtest_methodology.revenue_growth_qoq is ordered [FQ1, FQ2, FQ3, FQ4];
+# forward bear/base/bull vectors are POSITIONAL from the seed:
+# [FY26Q4, FY27Q1, FY27Q2, FY27Q3].
+# ---------------------------------------------------------------------------
+name: "Micron Technology, Inc."
+name_kr: "마이크론 테크놀로지"
+ticker: "MU"
+currency: "USD"
+reporting_unit: "USD_million"
+fiscal_year_end_month: 8
+weighted_avg_diluted: 1150000000    # FQ3 FY26 prepared remarks: "share count of approximately 1.15 billion"
+
+regime_break_quarter: "2024Q1"      # PREREG §13 LOCK (d5918c8) — B-3 2023 Restructure Plan
+split_history: []                   # no MU stock split in the actuals window
+
+# ---------------------------------------------------------------------------
+# Historical one-step backtest methodology — FISCAL slots [FQ1..FQ4].
+# Mechanical (SNDK precedent): medians of the realised post-break record,
+# NOT the forward view.
+# 🔴 IN-SAMPLE — NOT SKILL EVIDENCE: the slot growth, op_margin, ETR and
+# below-OP ratio below are fitted on the SAME 10 actuals the backtest scores.
+# The backtest is therefore a consistency check, not a performance claim
+# (START §154). Within this sample revenue MASE 0.652 / Theil U2 0.749 were
+# below the random walk, which is NOT out-of-sample skill; EPS MASE 1.264 /
+# U2 1.455 exceed 1 even in-sample. See notes BACKTEST_IN_SAMPLE.
+#   revenue_growth_qoq: per-slot median QoQ over the 10 one-step transitions
+#     (FQ1 n=2, FQ2 n=3, FQ3 n=3, FQ4 n=2; FQ4 transitions are 13w->13w).
+#   op_margin 0.2414: median GAAP operating margin of the 10 target quarters.
+#   effective_tax_rate 0.1341: median GAAP ETR of the profitable target quarters.
+#   net_interest_pct_of_revenue -0.00228: median (pretax − operating income)/revenue.
+# ⚠️ EXPECTED TO PERFORM BADLY: GAAP op margin moved −23.9% -> +80.4% inside the
+# window; one median cannot track it. Report MASE/Theil honestly even if > 1.
+# ---------------------------------------------------------------------------
+backtest_methodology:
+  revenue_growth_qoq: [0.1647, 0.2323, 0.1695, 0.1772]
+  op_margin: 0.2414
+  effective_tax_rate: 0.1341
+  net_interest_pct_of_revenue: -0.00228
+
+seed:
+  quarter_label: "2026Q3"           # FY2026 Q3, ended 2026-05-28 (10-Q 0000723125-26-000015)
+  revenue_total: 41456
+  net_profit: 28243
+
+# 11 contiguous fiscal quarters FY2024 Q1 .. FY2026 Q3 (PANEL §2; H = 11).
+# revenue/net_profit USD_million; diluted_shares absolute, as-filed per quarter.
+# EPS is DERIVED at load (net_profit / diluted_shares) — all 11 reproduce the
+# as-filed GAAP diluted EPS to the cent (tests).
+actuals:
+  - { quarter_label: "2024Q1", period_end: 2023-11-30, revenue_total: 4726, net_profit: -1234, diluted_shares: 1100000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-23-000077 filed 2023-12-21 (as-filed, earliest accession); BREAK QUARTER B-3 (PREREG d5918c8) — transition-in-progress flag, included per §6" }
+  - { quarter_label: "2024Q2", period_end: 2024-02-29, revenue_total: 5824, net_profit: 793, diluted_shares: 1114000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-24-000007 filed 2024-03-21 (as-filed, earliest accession)" }
+  - { quarter_label: "2024Q3", period_end: 2024-05-30, revenue_total: 6811, net_profit: 332, diluted_shares: 1123000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-24-000019 filed 2024-06-27 (as-filed, earliest accession)" }
+  - { quarter_label: "2024Q4", period_end: 2024-08-29, revenue_total: 7750, net_profit: 887, diluted_shares: 1125000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; Q4 DERIVED revenue/NI = FY 10-K − 9M 10-Q (0000723125-24-000027 − 0000723125-24-000019); diluted_shares AS-FILED 8-K EX-99.1 0000723125-24-000023 (sha256 3faad63e); 4xFY-3x9M = 1160M kept as cross-check only (PLAN G0-C)" }
+  - { quarter_label: "2025Q1", period_end: 2024-11-28, revenue_total: 8709, net_profit: 1870, diluted_shares: 1122000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-24-000047 filed 2024-12-19 (as-filed, earliest accession)" }
+  - { quarter_label: "2025Q2", period_end: 2025-02-27, revenue_total: 8053, net_profit: 1583, diluted_shares: 1123000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-25-000009 filed 2025-03-21 (as-filed, earliest accession)" }
+  - { quarter_label: "2025Q3", period_end: 2025-05-29, revenue_total: 9301, net_profit: 1885, diluted_shares: 1125000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-25-000021 filed 2025-06-26 (as-filed, earliest accession)" }
+  - { quarter_label: "2025Q4", period_end: 2025-08-28, revenue_total: 11315, net_profit: 3201, diluted_shares: 1131000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; Q4 DERIVED revenue/NI = FY 10-K − 9M 10-Q (0000723125-25-000028 − 0000723125-25-000021); diluted_shares AS-FILED 8-K EX-99.1 0000723125-25-000024 (sha256 34478c62); 4xFY-3x9M = 1131M kept as cross-check only (PLAN G0-C); B-1 BU reorg quarter — consolidated unchanged, segment SF4 only" }
+  - { quarter_label: "2026Q1", period_end: 2025-11-27, revenue_total: 13643, net_profit: 5240, diluted_shares: 1138000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-25-000046 filed 2025-12-18 (as-filed, earliest accession)" }
+  - { quarter_label: "2026Q2", period_end: 2026-02-26, revenue_total: 23860, net_profit: 13785, diluted_shares: 1142000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-26-000006 filed 2026-03-19 (as-filed, earliest accession)" }
+  - { quarter_label: "2026Q3", period_end: 2026-05-28, revenue_total: 41456, net_profit: 28243, diluted_shares: 1145000000, source: "EDGAR companyfacts CIK 0000723125 blob sha256 a8b088c2 (PANEL 7d68cf4); 13w; 10-Q 0000723125-26-000015 filed 2026-06-25 (as-filed, earliest accession)" }
+
+window:
+  start_quarter: "2026Q4"           # FY2026 Q4 — the frozen target (14 weeks)
+  n_quarters: 4                     # FY26Q4, FY27Q1, FY27Q2, FY27Q3
+
+# ---------------------------------------------------------------------------
+# Forward scenarios — POSITIONAL [FY26Q4, FY27Q1, FY27Q2, FY27Q3]. GAAP basis.
+#
+# GUIDANCE (8-K EX-99.1 0000723125-26-000013, FQ4-26; column heads recorded —
+# PLAN §4-1b forbids judging basis from the row label):
+#   GAAP Outlook:     revenue $50.0B ± $1.0B · GM ~86% · opex ~$1.86B · diluted EPS $30.73 ± $1.00
+#   Non-GAAP Outlook: revenue $50.0B ± $1.0B · GM ~86% · opex ~$1.65B · diluted EPS $31.00 ± $1.00
+#   Prepared remarks: share count ~1.15B · FQ4 & FY26 tax rate ~15.0% (BASIS NOT STATED) · "meaningful
+#   moderation in the rate of price increases" · FY27 opex +~$1B, 2H-weighted.
+#
+# 🔴 WEEK BASIS (PLAN G0-B): the FQ4 guidance is a 14-WEEK figure (the 53rd week
+# is inside it; the remarks never mention weeks). The FQ4 level is therefore
+# anchored on guidance and NOT multiplied by 14/13 again. FY27 Q1 returns to 13
+# weeks: per-week growth g_week is converted with g_raw = (1+g_week)*13/14 − 1.
+# Machine-readable anchors are in notes (WEEK_NORM / ANCHOR) and tested.
+#
+# LEVEL (R1): latest actual + guidance, never a historical average.
+#   FQ4 revenue = guidance mid × (1 + beat):
+#     base beat = median of the 10 post-break guidance beats (+0.0572)
+#     bull beat = median of the last 4 beats (+0.1645)
+#     bear      = guidance LOW end (-0.0200); no miss exists in the record
+#   Beat record 2024Q2..2026Q3: 10/10 revenue at/above mid, 10/10 GAAP EPS above mid.
+# MARGIN: op_margin = GM − opex/revenue (GAAP GM, GAAP opex $). GM is not a
+#   schema field (extra='forbid'); it lives here and in notes (PLAN §3 SF3/SF2).
+# TAX: 🔴 base ETR 0.1386 is a BACK-SOLVED RESIDUAL, not a disclosed GAAP rate. It is
+#   the rate at which guidance-mid revenue, base GM/opex and the backtest below-OP
+#   ratio reproduce the GAAP EPS guide mid ($30.73); it also absorbs the
+#   "approximately" rounding in GM, opex and the ~1.15B share count. The EPS-30.73
+#   test is therefore an ALGEBRAIC RECONCILIATION, not independent validation.
+#   The remarks' "tax rate of around 15.0%" does not state GAAP or non-GAAP; it reads
+#   as non-GAAP context, but that is an inference, not a confirmed basis.
+#   Sensitivity: at 15% the guidance-mid GAAP EPS is 30.32 (−0.41 / −1.32%).
+#   bull = base − 0.5pt; bear = 0.15 (stated rate, basis unstated). See notes TAX_BASIS.
+# BELOW-OP (SF5): median ratio -0.00228; equity-method income (≤ $9M/qtr) is outside
+#   the engine's pretax×(1−t) chain and is ignored — immaterial, recorded in notes.
+# SHAPE (FY27): low confidence. Company signals slower price increases; FY27Q1
+#   is also the −7.1% 14w->13w calendar step. Positions 2-4 are NOT the frozen target.
+# ---------------------------------------------------------------------------
+bear:
+  probability: 0.2
+  rationale: "Guidance low end in FQ4; price rollover in FY27 (per-week −8%/−10%/−5%), GM 85%->75%, stated 15% tax."
+  revenue_growth_qoq: [0.181976, -0.145714, -0.1, -0.05]
+  op_margin: [0.812, 0.7846, 0.7382, 0.6899]
+  effective_tax_rate: 0.15
+  net_interest_pct_of_revenue: -0.00228
+
+base:
+  probability: 0.5
+  rationale: "FQ4 = guide mid × (1 + median post-break beat); GM ~86% guided; FY27 per-week +5%/+3%/+2% (moderating price increases); calibrated GAAP ETR."
+  revenue_growth_qoq: [0.275092, -0.025, 0.03, 0.02]
+  op_margin: [0.8248, 0.8231, 0.8233, 0.8203]
+  effective_tax_rate: 0.1386
+  net_interest_pct_of_revenue: -0.00228
+
+bull:
+  probability: 0.3
+  rationale: "FQ4 = guide mid × (1 + median of last-4 beats); GM 87%; FY27 per-week +12%/+8%/+5%."
+  revenue_growth_qoq: [0.40446, 0.04, 0.08, 0.05]
+  op_margin: [0.8381, 0.8386, 0.8402, 0.8387]
+  effective_tax_rate: 0.1336
+  net_interest_pct_of_revenue: -0.00228
+
+notes:
+  - "LABEL: fiscal FY(N) Q(q) per PREREG §5-b; FYE Thursday nearest Aug 31. Break 2024Q1 (d5918c8)."
+  - "H = 11 post-break comparable actuals (PANEL 7d68cf4); 1-step evaluable: revenue/NI 10, EPS 10 on as-filed shares (PANEL §8)."
+  - "WEEK_BASIS: actuals 2024Q1..2026Q3 all 13w (91d). Target 2026Q4 = 14w (FY2026 = 371d). FY2027 = 52w. Last 53-week FY before FY2026 = FY2020 (outside window)."
+  - "WEEK_NORM bear: weeks=[14,13,13,13] seed_weeks=13 g_week=[0.097549, -0.08, -0.1, -0.05]"
+  - "WEEK_NORM base: weeks=[14,13,13,13] seed_weeks=13 g_week=[0.184014, 0.05, 0.03, 0.02]"
+  - "WEEK_NORM bull: weeks=[14,13,13,13] seed_weeks=13 g_week=[0.304142, 0.12, 0.08, 0.05]"
+  - "ANCHOR bear: guide_mid=50000 beat=-0.020000 fq4_rev=49000.00"
+  - "ANCHOR base: guide_mid=50000 beat=0.057204 fq4_rev=52860.21"
+  - "ANCHOR bull: guide_mid=50000 beat=0.164466 fq4_rev=58223.31"
+  - "FQ4 position: the 14w guidance-anchored level is primary (g_raw); g_week there is informational (g_week = (1+g_raw)*13/14 − 1). NEVER re-multiply by 14/13."
+  - "GM path (not a schema field): bear [0.85, 0.83, 0.79, 0.75] · base [0.86, 0.86, 0.86, 0.86] · bull [0.87, 0.87, 0.87, 0.87]; GAAP opex $M [1860.0, 1900.0, 1950.0, 2150.0]."
+  - "Q4 diluted shares: as-filed from 8-K EX-99.1 (2024Q4 1,125M; 2025Q4 1,131M). 4xFY−3x9M derived (1,160 / 1,131) = cross-check only (PLAN G0-C)."
+  - "2024Q1: transition-in-progress flag (15% headcount cut completed by calendar 2023 end) — included per PREREG §6, not excluded."
+  - "2025Q4+: BU reorg (B-1) — consolidated series unchanged; segment comparisons carry SF4."
+  - "gp_margin in engine/generic_forecast is 0.0 by construction — do NOT read it as a forecast (PLAN §3)."
+  - "Equity-method income (≤ $9M/qtr) is outside the engine chain and ignored (SF5 note)."
+  - "CONSENSUS_PATH: REFUSED for this freeze. The automatic label/consensus path (edgar_fetcher.model_label_for_period -> generic_consensus.to_generic_consensus_record, generic CLI consensus) is NOT used; the builder is NOT modified. (d) uses only a manually mapped target-quarter (FY2026 Q4) consensus. SF8 historical skill = UNAVAILABLE — label contract mismatch."
+  - "BACKTEST_IN_SAMPLE: backtest_methodology is fitted on the same 10 actuals it scores -> consistency check, NOT skill evidence (START §154). In-sample revenue MASE 0.652 / U2 0.749 (< RW, not out-of-sample skill); in-sample EPS MASE 1.264 / U2 1.455 (> 1)."
+  - "TAX_BASIS: base ETR 0.1386 = back-solved residual reproducing GAAP EPS guide 30.73 (algebraic reconciliation, not validation). Remarks ~15.0% has no stated basis (non-GAAP reading is inference). At 15%: guidance-mid EPS 30.32 (−0.41 / −1.32%)."
+  - "PROBABILITIES: judgmental 0.20/0.50/0.30, NOT empirically calibrated. Bear = guidance low end only; there is NO below-guidance tail (no miss in the 10-quarter record). Weighted EPS is not a calibrated expectation and carries no confidence interval."
+  - "NONGAAP_BRIDGE: FQ4 guidance-mid adjustments $309M (SBC COGS 159 + R&D 138 + SG&A 67 − tax effects 55; 8-K EX-99.1 0000723125-26-000013) / ~1.15B diluted = $0.27 (GAAP 30.73 -> non-GAAP 31.00). Directly usable at guidance mid; applying a fixed $0.27 to bear/base/bull is an ASSUMPTION."
+  - "본 프로파일은 투자 자문이 아니다."

@@ -169,7 +169,7 @@ def test_real_frozen_profiles_carry_no_valuation() -> None:
 def test_real_frozen_reports_all_resolve_to_existing_profiles() -> None:
     result = verify_valuation_allowlist()
 
-    assert len(result.frozen_profiles) == 9
+    assert len(result.frozen_profiles) == 10
     assert not [failure for failure in result.failures if failure.startswith("UNRESOLVED:")]
 
 

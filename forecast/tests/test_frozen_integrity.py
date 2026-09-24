@@ -17,6 +17,7 @@ FORECAST_ROOT = Path(__file__).resolve().parents[1]
 CONVENTION_DATE = "2026-08-05"
 CONVENTION_PROFILES = {
     "amd_q2_2026_forecast_FROZEN.md": "profiles/amd.generic.yaml",
+    "mu_fy2026q4_forecast_FROZEN.md": "profiles/mu.generic.yaml",
     "sndk_fy2026q4_forecast_FROZEN.md": "profiles/sndk.generic.yaml",
     "spcx_q2_2026_forecast_FROZEN.md": "profiles/spcx.generic.yaml",
     "vst_q2_2026_forecast_FROZEN.md": "profiles/vst.generic.yaml",
@@ -366,7 +367,7 @@ def test_unregistered_report_uses_kst_commit_date(
     timestamp: str,
     legacy: bool,
 ) -> None:
-    _fixture_report(isolated_forecast, "mu_fy2026q4_forecast_FROZEN.md")
+    _fixture_report(isolated_forecast, "unregistered_fy2026q4_forecast_FROZEN.md")
     _fixture_commit(isolated_forecast.parent, timestamp)
     result = verify_frozen_integrity(isolated_forecast)
     output = capsys.readouterr().out

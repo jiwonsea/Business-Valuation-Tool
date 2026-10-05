@@ -1,0 +1,6910 @@
+{
+  "equity_balances": {
+    "FY2022A": {
+      "caption": "Total equity",
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 38,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20230831.htm",
+      "source_sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb",
+      "value": 49907.0
+    },
+    "FY2023A": {
+      "caption": "Total equity",
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 38,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20230831.htm",
+      "source_sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb",
+      "value": 44120.0
+    },
+    "FY2024A": {
+      "caption": "Total equity",
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 38,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20250828.htm",
+      "source_sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2",
+      "value": 45131.0
+    },
+    "FY2025A": {
+      "caption": "Total equity",
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 38,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20250828.htm",
+      "source_sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2",
+      "value": 54165.0
+    }
+  },
+  "inventory_balances": {
+    "FY2022A": {
+      "caption": "Inventories",
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 7,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20230831.htm",
+      "source_sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb",
+      "value": 6663.0
+    },
+    "FY2023A": {
+      "caption": "Inventories",
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 7,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20230831.htm",
+      "source_sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb",
+      "value": 8387.0
+    },
+    "FY2024A": {
+      "caption": "Inventories",
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 7,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20250828.htm",
+      "source_sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2",
+      "value": 8875.0
+    },
+    "FY2025A": {
+      "caption": "Inventories",
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 7,
+        "table": 20
+      },
+      "source_path": "logs/_claude_scratch/mu-20250828.htm",
+      "source_sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2",
+      "value": 8355.0
+    }
+  },
+  "source": {
+    "accession": "0000723125-25-000028",
+    "as_of": "2025-08-28",
+    "path": "logs/_claude_scratch/mu-20250828.htm",
+    "sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2"
+  },
+  "supplemental_source": {
+    "accession": "0000723125-23-000084",
+    "as_of": "2023-08-31",
+    "path": "logs/_claude_scratch/mu-20230831.htm",
+    "sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb"
+  },
+  "unit": "USD_million_except_per_share",
+  "years": {
+    "FY2023A": {
+      "as_filed_rows": {
+        "balance_sheet": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cash and equivalents",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8577.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Short-term investments",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1017.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2443.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8387.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Other current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 820.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Total current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 21244.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Long-term marketable investments",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 844.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 37928.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Operating lease right-of-use assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 666.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 404.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Deferred tax assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 756.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Goodwill",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1150.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Other noncurrent assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1262.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 17
+            },
+            "label": "Total assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 64254.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 3958.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Current debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 278.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 529.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Total current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 4765.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Long-term debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 13052.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 25
+            },
+            "label": "Noncurrent operating lease liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 603.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 26
+            },
+            "label": "Noncurrent unearned government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 727.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Other noncurrent liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 987.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Total liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 20134.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Common stock, $0.10 par value, 3,000 shares authorized, 1,239 shares issued and 1,098 outstanding (1,226 shares issued and 1,094 outstanding as of September 1, 2022)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 124.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 34
+            },
+            "label": "Additional capital",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 11036.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Retained earnings",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 40824.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 36
+            },
+            "label": "Treasury stock, 141 shares held (132 shares as of September 1, 2022)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -7552.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Accumulated other comprehensive income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -312.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Total equity",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 44120.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Total liabilities and equity",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 64254.0
+            }
+          }
+        ],
+        "cash_flow": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Depreciation expense and amortization of intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7756.0,
+              "FY2024A": 7780.0,
+              "FY2025A": 8352.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Stock-based compensation",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 596.0,
+              "FY2024A": 833.0,
+              "FY2025A": 972.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Provision to write down inventories to net realizable value",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1831.0,
+              "FY2024A": null,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Goodwill impairment",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 101.0,
+              "FY2024A": null,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2763.0,
+              "FY2024A": -3581.0,
+              "FY2025A": -1776.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -3555.0,
+              "FY2024A": -488.0,
+              "FY2025A": 520.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1302.0,
+              "FY2024A": 1915.0,
+              "FY2025A": 862.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -817.0,
+              "FY2024A": 989.0,
+              "FY2025A": -272.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 19.0,
+              "FY2024A": 281.0,
+              "FY2025A": 328.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Net cash provided by operating activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1559.0,
+              "FY2024A": 8507.0,
+              "FY2025A": 17525.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Expenditures for property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -7676.0,
+              "FY2024A": -8386.0,
+              "FY2025A": -15857.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Purchases of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -723.0,
+              "FY2024A": -1999.0,
+              "FY2025A": -1890.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Proceeds from government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 710.0,
+              "FY2024A": 315.0,
+              "FY2025A": 2005.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Proceeds from maturities and sales of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1591.0,
+              "FY2024A": 1794.0,
+              "FY2025A": 1698.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Other",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": -93.0,
+              "FY2024A": -33.0,
+              "FY2025A": -43.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Net cash used for investing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -6191.0,
+              "FY2024A": -8309.0,
+              "FY2025A": -14087.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Repayments of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -761.0,
+              "FY2024A": -1897.0,
+              "FY2025A": -4619.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Payments of dividends to shareholders",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -504.0,
+              "FY2024A": -513.0,
+              "FY2025A": -522.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 29
+            },
+            "label": "Repurchases of common stock - repurchase program",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -425.0,
+              "FY2024A": -300.0,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 30
+            },
+            "label": "Payments on equipment purchase contracts",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -138.0,
+              "FY2024A": -149.0,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 31
+            },
+            "label": "Proceeds from issuance of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 6716.0,
+              "FY2024A": 999.0,
+              "FY2025A": 4430.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 32
+            },
+            "label": "Other",
+            "occurrence": 2,
+            "values": {
+              "FY2023A": 95.0,
+              "FY2024A": 18.0,
+              "FY2025A": -139.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Net cash provided by (used for) financing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 4983.0,
+              "FY2024A": -1842.0,
+              "FY2025A": -850.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Effect of changes in currency exchange rates on cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -34.0,
+              "FY2024A": 40.0,
+              "FY2025A": 6.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Net increase (decrease) in cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 317.0,
+              "FY2024A": -1604.0,
+              "FY2025A": 2594.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Cash, cash equivalents, and restricted cash at beginning of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8339.0,
+              "FY2024A": 8656.0,
+              "FY2025A": 7052.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Cash, cash equivalents, and restricted cash at end of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8656.0,
+              "FY2024A": 7052.0,
+              "FY2025A": 9646.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 42
+            },
+            "label": "Income taxes paid, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -532.0,
+              "FY2024A": -338.0,
+              "FY2025A": -583.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 43
+            },
+            "label": "Interest paid, net of amounts capitalized",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -323.0,
+              "FY2024A": -503.0,
+              "FY2025A": -418.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 44
+            },
+            "label": "Non-cash equipment acquisitions on contracts payable",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 165.0,
+              "FY2024A": 118.0,
+              "FY2025A": 321.0
+            }
+          }
+        ],
+        "income_statement": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 3
+            },
+            "label": "Revenue",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 15540.0,
+              "FY2024A": 25111.0,
+              "FY2025A": 37378.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cost of goods sold",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 16956.0,
+              "FY2024A": 19498.0,
+              "FY2025A": 22505.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Gross margin",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1416.0,
+              "FY2024A": 5613.0,
+              "FY2025A": 14873.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Research and development",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 3114.0,
+              "FY2024A": 3430.0,
+              "FY2025A": 3798.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Selling, general, and administrative",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 920.0,
+              "FY2024A": 1129.0,
+              "FY2025A": 1205.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Restructure and asset impairments",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 171.0,
+              "FY2024A": 1.0,
+              "FY2025A": 39.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Other operating (income) expense, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 124.0,
+              "FY2024A": -251.0,
+              "FY2025A": 61.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Operating income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5745.0,
+              "FY2024A": 1304.0,
+              "FY2025A": 9770.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Interest income",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 468.0,
+              "FY2024A": 529.0,
+              "FY2025A": 496.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Interest expense",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -388.0,
+              "FY2024A": -562.0,
+              "FY2025A": -477.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other non-operating income (expense), net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7.0,
+              "FY2024A": -31.0,
+              "FY2025A": -135.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 18
+            },
+            "label": "Income tax (provision) benefit",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -177.0,
+              "FY2024A": -451.0,
+              "FY2025A": -1124.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Equity in net income (loss) of equity method investees",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2.0,
+              "FY2024A": -11.0,
+              "FY2025A": 9.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Basic",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.65
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Diluted",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.59
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Basic",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1105.0,
+              "FY2025A": 1116.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Diluted",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1118.0,
+              "FY2025A": 1125.0
+            }
+          }
+        ]
+      },
+      "balance_sheet": {
+        "accounts_payable_accrued": 3958.0,
+        "cash": 8577.0,
+        "current_debt": 278.0,
+        "inventories": 8387.0,
+        "long_term_debt": 13052.0,
+        "long_term_investments": 844.0,
+        "ppe": 37928.0,
+        "receivables": 2443.0,
+        "short_term_investments": 1017.0,
+        "total_assets": 64254.0,
+        "total_current_assets": 21244.0,
+        "total_current_liabilities": 4765.0,
+        "total_equity": 44120.0,
+        "total_liabilities": 20134.0
+      },
+      "cash_flow": {
+        "accounts_payable_change": -1302.0,
+        "cash_change": 317.0,
+        "d_and_a": 7756.0,
+        "debt_issuance": 6716.0,
+        "debt_repayments": -761.0,
+        "dividends": -504.0,
+        "financing_cash_flow": 4983.0,
+        "fx_effect": -34.0,
+        "government_incentives": 710.0,
+        "inventories_change": -3555.0,
+        "investing_cash_flow": -6191.0,
+        "net_income": -5833.0,
+        "operating_cash_flow": 1559.0,
+        "other_current_liabilities_change": -817.0,
+        "ppe_expenditures": -7676.0,
+        "receivables_change": 2763.0,
+        "sbc": 596.0
+      },
+      "coordinates": {
+        "balance_sheet": {
+          "accounts_payable_accrued": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 20,
+            "table": 20
+          },
+          "cash": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 4,
+            "table": 20
+          },
+          "current_debt": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 21,
+            "table": 20
+          },
+          "inventories": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 7,
+            "table": 20
+          },
+          "long_term_debt": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 24,
+            "table": 20
+          },
+          "long_term_investments": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 10,
+            "table": 20
+          },
+          "ppe": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 11,
+            "table": 20
+          },
+          "receivables": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 6,
+            "table": 20
+          },
+          "short_term_investments": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 5,
+            "table": 20
+          },
+          "total_assets": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 17,
+            "table": 20
+          },
+          "total_current_assets": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 9,
+            "table": 20
+          },
+          "total_current_liabilities": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 23,
+            "table": 20
+          },
+          "total_equity": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 38,
+            "table": 20
+          },
+          "total_liabilities": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 28,
+            "table": 20
+          }
+        },
+        "cash_flow": {
+          "accounts_payable_change": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 13,
+            "table": 22
+          },
+          "cash_change": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 37,
+            "table": 22
+          },
+          "d_and_a": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 6,
+            "table": 22
+          },
+          "debt_issuance": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 31,
+            "table": 22
+          },
+          "debt_repayments": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 27,
+            "table": 22
+          },
+          "dividends": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 28,
+            "table": 22
+          },
+          "financing_cash_flow": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 33,
+            "table": 22
+          },
+          "fx_effect": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 35,
+            "table": 22
+          },
+          "government_incentives": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 21,
+            "table": 22
+          },
+          "inventories_change": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 12,
+            "table": 22
+          },
+          "investing_cash_flow": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 24,
+            "table": 22
+          },
+          "net_income": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 4,
+            "table": 22
+          },
+          "operating_cash_flow": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 16,
+            "table": 22
+          },
+          "other_current_liabilities_change": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 14,
+            "table": 22
+          },
+          "ppe_expenditures": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 19,
+            "table": 22
+          },
+          "receivables_change": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 11,
+            "table": 22
+          },
+          "sbc": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 7,
+            "table": 22
+          }
+        },
+        "income_statement": {
+          "cogs": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 4,
+            "table": 18
+          },
+          "diluted_eps": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 24,
+            "table": 18
+          },
+          "diluted_shares": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 28,
+            "table": 18
+          },
+          "equity_method": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 19,
+            "table": 18
+          },
+          "gross_profit": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 5,
+            "table": 18
+          },
+          "interest_expense": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 14,
+            "table": 18
+          },
+          "interest_income": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 13,
+            "table": 18
+          },
+          "net_income": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 20,
+            "table": 18
+          },
+          "operating_income": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 11,
+            "table": 18
+          },
+          "other_nonoperating": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 15,
+            "table": 18
+          },
+          "other_operating": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 10,
+            "table": 18
+          },
+          "pretax_income": {
+            "anchor": "unlabeled subtotal after other non-operating",
+            "columns": [
+              9,
+              11
+            ],
+            "row": 16,
+            "table": 18
+          },
+          "r_and_d": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 7,
+            "table": 18
+          },
+          "restructuring": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 9,
+            "table": 18
+          },
+          "revenue": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 3,
+            "table": 18
+          },
+          "sg_and_a": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 8,
+            "table": 18
+          },
+          "tax": {
+            "columns": [
+              9,
+              11
+            ],
+            "row": 18,
+            "table": 18
+          }
+        }
+      },
+      "income_statement": {
+        "cogs": 16956.0,
+        "diluted_eps": -5.34,
+        "diluted_shares": 1093.0,
+        "equity_method": 2.0,
+        "gross_profit": -1416.0,
+        "interest_expense": -388.0,
+        "interest_income": 468.0,
+        "net_income": -5833.0,
+        "operating_income": -5745.0,
+        "other_nonoperating": 7.0,
+        "other_operating": 124.0,
+        "pretax_income": -5658.0,
+        "r_and_d": 3114.0,
+        "restructuring": 171.0,
+        "revenue": 15540.0,
+        "sg_and_a": 920.0,
+        "tax": -177.0
+      }
+    },
+    "FY2024A": {
+      "as_filed_rows": {
+        "balance_sheet": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cash and cash equivalents",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 7041.0,
+              "FY2025A": 9642.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Short-term investments",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1065.0,
+              "FY2025A": 665.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 6615.0,
+              "FY2025A": 9265.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 8875.0,
+              "FY2025A": 8355.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Other current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 776.0,
+              "FY2025A": 914.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Total current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 24372.0,
+              "FY2025A": 28841.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Long-term marketable investments",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1046.0,
+              "FY2025A": 1629.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 39749.0,
+              "FY2025A": 46590.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Operating lease right-of-use assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 645.0,
+              "FY2025A": 736.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 416.0,
+              "FY2025A": 453.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Deferred tax assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 520.0,
+              "FY2025A": 616.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Goodwill",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1150.0,
+              "FY2025A": 1150.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Other noncurrent assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1518.0,
+              "FY2025A": 2783.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 17
+            },
+            "label": "Total assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 69416.0,
+              "FY2025A": 82798.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 7299.0,
+              "FY2025A": 9649.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Current debt",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 431.0,
+              "FY2025A": 560.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1518.0,
+              "FY2025A": 1245.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Total current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 9248.0,
+              "FY2025A": 11454.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Long-term debt",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 12966.0,
+              "FY2025A": 14017.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 25
+            },
+            "label": "Noncurrent operating lease liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 610.0,
+              "FY2025A": 701.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 26
+            },
+            "label": "Noncurrent unearned government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 550.0,
+              "FY2025A": 1018.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Other noncurrent liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 911.0,
+              "FY2025A": 1443.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Total liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 24285.0,
+              "FY2025A": 28633.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Common stock, $0.10 par value, 3,000 shares authorized, 1,266 shares issued and 1,122 outstanding (1,253 shares issued and 1,109 outstanding as of August 29, 2024)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 125.0,
+              "FY2025A": 127.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 34
+            },
+            "label": "Additional capital",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 12115.0,
+              "FY2025A": 13339.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Retained earnings",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 40877.0,
+              "FY2025A": 48583.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 36
+            },
+            "label": "Treasury stock, 144 shares held (144 shares as of August 29, 2024)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": -7852.0,
+              "FY2025A": -7852.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Accumulated other comprehensive income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": -134.0,
+              "FY2025A": -32.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Total equity",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 45131.0,
+              "FY2025A": 54165.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Total liabilities and equity",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 69416.0,
+              "FY2025A": 82798.0
+            }
+          }
+        ],
+        "cash_flow": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Depreciation expense and amortization of intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7756.0,
+              "FY2024A": 7780.0,
+              "FY2025A": 8352.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Stock-based compensation",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 596.0,
+              "FY2024A": 833.0,
+              "FY2025A": 972.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2763.0,
+              "FY2024A": -3581.0,
+              "FY2025A": -1776.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -3555.0,
+              "FY2024A": -488.0,
+              "FY2025A": 520.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1302.0,
+              "FY2024A": 1915.0,
+              "FY2025A": 862.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -817.0,
+              "FY2024A": 989.0,
+              "FY2025A": -272.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 19.0,
+              "FY2024A": 281.0,
+              "FY2025A": 328.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Net cash provided by operating activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1559.0,
+              "FY2024A": 8507.0,
+              "FY2025A": 17525.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Expenditures for property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -7676.0,
+              "FY2024A": -8386.0,
+              "FY2025A": -15857.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Purchases of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -723.0,
+              "FY2024A": -1999.0,
+              "FY2025A": -1890.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Proceeds from government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 710.0,
+              "FY2024A": 315.0,
+              "FY2025A": 2005.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Proceeds from maturities and sales of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1591.0,
+              "FY2024A": 1794.0,
+              "FY2025A": 1698.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Other",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": -93.0,
+              "FY2024A": -33.0,
+              "FY2025A": -43.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Net cash used for investing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -6191.0,
+              "FY2024A": -8309.0,
+              "FY2025A": -14087.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Repayments of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -761.0,
+              "FY2024A": -1897.0,
+              "FY2025A": -4619.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Payments of dividends to shareholders",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -504.0,
+              "FY2024A": -513.0,
+              "FY2025A": -522.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 29
+            },
+            "label": "Repurchases of common stock - repurchase program",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -425.0,
+              "FY2024A": -300.0,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 30
+            },
+            "label": "Payments on equipment purchase contracts",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -138.0,
+              "FY2024A": -149.0,
+              "FY2025A": null
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 31
+            },
+            "label": "Proceeds from issuance of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 6716.0,
+              "FY2024A": 999.0,
+              "FY2025A": 4430.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 32
+            },
+            "label": "Other",
+            "occurrence": 2,
+            "values": {
+              "FY2023A": 95.0,
+              "FY2024A": 18.0,
+              "FY2025A": -139.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Net cash provided by (used for) financing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 4983.0,
+              "FY2024A": -1842.0,
+              "FY2025A": -850.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Effect of changes in currency exchange rates on cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -34.0,
+              "FY2024A": 40.0,
+              "FY2025A": 6.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Net increase (decrease) in cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 317.0,
+              "FY2024A": -1604.0,
+              "FY2025A": 2594.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Cash, cash equivalents, and restricted cash at beginning of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8339.0,
+              "FY2024A": 8656.0,
+              "FY2025A": 7052.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Cash, cash equivalents, and restricted cash at end of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8656.0,
+              "FY2024A": 7052.0,
+              "FY2025A": 9646.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 42
+            },
+            "label": "Income taxes paid, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -532.0,
+              "FY2024A": -338.0,
+              "FY2025A": -583.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 43
+            },
+            "label": "Interest paid, net of amounts capitalized",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -323.0,
+              "FY2024A": -503.0,
+              "FY2025A": -418.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 44
+            },
+            "label": "Non-cash equipment acquisitions on contracts payable",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 165.0,
+              "FY2024A": 118.0,
+              "FY2025A": 321.0
+            }
+          }
+        ],
+        "income_statement": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 3
+            },
+            "label": "Revenue",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 15540.0,
+              "FY2024A": 25111.0,
+              "FY2025A": 37378.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cost of goods sold",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 16956.0,
+              "FY2024A": 19498.0,
+              "FY2025A": 22505.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Gross margin",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1416.0,
+              "FY2024A": 5613.0,
+              "FY2025A": 14873.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Research and development",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 3114.0,
+              "FY2024A": 3430.0,
+              "FY2025A": 3798.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Selling, general, and administrative",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 920.0,
+              "FY2024A": 1129.0,
+              "FY2025A": 1205.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Restructure and asset impairments",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 171.0,
+              "FY2024A": 1.0,
+              "FY2025A": 39.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Other operating (income) expense, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 124.0,
+              "FY2024A": -251.0,
+              "FY2025A": 61.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Operating income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5745.0,
+              "FY2024A": 1304.0,
+              "FY2025A": 9770.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Interest income",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 468.0,
+              "FY2024A": 529.0,
+              "FY2025A": 496.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Interest expense",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -388.0,
+              "FY2024A": -562.0,
+              "FY2025A": -477.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other non-operating income (expense), net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7.0,
+              "FY2024A": -31.0,
+              "FY2025A": -135.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 18
+            },
+            "label": "Income tax (provision) benefit",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -177.0,
+              "FY2024A": -451.0,
+              "FY2025A": -1124.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Equity in net income (loss) of equity method investees",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2.0,
+              "FY2024A": -11.0,
+              "FY2025A": 9.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Basic",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.65
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Diluted",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.59
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Basic",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1105.0,
+              "FY2025A": 1116.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Diluted",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1118.0,
+              "FY2025A": 1125.0
+            }
+          }
+        ]
+      },
+      "balance_sheet": {
+        "accounts_payable_accrued": 7299.0,
+        "cash": 7041.0,
+        "current_debt": 431.0,
+        "inventories": 8875.0,
+        "long_term_debt": 12966.0,
+        "long_term_investments": 1046.0,
+        "ppe": 39749.0,
+        "receivables": 6615.0,
+        "short_term_investments": 1065.0,
+        "total_assets": 69416.0,
+        "total_current_assets": 24372.0,
+        "total_current_liabilities": 9248.0,
+        "total_equity": 45131.0,
+        "total_liabilities": 24285.0
+      },
+      "cash_flow": {
+        "accounts_payable_change": 1915.0,
+        "cash_change": -1604.0,
+        "d_and_a": 7780.0,
+        "debt_issuance": 999.0,
+        "debt_repayments": -1897.0,
+        "dividends": -513.0,
+        "financing_cash_flow": -1842.0,
+        "fx_effect": 40.0,
+        "government_incentives": 315.0,
+        "inventories_change": -488.0,
+        "investing_cash_flow": -8309.0,
+        "net_income": 778.0,
+        "operating_cash_flow": 8507.0,
+        "other_current_liabilities_change": 989.0,
+        "ppe_expenditures": -8386.0,
+        "receivables_change": -3581.0,
+        "sbc": 833.0
+      },
+      "coordinates": {
+        "balance_sheet": {
+          "accounts_payable_accrued": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 20,
+            "table": 20
+          },
+          "cash": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 4,
+            "table": 20
+          },
+          "current_debt": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 21,
+            "table": 20
+          },
+          "inventories": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 7,
+            "table": 20
+          },
+          "long_term_debt": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 24,
+            "table": 20
+          },
+          "long_term_investments": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 10,
+            "table": 20
+          },
+          "ppe": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 11,
+            "table": 20
+          },
+          "receivables": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 6,
+            "table": 20
+          },
+          "short_term_investments": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 5,
+            "table": 20
+          },
+          "total_assets": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 17,
+            "table": 20
+          },
+          "total_current_assets": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 9,
+            "table": 20
+          },
+          "total_current_liabilities": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 23,
+            "table": 20
+          },
+          "total_equity": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 38,
+            "table": 20
+          },
+          "total_liabilities": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 28,
+            "table": 20
+          }
+        },
+        "cash_flow": {
+          "accounts_payable_change": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 13,
+            "table": 22
+          },
+          "cash_change": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 37,
+            "table": 22
+          },
+          "d_and_a": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 6,
+            "table": 22
+          },
+          "debt_issuance": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 31,
+            "table": 22
+          },
+          "debt_repayments": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 27,
+            "table": 22
+          },
+          "dividends": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 28,
+            "table": 22
+          },
+          "financing_cash_flow": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 33,
+            "table": 22
+          },
+          "fx_effect": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 35,
+            "table": 22
+          },
+          "government_incentives": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 21,
+            "table": 22
+          },
+          "inventories_change": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 12,
+            "table": 22
+          },
+          "investing_cash_flow": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 24,
+            "table": 22
+          },
+          "net_income": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 4,
+            "table": 22
+          },
+          "operating_cash_flow": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 16,
+            "table": 22
+          },
+          "other_current_liabilities_change": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 14,
+            "table": 22
+          },
+          "ppe_expenditures": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 19,
+            "table": 22
+          },
+          "receivables_change": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 11,
+            "table": 22
+          },
+          "sbc": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 7,
+            "table": 22
+          }
+        },
+        "income_statement": {
+          "cogs": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 4,
+            "table": 18
+          },
+          "diluted_eps": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 24,
+            "table": 18
+          },
+          "diluted_shares": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 28,
+            "table": 18
+          },
+          "equity_method": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 19,
+            "table": 18
+          },
+          "gross_profit": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 5,
+            "table": 18
+          },
+          "interest_expense": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 14,
+            "table": 18
+          },
+          "interest_income": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 13,
+            "table": 18
+          },
+          "net_income": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 20,
+            "table": 18
+          },
+          "operating_income": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 11,
+            "table": 18
+          },
+          "other_nonoperating": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 15,
+            "table": 18
+          },
+          "other_operating": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 10,
+            "table": 18
+          },
+          "pretax_income": {
+            "anchor": "unlabeled subtotal after other non-operating",
+            "columns": [
+              6,
+              8
+            ],
+            "row": 16,
+            "table": 18
+          },
+          "r_and_d": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 7,
+            "table": 18
+          },
+          "restructuring": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 9,
+            "table": 18
+          },
+          "revenue": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 3,
+            "table": 18
+          },
+          "sg_and_a": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 8,
+            "table": 18
+          },
+          "tax": {
+            "columns": [
+              6,
+              8
+            ],
+            "row": 18,
+            "table": 18
+          }
+        }
+      },
+      "income_statement": {
+        "cogs": 19498.0,
+        "diluted_eps": 0.7,
+        "diluted_shares": 1118.0,
+        "equity_method": -11.0,
+        "gross_profit": 5613.0,
+        "interest_expense": -562.0,
+        "interest_income": 529.0,
+        "net_income": 778.0,
+        "operating_income": 1304.0,
+        "other_nonoperating": -31.0,
+        "other_operating": -251.0,
+        "pretax_income": 1240.0,
+        "r_and_d": 3430.0,
+        "restructuring": 1.0,
+        "revenue": 25111.0,
+        "sg_and_a": 1129.0,
+        "tax": -451.0
+      }
+    },
+    "FY2025A": {
+      "as_filed_rows": {
+        "balance_sheet": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cash and cash equivalents",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 7041.0,
+              "FY2025A": 9642.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Short-term investments",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1065.0,
+              "FY2025A": 665.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 6615.0,
+              "FY2025A": 9265.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 8875.0,
+              "FY2025A": 8355.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Other current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 776.0,
+              "FY2025A": 914.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Total current assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 24372.0,
+              "FY2025A": 28841.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Long-term marketable investments",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1046.0,
+              "FY2025A": 1629.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 39749.0,
+              "FY2025A": 46590.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Operating lease right-of-use assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 645.0,
+              "FY2025A": 736.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 416.0,
+              "FY2025A": 453.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Deferred tax assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 520.0,
+              "FY2025A": 616.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Goodwill",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1150.0,
+              "FY2025A": 1150.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Other noncurrent assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1518.0,
+              "FY2025A": 2783.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 17
+            },
+            "label": "Total assets",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 69416.0,
+              "FY2025A": 82798.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 7299.0,
+              "FY2025A": 9649.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Current debt",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 431.0,
+              "FY2025A": 560.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 1518.0,
+              "FY2025A": 1245.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Total current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 9248.0,
+              "FY2025A": 11454.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Long-term debt",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 12966.0,
+              "FY2025A": 14017.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 25
+            },
+            "label": "Noncurrent operating lease liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 610.0,
+              "FY2025A": 701.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 26
+            },
+            "label": "Noncurrent unearned government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 550.0,
+              "FY2025A": 1018.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Other noncurrent liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 911.0,
+              "FY2025A": 1443.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Total liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 24285.0,
+              "FY2025A": 28633.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Common stock, $0.10 par value, 3,000 shares authorized, 1,266 shares issued and 1,122 outstanding (1,253 shares issued and 1,109 outstanding as of August 29, 2024)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 125.0,
+              "FY2025A": 127.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 34
+            },
+            "label": "Additional capital",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 12115.0,
+              "FY2025A": 13339.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Retained earnings",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 40877.0,
+              "FY2025A": 48583.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 36
+            },
+            "label": "Treasury stock, 144 shares held (144 shares as of August 29, 2024)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": -7852.0,
+              "FY2025A": -7852.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Accumulated other comprehensive income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": -134.0,
+              "FY2025A": -32.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Total equity",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 45131.0,
+              "FY2025A": 54165.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Total liabilities and equity",
+            "occurrence": 0,
+            "values": {
+              "FY2024A": 69416.0,
+              "FY2025A": 82798.0
+            }
+          }
+        ],
+        "cash_flow": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 6
+            },
+            "label": "Depreciation expense and amortization of intangible assets",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7756.0,
+              "FY2024A": 7780.0,
+              "FY2025A": 8352.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Stock-based compensation",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 596.0,
+              "FY2024A": 833.0,
+              "FY2025A": 972.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Receivables",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2763.0,
+              "FY2024A": -3581.0,
+              "FY2025A": -1776.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 12
+            },
+            "label": "Inventories",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -3555.0,
+              "FY2024A": -488.0,
+              "FY2025A": 520.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Accounts payable and accrued expenses",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1302.0,
+              "FY2024A": 1915.0,
+              "FY2025A": 862.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Other current liabilities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -817.0,
+              "FY2024A": 989.0,
+              "FY2025A": -272.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 19.0,
+              "FY2024A": 281.0,
+              "FY2025A": 328.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 16
+            },
+            "label": "Net cash provided by operating activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1559.0,
+              "FY2024A": 8507.0,
+              "FY2025A": 17525.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Expenditures for property, plant, and equipment",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -7676.0,
+              "FY2024A": -8386.0,
+              "FY2025A": -15857.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Purchases of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -723.0,
+              "FY2024A": -1999.0,
+              "FY2025A": -1890.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 21
+            },
+            "label": "Proceeds from government incentives",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 710.0,
+              "FY2024A": 315.0,
+              "FY2025A": 2005.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 22
+            },
+            "label": "Proceeds from maturities and sales of available-for-sale securities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 1591.0,
+              "FY2024A": 1794.0,
+              "FY2025A": 1698.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Other",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": -93.0,
+              "FY2024A": -33.0,
+              "FY2025A": -43.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Net cash used for investing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -6191.0,
+              "FY2024A": -8309.0,
+              "FY2025A": -14087.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Repayments of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -761.0,
+              "FY2024A": -1897.0,
+              "FY2025A": -4619.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Payments of dividends to shareholders",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -504.0,
+              "FY2024A": -513.0,
+              "FY2025A": -522.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 31
+            },
+            "label": "Proceeds from issuance of debt",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 6716.0,
+              "FY2024A": 999.0,
+              "FY2025A": 4430.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 32
+            },
+            "label": "Other",
+            "occurrence": 2,
+            "values": {
+              "FY2023A": 95.0,
+              "FY2024A": 18.0,
+              "FY2025A": -139.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 33
+            },
+            "label": "Net cash provided by (used for) financing activities",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 4983.0,
+              "FY2024A": -1842.0,
+              "FY2025A": -850.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 35
+            },
+            "label": "Effect of changes in currency exchange rates on cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -34.0,
+              "FY2024A": 40.0,
+              "FY2025A": 6.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 37
+            },
+            "label": "Net increase (decrease) in cash, cash equivalents, and restricted cash",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 317.0,
+              "FY2024A": -1604.0,
+              "FY2025A": 2594.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 38
+            },
+            "label": "Cash, cash equivalents, and restricted cash at beginning of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8339.0,
+              "FY2024A": 8656.0,
+              "FY2025A": 7052.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 39
+            },
+            "label": "Cash, cash equivalents, and restricted cash at end of period",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 8656.0,
+              "FY2024A": 7052.0,
+              "FY2025A": 9646.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 42
+            },
+            "label": "Income taxes paid, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -532.0,
+              "FY2024A": -338.0,
+              "FY2025A": -583.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 43
+            },
+            "label": "Interest paid, net of amounts capitalized",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -323.0,
+              "FY2024A": -503.0,
+              "FY2025A": -418.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 44
+            },
+            "label": "Non-cash equipment acquisitions on contracts payable",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 165.0,
+              "FY2024A": 118.0,
+              "FY2025A": 321.0
+            }
+          }
+        ],
+        "income_statement": [
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 3
+            },
+            "label": "Revenue",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 15540.0,
+              "FY2024A": 25111.0,
+              "FY2025A": 37378.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 4
+            },
+            "label": "Cost of goods sold",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 16956.0,
+              "FY2024A": 19498.0,
+              "FY2025A": 22505.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 5
+            },
+            "label": "Gross margin",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -1416.0,
+              "FY2024A": 5613.0,
+              "FY2025A": 14873.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 7
+            },
+            "label": "Research and development",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 3114.0,
+              "FY2024A": 3430.0,
+              "FY2025A": 3798.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 8
+            },
+            "label": "Selling, general, and administrative",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 920.0,
+              "FY2024A": 1129.0,
+              "FY2025A": 1205.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 9
+            },
+            "label": "Restructure and asset impairments",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 171.0,
+              "FY2024A": 1.0,
+              "FY2025A": 39.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 10
+            },
+            "label": "Other operating (income) expense, net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 124.0,
+              "FY2024A": -251.0,
+              "FY2025A": 61.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 11
+            },
+            "label": "Operating income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5745.0,
+              "FY2024A": 1304.0,
+              "FY2025A": 9770.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 13
+            },
+            "label": "Interest income",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 468.0,
+              "FY2024A": 529.0,
+              "FY2025A": 496.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 14
+            },
+            "label": "Interest expense",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -388.0,
+              "FY2024A": -562.0,
+              "FY2025A": -477.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 15
+            },
+            "label": "Other non-operating income (expense), net",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 7.0,
+              "FY2024A": -31.0,
+              "FY2025A": -135.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 18
+            },
+            "label": "Income tax (provision) benefit",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -177.0,
+              "FY2024A": -451.0,
+              "FY2025A": -1124.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 19
+            },
+            "label": "Equity in net income (loss) of equity method investees",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": 2.0,
+              "FY2024A": -11.0,
+              "FY2025A": 9.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 20
+            },
+            "label": "Net income (loss)",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5833.0,
+              "FY2024A": 778.0,
+              "FY2025A": 8539.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 23
+            },
+            "label": "Basic",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.65
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 24
+            },
+            "label": "Diluted",
+            "occurrence": 0,
+            "values": {
+              "FY2023A": -5.34,
+              "FY2024A": 0.7,
+              "FY2025A": 7.59
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 27
+            },
+            "label": "Basic",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1105.0,
+              "FY2025A": 1116.0
+            }
+          },
+          {
+            "coordinate": {
+              "columns": {
+                "FY2023A": [
+                  9,
+                  11
+                ],
+                "FY2024A": [
+                  6,
+                  8
+                ],
+                "FY2025A": [
+                  3,
+                  5
+                ]
+              },
+              "row": 28
+            },
+            "label": "Diluted",
+            "occurrence": 1,
+            "values": {
+              "FY2023A": 1093.0,
+              "FY2024A": 1118.0,
+              "FY2025A": 1125.0
+            }
+          }
+        ]
+      },
+      "balance_sheet": {
+        "accounts_payable_accrued": 9649.0,
+        "cash": 9642.0,
+        "current_debt": 560.0,
+        "inventories": 8355.0,
+        "long_term_debt": 14017.0,
+        "long_term_investments": 1629.0,
+        "ppe": 46590.0,
+        "receivables": 9265.0,
+        "short_term_investments": 665.0,
+        "total_assets": 82798.0,
+        "total_current_assets": 28841.0,
+        "total_current_liabilities": 11454.0,
+        "total_equity": 54165.0,
+        "total_liabilities": 28633.0
+      },
+      "cash_flow": {
+        "accounts_payable_change": 862.0,
+        "cash_change": 2594.0,
+        "d_and_a": 8352.0,
+        "debt_issuance": 4430.0,
+        "debt_repayments": -4619.0,
+        "dividends": -522.0,
+        "financing_cash_flow": -850.0,
+        "fx_effect": 6.0,
+        "government_incentives": 2005.0,
+        "inventories_change": 520.0,
+        "investing_cash_flow": -14087.0,
+        "net_income": 8539.0,
+        "operating_cash_flow": 17525.0,
+        "other_current_liabilities_change": -272.0,
+        "ppe_expenditures": -15857.0,
+        "receivables_change": -1776.0,
+        "sbc": 972.0
+      },
+      "coordinates": {
+        "balance_sheet": {
+          "accounts_payable_accrued": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 20,
+            "table": 20
+          },
+          "cash": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 4,
+            "table": 20
+          },
+          "current_debt": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 21,
+            "table": 20
+          },
+          "inventories": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 7,
+            "table": 20
+          },
+          "long_term_debt": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 24,
+            "table": 20
+          },
+          "long_term_investments": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 10,
+            "table": 20
+          },
+          "ppe": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 11,
+            "table": 20
+          },
+          "receivables": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 6,
+            "table": 20
+          },
+          "short_term_investments": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 5,
+            "table": 20
+          },
+          "total_assets": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 17,
+            "table": 20
+          },
+          "total_current_assets": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 9,
+            "table": 20
+          },
+          "total_current_liabilities": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 23,
+            "table": 20
+          },
+          "total_equity": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 38,
+            "table": 20
+          },
+          "total_liabilities": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 28,
+            "table": 20
+          }
+        },
+        "cash_flow": {
+          "accounts_payable_change": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 13,
+            "table": 22
+          },
+          "cash_change": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 37,
+            "table": 22
+          },
+          "d_and_a": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 6,
+            "table": 22
+          },
+          "debt_issuance": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 31,
+            "table": 22
+          },
+          "debt_repayments": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 27,
+            "table": 22
+          },
+          "dividends": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 28,
+            "table": 22
+          },
+          "financing_cash_flow": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 33,
+            "table": 22
+          },
+          "fx_effect": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 35,
+            "table": 22
+          },
+          "government_incentives": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 21,
+            "table": 22
+          },
+          "inventories_change": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 12,
+            "table": 22
+          },
+          "investing_cash_flow": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 24,
+            "table": 22
+          },
+          "net_income": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 4,
+            "table": 22
+          },
+          "operating_cash_flow": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 16,
+            "table": 22
+          },
+          "other_current_liabilities_change": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 14,
+            "table": 22
+          },
+          "ppe_expenditures": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 19,
+            "table": 22
+          },
+          "receivables_change": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 11,
+            "table": 22
+          },
+          "sbc": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 7,
+            "table": 22
+          }
+        },
+        "income_statement": {
+          "cogs": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 4,
+            "table": 18
+          },
+          "diluted_eps": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 24,
+            "table": 18
+          },
+          "diluted_shares": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 28,
+            "table": 18
+          },
+          "equity_method": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 19,
+            "table": 18
+          },
+          "gross_profit": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 5,
+            "table": 18
+          },
+          "interest_expense": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 14,
+            "table": 18
+          },
+          "interest_income": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 13,
+            "table": 18
+          },
+          "net_income": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 20,
+            "table": 18
+          },
+          "operating_income": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 11,
+            "table": 18
+          },
+          "other_nonoperating": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 15,
+            "table": 18
+          },
+          "other_operating": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 10,
+            "table": 18
+          },
+          "pretax_income": {
+            "anchor": "unlabeled subtotal after other non-operating",
+            "columns": [
+              3,
+              5
+            ],
+            "row": 16,
+            "table": 18
+          },
+          "r_and_d": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 7,
+            "table": 18
+          },
+          "restructuring": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 9,
+            "table": 18
+          },
+          "revenue": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 3,
+            "table": 18
+          },
+          "sg_and_a": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 8,
+            "table": 18
+          },
+          "tax": {
+            "columns": [
+              3,
+              5
+            ],
+            "row": 18,
+            "table": 18
+          }
+        }
+      },
+      "income_statement": {
+        "cogs": 22505.0,
+        "diluted_eps": 7.59,
+        "diluted_shares": 1125.0,
+        "equity_method": 9.0,
+        "gross_profit": 14873.0,
+        "interest_expense": -477.0,
+        "interest_income": 496.0,
+        "net_income": 8539.0,
+        "operating_income": 9770.0,
+        "other_nonoperating": -135.0,
+        "other_operating": 61.0,
+        "pretax_income": 9654.0,
+        "r_and_d": 3798.0,
+        "restructuring": 39.0,
+        "revenue": 37378.0,
+        "sg_and_a": 1205.0,
+        "tax": -1124.0
+      }
+    }
+  }
+}

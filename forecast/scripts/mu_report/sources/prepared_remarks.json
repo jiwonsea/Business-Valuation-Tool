@@ -1,0 +1,36 @@
+{
+  "anchors": [
+    {
+      "pattern": "DRAM[^.]{0,400}\\.",
+      "verbatim": "DRAM and NAND industry demand continues to significantly exceed industry supply."
+    },
+    {
+      "pattern": "NAND[^.]{0,400}\\.",
+      "verbatim": "NAND industry demand continues to significantly exceed industry supply."
+    },
+    {
+      "pattern": "low[- ]60s[^.]{0,200}\\.",
+      "verbatim": "low-60s percentage range, driven by tight industry conditions and favorable mix."
+    },
+    {
+      "pattern": "bit shipments[^.]{0,300}\\.",
+      "verbatim": "bit shipments in calendar 2026 expected to more than double from two years ago."
+    }
+  ],
+  "policy": "Qualitative pricing and bit ranges remain verbatim categorical strings and are never numericized.",
+  "product_metrics": {
+    "DRAM": {
+      "bit_shipments": "low-single-digit percentage range",
+      "pricing": "low-60s percentage range, driven by tight industry conditions and favorable mix"
+    },
+    "NAND": {
+      "bit_shipments": "mid-single-digit percentage range",
+      "pricing": "mid-80s percentage range, driven by tight NAND industry conditions and a favorable mix"
+    }
+  },
+  "source": {
+    "as_of": "2026-05-28",
+    "path": "logs/mu_ho5_Q3_remarks.pdf",
+    "sha256": "a3ce62b84a059e35fae80c2bfd5c89f9af334193fd6aceff698fc3008e7d4c27"
+  }
+}

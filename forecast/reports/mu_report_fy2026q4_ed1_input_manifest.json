@@ -1,0 +1,168 @@
+{
+  "internal_configs": [
+    {
+      "git_blob_sha": "393cb05876f6f5aabf6fbdb98778c69b8c5d06b6",
+      "kind": "internal_config",
+      "path": "forecast/inputs/mu_fy2026q4_conflict_confirmation.yaml"
+    }
+  ],
+  "phase": "E2-B",
+  "reads": [
+    {
+      "kind": "evidence",
+      "path": "forecast/CONSENSUS_efe_2026sep_mu_FY26Q4_2026-09-25.md",
+      "phase": "E2-B",
+      "sha256": "65077ba1079a5f903230848a92aa214647a850048803d6cf33f56c5b53568d53"
+    },
+    {
+      "kind": "evidence",
+      "path": "forecast/PANEL_efe_2026sep_mu_G0H_2026-09-25.md",
+      "phase": "E2-B",
+      "sha256": "2890a2a218bbbb8f56775eb0c8d20967ee9546bd5c916c1c5ab7ac3e0039ef33"
+    },
+    {
+      "kind": "evidence",
+      "path": "forecast/profiles/mu.generic.yaml",
+      "phase": "E2-B",
+      "sha256": "faa60912b6a364eee67f87d9ba21221a6c6da02f22695c4d980200260982dfd6"
+    },
+    {
+      "kind": "evidence",
+      "path": "forecast/reports/.cache/edgar_companyfacts_CIK0000723125.json",
+      "phase": "E2-B",
+      "sha256": "a8b088c2111daef36536e53c81fef4c0f01220c64933e126a665b00a9257f882"
+    },
+    {
+      "kind": "evidence",
+      "path": "forecast/reports/mu_fy2026q4_SCORED.md",
+      "phase": "E2-B",
+      "sha256": "0f6e6a951dc57d95b8846dbc8588d42b2ac2925f1c52b54cc80e9a2a027af4f9"
+    },
+    {
+      "kind": "evidence",
+      "path": "forecast/reports/mu_fy2026q4_forecast_FROZEN.md",
+      "phase": "E2-B",
+      "sha256": "eab1184f721cd69460ffc4ddefd9851c59815207c35975db0dd1a2962b629f9a"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu-20230831.htm",
+      "phase": "E2-B",
+      "sha256": "54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu-20250828.htm",
+      "phase": "E2-B",
+      "sha256": "84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_FY2024Q4_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "3faad63e6c8e3667a09e72916aa6a6e313ac3e205b24a3f625caa88b50bfe30a"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2024Q2_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "cba05d3a7684f893b43a3a54ec2bf27145a4ed4ed2197ff94d8168464cab2abb"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2024Q3_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "a635cd2a7c38e53ca19d60c94cf65ec45cddc3f175cee20b6078a1f48088d94a"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2024Q4_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "51fa896d882da1544c4bdcf52c52ce1acc15ff4ba0f7ea413ef848d8a186a938"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2025Q2_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "f1ece4749d1a645444f9e32c02e494c61ec7d2bcedac8949c1430e8faf715856"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2025Q3_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "503fbf81dc7fbf45c0a2bfe1f69a93b7b2fa352e490a3366738bf5262f65021a"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2025Q4_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "170cac3d1ae6d47c27ec6cdf619e67a5f00b5ccf49ecf9421d65d037fc00928a"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "phase": "E2-B",
+      "sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu/fy2026q4/postprint/8k_index.html",
+      "phase": "E2-B",
+      "sha256": "bda394e8b8f41e492a0051b11b92a9469c2bdac5d280e273763b8946519861e4"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu/fy2026q4/postprint/ex991.htm",
+      "phase": "E2-B",
+      "sha256": "5dad1ce5c2dd8958dad947ab1f12a1015bfcc29c7e8a29e48379e983f425120e"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu/fy2026q4/postprint/price_2026-10-01_src1.png",
+      "phase": "E2-B",
+      "sha256": "94e27d513188a89d3f02cabfe56e59eefd51e84c58e90a876666aa7c9a1f2622"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu/fy2026q4/postprint/price_2026-10-01_src2.png",
+      "phase": "E2-B",
+      "sha256": "e21769878c2b21fb873b32cb0547cae1580c5c826324938c95fd9c8690f5fa6b"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu/fy2026q4/postprint/remarks.pdf",
+      "phase": "E2-B",
+      "sha256": "2821d4ccaae50b40dcd28cd4e766c69c509e73d666e4109d5907c7205a03b700"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu_ho5_Q3_remarks.pdf",
+      "phase": "E2-B",
+      "sha256": "a3ce62b84a059e35fae80c2bfd5c89f9af334193fd6aceff698fc3008e7d4c27"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu_ho5_S2_release.html",
+      "phase": "E2-B",
+      "sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392"
+    },
+    {
+      "kind": "evidence",
+      "path": "logs/mu_ho5_S3_10q.html",
+      "phase": "E2-B",
+      "sha256": "bf4c3fb1833243d1c41c0426c4e0332d3a2f61a2b44e534fe8ff13648f205e20"
+    }
+  ]
+}

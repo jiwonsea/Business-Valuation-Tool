@@ -1,0 +1,595 @@
+{
+  "count": 11,
+  "guidance_records": [
+    {
+      "gaap_eps_actual": 0.71,
+      "gaap_eps_beat_high": 1.0899999999999999,
+      "gaap_eps_guidance_high": -0.38,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$5.30 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "12.0% ± 1.5%",
+            "13.0% ± 1.5%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.07 billion ± $15 million",
+            "$950 million ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "($0.45) ± $0.07",
+            "($0.28) ± $0.07"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2024Q2_ex991.htm",
+      "source_sha256": "cba05d3a7684f893b43a3a54ec2bf27145a4ed4ed2197ff94d8168464cab2abb",
+      "table": 2,
+      "target_period": "FQ2-24"
+    },
+    {
+      "gaap_eps_actual": 0.3,
+      "gaap_eps_beat_high": 0.05999999999999997,
+      "gaap_eps_guidance_high": 0.24000000000000002,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$6.60 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "25.5% ± 1.5%",
+            "26.5% ± 1.5%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.11 billion ± $15 million",
+            "$990 million ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$0.17 ± $0.07",
+            "$0.45 ± $0.07"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2024Q3_ex991.htm",
+      "source_sha256": "a635cd2a7c38e53ca19d60c94cf65ec45cddc3f175cee20b6078a1f48088d94a",
+      "table": 2,
+      "target_period": "FQ3-24"
+    },
+    {
+      "gaap_eps_actual": 0.79,
+      "gaap_eps_beat_high": 0.10000000000000009,
+      "gaap_eps_guidance_high": 0.69,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$7.60 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "33.5% ± 1.0%",
+            "34.5% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.19 billion ± $15 million",
+            "$1.06 billion ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$0.61 ± $0.08",
+            "$1.08 ± $0.08"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2024Q4_ex991.htm",
+      "source_sha256": "51fa896d882da1544c4bdcf52c52ce1acc15ff4ba0f7ea413ef848d8a186a938",
+      "table": 2,
+      "target_period": "FQ4-24"
+    },
+    {
+      "gaap_eps_actual": 1.67,
+      "gaap_eps_beat_high": 0.04999999999999982,
+      "gaap_eps_guidance_high": 1.62,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 3
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$8.70 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 3
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "38.5% ± 1.0%",
+            "39.5% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 3
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.211 billion ± $15 million",
+            "$1.085 billion ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 3
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$1.54 ± $0.08",
+            "$1.74 ± $0.08"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_FY2024Q4_ex991.htm",
+      "source_sha256": "3faad63e6c8e3667a09e72916aa6a6e313ac3e205b24a3f625caa88b50bfe30a",
+      "table": 3,
+      "target_period": "FQ1-25"
+    },
+    {
+      "gaap_eps_actual": 1.41,
+      "gaap_eps_beat_high": 0.04999999999999982,
+      "gaap_eps_guidance_high": 1.36,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$7.90 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "37.5% ± 1.0%",
+            "38.5% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.24 billion ± $15 million",
+            "$1.10 billion ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$1.26 ± $0.10",
+            "$1.43 ± $0.10"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2025Q2_ex991.htm",
+      "source_sha256": "f1ece4749d1a645444f9e32c02e494c61ec7d2bcedac8949c1430e8faf715856",
+      "table": 2,
+      "target_period": "FQ2-25"
+    },
+    {
+      "gaap_eps_actual": 1.68,
+      "gaap_eps_beat_high": 0.20999999999999974,
+      "gaap_eps_guidance_high": 1.4700000000000002,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$8.80 billion ± $200 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "35.5% ± 1.0%",
+            "36.5% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.27 billion ± $15 million",
+            "$1.13 billion ± $15 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$1.37 ± $0.10",
+            "$1.57 ± $0.10"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2025Q3_ex991.htm",
+      "source_sha256": "503fbf81dc7fbf45c0a2bfe1f69a93b7b2fa352e490a3366738bf5262f65021a",
+      "table": 2,
+      "target_period": "FQ3-25"
+    },
+    {
+      "gaap_eps_actual": 2.83,
+      "gaap_eps_beat_high": 0.3900000000000001,
+      "gaap_eps_guidance_high": 2.44,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 2
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$10.7 billion ± $300 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 2
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "41.0% ± 1.0%",
+            "42.0% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 2
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.35 billion ± $20 million",
+            "$1.20 billion ± $20 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 2
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$2.29 ± $0.15",
+            "$2.50 ± $0.15"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2025Q4_ex991.htm",
+      "source_sha256": "170cac3d1ae6d47c27ec6cdf619e67a5f00b5ccf49ecf9421d65d037fc00928a",
+      "table": 2,
+      "target_period": "FQ4-25"
+    },
+    {
+      "gaap_eps_actual": 4.6,
+      "gaap_eps_beat_high": 0.8899999999999997,
+      "gaap_eps_guidance_high": 3.71,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 4
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$12.50 billion ± $300 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 4
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "50.5% ± 1.0%",
+            "51.5% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 4
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.49 billion ± $20 million",
+            "$1.34 billion ± $20 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 4
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$3.56 ± $0.15",
+            "$3.75 ± $0.15"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "table": 4,
+      "target_period": "FQ1-26"
+    },
+    {
+      "gaap_eps_actual": 12.07,
+      "gaap_eps_beat_high": 3.6800000000000015,
+      "gaap_eps_guidance_high": 8.389999999999999,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 3
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$18.70 billion ± $400 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 3
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "67.0% ± 1.0%",
+            "68.0% ± 1.0%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 3
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "$1.56 billion ± $20 million",
+            "$1.38 billion ± $20 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 3
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$8.19 ± $0.20",
+            "$8.42 ± $0.20"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "table": 3,
+      "target_period": "FQ2-26"
+    },
+    {
+      "gaap_eps_actual": 24.67,
+      "gaap_eps_beat_high": 5.3700000000000045,
+      "gaap_eps_guidance_high": 19.299999999999997,
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 3
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$33.5 billion ± $750 million"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 3
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "Approximately 81%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 3
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "Approximately $1.60 billion",
+            "Approximately $1.40 billion"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 3
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$18.90 ± $0.40",
+            "$19.15 ± $0.40"
+          ]
+        }
+      ],
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "table": 3,
+      "target_period": "FQ3-26"
+    },
+    {
+      "rows": [
+        {
+          "coordinate": {
+            "row": 3,
+            "table": 3
+          },
+          "label": "Revenue",
+          "values_verbatim": [
+            "$50.0 billion ± $1.0 billion"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 4,
+            "table": 3
+          },
+          "label": "Gross margin",
+          "values_verbatim": [
+            "Approximately 86%"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 5,
+            "table": 3
+          },
+          "label": "Operating expenses",
+          "values_verbatim": [
+            "Approximately $1.86 billion",
+            "Approximately $1.65 billion"
+          ]
+        },
+        {
+          "coordinate": {
+            "row": 6,
+            "table": 3
+          },
+          "label": "Diluted earnings (loss) per share",
+          "values_verbatim": [
+            "$30.73 ± $1.00",
+            "$31.00 ± $1.00"
+          ]
+        }
+      ],
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "table": 3,
+      "target_period": "FQ4-26"
+    }
+  ],
+  "policy": "Values remain verbatim; basis comes from table column headings."
+}

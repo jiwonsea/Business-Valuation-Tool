@@ -1,0 +1,69 @@
+# FIXTURE — NOT REAL DATA
+scope: report_layer
+information_cutoff: 2099-01-01
+information_cutoff_precision: date_only
+information_cutoff_timezone: Asia/Seoul
+sources: [SRC-FIXTURE]
+units: {money: USD_million, shares: million, ratio: fraction}
+week_basis: {FY2027: "52w (13w x 4) ASSUMED", FY2028: "52w ASSUMED"}
+confidence: low
+input_sha256:
+  forecast/tests/fixtures/mu_report/fake_source.txt: "0000000000000000000000000000000000000000000000000000000000000000"
+source_catalog:
+  SRC-FIXTURE:
+    path: forecast/tests/fixtures/mu_report/fake_source.txt
+    role: fixture_only
+post_print_inputs:
+  fq4_actual_revenue:
+    value: 99999
+    source_id: SRC-FIXTURE
+  shares_million:
+    value: 1000
+    source_id: SRC-FIXTURE
+post_print_change:
+  A3_base:
+    original: {value: "fixture original", source_id: SRC-FIXTURE}
+    change: {value: "fixture change", source_id: SRC-FIXTURE}
+    reason: {value: "fixture reason", source_id: SRC-FIXTURE}
+    page: {value: 1, source_id: SRC-FIXTURE}
+    grade: {value: "J", source_id: SRC-FIXTURE}
+  A4_opex:
+    original: {value: "fixture original", source_id: SRC-FIXTURE}
+    change: {value: "fixture change", source_id: SRC-FIXTURE}
+    reason: {value: "fixture reason", source_id: SRC-FIXTURE}
+    page: {value: 1, source_id: SRC-FIXTURE}
+    grade: {value: "J", source_id: SRC-FIXTURE}
+  A14_net_capex:
+    original: {value: "fixture original", source_id: SRC-FIXTURE}
+    change: {value: "fixture change", source_id: SRC-FIXTURE}
+    reason: {value: "fixture reason", source_id: SRC-FIXTURE}
+    page: {value: 1, source_id: SRC-FIXTURE}
+    grade: {value: "J", source_id: SRC-FIXTURE}
+interpretation_note:
+  A11_net_capex_roll_forward:
+    corrected_interpretation:
+      value: "fixture net-capex PP&E roll-forward"
+      source_id: SRC-FIXTURE
+rules:
+  A1_fq1_revenue:
+    bear: {value: 90000, source_id: SRC-FIXTURE}
+    base: {value: 100000, source_id: SRC-FIXTURE}
+    bull: {value: 110000, source_id: SRC-FIXTURE}
+  A2_fq2_to_fq4_weekly_revenue_growth:
+    bear: {value: [-0.09, -0.08, -0.07], source_id: SRC-FIXTURE}
+    base: {value: [0.09, 0.08, 0.07], source_id: SRC-FIXTURE}
+    bull: {value: [0.19, 0.18, 0.17], source_id: SRC-FIXTURE}
+  A3_gaap_gross_margin:
+    bear: {value: [0.55, 0.55, 0.55, 0.55], source_id: SRC-FIXTURE}
+    base: {value: [0.66, 0.66, 0.66, 0.66], source_id: SRC-FIXTURE}
+    bull: {value: [0.77, 0.77, 0.77, 0.77], source_id: SRC-FIXTURE}
+  A4_gaap_opex:
+    quarterly_all_scenarios: {value: [9999, 9999, 9999, 9999], source_id: SRC-FIXTURE}
+  A5_below_operating_pct_of_revenue:
+    all_scenarios: {value: -0.02, source_id: SRC-FIXTURE}
+  A6_gaap_effective_tax_rate:
+    bear: {value: 0.19, source_id: SRC-FIXTURE}
+    base: {value: 0.17, source_id: SRC-FIXTURE}
+    bull: {value: 0.15, source_id: SRC-FIXTURE}
+  A7_diluted_shares:
+    quarterly_all_scenarios: {value: [1000, 1000, 1000, 1000], source_id: SRC-FIXTURE}

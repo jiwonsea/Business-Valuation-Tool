@@ -1,0 +1,193 @@
+title: "MU FY2026 Q4 리서치 인프라 검증본"
+edition_label: "FIXTURE — 실제 데이터 아님 · FY2026 Q4는 14주, FY2026은 53주"
+thesis: "사전등록 전망과 프린트 이후 실적을 분리하며, 보고서 레이어 추정치는 RLE로 명시한다."
+methodology_title: "방법론과 정보 경계"
+methodology: "FY2026Q4 PREREG_A, A-8K, A-10K와 FY2027E–FY2028E RLE는 서로 다른 열이다. FY27 컨센서스 비교는 {{fact:consensus.revenue.FY2027}}이다."
+toc_title: "목차"
+sections:
+  - {id: company, title: "회사 개요·읽는 규칙"}
+  - {id: thesis, title: "강세와 약세"}
+  - {id: fq4, title: "사전등록 대 실적"}
+  - {id: outlook, title: "전망"}
+  - {id: business, title: "사업 구조"}
+  - {id: financials, title: "재무제표"}
+  - {id: margin_bridge, title: "마진 브리지"}
+  - {id: scenarios, title: "시나리오"}
+  - {id: valuation, title: "밸류에이션"}
+  - {id: risks, title: "리스크·스윙 팩터"}
+  - {id: catalysts, title: "촉매·일정"}
+  - {id: appendix, title: "부록"}
+section_stub: "FIXTURE — 실제 데이터가 아닌 인프라 검증 절입니다."
+section_connectors:
+  company: "이 절은 회사 개요와 보고서의 정보 경계를 정리한다."
+  fq4: "사전등록 전망과 발표 실적은 같은 기준으로 나란히 비교한다."
+  outlook: "회사 가이던스와 보고서 레이어 추정은 서로 다른 열로 구분한다."
+  business: "사업부 구성과 가격·출하 신호는 공시된 범주 그대로 제시한다."
+  financials: "재무제표와 핵심 비율은 단일 fact manifest에서 가져온다."
+  margin_bridge: "마진 브리지는 매출총이익과 영업비용의 변화를 분리해 보여준다."
+  valuation: "밸류에이션 표는 기준일과 계산 기준을 함께 표시한다."
+  appendix: "부록은 사전 규칙, 발표 후 변경, 해석 정정과 기록 시점 한계를 한곳에 모은다."
+narrative_ui:
+  bull: "강세 논거"
+  bear: "약세 논거"
+  falsifier: "반증 관측원:"
+  source: "근거"
+  when: "시점"
+  what: "확인 항목"
+appendix:
+  r9_title: "사전 등록 규칙표"
+  rule: "규칙"
+  value: "입력값"
+  formula: "식"
+  grade: "입력 / 규칙 등급"
+  confidence_note: "전체 규칙 확신도: 하(low)"
+  source: "출처"
+  timing_limit: "이 규칙은 발표 전에 정해졌지만 파일과 해시는 발표 뒤에 기록되었다. 따라서 사전등록 증거는 대화 기록뿐이다."
+  r12_title: "발표 후 변경"
+  change_headers: ["항목", "원안", "변경", "사유", "근거 쪽"]
+  a11_title: "순설비투자 roll-forward 해석 정정"
+  nwc_note: "운전자본 변화는 연간 매출 변화에 k를 곱해 적용한다."
+  rule_names:
+    A1_fq1_revenue: "첫 분기 매출"
+    A2_fq2_to_fq4_weekly_revenue_growth: "후속 분기 주당 매출 성장"
+    A2_prime_decline_parallel_path: "하락 병렬 경로"
+    A3_gaap_gross_margin: "GAAP 매출총이익률"
+    A4_gaap_opex: "GAAP 영업비용"
+    A5_below_operating_pct_of_revenue: "영업이익 아래 항목"
+    A6_gaap_effective_tax_rate: "GAAP 유효세율"
+    A7_diluted_shares: "희석주식수"
+    A8_fy2028_revenue_growth: "다음 연도 매출 성장"
+    A9_fy2028_gross_margin: "다음 연도 매출총이익률"
+    A10_fy2028_opex: "다음 연도 영업비용"
+    A11_da: "감가상각"
+    A12_sbc: "주식보상"
+    A13_working_capital: "운전자본"
+    A14_net_capex: "순설비투자"
+    A15_dividends: "배당"
+    A16_sca_deposits: "SCA 예치금"
+    A17_nongaap_fy2027_fy2028: "비GAAP 추정"
+scored:
+  title: "SCORED 인용 요약"
+  metric: "지표"
+  actual: "실적"
+  forecast: "사전등록 기준"
+  error: "오차"
+  ape: "절대백분율오차"
+  revenue: "매출"
+  gaap_eps: "GAAP 희석 EPS"
+  nongaap_eps: "비GAAP 희석 EPS"
+  gaap_opex: "GAAP 영업비용"
+  labels: "가이던스 라벨"
+  labels_suffix: "적중"
+  bands: "밴드 커버리지"
+  lever: "GAAP EPS 네 레버 귀인"
+  sf7: "차기 분기 방향 판정"
+ed1:
+  title: "Micron Technology, Inc. (NASDAQ: MU)"
+  ribbon: "Review & Outlook — FY2026Q4 · 14주 · FY2026 53주 · 제1판"
+  summary_title: "핵심 수치"
+  cover:
+    author: "작성자: 김지원"
+    issued: "발행일: {{render_date}}"
+    as_of: "자료 기준일: 2026-10-01(주가) · 2026-09-30(실적)"
+    cutoff: "정보 컷오프: 2026-10-04 KST"
+    completeness: "완결성: 역사 실적, PREREG_A 채점, 발표 후 실적과 RLE"
+    observations:
+      - "사전등록 전망과 발표 후 추정을 분리한다."
+      - "시나리오는 무가중 범위이며 확률을 두지 않는다."
+      - "순현금은 SCA 예치금을 조정하지 않는다."
+market_data:
+  title: "시장 데이터"
+  rows:
+    - {label: "기준 주가", value: "{{fact:market.price.2026-10-01.CITED}}", basis: "{{fact:meta.price_date.2026-10-01.CITED}} 기준"}
+    - {label: "희석 가중평균 주식수(FQ4)", value: "{{fact:market.shares_outstanding.CITED}}", basis: "FY2026Q4 A-8K"}
+    - {label: "시가총액", value: "{{fact:market.market_cap.2026-10-01.CALCULATED}}", basis: "기준 주가 × FQ4 희석 가중평균 주식수"}
+    - {label: "회계연도 종료일", value: "{{fact:meta.fiscal_year_end.FY2026.A-8K}}", basis: "A-8K"}
+  note: "시가총액은 USD million 단위이며 기준 주가 × FQ4 희석 가중평균 주식수로 계산했다. 발행주식수 기준 시가총액이 아니다."
+financials:
+  inventory_days: "회사 재고일수"
+valuation:
+  trailing_pb: "Trailing P/B"
+  pb_caption: "주가 기준일 {{fact:meta.price_date.2026-10-01.CITED}} · 자본 기준일 {{fact:meta.equity_date.FY2026.A-8K}} · 주식수는 FQ4 희석 가중평균 주식수"
+  title: "기준 주가 기반 암시 배수"
+  period: "기간·경로"
+  pe: "P/E"
+  ev_ebitda: "EV/EBITDA"
+  ev_sales: "EV/매출"
+  fcf_yield: "FCF 수익률"
+summary_rows:
+  - {label: "FQ4 매출", value: "{{fact:prereg.revenue.base.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD million"}
+  - {label: "FQ4 매출", value: "{{fact:is.revenue.FY2026Q4.A-8K}}", basis: "A-8K · USD million"}
+  - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD/share"}
+  - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.A-8K}}", basis: "A-8K · USD/share"}
+  - {label: "FY26 매출", value: "{{fact:is.revenue.FY2026E.PREREG_A}}", basis: "PREREG_A · USD million"}
+  - {label: "FY26 매출", value: "{{fact:is.revenue.FY2026A.A-8K}}", basis: "A-8K · USD million"}
+  - {label: "FY27E 매출 / GAAP EPS", value: "{{fact:is.revenue.FY2027E.base}} / {{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE 기준 경로"}
+  - {label: "FY28E 매출 / GAAP EPS", value: "{{fact:is.revenue.FY2028E.base}} / {{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE 기준 경로"}
+disclaimer:
+  not_advice: "본 문서는 투자 자문이 아닙니다."
+  third_party: "공개 자료 기반 제3자 분석이며 Micron 및 계열사가 작성·검토·승인한 자료가 아닙니다."
+  third_party_short: "공개 자료 기반 제3자 분석 · Micron 미승인."
+  conflict: "발행 직전 확인 시각({{conflict.confirmed_at_kst}}) 현재, 작성자 김지원은 Micron Technology, Inc. (MU) 주식을 보유하지 않습니다."
+  conflict_short: "작성자 MU 주식 미보유 - 발행 직전 재확인."
+dryrun:
+  title: "Micron Technology, Inc. (NASDAQ: MU)"
+  ribbon: "Review & Outlook — FY2026Q4 · 14주 · FY2026 53주 · PRE-PRINT DRY RUN"
+  watermark: "PRE-PRINT DRY RUN · 배포 금지"
+  conflict: "[DRY RUN — 발행 전 보유 확인 미실시]"
+  section_stub: "[DRY RUN 자리표시 문단 — E2-B에서 작성] 실제 역사 데이터와 사전등록 전망만으로 지면 흐름을 점검합니다. 발표 후 정보와 리포트 레이어 추정은 사용할 수 없습니다. 표와 차트의 빈 자리는 입력 확보 뒤 같은 렌더 경로에서 채웁니다."
+  unavailable_price: "기준 주가 미확보로 계산하지 않음(발표 후 확정)"
+  unavailable_input: "발표 후 입력 확보 시 확정"
+  summary_title: "사전등록 핵심 수치"
+  historical_title: "역사 손익 요약"
+  summary_rows:
+    - {label: "사전등록 매출", value: "{{fact:prereg.revenue.base.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD million"}
+    - {label: "사전등록 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD/share"}
+    - {label: "고정 비GAAP 브릿지", value: "{{fact:bridge.nongaap_fixed_027.FY2026Q4}}", basis: "PREREG_A_ASSUMPTION · FY2026Q4 only"}
+cover:
+  author: "작성자: 김지원"
+  issued: "발행일: 발표 후 확정"
+  as_of: "자료 기준일: 2026-09-25"
+  cutoff: "정보 컷오프: 2026-09-25 23:59 KST"
+  completeness: "완결성: 역사 실적 + PREREG_A; 발표 후 실적·가격·RLE는 UNAVAILABLE"
+  observations:
+    - "FY2026Q4는 14주, FY2026은 53주 기준이다."
+    - "FQ3 실제치에서 FQ4 사전등록 범위로 연결한다."
+    - "기준 주가와 발표 후 실적은 확보 전까지 계산하지 않는다."
+table:
+  metric: "항목"
+  value: "값"
+  basis: "기준"
+  period: "기간"
+  unavailable: "UNAVAILABLE"
+financial_tables:
+  income_title: "손익계산서 요약 (USD million, 주당금액 제외)"
+  balance_title: "재무상태표 요약 (USD million)"
+  cashflow_title: "현금흐름표 요약 (USD million)"
+  ratio_title: "핵심 비율 및 운전자본 (%, 일, USD million)"
+  columns: ["항목", "FY23A", "FY24A", "FY25A", "FY26E PREREG_A", "FY26A A-8K", "FY27E RLE", "FY28E RLE"]
+  dram_nand_title: "DRAM·NAND 정성 체크"
+  dram_nand_headers: ["사업", "기간", "가격", "비트 출하", "판정"]
+  verbatim_treatment: "원문 범주 · 수치화하지 않음"
+  not_preregistered: "—(사전등록 범위 밖)"
+  not_preregistered_note: "FY26E PREREG_A의 대시 표시는 해당 항목이 사전등록 범위 밖이었음을 뜻한다."
+guidance_table:
+  title: "FQ1 FY27 회사 가이던스"
+  headers: ["항목", "GAAP", "비GAAP", "기준"]
+  rows: ["매출", "매출총이익률", "영업비용", "희석 EPS", "희석 가중평균 주식수"]
+  basis: ["USD million, 중간값 ± 범위", "근사치", "USD million, 근사치", "USD/share, 중간값 ± 범위", "million, 근사치"]
+margin_bridge_table:
+  title: "GAAP 마진·영업비용 브리지"
+  headers: ["구간", "항목", "시작", "종료", "변화 / 영업마진 기여"]
+  periods: ["FQ3→FQ4 FY26 실제", "FY26A→FY27E 기준"]
+  metrics: ["매출총이익률", "영업비용(USD million)", "영업비용/매출"]
+  note: "매출총이익률 변화와 영업비용/매출 감소 기여의 합은 영업마진 변화다. 영업비용 금액 행은 금액 변화를 별도로 표시한다."
+charts:
+  01_quarterly_revenue_margin: {figure: "그림 5.", title: "분기 매출과 GAAP 마진", x_axis: "회계 분기", y_axis: "USD million / %", series: ["매출", "매출총이익률", "영업이익률"], unit: "USD million / %", basis: "GAAP 실제(A), FQ4는 14주", source: "Micron 10-Q·8-K"}
+  02_business_unit_mix: {figure: "그림 1.", title: "사업부별 매출 구성", x_axis: "회계 분기", y_axis: "USD million", series: ["CMBU", "CDBU", "MCBU", "AEBU"], unit: "USD million", basis: "GAAP 실제(A) 사업부 매출", source: "Micron 실적자료"}
+  03b_guidance_beat_history: {figure: "그림 4.", title: "GAAP 매출총이익률 가이던스와 실제", x_axis: "회계 분기", y_axis: "%", series: ["가이던스 중간값", "실제"], unit: "%", basis: "GAAP 가이던스와 실제", source: "Micron 분기 가이던스·실적자료"}
+  04_beat_history: {figure: "그림 2.", title: "매출 가이던스 상회율과 GAAP EPS 상회액", x_axis: "회계 분기", y_axis: "% / USD per share", series: ["매출 상회율", "GAAP EPS 상단 대비"], unit: "% / USD per share", basis: "GAAP 실제와 가이던스", source: "Micron 분기 가이던스·실적자료"}
+  05_scenario_fan: {figure: "그림 3.", title: "FQ4 실제에서 FY27E 시나리오", x_axis: "회계 분기", y_axis: "USD million", series: ["FQ4 실제", "약세", "기준", "강세"], unit: "USD million", basis: "GAAP 실제(A-8K) + RLE 무가중 경로", source: "Micron FQ4 실적·RLE"}
+  06_annual_income: {figure: "그림 6.", title: "연간 매출·영업이익·순이익", x_axis: "회계연도", y_axis: "USD million", series: ["매출", "영업이익", "순이익"], unit: "USD million", basis: "GAAP 실제(A) + PREREG_A + RLE", source: "Micron 10-K·8-K·RLE"}
+  07_valuation_heatmap: {figure: "그림 8.", title: "암시 P/E 민감도", x_axis: "FY27 FQ2–FQ4 주당 성장 오프셋(%p, 기준 경로 대비)", y_axis: "FY27 GM 오프셋(%p, 기준 경로 대비)", series: ["암시 P/E"], unit: "배; 축 단위 %p", basis: "중앙 셀=기준 경로 · 기준 주가 고정·GAAP EPS RLE 재계산", source: "기준 주가·RLE"}
+  08_cash_flow_capex_net_cash: {figure: "그림 7.", title: "조정 FCF·순설비투자·순현금(SCA 예치금 미조정)", x_axis: "회계연도", y_axis: "USD million", series: ["조정 FCF", "순설비투자", "순현금(SCA 예치금 미조정)"], unit: "USD million", basis: "GAAP 현금흐름 틀·RLE, SCA 예치금 미예측", source: "Micron 10-K·8-K·RLE"}

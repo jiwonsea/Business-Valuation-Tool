@@ -1,0 +1,1648 @@
+{
+  "latest_release_wins": true,
+  "periods": [
+    "FQ1-25",
+    "FQ1-26",
+    "FQ2-25",
+    "FQ2-26",
+    "FQ3-25",
+    "FQ3-26",
+    "FQ4-24",
+    "FQ4-25"
+  ],
+  "records": [
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 20.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 7.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 1158.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 50.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 38.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 2292.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 51.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 40.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 2648.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 27.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 15.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 2608.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 45.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 36.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 1720.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 51.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 37.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 2379.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 66.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 55.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 5284.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 54.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 47.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ1-26",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 4255.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 21.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 6.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "AEBU",
+      "value": 1034.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 47.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 33.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CDBU",
+      "value": 1830.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 55.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 45.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "CMBU",
+      "value": 2947.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 15.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 1.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q3_ex991.htm",
+      "source_sha256": "18c8475fe645dacbdb048073869a393c3dc82d7440d89fe5cf25c7a457851927",
+      "unit": "MCBU",
+      "value": 2236.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 68.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 62.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 2708.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 74.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 67.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 5687.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 74.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 66.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 7749.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 79.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 76.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ2-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 7711.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 26.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 11.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 1127.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 38.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 20.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 1530.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 58.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 46.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 3386.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 24.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 15.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-25",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 3255.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 79.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 75.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "AEBU",
+      "value": 4634.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 87.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 83.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CDBU",
+      "value": 11524.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 83.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 78.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "CMBU",
+      "value": 13769.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 87.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 86.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ3-26",
+      "source_path": "logs/mu_ho5_S2_release.html",
+      "source_sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392",
+      "unit": "MCBU",
+      "value": 11521.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 21,
+        "table": 3
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "AEBU",
+      "value": 24.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 22,
+        "table": 3
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "AEBU",
+      "value": 11.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 20,
+        "table": 3
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "AEBU",
+      "value": 1230.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 11,
+        "table": 3
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CDBU",
+      "value": 41.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 12,
+        "table": 3
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CDBU",
+      "value": 27.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 10,
+        "table": 3
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CDBU",
+      "value": 2048.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 6,
+        "table": 3
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CMBU",
+      "value": 49.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 7,
+        "table": 3
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CMBU",
+      "value": 33.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 5,
+        "table": 3
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "CMBU",
+      "value": 1449.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 16,
+        "table": 3
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "MCBU",
+      "value": 32.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 17,
+        "table": 3
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "MCBU",
+      "value": 20.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          9,
+          11
+        ],
+        "row": 15,
+        "table": 3
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-24",
+      "source_path": "logs/_claude_scratch/mu_FY2025Q4_ex991.htm",
+      "source_sha256": "34478c62e48f4184444c2cb72e4e4da28389026aa636297e80d33a79694efc58",
+      "unit": "MCBU",
+      "value": 3019.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 21,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 31.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 22,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 20.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 20,
+        "table": 2
+      },
+      "full_name": "Automotive and Embedded Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "AEBU",
+      "value": 1434.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 11,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 41.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 12,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 25.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 10,
+        "table": 2
+      },
+      "full_name": "Core Data Center Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CDBU",
+      "value": 1577.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 6,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 59.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 7,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 48.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 5,
+        "table": 2
+      },
+      "full_name": "Cloud Memory Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "CMBU",
+      "value": 4543.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 16,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "gross_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 36.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 17,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "operating_margin_pct",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 29.0
+    },
+    {
+      "coordinate": {
+        "columns": [
+          6,
+          8
+        ],
+        "row": 15,
+        "table": 2
+      },
+      "full_name": "Mobile and Client Business Unit",
+      "metric": "revenue",
+      "period": "FQ4-25",
+      "source_path": "logs/_claude_scratch/mu_G2026Q2_ex991.htm",
+      "source_sha256": "ee2e84a14aefe39c12f9808ef596f8819a10ce902d7c083947d9473c05fc640e",
+      "unit": "MCBU",
+      "value": 3760.0
+    }
+  ],
+  "rewrites": []
+}

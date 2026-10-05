@@ -1,0 +1,568 @@
+{
+  "annual_prereg": {
+    "diluted_eps": 73.9,
+    "net_income": 84720.0,
+    "revenue": 131819.0
+  },
+  "beat_history": [
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY24 Q2",
+      "revenue_above_high": true,
+      "revenue_actual": 5824.0,
+      "revenue_beat_pct": 9.89,
+      "revenue_guidance_midpoint": 5300.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY24 Q3",
+      "revenue_above_high": true,
+      "revenue_actual": 6811.0,
+      "revenue_beat_pct": 3.2,
+      "revenue_guidance_midpoint": 6600.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY24 Q4",
+      "revenue_above_high": false,
+      "revenue_actual": 7750.0,
+      "revenue_beat_pct": 1.97,
+      "revenue_guidance_midpoint": 7600.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY25 Q1",
+      "revenue_above_high": false,
+      "revenue_actual": 8709.0,
+      "revenue_beat_pct": 0.1,
+      "revenue_guidance_midpoint": 8700.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY25 Q2",
+      "revenue_above_high": false,
+      "revenue_actual": 8053.0,
+      "revenue_beat_pct": 1.94,
+      "revenue_guidance_midpoint": 7900.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY25 Q3",
+      "revenue_above_high": true,
+      "revenue_actual": 9301.0,
+      "revenue_beat_pct": 5.69,
+      "revenue_guidance_midpoint": 8800.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY25 Q4",
+      "revenue_above_high": true,
+      "revenue_actual": 11315.0,
+      "revenue_beat_pct": 5.75,
+      "revenue_guidance_midpoint": 10700.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY26 Q1",
+      "revenue_above_high": true,
+      "revenue_actual": 13643.0,
+      "revenue_beat_pct": 9.14,
+      "revenue_guidance_midpoint": 12500.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY26 Q2",
+      "revenue_above_high": true,
+      "revenue_actual": 23860.0,
+      "revenue_beat_pct": 27.59,
+      "revenue_guidance_midpoint": 18700.0
+    },
+    {
+      "gaap_eps_above_high": true,
+      "period": "FY26 Q3",
+      "revenue_above_high": true,
+      "revenue_actual": 41456.0,
+      "revenue_beat_pct": 23.75,
+      "revenue_guidance_midpoint": 33500.0
+    }
+  ],
+  "gm_guidance_history": [
+    {
+      "actual_pct": 18.53,
+      "difference_pt": 6.53,
+      "guidance_midpoint_pct": 12.0,
+      "period": "FY24 Q2"
+    },
+    {
+      "actual_pct": 26.9,
+      "difference_pt": 1.4,
+      "guidance_midpoint_pct": 25.5,
+      "period": "FY24 Q3"
+    },
+    {
+      "actual_pct": 35.32,
+      "difference_pt": 1.82,
+      "guidance_midpoint_pct": 33.5,
+      "period": "FY24 Q4"
+    },
+    {
+      "actual_pct": 38.44,
+      "difference_pt": 0.06,
+      "guidance_midpoint_pct": 38.5,
+      "period": "FY25 Q1"
+    },
+    {
+      "actual_pct": 36.79,
+      "difference_pt": 0.71,
+      "guidance_midpoint_pct": 37.5,
+      "period": "FY25 Q2"
+    },
+    {
+      "actual_pct": 37.72,
+      "difference_pt": 2.22,
+      "guidance_midpoint_pct": 35.5,
+      "period": "FY25 Q3"
+    },
+    {
+      "actual_pct": 44.67,
+      "difference_pt": 3.67,
+      "guidance_midpoint_pct": 41.0,
+      "period": "FY25 Q4"
+    },
+    {
+      "actual_pct": 56.04,
+      "difference_pt": 5.54,
+      "guidance_midpoint_pct": 50.5,
+      "period": "FY26 Q1"
+    },
+    {
+      "actual_pct": 74.41,
+      "difference_pt": 7.41,
+      "guidance_midpoint_pct": 67.0,
+      "period": "FY26 Q2"
+    },
+    {
+      "actual_pct": 84.56,
+      "difference_pt": 3.56,
+      "guidance_midpoint_pct": 81.0,
+      "period": "FY26 Q3"
+    }
+  ],
+  "prereg_a_display_rows": [
+    {
+      "coordinate": {
+        "line": 38,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**52,860**",
+        "bear": "49,000",
+        "bull": "58,223",
+        "weighted": "**53,697**"
+      },
+      "display_text": {
+        "base": "52,860",
+        "bear": "49,000",
+        "bull": "58,223",
+        "weighted": "53,697"
+      },
+      "label_markdown": "매출"
+    },
+    {
+      "coordinate": {
+        "line": 39,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**+27.5%**",
+        "bear": "+18.2%",
+        "bull": "+40.4%",
+        "weighted": "+29.5%"
+      },
+      "display_text": {
+        "base": "+27.5%",
+        "bear": "+18.2%",
+        "bull": "+40.4%",
+        "weighted": "+29.5%"
+      },
+      "label_markdown": "QoQ 표면 (vs FQ3 41,456, 13w)"
+    },
+    {
+      "coordinate": {
+        "line": 40,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**+18.4%**",
+        "bear": "+9.8%",
+        "bull": "+30.4%",
+        "weighted": "+20.3%"
+      },
+      "display_text": {
+        "base": "+18.4%",
+        "bear": "+9.8%",
+        "bull": "+30.4%",
+        "weighted": "+20.3%"
+      },
+      "label_markdown": "QoQ **주당** (14w ÷ 13w 정규화)"
+    },
+    {
+      "coordinate": {
+        "line": 41,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**+367.2%**",
+        "bear": "+333.1%",
+        "bull": "+414.6%",
+        "weighted": "+374.6%"
+      },
+      "display_text": {
+        "base": "+367.2%",
+        "bear": "+333.1%",
+        "bull": "+414.6%",
+        "weighted": "+374.6%"
+      },
+      "label_markdown": "YoY 표면 (14w vs FQ4 FY25 11,315, **13w**)"
+    },
+    {
+      "coordinate": {
+        "line": 42,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**+333.8%**",
+        "bear": "+302.1%",
+        "bull": "+377.8%",
+        "weighted": "+340.7%"
+      },
+      "display_text": {
+        "base": "+333.8%",
+        "bear": "+302.1%",
+        "bull": "+377.8%",
+        "weighted": "+340.7%"
+      },
+      "label_markdown": "YoY **주당** (× 13/14 정규화)"
+    },
+    {
+      "coordinate": {
+        "line": 43,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "중간값 × (1+5.72%)",
+        "bear": "하단 −2.0%",
+        "bull": "중간값 × (1+16.45%)",
+        "weighted": "—"
+      },
+      "display_text": {
+        "base": "중간값 × (1+5.72%)",
+        "bear": "하단 −2.0%",
+        "bull": "중간값 × (1+16.45%)",
+        "weighted": "—"
+      },
+      "label_markdown": "가이던스 앵커 (`ANCHOR` notes)"
+    },
+    {
+      "coordinate": {
+        "line": 44,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**86.0%**",
+        "bear": "85.0%",
+        "bull": "87.0%",
+        "weighted": "—"
+      },
+      "display_text": {
+        "base": "86.0%",
+        "bear": "85.0%",
+        "bull": "87.0%",
+        "weighted": "—"
+      },
+      "label_markdown": "GAAP GM (스키마 필드 아님, §(b))"
+    },
+    {
+      "coordinate": {
+        "line": 45,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**1,860**",
+        "bear": "1,860",
+        "bull": "1,860",
+        "weighted": "—"
+      },
+      "display_text": {
+        "base": "1,860",
+        "bear": "1,860",
+        "bull": "1,860",
+        "weighted": "—"
+      },
+      "label_markdown": "GAAP opex"
+    },
+    {
+      "coordinate": {
+        "line": 46,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**43,599**",
+        "bear": "39,788",
+        "bull": "48,797",
+        "weighted": "44,396"
+      },
+      "display_text": {
+        "base": "43,599",
+        "bear": "39,788",
+        "bull": "48,797",
+        "weighted": "44,396"
+      },
+      "label_markdown": "GAAP 영업이익"
+    },
+    {
+      "coordinate": {
+        "line": 47,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**82.48%**",
+        "bear": "81.20%",
+        "bull": "83.81%",
+        "weighted": "82.68%"
+      },
+      "display_text": {
+        "base": "82.48%",
+        "bear": "81.20%",
+        "bull": "83.81%",
+        "weighted": "82.68%"
+      },
+      "label_markdown": "GAAP 영업이익률 (`op_margin`)"
+    },
+    {
+      "coordinate": {
+        "line": 48,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**−121**",
+        "bear": "−112",
+        "bull": "−133",
+        "weighted": "−122"
+      },
+      "display_text": {
+        "base": "−121",
+        "bear": "−112",
+        "bull": "−133",
+        "weighted": "−122"
+      },
+      "label_markdown": "below-OP (−0.228% × 매출)"
+    },
+    {
+      "coordinate": {
+        "line": 49,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**43,479**",
+        "bear": "39,676",
+        "bull": "48,664",
+        "weighted": "44,274"
+      },
+      "display_text": {
+        "base": "43,479",
+        "bear": "39,676",
+        "bull": "48,664",
+        "weighted": "44,274"
+      },
+      "label_markdown": "세전이익"
+    },
+    {
+      "coordinate": {
+        "line": 50,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**13.86%**",
+        "bear": "15.00%",
+        "bull": "13.36%",
+        "weighted": "—"
+      },
+      "display_text": {
+        "base": "13.86%",
+        "bear": "15.00%",
+        "bull": "13.36%",
+        "weighted": "—"
+      },
+      "label_markdown": "유효세율 (GAAP)"
+    },
+    {
+      "coordinate": {
+        "line": 51,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**37,452**",
+        "bear": "33,725",
+        "bull": "42,163",
+        "weighted": "38,120"
+      },
+      "display_text": {
+        "base": "37,452",
+        "bear": "33,725",
+        "bull": "42,163",
+        "weighted": "38,120"
+      },
+      "label_markdown": "GAAP 순이익"
+    },
+    {
+      "coordinate": {
+        "line": 52,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "1,150M",
+        "bear": "1,150M",
+        "bull": "1,150M",
+        "weighted": "1,150M"
+      },
+      "display_text": {
+        "base": "1,150M",
+        "bear": "1,150M",
+        "bull": "1,150M",
+        "weighted": "1,150M"
+      },
+      "label_markdown": "희석주식수"
+    },
+    {
+      "coordinate": {
+        "line": 53,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**32.57**",
+        "bear": "**29.33**",
+        "bull": "**36.66**",
+        "weighted": "**33.15**"
+      },
+      "display_text": {
+        "base": "32.57",
+        "bear": "29.33",
+        "bull": "36.66",
+        "weighted": "33.15"
+      },
+      "label_markdown": "**GAAP 희석 EPS**"
+    },
+    {
+      "coordinate": {
+        "line": 54,
+        "section": "(a-1)"
+      },
+      "display_markdown": {
+        "base": "**32.84**",
+        "bear": "**29.60**",
+        "bull": "**36.93**",
+        "weighted": "**33.42**"
+      },
+      "display_text": {
+        "base": "32.84",
+        "bear": "29.60",
+        "bull": "36.93",
+        "weighted": "33.42"
+      },
+      "label_markdown": "**비GAAP 희석 EPS** (+0.27, 가정)"
+    }
+  ],
+  "profile_path": {
+    "base": [
+      {
+        "gaap_eps": 32.56734917485121,
+        "operating_income": 43599.1044676096,
+        "quarter_label": "2026Q4",
+        "revenue": 52860.213952
+      },
+      {
+        "gaap_eps": 31.687537398432664,
+        "operating_income": 42421.51105129392,
+        "quarter_label": "2027Q1",
+        "revenue": 51538.7086032
+      },
+      {
+        "gaap_eps": 32.646116095498435,
+        "operating_income": 43704.773356804995,
+        "quarter_label": "2027Q2",
+        "revenue": 53084.869861296
+      },
+      {
+        "gaap_eps": 33.17736401818277,
+        "operating_income": 44416.42912216554,
+        "quarter_label": "2027Q3",
+        "revenue": 54146.56725852192
+      }
+    ],
+    "bear": [
+      {
+        "gaap_eps": 29.325944325005796,
+        "operating_income": 39787.997609472,
+        "quarter_label": "2026Q4",
+        "revenue": 48999.99705599999
+      },
+      {
+        "gaap_eps": 24.204987441036046,
+        "operating_income": 32843.36501111688,
+        "quarter_label": "2027Q1",
+        "revenue": 41860.01148498201
+      },
+      {
+        "gaap_eps": 20.49243394243599,
+        "operating_income": 27810.954430392347,
+        "quarter_label": "2027Q2",
+        "revenue": 37674.01033648381
+      },
+      {
+        "gaap_eps": 18.19009818475234,
+        "operating_income": 24691.73474458317,
+        "quarter_label": "2027Q3",
+        "revenue": 35790.30981965962
+      }
+    ],
+    "bull": [
+      {
+        "gaap_eps": 36.66318013349099,
+        "operating_income": 48796.942500255995,
+        "quarter_label": "2026Q4",
+        "revenue": 58223.29376
+      },
+      {
+        "gaap_eps": 38.15251709890986,
+        "operating_income": 50779.09631302144,
+        "quarter_label": "2027Q1",
+        "revenue": 60552.2255104
+      },
+      {
+        "gaap_eps": 41.28354899765644,
+        "operating_income": 54946.05826374513,
+        "quarter_label": "2027Q2",
+        "revenue": 65396.403551232004
+      },
+      {
+        "gaap_eps": 43.270127643749746,
+        "operating_income": 57590.361841339196,
+        "quarter_label": "2027Q3",
+        "revenue": 68666.2237287936
+      }
+    ]
+  },
+  "profile_path_basis": "PREREG_A_PROFILE_PATH_ONLY_NOT_RLE_INPUT",
+  "profile_source": {
+    "as_of": "2026-09-25",
+    "path": "forecast/profiles/mu.generic.yaml",
+    "sha256": "faa60912b6a364eee67f87d9ba21221a6c6da02f22695c4d980200260982dfd6"
+  },
+  "source": {
+    "as_of": "2026-09-25",
+    "freeze_commit": "f8cfd47",
+    "path": "forecast/reports/mu_fy2026q4_forecast_FROZEN.md",
+    "sha256": "eab1184f721cd69460ffc4ddefd9851c59815207c35975db0dd1a2962b629f9a"
+  }
+}

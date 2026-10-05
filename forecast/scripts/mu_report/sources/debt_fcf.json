@@ -1,0 +1,235 @@
+{
+  "company_defined_fq3_fy26": {
+    "adjusted_free_cash_flow": 18304.0,
+    "component_coordinates": {
+      "adjusted_free_cash_flow": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 10,
+        "table": 8
+      },
+      "government_incentives": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 8,
+        "table": 8
+      },
+      "net_capex": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 9,
+        "table": 8
+      },
+      "operating_cash_flow": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 4,
+        "table": 8
+      },
+      "ppe_disposal_proceeds": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 7,
+        "table": 8
+      },
+      "ppe_expenditures": {
+        "columns": [
+          3,
+          5
+        ],
+        "row": 6,
+        "table": 8
+      }
+    },
+    "government_incentives": 733.0,
+    "identities": [
+      "7826 - 9 - 733 = 7084",
+      "25388 - 7084 = 18304"
+    ],
+    "net_capex": 7084.0,
+    "operating_cash_flow": 25388.0,
+    "ppe_disposal_proceeds": 9.0,
+    "ppe_expenditures": 7826.0,
+    "release_rows": [
+      {
+        "coordinate": {
+          "row": 15,
+          "table": 6
+        },
+        "label": "Net cash provided by operating activities",
+        "values": [
+          "Net cash provided by operating activities",
+          "Net cash provided by operating activities",
+          "Net cash provided by operating activities",
+          "45702",
+          "45702",
+          "nan",
+          "11795",
+          "11795",
+          "nan"
+        ]
+      },
+      {
+        "coordinate": {
+          "row": 18,
+          "table": 6
+        },
+        "label": "Expenditures for property, plant, and equipment",
+        "values": [
+          "Expenditures for property, plant, and equipment",
+          "Expenditures for property, plant, and equipment",
+          "Expenditures for property, plant, and equipment",
+          "(19,602)",
+          "(19,602)",
+          "nan",
+          "(10,199)",
+          "(10,199)",
+          "nan"
+        ]
+      },
+      {
+        "coordinate": {
+          "row": 6,
+          "table": 8
+        },
+        "label": "Expenditures for property, plant, and equipment",
+        "values": [
+          "Expenditures for property, plant, and equipment",
+          "Expenditures for property, plant, and equipment",
+          "Expenditures for property, plant, and equipment",
+          "(7,826)",
+          "(7,826)",
+          "nan",
+          "(6,387)",
+          "(6,387)",
+          "nan",
+          "(2,938)",
+          "(2,938)",
+          "nan"
+        ]
+      },
+      {
+        "coordinate": {
+          "row": 7,
+          "table": 8
+        },
+        "label": "Proceeds from sales of property, plant, and equipment",
+        "values": [
+          "Proceeds from sales of property, plant, and equipment",
+          "Proceeds from sales of property, plant, and equipment",
+          "Proceeds from sales of property, plant, and equipment",
+          "9",
+          "9",
+          "nan",
+          "5",
+          "5",
+          "nan",
+          "12",
+          "12",
+          "nan"
+        ]
+      },
+      {
+        "coordinate": {
+          "row": 10,
+          "table": 8
+        },
+        "label": "Adjusted free cash flow",
+        "values": [
+          "Adjusted free cash flow",
+          "Adjusted free cash flow",
+          "Adjusted free cash flow",
+          "$",
+          "18304",
+          "nan",
+          "$",
+          "6899",
+          "nan",
+          "$",
+          "1949",
+          "nan"
+        ]
+      }
+    ]
+  },
+  "debt_prepayment": {
+    "basis_note": "Separate bases; the $2M difference is not adjusted away.",
+    "gaap_other_nonoperating_net": -321.0,
+    "nongaap_reconciliation_adjustment": 325.0,
+    "release_rows": [
+      {
+        "coordinate": {
+          "row": 15,
+          "table": 4
+        },
+        "label": "Other non-operating income (expense), net",
+        "values": [
+          "Other non-operating income (expense), net",
+          "Other non-operating income (expense), net",
+          "Other non-operating income (expense), net",
+          "(321)",
+          "(321)",
+          "nan",
+          "(98)",
+          "(98)",
+          "nan",
+          "(68)",
+          "(68)",
+          "nan",
+          "(559)",
+          "(559)",
+          "nan",
+          "(90)",
+          "(90)",
+          "nan"
+        ]
+      },
+      {
+        "coordinate": {
+          "row": 20,
+          "table": 7
+        },
+        "label": "Loss on debt prepayments",
+        "values": [
+          "Loss on debt prepayments",
+          "Loss on debt prepayments",
+          "Loss on debt prepayments",
+          "325",
+          "325",
+          "nan",
+          "47",
+          "47",
+          "nan",
+          "46",
+          "46",
+          "nan"
+        ]
+      }
+    ],
+    "ten_q_anchor": "recognized losses in other non-operating income (expense) of $ 323 million and $ 500 million for the third quarter and first nine months of 2026, respectively.",
+    "ten_q_debt_note_loss": 323
+  },
+  "sources": [
+    {
+      "as_of": "2026-05-28",
+      "path": "logs/mu_ho5_S2_release.html",
+      "sha256": "9f7e667a8224193b438287d0186c7273262c79e98af71feb3613e0837347c392"
+    },
+    {
+      "accession": "0000723125-26-000015",
+      "as_of": "2026-05-28",
+      "path": "logs/mu_ho5_S3_10q.html",
+      "sha256": "bf4c3fb1833243d1c41c0426c4e0332d3a2f61a2b44e534fe8ff13648f205e20"
+    }
+  ]
+}

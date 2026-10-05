@@ -1,0 +1,193 @@
+title: "MU FY2026 Q4 Research Infrastructure Proof"
+edition_label: "FIXTURE — NOT REAL DATA · FY2026 Q4 has 14 weeks; FY2026 has 53 weeks"
+thesis: "The pre-registered forecast and post-print actuals remain separate, while report-layer estimates are explicitly labelled RLE."
+methodology_title: "Method and information boundary"
+methodology: "FY2026Q4 PREREG_A, A-8K, A-10K and FY2027E–FY2028E RLE are separate columns. FY27 consensus comparison is {{fact:consensus.revenue.FY2027}}."
+toc_title: "Contents"
+sections:
+  - {id: company, title: "Company overview and reading rules"}
+  - {id: thesis, title: "Bull and bear cases"}
+  - {id: fq4, title: "Pre-registration versus actuals"}
+  - {id: outlook, title: "Outlook"}
+  - {id: business, title: "Business structure"}
+  - {id: financials, title: "Financial statements"}
+  - {id: margin_bridge, title: "Margin bridge"}
+  - {id: scenarios, title: "Scenarios"}
+  - {id: valuation, title: "Valuation"}
+  - {id: risks, title: "Risks and swing factors"}
+  - {id: catalysts, title: "Catalysts and schedule"}
+  - {id: appendix, title: "Appendix"}
+section_stub: "FIXTURE — infrastructure verification section using no real data."
+section_connectors:
+  company: "This section sets out the company overview and the report's information boundaries."
+  fq4: "The pre-registered forecast and reported actuals are compared on the same basis."
+  outlook: "Company guidance and report-layer estimates remain in separate columns."
+  business: "Business-unit mix and pricing and shipment signals are shown in the categories disclosed by the company."
+  financials: "The financial statements and key ratios draw from one fact manifest."
+  margin_bridge: "The margin bridge separates changes in gross profit from changes in operating expense."
+  valuation: "The valuation table shows its reference dates and calculation basis."
+  appendix: "The appendix brings together the prior rules, post-print changes, interpretation correction and timing limitation."
+narrative_ui:
+  bull: "Bull case"
+  bear: "Bear case"
+  falsifier: "Falsifier:"
+  source: "Source"
+  when: "When"
+  what: "What to check"
+appendix:
+  r9_title: "Pre-print rule table"
+  rule: "Rule"
+  value: "Inputs"
+  formula: "Formula"
+  grade: "Input / rule grade"
+  confidence_note: "Overall rule confidence: low"
+  source: "Source"
+  timing_limit: "The rules were set before the print, but the file and hash were recorded afterward. The conversation record is therefore the only evidence of pre-registration."
+  r12_title: "Post-print changes"
+  change_headers: ["Item", "Original", "Change", "Reason", "Source page"]
+  a11_title: "Net-capex roll-forward interpretation correction"
+  nwc_note: "The working-capital change applies k to the annual change in revenue."
+  rule_names:
+    A1_fq1_revenue: "First-quarter revenue"
+    A2_fq2_to_fq4_weekly_revenue_growth: "Later-quarter weekly revenue growth"
+    A2_prime_decline_parallel_path: "Decline parallel path"
+    A3_gaap_gross_margin: "GAAP gross margin"
+    A4_gaap_opex: "GAAP operating expenses"
+    A5_below_operating_pct_of_revenue: "Below-operating items"
+    A6_gaap_effective_tax_rate: "GAAP effective tax rate"
+    A7_diluted_shares: "Diluted shares"
+    A8_fy2028_revenue_growth: "Next-year revenue growth"
+    A9_fy2028_gross_margin: "Next-year gross margin"
+    A10_fy2028_opex: "Next-year operating expenses"
+    A11_da: "Depreciation and amortization"
+    A12_sbc: "Stock-based compensation"
+    A13_working_capital: "Working capital"
+    A14_net_capex: "Net capital expenditures"
+    A15_dividends: "Dividends"
+    A16_sca_deposits: "SCA deposits"
+    A17_nongaap_fy2027_fy2028: "Non-GAAP estimates"
+scored:
+  title: "Quoted SCORED summary"
+  metric: "Metric"
+  actual: "Actual"
+  forecast: "Pre-registered base"
+  error: "Error"
+  ape: "Absolute percentage error"
+  revenue: "Revenue"
+  gaap_eps: "GAAP diluted EPS"
+  nongaap_eps: "Non-GAAP diluted EPS"
+  gaap_opex: "GAAP operating expenses"
+  labels: "Guidance labels"
+  labels_suffix: "hit"
+  bands: "Band coverage"
+  lever: "Four-lever GAAP EPS attribution"
+  sf7: "Next-quarter direction verdict"
+ed1:
+  title: "Micron Technology, Inc. (NASDAQ: MU)"
+  ribbon: "Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · First edition"
+  summary_title: "Key figures"
+  cover:
+    author: "Author: Jiwon Kim"
+    issued: "Issue date: {{render_date}}"
+    as_of: "Data as of: 2026-10-01 (price) · 2026-09-30 (results)"
+    cutoff: "Information cutoff: 2026-10-04 KST"
+    completeness: "Completeness: historical actuals, PREREG_A scoring, post-print actuals and RLE"
+    observations:
+      - "The pre-registered forecast and post-print estimates remain separate."
+      - "Scenarios are an unweighted range and carry no probabilities."
+      - "Net cash is not adjusted for SCA deposits."
+market_data:
+  title: "Market data"
+  rows:
+    - {label: "Reference price", value: "{{fact:market.price.2026-10-01.CITED}}", basis: "As of {{fact:meta.price_date.2026-10-01.CITED}}"}
+    - {label: "Diluted weighted-average shares (FQ4)", value: "{{fact:market.shares_outstanding.CITED}}", basis: "FY2026 Q4 A-8K"}
+    - {label: "Market capitalization", value: "{{fact:market.market_cap.2026-10-01.CALCULATED}}", basis: "Reference price × FQ4 diluted weighted-average shares"}
+    - {label: "Fiscal year end", value: "{{fact:meta.fiscal_year_end.FY2026.A-8K}}", basis: "A-8K"}
+  note: "Market capitalization is in USD million and equals the reference price times FQ4 diluted weighted-average shares; it is not based on period-end shares outstanding."
+financials:
+  inventory_days: "Company inventory days"
+valuation:
+  trailing_pb: "Trailing P/B"
+  pb_caption: "Price date {{fact:meta.price_date.2026-10-01.CITED}} · equity date {{fact:meta.equity_date.FY2026.A-8K}} · shares use FQ4 diluted weighted-average shares"
+  title: "Reference-price implied multiples"
+  period: "Period and path"
+  pe: "P/E"
+  ev_ebitda: "EV/EBITDA"
+  ev_sales: "EV/Sales"
+  fcf_yield: "FCF yield"
+summary_rows:
+  - {label: "FQ4 revenue", value: "{{fact:prereg.revenue.base.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD million"}
+  - {label: "FQ4 revenue", value: "{{fact:is.revenue.FY2026Q4.A-8K}}", basis: "A-8K · USD million"}
+  - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD/share"}
+  - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.A-8K}}", basis: "A-8K · USD/share"}
+  - {label: "FY26 revenue", value: "{{fact:is.revenue.FY2026E.PREREG_A}}", basis: "PREREG_A · USD million"}
+  - {label: "FY26 revenue", value: "{{fact:is.revenue.FY2026A.A-8K}}", basis: "A-8K · USD million"}
+  - {label: "FY27E revenue / GAAP EPS", value: "{{fact:is.revenue.FY2027E.base}} / {{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE base path"}
+  - {label: "FY28E revenue / GAAP EPS", value: "{{fact:is.revenue.FY2028E.base}} / {{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE base path"}
+disclaimer:
+  not_advice: "This document is not investment advice."
+  third_party: "This is third-party analysis based on public information and has not been prepared, reviewed, or approved by Micron or its affiliates."
+  third_party_short: "Third-party public-information analysis · not approved by Micron."
+  conflict: "As of the pre-publication confirmation time ({{conflict.confirmed_at_kst}}), the author, Jiwon Kim, does not hold shares of Micron Technology, Inc. (MU)."
+  conflict_short: "Author does not hold MU shares - reconfirmed before publication."
+dryrun:
+  title: "Micron Technology, Inc. (NASDAQ: MU)"
+  ribbon: "Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · PRE-PRINT DRY RUN"
+  watermark: "PRE-PRINT DRY RUN · NOT FOR DISTRIBUTION"
+  conflict: "[DRY RUN — pre-publication holding check not performed]"
+  section_stub: "[DRY RUN placeholder paragraph — to be written in E2-B] This rehearsal checks page flow using historical actuals and the pre-registered forecast only. Post-print information and report-layer estimates are unavailable. Empty table and chart positions will be populated through the same render path after inputs arrive."
+  unavailable_price: "Not calculated because the reference share price is unavailable (to be fixed after the release)"
+  unavailable_input: "To be fixed when the post-release input is received"
+  summary_title: "Pre-registered key figures"
+  historical_title: "Historical income summary"
+  summary_rows:
+    - {label: "Pre-registered revenue", value: "{{fact:prereg.revenue.base.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD million"}
+    - {label: "Pre-registered GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.PREREG_A}}", basis: "PREREG_A · USD/share"}
+    - {label: "Fixed non-GAAP bridge", value: "{{fact:bridge.nongaap_fixed_027.FY2026Q4}}", basis: "PREREG_A_ASSUMPTION · FY2026Q4 only"}
+cover:
+  author: "Author: Jiwon Kim"
+  issued: "Issue date: to be fixed after the release"
+  as_of: "Data as of: 2026-09-25"
+  cutoff: "Information cutoff: 2026-09-25 23:59 KST"
+  completeness: "Completeness: historical actuals + PREREG_A; post-print actuals, price and RLE are UNAVAILABLE"
+  observations:
+    - "FY2026 Q4 has 14 weeks and FY2026 has 53 weeks."
+    - "The fan starts at FQ3 actual and ends at the FQ4 pre-registered range."
+    - "Reference price and post-print results are not calculated before receipt."
+table:
+  metric: "Metric"
+  value: "Value"
+  basis: "Basis"
+  period: "Period"
+  unavailable: "UNAVAILABLE"
+financial_tables:
+  income_title: "Income statement summary (USD million, except per-share data)"
+  balance_title: "Balance sheet summary (USD million)"
+  cashflow_title: "Cash-flow statement summary (USD million)"
+  ratio_title: "Key ratios and working capital (%, days, USD million)"
+  columns: ["Metric", "FY23A", "FY24A", "FY25A", "FY26E PREREG_A", "FY26A A-8K", "FY27E RLE", "FY28E RLE"]
+  dram_nand_title: "DRAM and NAND qualitative check"
+  dram_nand_headers: ["Business", "Period", "Pricing", "Bit shipments", "Treatment"]
+  verbatim_treatment: "Verbatim category · not numericized"
+  not_preregistered: "— (not pre-registered)"
+  not_preregistered_note: "A dash in FY26E PREREG_A means the item was outside the pre-registered scope."
+guidance_table:
+  title: "FQ1 FY27 company guidance"
+  headers: ["Metric", "GAAP", "Non-GAAP", "Basis"]
+  rows: ["Revenue", "Gross margin", "Operating expenses", "Diluted EPS", "Diluted weighted-average shares"]
+  basis: ["USD million, midpoint ± range", "Approximate", "USD million, approximate", "USD/share, midpoint ± range", "million, approximate"]
+margin_bridge_table:
+  title: "GAAP margin and operating-expense bridge"
+  headers: ["Interval", "Metric", "Start", "End", "Change / operating-margin contribution"]
+  periods: ["FQ3→FQ4 FY26 actual", "FY26A→FY27E base"]
+  metrics: ["Gross margin", "Operating expenses (USD million)", "Operating expenses / revenue"]
+  note: "The gross-margin change plus the contribution from a lower operating-expense ratio equals the operating-margin change. The expense-amount row separately shows the change in USD million."
+charts:
+  01_quarterly_revenue_margin: {figure: "Figure 5.", title: "Quarterly revenue and GAAP margins", x_axis: "Fiscal quarter", y_axis: "USD million / %", series: ["Revenue", "Gross margin", "Operating margin"], unit: "USD million / %", basis: "GAAP actual (A); FQ4 has 14 weeks", source: "Micron 10-Q and 8-K"}
+  02_business_unit_mix: {figure: "Figure 1.", title: "Business-unit revenue mix", x_axis: "Fiscal quarter", y_axis: "USD million", series: ["CMBU", "CDBU", "MCBU", "AEBU"], unit: "USD million", basis: "GAAP actual (A) business-unit revenue", source: "Micron earnings materials"}
+  03b_guidance_beat_history: {figure: "Figure 4.", title: "GAAP gross-margin guidance versus actual", x_axis: "Fiscal quarter", y_axis: "%", series: ["Guidance midpoint", "Actual"], unit: "%", basis: "GAAP guidance and actual", source: "Micron quarterly guidance and results"}
+  04_beat_history: {figure: "Figure 2.", title: "Revenue guidance beat and GAAP EPS above high end", x_axis: "Fiscal quarter", y_axis: "% / USD per share", series: ["Revenue beat", "GAAP EPS above high end"], unit: "% / USD per share", basis: "GAAP actual and guidance", source: "Micron quarterly guidance and results"}
+  05_scenario_fan: {figure: "Figure 3.", title: "FQ4 actual to FY27E scenarios", x_axis: "Fiscal quarter", y_axis: "USD million", series: ["FQ4 actual", "Bear", "Base", "Bull"], unit: "USD million", basis: "GAAP actual (A-8K) + unweighted RLE paths", source: "Micron FQ4 results and RLE"}
+  06_annual_income: {figure: "Figure 6.", title: "Annual revenue, operating income and net income", x_axis: "Fiscal year", y_axis: "USD million", series: ["Revenue", "Operating income", "Net income"], unit: "USD million", basis: "GAAP actual (A) + PREREG_A + RLE", source: "Micron 10-K, 8-K and RLE"}
+  07_valuation_heatmap: {figure: "Figure 8.", title: "Implied P/E sensitivity", x_axis: "FY27 FQ2–FQ4 per-share growth offset (%p vs base)", y_axis: "FY27 GM offset (%p vs base)", series: ["Implied P/E"], unit: "multiple; axes in %p", basis: "Center cell=base path; fixed reference price; recalculated GAAP EPS RLE", source: "Reference price and RLE"}
+  08_cash_flow_capex_net_cash: {figure: "Figure 7.", title: "Adjusted FCF, net capex and net cash (not adjusted for SCA deposits)", x_axis: "Fiscal year", y_axis: "USD million", series: ["Adjusted FCF", "Net capex", "Net cash (not adjusted for SCA deposits)"], unit: "USD million", basis: "GAAP cash-flow framework and RLE; SCA deposits not forecast", source: "Micron 10-K, 8-K and RLE"}

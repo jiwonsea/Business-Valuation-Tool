@@ -1,0 +1,503 @@
+scope: report_layer
+information_cutoff: "2026-10-04"
+information_cutoff_precision: date_only
+information_cutoff_timezone: Asia/Seoul
+sources:
+  - SRC-HANDOFF-R9-R12
+  - SRC-EX991-FQ4FY26
+  - SRC-REMARKS-FQ4FY26
+  - SRC-SCORED-FQ4FY26
+  - SRC-FROZEN-PREREG-A
+  - SRC-10K-FY25
+  - SRC-10K-FY23
+units:
+  money: USD_million
+  shares: million
+  ratio: fraction
+week_basis:
+  FY2027: "52w (13w x 4) ASSUMED"
+  FY2028: "52w ASSUMED"
+confidence: low
+input_sha256:
+  forecast/HANDOFF_CODEX_mu_report_exec.md: ada3352e69b9c189dcc1cebea9dd7eee1d970628104956003a671988f3d6d422
+  forecast/reports/mu_fy2026q4_forecast_FROZEN.md: eab1184f721cd69460ffc4ddefd9851c59815207c35975db0dd1a2962b629f9a
+  forecast/reports/mu_fy2026q4_SCORED.md: 0f6e6a951dc57d95b8846dbc8588d42b2ac2925f1c52b54cc80e9a2a027af4f9
+  logs/mu/fy2026q4/postprint/ex991.htm: 5dad1ce5c2dd8958dad947ab1f12a1015bfcc29c7e8a29e48379e983f425120e
+  logs/mu/fy2026q4/postprint/remarks.pdf: 2821d4ccaae50b40dcd28cd4e766c69c509e73d666e4109d5907c7205a03b700
+  logs/_claude_scratch/mu-20250828.htm: 84ea0693543f8f86af6c981934f43320c5ccf230d5642d050598a535dacc5ad2
+  logs/_claude_scratch/mu-20230831.htm: 54bdb6a96570e56071b532434751c7d1ea6189e18b45e3aa2bf82101f38d69fb
+
+source_catalog:
+  SRC-HANDOFF-R9-R12:
+    path: forecast/HANDOFF_CODEX_mu_report_exec.md
+    role: approved_R9_v1_R12_post_print_change_and_R13_interpretation_contract
+  SRC-EX991-FQ4FY26:
+    path: logs/mu/fy2026q4/postprint/ex991.htm
+    role: FY2026_Q4_release_and_FQ1_FY2027_GAAP_outlook
+  SRC-REMARKS-FQ4FY26:
+    path: logs/mu/fy2026q4/postprint/remarks.pdf
+    role: FY2026_Q4_prepared_remarks
+  SRC-SCORED-FQ4FY26:
+    path: forecast/reports/mu_fy2026q4_SCORED.md
+    role: scored_guidance_history_statistics
+  SRC-FROZEN-PREREG-A:
+    path: forecast/reports/mu_fy2026q4_forecast_FROZEN.md
+    role: preregistered_A5_below_operating_rate
+  SRC-10K-FY25:
+    path: logs/_claude_scratch/mu-20250828.htm
+    role: FY2024_and_FY2025_balance_sheet_and_cash_flow
+  SRC-10K-FY23:
+    path: logs/_claude_scratch/mu-20230831.htm
+    role: FY2023_balance_sheet
+
+post_print_inputs:
+  G1_revenue_mid:
+    value: 61500
+    source_id: SRC-EX991-FQ4FY26
+  G1_revenue_low:
+    value: 60000
+    source_id: SRC-EX991-FQ4FY26
+  G1_revenue_high:
+    value: 63000
+    source_id: SRC-EX991-FQ4FY26
+  M1_gaap_gross_margin:
+    value: 0.8595
+    source_id: SRC-EX991-FQ4FY26
+  X1_gaap_opex:
+    value: 2310
+    source_id: SRC-EX991-FQ4FY26
+  S1_diluted_shares:
+    value: 1150
+    source_id: SRC-EX991-FQ4FY26
+  fq1_gaap_eps_mid:
+    value: 37.84
+    source_id: SRC-EX991-FQ4FY26
+  fq1_gaap_eps_half_range:
+    value: 1.00
+    source_id: SRC-EX991-FQ4FY26
+  A4_fq4_fy2026_actual_revenue_14w:
+    value: 54229
+    source_id: SRC-EX991-FQ4FY26
+  b_med_11_quarters:
+    value: 0.0575
+    source_id: SRC-SCORED-FQ4FY26
+  b4_fy2026_q1_to_q4:
+    value: 0.1645
+    source_id: SRC-SCORED-FQ4FY26
+  fy2026_gaap_opex:
+    value: 8164
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_revenue:
+    value: 133188
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_nongaap_opex:
+    value: 6841
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_da:
+    value: 9503
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_sbc:
+    value: 1333
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_ending_ppe:
+    value: 63310
+    source_id: SRC-EX991-FQ4FY26
+  declared_quarterly_dps:
+    value: 0.15
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_cash_and_equivalents:
+    value: 38364
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_short_term_investments:
+    value: 5070
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_long_term_marketable_investments:
+    value: 30019
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_current_debt:
+    value: 491
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_long_term_debt:
+    value: 4688
+    source_id: SRC-EX991-FQ4FY26
+  fy2026_sca_customer_deposits:
+    value: 12895
+    source_id: SRC-EX991-FQ4FY26
+
+post_print_change:
+  A3_base:
+    original:
+      value: "FQ1 = M1; then -0.5 percentage point per quarter"
+      source_id: SRC-HANDOFF-R9-R12
+    change:
+      value: "FQ1 = M1; then flat through FQ4; retain -0.5 point path as preregistered sensitivity"
+      source_id: SRC-HANDOFF-R9-R12
+    reason:
+      value: "Prepared remarks identify FQ1 as the FY2027 gross-margin floor and state that later quarters should be higher; flat is a conservative no-new-number implementation."
+      source_id: SRC-REMARKS-FQ4FY26
+    page:
+      value: 9
+      source_id: SRC-REMARKS-FQ4FY26
+    grade:
+      value: "direction E; magnitude J"
+      source_id: SRC-HANDOFF-R9-R12
+  A4_opex:
+    original:
+      value: "FY2026 GAAP opex * 52/53 + 1000; FQ1=X1; allocate the remainder 30:33:37"
+      source_id: SRC-HANDOFF-R9-R12
+    change:
+      value: "(6841 non-GAAP opex + 2500) + 253*4 = 10353; quarterly 2310/2413/2654/2976"
+      source_id: SRC-HANDOFF-R9-R12
+    reason:
+      value: "Prepared remarks give an approximately 2500 FY2027 increase on the document's non-GAAP basis. The 253 quarterly GAAP add-on is the FQ1 stock-compensation difference: R&D 166 plus SG&A 87."
+      source_id:
+        - SRC-REMARKS-FQ4FY26
+        - SRC-EX991-FQ4FY26
+    page:
+      value: 9
+      source_id: SRC-REMARKS-FQ4FY26
+    grade:
+      value: "increase E; GAAP conversion and allocation J"
+      source_id: SRC-HANDOFF-R9-R12
+  A14_net_capex:
+    original:
+      value: "FQ4 actual net capex * 1.05, flat; replace if numerical FY2027 guidance is issued"
+      source_id: SRC-HANDOFF-R9-R12
+    change:
+      value: "11500/13500/12500/12500; FY2027 total 50000; FY2028 total 50000"
+      source_id: SRC-HANDOFF-R9-R12
+    reason:
+      value: "Prepared remarks give FQ1 about 11500 and first-half about 25000, and say second-half capex will be higher. Setting second half equal to first half is a disclosed lower bound that biases FCF high."
+      source_id: SRC-REMARKS-FQ4FY26
+    page:
+      value: 10
+      source_id: SRC-REMARKS-FQ4FY26
+    grade:
+      value: "FQ1 and first half E; second-half lower bound J"
+      source_id: SRC-HANDOFF-R9-R12
+
+interpretation_note:
+  A11_net_capex_roll_forward:
+    original_interpretation:
+      value: "The R6 label gross capex required projected D&A to remain UNAVAILABLE because FY2027 guidance is net of anticipated government incentives."
+      source_id: SRC-HANDOFF-R9-R12
+    corrected_interpretation:
+      value: "Use net capex in the PP&E roll-forward: PPE_end = PPE_begin + net_capex - D&A; quarterly D&A = (d/4) * average(PPE_begin, PPE_end)."
+      source_id: SRC-HANDOFF-R9-R12
+    evidence:
+      value: "The FY2025 10-K states that government incentives related to capital expenditures reduce property, plant and equipment."
+      source_id: SRC-10K-FY25
+    limitation:
+      value: "The timing difference between receipt of incentives and the PP&E reduction, including the FY2026 noncurrent unearned government incentive balance of 786, is not modeled."
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+
+rules:
+  A1_fq1_revenue:
+    bear:
+      value: 60000
+      formula: G1_low
+      source_id: SRC-EX991-FQ4FY26
+    base:
+      value: 65036.25
+      formula: G1_mid * (1 + b_med)
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-SCORED-FQ4FY26
+    bull:
+      value: 71616.75
+      formula: G1_mid * (1 + b4)
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-SCORED-FQ4FY26
+    sensitivity_company_midpoint:
+      value: 61500
+      source_id: SRC-HANDOFF-R9-R12
+  A2_fq2_to_fq4_weekly_revenue_growth:
+    bear:
+      value: [-0.10, -0.08, -0.05]
+      source_id: SRC-HANDOFF-R9-R12
+    base:
+      value: [0.04, 0.035, 0.03]
+      source_id: SRC-HANDOFF-R9-R12
+    bull:
+      value: [0.08, 0.05, 0.03]
+      source_id: SRC-HANDOFF-R9-R12
+    sensitivity_existing_slowdown:
+      value: [0.03, 0.02, 0.01]
+      source_id: SRC-HANDOFF-R9-R12
+    sensitivity_flat:
+      value: [0.0, 0.0, 0.0]
+      source_id: SRC-HANDOFF-R9-R12
+    sensitivity_codex_R8_original:
+      value: [0.045, 0.04, 0.03]
+      source_id: SRC-HANDOFF-R9-R12
+  A2_prime_decline_parallel_path:
+    trigger:
+      value: "FQ1 weekly direction <= -0.02"
+      source_id: SRC-HANDOFF-R9-R12
+    observed_direction:
+      value: 0.2213164401108121
+      formula: (G1_mid / 13) / (A4_actual / 14) - 1
+      source_id: SRC-EX991-FQ4FY26
+    status:
+      value: NOT_ACTIVATED
+      source_id: SRC-HANDOFF-R9-R12
+  A3_gaap_gross_margin:
+    bear:
+      value: [0.8495, 0.8245, 0.7995, 0.7745]
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    base:
+      value: [0.8595, 0.8595, 0.8595, 0.8595]
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    bull:
+      value: [0.8695, 0.8745, 0.8795, 0.8845]
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    sensitivity_preregistered_original:
+      value: [0.8595, 0.8545, 0.8495, 0.8445]
+      source_id: SRC-HANDOFF-R9-R12
+  A4_gaap_opex:
+    quarterly_all_scenarios:
+      value: [2310, 2413, 2654, 2976]
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    fy2027_total:
+      value: 10353
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+  A5_below_operating_pct_of_revenue:
+    all_scenarios:
+      value: -0.00228
+      source_id: SRC-FROZEN-PREREG-A
+  A6_gaap_effective_tax_rate:
+    status:
+      value: AVAILABLE_BACKSOLVED
+      source_id: SRC-HANDOFF-R9-R12
+    same_basis_check:
+      value: PASS_GAAP
+      source_id: SRC-EX991-FQ4FY26
+    pretax_residual_input:
+      value: 50409.03
+      formula: G1_mid * M1 - X1 + A5 * G1_mid
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-FROZEN-PREREG-A
+    bear:
+      value: 0.15
+      source_id: SRC-HANDOFF-R9-R12
+    base:
+      value: 0.1367419686512516
+      formula: 1 - (fq1_gaap_eps_mid * S1) / pretax_residual_input
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-FROZEN-PREREG-A
+        - SRC-HANDOFF-R9-R12
+    bull:
+      value: 0.1317419686512516
+      formula: base - 0.005
+      source_id: SRC-HANDOFF-R9-R12
+    fallback_if_basis_or_math_fails:
+      value: 0.15
+      sensitivity: 0.015
+      source_id: SRC-HANDOFF-R9-R12
+  A7_diluted_shares:
+    quarterly_all_scenarios:
+      value: [1150, 1150, 1150, 1150]
+      source_id: SRC-EX991-FQ4FY26
+    buyback:
+      value: 0
+      source_id: SRC-HANDOFF-R9-R12
+    sensitivity_reduction:
+      value: [-0.01, -0.03]
+      source_id: SRC-HANDOFF-R9-R12
+  A8_fy2028_revenue_growth:
+    bear:
+      value: -0.25
+      source_id: SRC-HANDOFF-R9-R12
+    base:
+      value: 0.0
+      source_id: SRC-HANDOFF-R9-R12
+    bull:
+      value: 0.10
+      source_id: SRC-HANDOFF-R9-R12
+  A9_fy2028_gross_margin:
+    bear:
+      value: 0.6245
+      formula: FY2027_bear_FQ4 - 0.15
+      source_id: SRC-HANDOFF-R9-R12
+    base:
+      value: 0.8295
+      formula: FY2027_base_FQ4 - 0.03
+      source_id: SRC-HANDOFF-R9-R12
+    bull:
+      value: 0.8845
+      formula: FY2027_bull_FQ4
+      source_id: SRC-HANDOFF-R9-R12
+  A10_fy2028_opex:
+    all_scenarios:
+      value: 11181.24
+      formula: FY2027_opex * 1.08
+      source_id: SRC-HANDOFF-R9-R12
+  A11_da:
+    fy2026_rate_d:
+      value: 0.1729390354868062
+      formula: FY2026_DA / average(FY2025_ending_PPE, FY2026_ending_PPE)
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    sensitivity_rate_points:
+      value: [-0.02, 0.02]
+      source_id: SRC-HANDOFF-R9-R12
+    quarterly_rate:
+      value: 0.04323475887170155
+      formula: annual_rate_d / 4
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    roll_forward_method:
+      value: "PPE_end = PPE_begin + net_capex - DA; DA = (d/4) * average(PPE_begin, PPE_end)"
+      source_id: SRC-HANDOFF-R9-R12
+    fy2027_quarterly_roll_forward:
+      value:
+        FQ1: {ppe_begin: 63310, net_capex: 11500, da: 2922.6132089966, ppe_end: 71887.3867910034}
+        FQ2: {ppe_begin: 71887.3867910034, net_capex: 13500, da: 3327.92738714685, ppe_end: 82059.45940385655}
+        FQ3: {ppe_begin: 82059.45940385655, net_capex: 12500, da: 3737.24866106372, ppe_end: 90822.21074279284}
+        FQ4: {ppe_begin: 90822.21074279284, net_capex: 12500, da: 4108.08753755268, ppe_end: 99214.12320524016}
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    fy2027_total:
+      value: 14095.87679475984
+      formula: sum(FQ1:FQ4_DA)
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    fy2027_ending_ppe:
+      value: 99214.12320524016
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+      source_id:
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+  A12_sbc:
+    historical_sbc_to_gaap_opex:
+      value:
+        FY2024: 0.1933163146901833
+        FY2025: 0.1904761904761905
+        FY2026: 0.1632778049975502
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    median_rate:
+      value: 0.1904761904761905
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    fy2027_total:
+      value: 1972
+      formula: median_rate * FY2027_opex
+      source_id:
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+  A13_working_capital:
+    status:
+      value: AVAILABLE
+      source_id: SRC-HANDOFF-R9-R12
+    definition:
+      value: AR + Inventory - AP_and_accrued_expenses - Other_current_liabilities
+      source_id: SRC-HANDOFF-R9-R12
+    balance_sheet_nwc:
+      value:
+        FY2023: 6343
+        FY2024: 6673
+        FY2025: 6726
+        FY2026: 19578
+      source_id:
+        - SRC-10K-FY23
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    annual_k:
+      value:
+        FY2024: 0.03447915578309477
+        FY2025: 0.004320534768076954
+        FY2026: 0.1341404863792923
+      formula: change_in_balance_sheet_nwc / change_in_revenue
+      source_id:
+        - SRC-10K-FY23
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    median_k:
+      value: 0.03447915578309477
+      source_id:
+        - SRC-10K-FY23
+        - SRC-10K-FY25
+        - SRC-EX991-FQ4FY26
+    cash_flow_formula:
+      value: -median_k * change_in_revenue
+      source_id: SRC-HANDOFF-R9-R12
+  A14_net_capex:
+    quarterly_all_scenarios:
+      value: [11500, 13500, 12500, 12500]
+      source_id:
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    fy2027_total:
+      value: 50000
+      source_id:
+        - SRC-REMARKS-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+    fy2028_total:
+      value: 50000
+      source_id: SRC-HANDOFF-R9-R12
+    sensitivity_pct:
+      value: [-0.10, -0.05, 0.05, 0.10]
+      source_id: SRC-HANDOFF-R9-R12
+  A15_dividends:
+    quarterly_dps:
+      value: 0.15
+      source_id: SRC-EX991-FQ4FY26
+    fy2027_total:
+      value: 690
+      formula: quarterly_dps * 4 * S1
+      source_id:
+        - SRC-EX991-FQ4FY26
+        - SRC-HANDOFF-R9-R12
+  A16_sca_deposits:
+    rle_periods:
+      value: UNAVAILABLE
+      source_id: SRC-HANDOFF-R9-R12
+  A17_nongaap_fy2027_fy2028:
+    value: UNAVAILABLE_WITHOUT_ASSUMPTIONS
+    source_id: SRC-HANDOFF-R9-R12
+  opening_net_cash_unadjusted:
+    label:
+      value: "순현금(SCA 예치금 미조정)"
+      source_id: SRC-HANDOFF-R9-R12
+    amount:
+      value: 68274
+      formula: cash_and_equivalents + short_term_investments + long_term_marketable_investments - current_debt - long_term_debt
+      source_id: SRC-EX991-FQ4FY26
+    sca_treatment:
+      value: "SCA customer deposits are neither adjusted out of opening net cash nor forecast in RLE periods."
+      source_id: SRC-HANDOFF-R9-R12
+  scenario_probabilities:
+    value: null
+    source_id: SRC-HANDOFF-R9-R12

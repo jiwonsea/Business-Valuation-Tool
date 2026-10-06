@@ -5,13 +5,15 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import dataclass
+import warnings
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.text import Text
 from matplotlib.ticker import FuncFormatter
 
 from .facts import Manifest
@@ -47,6 +49,7 @@ class ChartSpec:
     figure_number: str = ""
     source_label: str = "canonical fact manifest"
     ui_text: tuple[str, ...] = ()
+    footnote: str = ""
 
 
 def fixture_specs(manifest: Manifest) -> list[ChartSpec]:
@@ -158,7 +161,16 @@ def e2b_specs(manifest: Manifest, locale: str, strings: dict) -> list[ChartSpec]
             "2026-10-04", chart_type, count, families, (), tuple(config["series"]), config["unit"], config["basis"],
             config["figure"], config["source"], tuple([config["title"], config["x_axis"], config["y_axis"], *config["series"]]),
         ))
-    return specs
+    from .revision import revision_specs
+
+    from .presentation import FIGURE_ORDER
+
+    numbered = []
+    for spec in specs + revision_specs(manifest, locale, strings):
+        number = f"{'그림' if locale == 'ko' else 'Figure'} {FIGURE_ORDER.index(spec.chart_id) + 1}."
+        numbered.append(replace(spec, figure_number=number, title=f"{number} {spec.ui_text[0]}"))
+    manifest.metadata["figure_numbers"] = {key: index for index, key in enumerate(FIGURE_ORDER, 1)}
+    return numbered
 
 
 def _values(manifest: Manifest, spec: ChartSpec) -> tuple[list[float], list[str]]:
@@ -173,6 +185,67 @@ def _values(manifest: Manifest, spec: ChartSpec) -> tuple[list[float], list[str]
 
 def _series(spec: ChartSpec, values: list[float], prefix: str) -> list[tuple[ChartPoint, float]]:
     return [(point, value) for point, value in zip(spec.points, values, strict=True) if point.fact_id.startswith(prefix)]
+
+
+def chart_data_contract(manifest: Manifest, spec: ChartSpec, locale: str) -> dict:
+    """Prepare chart provenance and values without rendering or writing files."""
+    values, refs = _values(manifest, spec)
+    from .presentation import source_titles
+
+    sources = sorted({manifest.fact(key).source_id for key in refs})
+    source = source_titles(sources, locale) if sources else spec.source_label
+    release_periods = sorted({manifest.sources[key].as_of for key in sources if key.startswith(("SRC-GUIDANCE-", "SRC-BU-"))})
+    if release_periods:
+        source += " (" + ", ".join(release_periods) + ")"
+    if spec.chart_id == "10_price_bit_ranges":
+        source = ("Micron FQ3/FQ4 FY26 준비문 p.7" if locale == "ko"
+                  else "Micron FQ3/FQ4 FY26 prepared remarks p.7")
+    basis = spec.basis.replace("CITED + J", "회사 공시 원문 + J(저자 판단)" if locale == "ko" else "Company statement + J (author judgement)")
+    basis = basis.replace("CITED", "회사 공시 원문" if locale == "ko" else "Company statement")
+    basis = ("근거 등급·회계 기준: " if locale == "ko" else "Evidence grade / accounting basis: ") + basis
+    caption = {"number": spec.figure_number, "title": spec.ui_text[0] if spec.ui_text else spec.title,
+               "unit": spec.unit, "source": source, "as_of": spec.source_as_of, "basis": basis}
+    return {"path": f"{spec.chart_id}_{locale}.png", "fact_ids": refs, "values": values,
+            "periods": [manifest.fact(key).period for key in refs],
+            "series_periods": {family: [manifest.fact(key).period for key in refs if key.startswith(family)] for family in spec.allowed_families},
+            "source_as_of": spec.source_as_of, "chart_type": spec.chart_type, "series_count": spec.series_count,
+            "allowed_families": list(spec.allowed_families), "placeholder_slots": list(spec.placeholder_slots),
+            "caption": caption, "source_ids": sources, "ui_text": list(spec.ui_text), "locale": locale, "footnote": spec.footnote}
+
+
+def chart_text_bounds(figure) -> list[dict]:
+    """Measure every visible text artist after layout, in figure pixels."""
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    inactive_ticks = set()
+    for axes in figure.axes:
+        for axis in (axes.xaxis, axes.yaxis):
+            low, high = sorted(axis.get_view_interval())
+            for tick in [*axis.get_major_ticks(), *axis.get_minor_ticks()]:
+                if not low - 1e-10 <= tick.get_loc() <= high + 1e-10:
+                    # Matplotlib retains ticks outside limits but does not paint them.
+                    inactive_ticks.update((tick.label1, tick.label2))
+    return [{"text": artist.get_text(), "bbox": list(artist.get_window_extent(renderer).bounds), "font_size": artist.get_fontsize()}
+            for artist in figure.findobj(Text) if artist not in inactive_ticks and artist.get_visible() and artist.get_text().strip()]
+
+
+def validate_chart_text_bounds(figure) -> dict:
+    from .gates import GateError
+
+    bounds = chart_text_bounds(figure)
+    width, height = figure.bbox.width, figure.bbox.height
+    for item in bounds:
+        x, y, w, h = item["bbox"]
+        if min(x, y) < -1 or x + w > width + 1 or y + h > height + 1:
+            raise GateError(f"Chart text outside figure: {item['text']}: {item['bbox']}")
+    axes_bounds = [list(axis.bbox.bounds) for axis in figure.axes]
+    outside = [artist.get_window_extent(figure.canvas.get_renderer()).bounds for artist in [*figure.texts, *figure.legends]]
+    for x, y, w, h in outside:
+        for ax, ay, aw, ah in axes_bounds:
+            if min(x + w, ax + aw) > max(x, ax) and min(y + h, ay + ah) > max(y, ay):
+                raise GateError("Figure note or combined legend overlaps a plot panel")
+    return {"figure_size": [width, height], "text_bounds": bounds, "axes_bounds": axes_bounds,
+            "outside_bounds": [list(box) for box in outside]}
 
 
 def render_charts(
@@ -190,7 +263,11 @@ def render_charts(
         values, refs = _values(manifest, spec)
         figure, axis = plt.subplots(figsize=(7.2, 3.8), dpi=120)
         figure.patch.set_facecolor(COLORS["paper"]); axis.set_facecolor(COLORS["paper"])
-        if spec.chart_type == "heatmap":
+        from .revision import REVISION_CHARTS, draw_revision_chart
+
+        if spec.chart_id in REVISION_CHARTS:
+            axis = draw_revision_chart(figure, axis, manifest, spec, values, locale)
+        elif spec.chart_type == "heatmap":
             if spec.placeholder_slots:
                 axis.text(.5, .5, "UNAVAILABLE", ha="center", va="center", color=COLORS["gray_dark"], fontsize=14); axis.set_xticks([]); axis.set_yticks([])
             else:
@@ -256,10 +333,12 @@ def render_charts(
                     mapping[key] = value
                 series = [mapping.get(key, 0) for key in periods]
                 axis.bar([index + (offset - 1) * width for index in range(len(periods))], series, width=width, label=label, color=color)
-            axis.set_xticks(range(len(periods)), periods)
+            week_label = "53주" if locale == "ko" else "53 weeks"
+            display_periods = [f"{period} ({week_label})" if index in (3, 4) else period for index, period in enumerate(periods)]
+            axis.set_xticks(range(len(periods)), display_periods)
             if spec.placeholder_slots:
                 for index in (4, 5, 6): axis.text(index, 0, "UNAVAILABLE", rotation=90, va="bottom", ha="center", fontsize=6)
-            axis.text(3, 0, "53w", ha="center", va="bottom", fontsize=7); axis.text(4, 0, "53w", ha="center", va="bottom", fontsize=7); axis.legend(frameon=False, fontsize=7, ncols=3)
+            axis.legend(frameon=False, fontsize=7, ncols=3)
         elif spec.chart_type == "multi_series":
             periods = ["FY23A", "FY24A", "FY25A", "FY26A A-8K", "FY27E", "FY28E"]
             width = .24
@@ -268,43 +347,64 @@ def render_charts(
                 mapping = {int(re.search(r"FY(\d{4})", point.fact_id).group(1)): value for point, value in rows}
                 series = [mapping.get(year, 0) for year in (2023, 2024, 2025, 2026, 2027, 2028)]
                 axis.bar([index + (offset - 1) * width for index in range(len(periods))], series, width=width, label=label, color=color)
-            axis.set_xticks(range(len(periods)), periods); axis.legend(frameon=False, fontsize=7, ncols=3)
+            axis.set_xticks(range(len(periods)), periods); axis.legend(frameon=False, fontsize=7, ncols=1)
             if spec.placeholder_slots:
                 for index in (3, 4, 5): axis.text(index, 0, "UNAVAILABLE", rotation=90, va="bottom", ha="center", fontsize=6)
         else:
             axis.plot([point.label for point in spec.points], values, marker="o", color=COLORS["primary"])
-        title = spec.title
-        if spec.chart_id == "08_cash_flow_capex_net_cash" and locale == "en":
-            from textwrap import fill
-
-            title = fill(title, width=70)
-        axis.set_title(title, loc="left", color=COLORS["ink"], fontweight="bold")
-        if len(spec.ui_text) >= 3 and spec.chart_type != "two_panel":
+        # Captions own titles and figure numbers; do not repeat them in bitmaps.
+        if len(spec.ui_text) >= 3 and spec.chart_type not in {"two_panel", "sca_structure"}:
             axis.set_xlabel(spec.ui_text[1]); axis.set_ylabel(spec.ui_text[2])
         axis.spines[["top", "right"]].set_visible(False); axis.grid(axis="y", alpha=.2)
-        if spec.chart_type != "heatmap":
+        if spec.chart_type not in {"heatmap", "range_bar"}:
             axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
-        axis.tick_params(axis="x", labelrotation=38, labelsize=7); plt.setp(axis.get_xticklabels(), ha="right"); figure.tight_layout()
+        axis.tick_params(axis="x", labelrotation=38); plt.setp(axis.get_xticklabels(), ha="right")
+        for panel in figure.axes:
+            panel.tick_params(axis="both", which="both", labelsize=8.5)
+            legend = panel.get_legend()
+            if legend:
+                for text in legend.get_texts():
+                    text.set_fontsize(8.5)
+        for legend in figure.legends:
+            for text in legend.get_texts():
+                text.set_fontsize(8.5)
+        if spec.chart_id == "11_eps_error_waterfall":
+            axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:.1f}"))
+        bottom = .23 if spec.chart_type == "gm_compression" else 0
+        top = .92 if spec.chart_type == "sca_structure" else 1
         path = output / f"{spec.chart_id}_{locale}.png"; temporary = path.with_name(f".{path.stem}.tmp.png")
         try:
-            figure.savefig(temporary, metadata={"Software": "MU report builder", "Creation Time": ""}); os.replace(temporary, path)
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                figure.tight_layout(rect=(0, bottom, 1, top))
+                layout = validate_chart_text_bounds(figure)
+                if spec.chart_type == "waterfall":
+                    from .gates import require
+                    annotations = [text.get_window_extent(figure.canvas.get_renderer()) for text in axis.texts]
+                    require(all(not left.overlaps(right) for index, left in enumerate(annotations) for right in annotations[index + 1:]), "R23 waterfall labels overlap")
+                    bars = [bar.get_window_extent(figure.canvas.get_renderer()) for bar in axis.patches]
+                    require(all(not label.overlaps(bar) for label in annotations for bar in bars), "R23 waterfall label overlaps a bar")
+                    layout["annotation_bounds"] = [list(box.bounds) for box in annotations]
+                # The bitmap is 7.2 inches wide; CSS gives it the body content width.
+                scale = (178 * 72 / 25.4 - 12) / (7.2 * 72)
+                legend_ticks = [text for panel in figure.axes for text in [*panel.get_xticklabels(), *panel.get_yticklabels()]]
+                legend_ticks += [text for panel in figure.axes if panel.get_legend() for text in panel.get_legend().get_texts()]
+                legend_ticks += [text for legend in figure.legends for text in legend.get_texts()]
+                minimum = min((text.get_fontsize() * scale for text in legend_ticks if text.get_visible() and text.get_text()), default=8.5 * scale)
+                from .gates import require
+                require(minimum >= 7, "R23 chart legend/tick font below PDF 7pt")
+                layout["minimum_legend_tick_pdf_pt"] = minimum
+                figure.savefig(temporary, metadata={"Software": "MU report builder", "Creation Time": ""})
+            from .gates import gate_missing_glyphs
+
+            messages = [str(item.message) for item in caught]
+            gate_missing_glyphs(messages)
+            os.replace(temporary, path)
         finally:
             plt.close(figure)
             if temporary.exists(): temporary.unlink()
-        sources = sorted({manifest.fact(fact_id).source_id for fact_id in refs})
-        if len(sources) > 4:
-            grouped: dict[str, int] = {}
-            for source in sources:
-                family = source.rsplit("-", 1)[0] if re.search(r"-[0-9a-f]{12}$", source) else source
-                grouped[family] = grouped.get(family, 0) + 1
-            sources = [f"{family}×{count}" if count > 1 else family for family, count in sorted(grouped.items())]
-        source = spec.source_label + (" [" + ", ".join(sources) + "]" if sources else "")
-        caption = {"number": spec.figure_number, "title": spec.ui_text[0] if spec.ui_text else spec.title, "unit": spec.unit, "source": source, "as_of": spec.source_as_of, "basis": spec.basis}
-        series_periods = {
-            family: [manifest.fact(fact_id).period for fact_id in refs if fact_id.startswith(family)]
-            for family in spec.allowed_families
-        }
-        chart_manifest[spec.chart_id] = {"path": path.name, "fact_ids": refs, "values": values, "periods": [manifest.fact(fact_id).period for fact_id in refs], "series_periods": series_periods, "source_as_of": spec.source_as_of, "chart_type": spec.chart_type, "series_count": spec.series_count, "allowed_families": list(spec.allowed_families), "placeholder_slots": list(spec.placeholder_slots), "caption": caption, "ui_text": list(spec.ui_text), "locale": locale}
+        chart_manifest[spec.chart_id] = chart_data_contract(manifest, spec, locale)
+        chart_manifest[spec.chart_id].update({"layout": layout, "render_warnings": messages})
     if write_manifest:
         atomic_write(output / f"chart_manifest_{locale}.json", (json.dumps(chart_manifest, indent=2, sort_keys=True) + "\n").encode("utf-8"))
         if locale == "en":

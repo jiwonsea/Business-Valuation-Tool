@@ -283,6 +283,10 @@ def gate_theme(html_text: str, i18n_texts: Iterable[str]) -> dict[str, float]:
 
 def gate_g13_charts(chart_manifest: dict[str, Any]) -> None:
     require(set(CHART_NAMES) <= set(chart_manifest), "required chart set is incomplete")
+    from .revision import REVISION_CHARTS
+
+    if set(chart_manifest) & set(REVISION_CHARTS):
+        require(set(chart_manifest) == set(CHART_NAMES) | set(REVISION_CHARTS), "revision requires sixteen charts")
 
 
 def _annual_year(period: str) -> int | None:
@@ -311,7 +315,11 @@ def gate_g13c_chart_semantics(manifest: Manifest, chart_manifest: dict[str, Any]
         for chart_id in ("01_quarterly_revenue_margin", "02_business_unit_mix", "03b_guidance_beat_history", "04_beat_history"):
             chart_type, count, families, _ = contract[chart_id]
             contract[chart_id] = (chart_type, count, families, ())
-    require(set(chart_manifest) == set(contract), "G-13c chart set differs from the eight-chart contract")
+    if manifest.metadata.get("revision") == 1:
+        from .revision import REVISION_CHARTS
+
+        contract.update({key: (*value, ()) for key, value in REVISION_CHARTS.items()})
+    require(set(chart_manifest) == set(contract), "G-13c chart set differs from the phase chart contract")
     for chart_id, (chart_type, count, families, slots) in contract.items():
         chart = chart_manifest[chart_id]
         require(chart.get("chart_type") == chart_type, f"G-13c chart type mismatch: {chart_id}")
@@ -320,6 +328,34 @@ def gate_g13c_chart_semantics(manifest: Manifest, chart_manifest: dict[str, Any]
         require(tuple(chart.get("placeholder_slots", ())) == slots, f"G-13c placeholder contract mismatch: {chart_id}")
         for fact_id in chart.get("fact_ids", []):
             require(any(fact_id.startswith(family) for family in families), f"G-13c forbidden fact family: {chart_id}/{fact_id}")
+            if manifest.metadata.get("revision") == 1:
+                fact = manifest.fact(fact_id)
+                require(fact.status == "AVAILABLE" and isinstance(fact.raw_value, (int, float)), f"G-13c nonnumeric or unavailable point: {fact_id}")
+        if manifest.metadata.get("revision") == 1:
+            require(chart.get("values") == [float(manifest.fact(key).raw_value) for key in chart["fact_ids"]], f"G-13c point values differ: {chart_id}")
+    if manifest.metadata.get("revision") == 1:
+        from .revision import RANGE_J
+
+        ranges = chart_manifest["10_price_bit_ranges"]
+        require("J" in ranges["caption"]["basis"] and "J" in ranges.get("footnote", ""), "C10 must disclose judgement grade J")
+        for low, high in RANGE_J.values():
+            require(f"{low}–{high}%" in ranges.get("footnote", ""), "C10 conversion table is incomplete")
+        for key in ranges["fact_ids"]:
+            fact = manifest.fact(key)
+            require(fact.basis == "J" and fact.lineage.get("grade") == "J", "C10 range fact lacks J provenance")
+            phrase = next((phrase for phrase in RANGE_J if phrase in fact.lineage["company_wording"]), None)
+            expected = RANGE_J[phrase][0 if key.endswith(".low") else 1] if phrase else None
+            require(fact.raw_value == expected, "C10 endpoint differs from approved J conversion")
+        costs = chart_manifest["14_opex_net_capex_trend"]
+        missing = {(row["period"], row["series"]) for row in manifest.metadata["c14_missing"]}
+        for year in (2024, 2025, 2026):
+            for quarter in range(1, 5):
+                period = f"FY{year}Q{quarter}"
+                for metric in ("opex", "net_capex"):
+                    plotted = [key for key in costs["fact_ids"] if manifest.fact(key).period == period and f".{metric}." in key]
+                    require(bool(plotted) != ((period, metric) in missing), f"C14 missing-quarter contract differs: {period}/{metric}")
+                    if (period, metric) in missing:
+                        require(f"{period}/{metric}" in costs.get("footnote", ""), "C14 omission is absent from footnote")
 
     cash_chart = chart_manifest["08_cash_flow_capex_net_cash"]
     periods = cash_chart.get("periods", [])
@@ -375,8 +411,10 @@ def gate_g14_provenance(manifest: Manifest) -> None:
 
 def gate_g14_template_numbers(template: str) -> None:
     scrubbed = PLACEHOLDER_RE.sub("", template)
+    scrubbed = re.sub(r"Edition 1, Revision 1|제1판 개정 1", "", scrubbed)
+    scrubbed = re.sub(r"EX-99\.1|\b4-lever\b|(?:SCORED|FROZEN)\s*§(?:\([^)]*\)|\d+)|p\.\s*\d+(?:[–-]\d+)?|A\d+[–-]A\d+", "", scrubbed)
     scrubbed = re.sub(r"(?:Plan|계획)\s*§\d+(?:[-–]\d+)*", "", scrubbed, flags=re.I)
-    scrubbed = re.sub(r"FY20\d{2}\s*Q[1-4]|FY20\d{2}E?|FY\d{2}(?:A|E)?|FQ[1-4]-\d{2}|20\d{2}-\d{2}-\d{2}(?:\s+23:59\s+KST)?|\b(?:14|53) weeks?\b|(?:14|53)주|A-\d+K|\b8-K\b|10-[QK]|\bQ[1-4]\b|(?:Figure|그림)\s*[1-8]\.?", "", scrubbed)
+    scrubbed = re.sub(r"FY20\d{2}\s*Q[1-4]|FY20\d{2}E?|FY\d{2}(?:A|E)?|FQ[1-4]-\d{2}|20\d{2}-\d{2}-\d{2}(?:\s+23:59\s+KST)?|\b(?:14|53) weeks?\b|(?:14|53)주|A-\d+K|\b8-K\b|10-[QK]|\bQ[1-4]\b|(?:Figure|그림)\s*(?:1[0-6]|[1-9])\b\.?", "", scrubbed)
     scrubbed = re.sub(r"(?m)^\s{2}\d{2}[a-z]?_[^:]+:", "", scrubbed)
     tokens = re.findall(r"(?<!\w)[-+]?\$?\d+(?:[.,]\d+)?%?", scrubbed)
     require(not tokens, f"template contains unreferenced numeric/date literals: {tokens}")
@@ -393,6 +431,8 @@ def _reference_map(entries: list[dict[str, str]], locale: str) -> dict[str, dict
 
 
 def _number_multiset(text: str) -> Counter[str]:
+    # These equivalent edition labels tokenize Korean/English digits differently.
+    text = text.replace("Edition 1, Revision 1", "").replace("제1판 개정 1", "")
     tokens = re.findall(r"(?<!\w)[-+]?\$?\d[\d,]*(?:\.\d+)?%?", text)
     return Counter(token.replace(",", "").replace("$", "").lstrip("+") for token in tokens)
 
@@ -430,11 +470,13 @@ def gate_g15_toc(entries: dict[str, list[dict[str, str]]]) -> None:
 
 def gate_narrative_contract(narrative: dict[str, Any], manifest: Manifest) -> None:
     """Require the approved KO/EN narrative shape and fact-token order to match."""
-    expected = {"thesis", "scenarios", "risks", "catalysts"}
+    from .revision import NEW_BINDINGS, NEW_SECTIONS
+
+    expected = {"thesis", "scenarios", "risks", "catalysts", *NEW_SECTIONS}
     require(set(narrative.get("meta", {}).get("sections", [])) == expected, "narrative meta sections differ")
     bindings = narrative.get("fact_bindings", [])
     binding_ids = [item.get("token") for item in bindings]
-    require(len(binding_ids) == 12 and len(set(binding_ids)) == 12, "narrative must bind twelve unique facts")
+    require(len(binding_ids) == 12 + len(NEW_BINDINGS) and len(set(binding_ids)) == len(binding_ids), "narrative revision bindings must be unique and complete")
     require(set(binding_ids) <= set(manifest.facts), "narrative binding is absent from manifest")
 
     def shape(value: Any) -> Any:
@@ -454,6 +496,10 @@ def gate_narrative_contract(narrative: dict[str, Any], manifest: Manifest) -> No
     for section in expected:
         localized = narrative.get(section, {})
         require(set(localized) == {"ko", "en"}, f"narrative locale missing: {section}")
+        if section in {"business_structure", "methodology"}:
+            count = 4 if section == "business_structure" else 5
+            require(all(len(localized[locale]) == count for locale in ("ko", "en")), f"narrative paragraph count differs: {section}")
+            require(_number_multiset(" ".join(localized["ko"])) == _number_multiset(" ".join(localized["en"])), f"narrative numeric parity differs: {section}")
         require(shape(localized["ko"]) == shape(localized["en"]), f"narrative KO/EN structure differs: {section}")
         ko_ids = [match[7:-2] for match in tokens(localized["ko"])]
         en_ids = [match[7:-2] for match in tokens(localized["en"])]
@@ -502,6 +548,11 @@ def gate_g15b_localized_ui(chart_manifests: dict[str, dict[str, Any]], rendered_
         require(chart.get("path", "").endswith("_ko.png"), f"G-15b KO chart asset is not locale-specific: {chart_id}")
         require(chart_manifests["en"][chart_id].get("path", "").endswith("_en.png"), f"G-15b EN chart asset is not locale-specific: {chart_id}")
     require("| Metric | Value | Basis |" not in rendered_texts["ko"], "G-15b English table UI remains in KO edition")
+    raw_codes = re.compile(r"\b(?:ABOVE_HIGH|IN_RANGE|BELOW_LOW|NO_LABEL)\b")
+    raw_status_codes = re.compile(r"\b(?:AVAILABLE|AVAILABLE_BACKSOLVED|UNAVAILABLE_WITHOUT_ASSUMPTIONS|NOT_ACTIVATED|PASS_GAAP)\b")
+    for locale, text in rendered_texts.items():
+        require(raw_codes.search(text) is None, f"G-15b raw verdict code remains in {locale} edition")
+        require(raw_status_codes.search(text) is None, f"G-15b raw status code remains in {locale} edition")
     allowed_terms = re.compile(
         r"\b(?:Micron|Technology|NASDAQ|MU|GAAP|PREREG_A|RLE|A-8K|FQ\d(?:-\d{2})?|FY\d{2,4}[A-Z0-9-]*|"
         r"CMBU|CDBU|MCBU|AEBU|DRAM|NAND|HBM|FCF|SCA|ROE|EPS|USD|PP&E|NetCash|source_id|NOT_IN_SOURCE|"
@@ -692,17 +743,101 @@ def gate_g25_cover_dates(rendered_texts: dict[str, str]) -> None:
 def gate_g16_caption(caption: dict[str, str]) -> None:
     for key in ("number", "title", "unit", "source", "as_of", "basis"):
         require(bool(caption.get(key)), f"caption lacks {key}")
-    require(re.fullmatch(r"(?:Figure|그림)\s+[1-8]\.", caption["number"]) is not None, "caption number is not a concrete Figure 1-8 label")
+    require(re.fullmatch(r"(?:Figure|그림)\s+(?:1[0-6]|[1-9])\.", caption["number"]) is not None, "caption number is not a concrete Figure 1-16 label")
     require(caption["unit"] not in {"per axis", "per chart axis", "various", "각 축", "차트 축 기준"}, "caption unit is generic")
     require(any(token in caption["unit"] for token in ("USD", "%")), "caption unit is not concrete")
     require(
-        "SRC-" in caption["source"]
+        any(token in caption["source"] for token in ("SRC-", "Micron", "SEC", "MU", "고정 테스트", "Fixed test", "본 리포트", "This report", "저자 승인", "Author-approved"))
         or "기준 주가" in caption["source"]
         or "reference price" in caption["source"].lower(),
         "caption source lacks a concrete source identifier",
     )
     require(re.fullmatch(r"\d{4}-\d{2}-\d{2}", caption["as_of"]) is not None, "caption as_of is not an ISO date")
-    require(any(token in caption["basis"] for token in ("GAAP", "UNAVAILABLE")), "caption accounting basis is not concrete")
+    require(any(token in caption["basis"] for token in ("GAAP", "UNAVAILABLE", "CITED", "회사 공시", "Company statement")), "caption accounting basis or company-statement basis is not concrete")
+
+
+def gate_missing_glyphs(messages: list[str]) -> None:
+    failures = [message for message in messages if re.search(r"glyph.*missing|missing.?glyph", message, re.I)]
+    require(not failures, "missing glyph warnings: " + "; ".join(failures))
+
+
+def gate_pdf_bold_runs(path: Path, texts: list[str]) -> dict[str, int]:
+    import pdfplumber
+
+    locations = {}
+    with pdfplumber.open(path) as document:
+        for target in texts:
+            normalized = re.sub(r"\s+", "", target)
+            for number, page in enumerate(document.pages, 1):
+                chars = [(letter, char["fontname"]) for char in page.chars
+                         for letter in char["text"] if not letter.isspace()]
+                joined = "".join(letter for letter, _ in chars)
+                start = joined.find(normalized)
+                if start >= 0 and all("bold" in font.lower() for _, font in chars[start:start + len(normalized)]):
+                    locations[target] = number
+                    break
+            require(target in locations, f"PDF text lacks a real Bold font run: {target}")
+    return locations
+
+
+def gate_r22_presentation(outputs, chart_manifests, narrative, manifest) -> dict:
+    from .presentation import FIGURE_ORDER
+    from .render import _locale
+
+    audit = {}
+    for locale in ("ko", "en"):
+        text = outputs[f"md_{locale}"].read_text(encoding="utf-8")
+        images = re.findall(r"!\[([^]]+)]", text)
+        require(tuple(images) == FIGURE_ORDER, f"R22 figure order/duplication: {locale}")
+        require("SRC-" not in text, f"R22 internal source ID exposed: {locale}")
+        for number, chart_id in enumerate(images, 1):
+            chart = chart_manifests[locale][chart_id]
+            require(re.search(r"\d+", chart["caption"]["number"]).group() == str(number), "R22 figure numbering mismatch")
+            gate_missing_glyphs(chart["render_warnings"])
+            layout = chart["layout"]
+            width, height = layout["figure_size"]
+            for item in layout["text_bounds"]:
+                x, y, w, h = item["bbox"]
+                require(min(x, y) >= -1 and x + w <= width + 1 and y + h <= height + 1, "R22 text outside bitmap")
+        config = _locale(locale)
+        targets = [config["ed1"]["title"], config["narrative_ui"]["bull"], config["narrative_ui"]["bear"]]
+        targets += [item["claim"] for side in ("bull", "bear") for item in narrative["thesis"][locale][side]]
+        targets += [item["title"] for item in narrative["risks"][locale]]
+        targets = [PLACEHOLDER_RE.sub(lambda match: manifest.fact(match.group(1)).display[locale], target) for target in targets]
+        audit[locale] = gate_pdf_bold_runs(outputs[f"pdf_{locale}"], targets)
+    return audit
+
+
+def gate_r23_table_layout(html_text: str, base_url: str | None = None) -> dict:
+    """Check actual paginated header text and appendix table geometry."""
+    from weasyprint import HTML
+
+    document = HTML(string=html_text, base_url=base_url).render()
+    headers, appendix_tables = 0, []
+    for number, page in enumerate(document.pages, 1):
+        for box in page._page_box.descendants():
+            if type(box).__name__ == "TableCellBox" and box.element_tag == "th":
+                headers += 1
+                for child in box.descendants():
+                    if type(child).__name__ == "TextBox":
+                        require(child.position_x >= box.position_x - .1 and child.position_x + child.width <= box.position_x + box.border_width() + .1,
+                                f"R23 header outside its own cell: page {number}: {child.text}")
+            if type(box).__name__ == "TableBox" and box.element is not None and box.element.get("class") in {"appendix-rules", "post-print-changes"}:
+                right = (box.position_x + box.border_width()) * .75
+                require(right <= 549.9, f"R23 appendix table outside content: page {number}: {right:.2f}pt")
+                appendix_tables.append({"page": number, "class": box.element.get("class"), "right_pt": right})
+    require(headers > 0, "R23 table header audit found no headers")
+    return {"headers": headers, "appendix_tables": appendix_tables}
+
+
+def gate_r23_presentation(outputs, chart_manifests) -> dict:
+    audit = {}
+    for locale in ("ko", "en"):
+        html_path = outputs[f"html_{locale}"]
+        audit[locale] = gate_r23_table_layout(html_path.read_text(encoding="utf-8"), str(html_path.parent))
+        for chart in chart_manifests[locale].values():
+            require(chart["layout"]["minimum_legend_tick_pdf_pt"] >= 7, "R23 legend/tick below PDF 7pt")
+    return audit
 
 
 def gate_g17_labels(text: str, locale: str) -> None:

@@ -712,6 +712,9 @@ def e2b_manifest_from_inputs(
         )
     _extend_e2b_manifest(manifest, assumptions, ex991_text, remarks_text, scored_text, source_paths)
     manifest.metadata = {"information_cutoff": "2026-10-04", "layer": "E2-B", "fixture_values": False}
+    from .revision import extend_revision
+
+    extend_revision(manifest, narrative, assumptions, remarks_text, values)
     manifest.validate()
     return manifest, narrative, assumptions, values
 
@@ -729,10 +732,10 @@ def narrative_section_markdown(
     if section_id == "thesis":
         out.extend([replace_fact(data["intro"], "intro"), ""])
         for side in ("bull", "bear"):
-            out.extend([f"### {ui[side]}", ""])
+            out.extend([f"### **{ui[side]}**", ""])
             for index, item in enumerate(data[side], start=1):
                 out.extend([
-                    f"#### {replace_fact(item['claim'], f'{side}:{index}:claim')}", "",
+                    f"#### **{replace_fact(item['claim'], f'{side}:{index}:claim')}**", "",
                     replace_fact(item["detail"], f"{side}:{index}:detail"), "",
                     f"**{ui['falsifier']}** {replace_fact(item['falsifier'], f'{side}:{index}:falsifier')}", "",
                     f"*{ui['source']}: {item['src']}*", "",
@@ -743,7 +746,7 @@ def narrative_section_markdown(
     elif section_id == "risks":
         for index, item in enumerate(data, start=1):
             out.extend([
-                f"### {item['title']}", "", replace_fact(item["body"], f"risk:{index}:body"), "",
+                f"### **{item['title']}**", "", replace_fact(item["body"], f"risk:{index}:body"), "",
                 f"*{ui['source']}: {item['src']}*", "",
             ])
     elif section_id == "catalysts":
@@ -760,6 +763,7 @@ def narrative_section_markdown(
 
 
 def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings: dict[str, Any]) -> list[str]:
+    from .presentation import FIELD_LABELS, RULE_SENTENCES, source_titles
     ui = strings["appendix"]
     rules = assumptions.rules
 
@@ -779,17 +783,32 @@ def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings:
             return [child for value in node for child in collect(value, key)]
         return []
 
-    def leaf_values(node: Any, prefix: str = "") -> list[str]:
+    def format_number(value: int | float, percent: bool) -> str:
+        return f"{float(value) * 100:.2f}%".replace("-", "−") if percent else f"{float(value):g}"
+
+    def leaf_values(node: Any, prefix: str = "", percent: bool = False) -> list[str]:
         if isinstance(node, dict):
             values: list[str] = []
             for name, value in node.items():
                 if name in {"source_id", "formula"}:
                     continue
-                values.extend(leaf_values(value, f"{prefix}.{name}" if prefix else name))
+                label = "" if name == "value" and prefix else FIELD_LABELS.get(name, ("", ""))[0 if locale == "ko" else 1]
+                values.extend(leaf_values(value, label or prefix, percent))
             return values
         if isinstance(node, list):
-            return [("값: " if locale == "ko" else "value: ") + "/".join(f"{float(value):g}" if isinstance(value, (int, float)) else str(value) for value in node)]
-        rendered = f"{float(node):g}" if isinstance(node, (int, float)) else str(node)
+            return [prefix + ": " + "/".join(format_number(value, percent) if isinstance(value, (int, float)) else str(value) for value in node)]
+        rendered = format_number(node, percent) if isinstance(node, (int, float)) else str(node)
+        statuses = {
+            "AVAILABLE": ("가용", "available"),
+            "AVAILABLE_BACKSOLVED": ("역산 가용", "available (backsolved)"),
+            "PASS_GAAP": ("GAAP 기준 통과", "GAAP pass"),
+            "NOT_ACTIVATED": ("미발동", "not activated"),
+            "UNAVAILABLE": ("추정하지 않음", "not estimated"),
+            "UNAVAILABLE_WITHOUT_ASSUMPTIONS": ("가정이 없어 추정하지 않음", "not estimated (no assumption)"),
+        }
+        rendered = statuses.get(rendered, (rendered, rendered))[0 if locale == "ko" else 1]
+        if rendered == "FQ1 weekly direction <= -0.02":
+            return [prefix + ": " + ("FQ1 주당 성장률 ≤ −2%" if locale == "ko" else "FQ1 weekly growth ≤ −2%")]
         if locale == "ko" and re.search(r"[A-Za-z]", rendered):
             original = rendered
             status = {
@@ -800,11 +819,12 @@ def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings:
             tokens = numeric_tokens(original)
             if tokens and not all(token in rendered for token in tokens):
                 rendered += " (" + " · ".join(tokens) + ")"
-        return [("값: " if locale == "ko" else "value: ") + rendered]
+        return [prefix + ": " + rendered]
 
     out = [
         f"### {ui['r9_title']}", "", ui["confidence_note"], "",
-        f"| {ui['rule']} | {ui['value']} | {ui['formula']} | {ui['grade']} | {ui['source']} |",
+        ("근거 등급: E(회사·사전등록 입력), D(계산값), J(저자 판단). 적용 값의 비율은 %, 금액은 USD million, 주식수는 million shares이다." if locale == "ko" else "Evidence grades: E (company/pre-print input), D (calculated), J (author judgement). Ratios are percentages; amounts are USD million and shares are million shares."), "",
+        ("| 항목 | 규칙(문장) | 적용 값 | 근거 등급 | 출처 |" if locale == "ko" else "| Item | Rule in words | Applied value | Evidence grade | Source |"),
         "|---|---|---|---|---|",
     ]
     display_inputs = {
@@ -827,16 +847,32 @@ def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings:
         "A16_sca_deposits": ("rle_periods",),
         "A17_nongaap_fy2027_fy2028": ("value",),
     }
+    percentage_fields = {
+        "A2_fq2_to_fq4_weekly_revenue_growth": set(display_inputs["A2_fq2_to_fq4_weekly_revenue_growth"]),
+        "A2_prime_decline_parallel_path": {"observed_direction"},
+        "A3_gaap_gross_margin": set(display_inputs["A3_gaap_gross_margin"]),
+        "A5_below_operating_pct_of_revenue": {"all_scenarios"},
+        "A6_gaap_effective_tax_rate": {"bear", "base", "bull"},
+        "A7_diluted_shares": {"sensitivity_reduction"},
+        "A8_fy2028_revenue_growth": {"bear", "base", "bull"},
+        "A9_fy2028_gross_margin": {"bear", "base", "bull"},
+        "A11_da": {"fy2026_rate_d", "quarterly_rate"},
+        "A12_sbc": {"median_rate"},
+        "A13_working_capital": {"median_k"},
+        "A14_net_capex": {"sensitivity_pct"},
+    }
     for key in sorted(rules, key=lambda item: (int(re.match(r"A(\d+)", item).group(1)) if re.match(r"A(\d+)", item) else 99, item)):
         if not key.startswith("A"):
             continue
         selected = {name: rules[key][name] for name in display_inputs[key]}
-        values = "; ".join(leaf_values(selected))
-        formulas = "; ".join(dict.fromkeys(str(value) for value in collect(rules[key], "formula"))) or "—"
-        formulas = formulas.replace("*", "×")
-        sources = "; ".join(dict.fromkeys(
+        values = "; ".join(
+            leaf for name, node in selected.items()
+            for leaf in leaf_values({name: node}, percent=name in percentage_fields.get(key, set()))
+        )
+        formulas = RULE_SENTENCES[key][0 if locale == "ko" else 1]
+        sources = source_titles(dict.fromkeys(
             source for value in collect(rules[key], "source_id") for source in (value if isinstance(value, list) else [value])
-        ))
+        ), locale)
         name = ui.get("rule_names", {}).get(key, key)
         rule_number = int(re.match(r"A(\d+)", key).group(1))
         input_grade = "D" if rule_number in {4, 6, 8, 9, 10} else "E"
@@ -845,14 +881,14 @@ def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings:
         if rule_number == 14:
             input_grade = "E(하한)" if locale == "ko" else "E(lower bound)"
         grade = input_grade + (" / —" if rule_number >= 15 else " / J")
-        out.append(f"| {key} · {name} | {values} | {formulas} | {grade} | {sources} |")
+        out.append(f"| {name} | {formulas} | {values} | {grade} | {sources} |")
     out.extend(["", ui["timing_limit"], "", f"### {ui['r12_title']}", ""])
-    headers = ui["change_headers"]
+    headers = [*ui["change_headers"][:-1], "쪽" if locale == "ko" else "Page"]
     out.extend(["| " + " | ".join(headers) + " |", "|---|---|---|---|---|"])
     ko_reasons = {
         "A3_base": "준비문은 첫 분기를 다음 회계연도 매출총이익률의 바닥으로 제시한다. 이후 분기를 같은 수준으로 둔 것은 새 수치를 만들지 않는 보수적 처리다.",
-        "A4_opex": "준비문의 비GAAP 영업비용 증가 안내와 첫 분기 주식보상 차이를 GAAP 기준으로 연결했다.",
-        "A14_net_capex": "준비문은 상반기 투자 규모와 하반기 증가 방향을 제시한다. 하반기를 상반기와 같게 둔 것은 FCF를 높게 만드는 공개된 하한 가정이다.",
+        "A4_opex": "준비문의 FY2027 비GAAP 영업비용 증가 약 2500 USD million과 분기 GAAP 가산 253 USD million(연구개발 166＋판매관리 87 USD million)을 연결했다.",
+        "A14_net_capex": "준비문은 FQ1 약 11500 및 상반기 약 25000 USD million, 하반기 증가 방향을 제시한다. 하반기를 상반기와 같게 둔 것은 FCF를 높게 만드는 공개된 하한 가정이다.",
     }
 
     ko_changes = {
@@ -871,34 +907,34 @@ def appendix_markdown(assumptions: ReportLayerAssumptions, locale: str, strings:
     }
 
     def localized_change(key: str, index: int, value: str) -> str:
-        if locale != "ko":
-            return value
-        return ko_changes[key][index]
+        text = ko_changes[key][index] if locale == "ko" else value
+        # M1 and X1 are guidance anchors, not the subsequently reported actuals.
+        for symbol, name in {"M1": ("FQ1 GAAP GM 가이던스", "FQ1 GAAP GM guidance"),
+                             "X1": ("FQ1 GAAP 영업비용 가이던스", "FQ1 GAAP opex guidance")}.items():
+            text = re.sub(rf"\b{symbol}\b", name[0 if locale == "ko" else 1], text)
+        return text
 
     for key in ("A3_base", "A4_opex", "A14_net_capex"):
         change = assumptions.post_print_change[key]
         reason = ko_reasons[key] if locale == "ko" else str(change.reason.value)
-        if locale == "ko":
-            reason_numbers = numeric_tokens(str(change.reason.value))
-            if reason_numbers:
-                reason += " (" + " · ".join(reason_numbers) + ")"
+        change_name = {"A3_base": ("기준 매출총이익률", "Base gross margin"), "A4_opex": ("영업비용", "Operating expenses"), "A14_net_capex": ("순설비투자", "Net capex")}[key][0 if locale == "ko" else 1]
         out.append("| " + " | ".join([
-            key, localized_change(key, 0, str(change.original.value)), localized_change(key, 1, str(change.change.value)),
+            change_name, localized_change(key, 0, str(change.original.value)), localized_change(key, 1, str(change.change.value)),
             reason, str(change.page.value),
         ]) + " |")
     note = assumptions.interpretation_note["A11_net_capex_roll_forward"]
     if locale == "ko":
         note_lines = [
-            "순설비투자를 유형자산 이월 계산에 사용한다. 기말 유형자산은 기초 유형자산에 순설비투자를 더하고 감가상각을 뺀 값이다. 분기 감가상각은 기초·기말 유형자산 평균에 분기율을 곱한다.",
-            "이전 회계연도 공시는 자본적 지출 관련 정부 인센티브가 유형자산을 줄인다고 설명한다.",
-            "정부 인센티브 수령과 유형자산 차감의 시차 및 미실현 정부 인센티브 잔액은 모델링하지 않는다.",
+            "순설비투자를 유형자산 이월 계산에 사용한다. 기말 유형자산은 기초 유형자산에 순설비투자를 더하고 감가상각을 뺀 값이다. 분기 감가상각은 기초·기말 유형자산 평균에 분기율(연간율÷4분기)을 곱한다.",
+            "Micron FY2025 Form 10-K는 자본적 지출 관련 정부 인센티브가 유형자산을 줄인다고 설명한다.",
+            "정부 인센티브 수령과 유형자산 차감의 시차 및 미실현 정부 인센티브 잔액 USD 786 million은 모델링하지 않는다.",
         ]
-        for index, key in enumerate(("corrected_interpretation", "evidence", "limitation")):
-            tokens = numeric_tokens(str(note[key].value))
-            if tokens:
-                note_lines[index] += " (" + " · ".join(tokens) + ")"
     else:
-        note_lines = [str(note["corrected_interpretation"].value), str(note["evidence"].value), str(note["limitation"].value)]
+        note_lines = [
+            "Use net capex in the PP&E roll-forward: closing PP&E equals opening PP&E plus net capex less D&A. Quarterly D&A equals the annual rate divided by 4 quarters times average opening and closing PP&E.",
+            str(note["evidence"].value).replace("10-K", "Form 10-K"),
+            str(note["limitation"].value).replace("balance of 786", "balance of USD 786 million"),
+        ]
     out.extend([
         "", f"### {ui['a11_title']}", "", note_lines[0], "",
         note_lines[1], "", note_lines[2], "",

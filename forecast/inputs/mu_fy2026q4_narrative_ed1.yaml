@@ -1,4 +1,4 @@
-# MU FY2026 Q4 리포트 ed1 — 본문 서술 초안 (Claude, 2026-10-04) · draft r2 (G-15 숫자 parity 정정)
+# MU FY2026 Q4 리포트 ed1 — 본문 서술 초안 (Claude, 2026-10-04) · draft r4 (2026-10-05: 5절 사업 구조·부록 방법론 추가, 촉매 표 내부 용어 제거) · r3: 회사 개요·판정 기준·GM 상회 폭·차트 연결·출처 표기
 # 대상 절: 2 thesis · 8 scenarios · 10 risks · 11 catalysts (HANDOFF R6-4)
 # 규칙:
 #  - 숫자는 직접 쓰지 않고 {{fact:...}} 토큰으로 넣는다. 토큰 목록과 바인딩 대상은 맨 아래 `fact_bindings`.
@@ -13,128 +13,316 @@ meta:
   status: draft
   author: Claude
   not_advice: true
-  sections: [thesis, scenarios, risks, catalysts]
-
+  sections:
+  - thesis
+  - scenarios
+  - risks
+  - catalysts
 thesis:
   ko:
-    intro: >-
-      아래 논거는 결론이 아니라 관측 대상이다. 각 논거마다 무엇이 관측되면 그 논거가 틀린 것인지(반증 관측원)를 함께 적는다.
+    intro: 아래 논거는 결론이 아니라 관측 대상이다. 각 논거마다 무엇이 관측되면 그 논거가 틀린 것인지(반증 관측원)를 함께 적는다.
     bull:
-      - claim: "공급 부족이 2026년보다 2027·2028년에 더 심해진다고 회사가 밝혔다."
-        detail: "회사는 산업 DRAM·NAND가 두 해 모두 공급 제약 상태로 남고, 수급 균형 시점이 보이지 않는다고 했다(REM p.5)."
-        falsifier: "분기 준비문에서 '공급 제약' 표현이 빠지거나, DRAM 가격 변화율이 음(−)으로 돌아서는 첫 분기."
-        src: "REM p.5"
-      - claim: "FQ1 FY27 매출 가이던스가 주당 기준으로 가속했다."
-        detail: "가이던스 중간값 {{fact:guidance.revenue_mid.FQ1FY27}}은 FQ4 실적 대비 주당 {{fact:derived.weekly_growth.FQ1FY27_guide}} 증가다. 회사는 FY27 매 분기 순차 매출 성장을 예상했다(REM p.9)."
-        falsifier: "FQ1 FY27 실적이 가이던스 하단 {{fact:guidance.revenue_lo.FQ1FY27}}을 밑돈다."
-        src: "PR Business Outlook · REM p.9 · SCORED §8"
-      - claim: "장기 공급 계약(SCA)이 매출의 일부에 가격 하한을 제공한다."
-        detail: "체결된 SCA는 26건, 2030년까지 매출의 35% 이상으로 회사가 추정한다. 이 중 75%는 가격 틀이 정해져 있고, 다수가 하한·상한 밴드다(REM p.3)."
-        falsifier: "SCA 해지·재협상 공시, 또는 고객 예치금 잔액 {{fact:bs.customer_contract_liabilities.FQ4FY26}}의 감소."
-        src: "REM p.3 · PR 재무상태표"
+    - claim: 공급 부족이 2026년보다 2027·2028년에 더 심해진다고 회사가 밝혔다.
+      detail: 회사는 산업 DRAM·NAND가 두 해 모두 공급 제약 상태로 남고, 수급 균형 시점이 보이지 않는다고 했다(준비문 p.5).
+      falsifier: 분기 준비문에서 '공급 제약' 표현이 빠지거나, DRAM 가격 변화율이 음(−)으로 돌아서는 첫 분기.
+      src: Micron FQ4 FY26 준비문 p.5
+    - claim: FQ1 FY27 매출 가이던스가 주당 기준으로 가속했다.
+      detail: 가이던스 중간값 {{fact:guidance.revenue_mid.FQ1FY27}}은 FQ4 실적 대비 주당 {{fact:derived.weekly_growth.FQ1FY27_guide}} 증가다. 회사는 FY27 매 분기 순차 매출 성장을 예상했다(준비문 p.9).
+      falsifier: FQ1 FY27 실적이 가이던스 하단 {{fact:guidance.revenue_lo.FQ1FY27}}을 밑돈다.
+      src: Micron FQ4 FY26 보도자료(8-K EX-99.1) 실적 전망 · Micron FQ4 FY26 준비문 p.9 · SCORED §8
+    - claim: 장기 공급 계약(SCA)이 매출의 일부에 가격 하한을 제공한다.
+      detail: 체결된 SCA는 26건, 2030년까지 매출의 35% 이상으로 회사가 추정한다. 이 중 75%는 가격 틀이 정해져 있고, 다수가 하한·상한 밴드다(준비문 p.3).
+      falsifier: SCA 해지·재협상 공시, 또는 고객 예치금 잔액 {{fact:bs.customer_contract_liabilities.FQ4FY26}}의 감소.
+      src: Micron FQ4 FY26 준비문 p.3 · Micron FQ4 FY26 보도자료(8-K EX-99.1) 재무상태표
     bear:
-      - claim: "가격 상승률 둔화는 회사가 직접 말한 사실이다."
-        detail: "회사는 FQ1 이후 GM 상승을 예고하면서도 가격 상승률은 더 완만해진다고 했다(REM p.9)."
-        falsifier: "FQ2 FY27 준비문의 DRAM 가격 상승률이 FQ4 FY26(high-teens%)보다 높다."
-        src: "REM p.7·p.9"
-      - claim: "SCA의 가격 상한이 상승기의 상방을 깎는다."
-        detail: "가격 틀이 정해진 SCA 매출의 다수는 상한이 있는 밴드다. 시장가가 상한을 넘으면 그 부분은 시장가를 따라가지 못한다(REM p.3)."
-        falsifier: "회사가 상한 도달 매출 비중을 공시하고, 그 비중이 작다."
-        src: "REM p.3"
-      - claim: "비용과 투자가 빠르게 늘고 있다."
-        detail: "FY27 opex는 약 $2.5B 증가(REM p.9), 순 capex는 상반기만 약 $25B다(REM p.10). FQ4 GAAP opex는 가이던스보다 {{fact:scored.opex_gap_pct.FQ4FY26}} 많았다(SCORED §4)."
-        falsifier: "FY27 분기 GAAP opex가 RLE 경로({{fact:rle.opex.FY27E}})를 밑돈다."
-        src: "REM p.9–10 · SCORED §4"
+    - claim: 가격 상승률 둔화는 회사가 직접 말한 사실이다.
+      detail: 회사는 FQ1 이후 GM 상승을 예고하면서도 가격 상승률은 더 완만해진다고 했다(준비문 p.9).
+      falsifier: FQ2 FY27 준비문의 DRAM 가격 상승률이 FQ4 FY26(high-teens%)보다 높다.
+      src: Micron FQ4 FY26 준비문 p.7·p.9
+    - claim: SCA의 가격 상한이 상승기의 상방을 깎는다.
+      detail: 가격 틀이 정해진 SCA 매출의 다수는 상한이 있는 밴드다. 시장가가 상한을 넘으면 그 부분은 시장가를 따라가지 못한다(준비문 p.3).
+      falsifier: 회사가 상한 도달 매출 비중을 공시하고, 그 비중이 작다.
+      src: Micron FQ4 FY26 준비문 p.3
+    - claim: 비용과 투자가 빠르게 늘고 있다.
+      detail: FY27 opex는 약 $2.5B 증가(준비문 p.9), 순 capex는 상반기만 약 $25B다(준비문 p.10). FQ4 GAAP opex는 가이던스보다 {{fact:scored.opex_gap_pct.FQ4FY26}} 많았다(SCORED §4).
+      falsifier: FY27 분기 GAAP opex가 RLE 경로({{fact:rle.opex.FY27E}})를 밑돈다.
+      src: Micron FQ4 FY26 준비문 p.9–10 · SCORED §4
   en:
-    intro: >-
-      The arguments below are things to monitor, not conclusions. Each one lists what observation would show it to be wrong (falsifier).
+    intro: The arguments below are things to monitor, not conclusions. Each one lists what observation would show it to be wrong (falsifier).
     bull:
-      - claim: "The company said supply will be tighter in 2027 and 2028 than in 2026."
-        detail: "Management expects industry DRAM and NAND to remain supply constrained in both years and sees no line of sight to balance (REM p.5)."
-        falsifier: "A quarterly script that drops the 'supply constrained' language, or the first quarter in which DRAM price change turns negative."
-        src: "REM p.5"
-      - claim: "FQ1 FY27 revenue guidance accelerated on a per-week basis."
-        detail: "The guidance midpoint of {{fact:guidance.revenue_mid.FQ1FY27}} is {{fact:derived.weekly_growth.FQ1FY27_guide}} per week above FQ4 actual. Management expects sequential revenue growth in every FY27 quarter (REM p.9)."
-        falsifier: "FQ1 FY27 actual revenue below the low end of guidance, {{fact:guidance.revenue_lo.FQ1FY27}}."
-        src: "PR Business Outlook · REM p.9 · SCORED §8"
-      - claim: "Strategic customer agreements (SCAs) put a price floor under part of revenue."
-        detail: "Micron has signed 26 SCAs, which it estimates at over 35% of revenue through 2030. 75% of that has a defined pricing framework, mostly bands with floors and ceilings (REM p.3)."
-        falsifier: "A disclosed SCA termination or renegotiation, or a decline in customer deposit balances of {{fact:bs.customer_contract_liabilities.FQ4FY26}}."
-        src: "REM p.3 · PR balance sheet"
+    - claim: The company said supply will be tighter in 2027 and 2028 than in 2026.
+      detail: Management expects industry DRAM and NAND to remain supply constrained in both years and sees no line of sight to balance (prepared remarks p.5).
+      falsifier: A quarterly script that drops the 'supply constrained' language, or the first quarter in which DRAM price change turns negative.
+      src: Micron FQ4 FY26 prepared remarks p.5
+    - claim: FQ1 FY27 revenue guidance accelerated on a per-week basis.
+      detail: The guidance midpoint of {{fact:guidance.revenue_mid.FQ1FY27}} is {{fact:derived.weekly_growth.FQ1FY27_guide}} per week above FQ4 actual. Management expects sequential revenue growth in every FY27 quarter (prepared remarks p.9).
+      falsifier: FQ1 FY27 actual revenue below the low end of guidance, {{fact:guidance.revenue_lo.FQ1FY27}}.
+      src: Micron FQ4 FY26 press release (8-K EX-99.1) business outlook · Micron FQ4 FY26 prepared remarks p.9 · SCORED §8
+    - claim: Strategic customer agreements (SCAs) put a price floor under part of revenue.
+      detail: Micron has signed 26 SCAs, which it estimates at over 35% of revenue through 2030. 75% of that has a defined pricing framework, mostly bands with floors and ceilings (prepared remarks p.3).
+      falsifier: A disclosed SCA termination or renegotiation, or a decline in customer deposit balances of {{fact:bs.customer_contract_liabilities.FQ4FY26}}.
+      src: Micron FQ4 FY26 prepared remarks p.3 · Micron FQ4 FY26 press release (8-K EX-99.1) balance sheet
     bear:
-      - claim: "Slower price increases are the company's own statement."
-        detail: "While guiding to higher gross margin after FQ1, management said price increases will be more moderate (REM p.9)."
-        falsifier: "The FQ2 FY27 script reports DRAM price growth above the FQ4 FY26 high-teens percent."
-        src: "REM p.7, p.9"
-      - claim: "SCA price ceilings cap upside in a rising market."
-        detail: "Most SCA revenue with a defined framework sits in bands with ceilings; above the ceiling, that revenue does not follow market prices (REM p.3)."
-        falsifier: "The company discloses the share of revenue at the ceiling, and it is small."
-        src: "REM p.3"
-      - claim: "Costs and investment are rising fast."
-        detail: "FY27 opex rises by about $2.5B (REM p.9) and first-half net capex alone is about $25B (REM p.10). FQ4 GAAP opex ran {{fact:scored.opex_gap_pct.FQ4FY26}} above guidance (SCORED §4)."
-        falsifier: "FY27 quarterly GAAP opex comes in below the RLE path ({{fact:rle.opex.FY27E}})."
-        src: "REM p.9–10 · SCORED §4"
-
+    - claim: Slower price increases are the company's own statement.
+      detail: While guiding to higher gross margin after FQ1, management said price increases will be more moderate (prepared remarks p.9).
+      falsifier: The FQ2 FY27 script reports DRAM price growth above the FQ4 FY26 high-teens percent.
+      src: Micron FQ4 FY26 prepared remarks p.7, p.9
+    - claim: SCA price ceilings cap upside in a rising market.
+      detail: Most SCA revenue with a defined framework sits in bands with ceilings; above the ceiling, that revenue does not follow market prices (prepared remarks p.3).
+      falsifier: The company discloses the share of revenue at the ceiling, and it is small.
+      src: Micron FQ4 FY26 prepared remarks p.3
+    - claim: Costs and investment are rising fast.
+      detail: FY27 opex rises by about $2.5B (prepared remarks p.9) and first-half net capex alone is about $25B (prepared remarks p.10). FQ4 GAAP opex ran {{fact:scored.opex_gap_pct.FQ4FY26}} above guidance (SCORED §4).
+      falsifier: FY27 quarterly GAAP opex comes in below the RLE path ({{fact:rle.opex.FY27E}}).
+      src: Micron FQ4 FY26 prepared remarks p.9–10 · SCORED §4
 scenarios:
   ko:
-    - "이 절은 두 층을 분리한다. ① 발표 전에 동결한 FQ4 FY26 예측(PREREG_A)과 그 채점, ② 발표 후 가이던스에 앵커를 둔 FY27E·FY28E 리포트 레이어 추정(RLE)이다. ①은 수정하지 않았고, ②는 예측 성능 근거가 아니다."
-    - "PREREG_A 채점 결과: 가이던스 범위 라벨 4개 모두 적중, 매출·GAAP EPS 모두 사전 밴드 안, GAAP EPS 오차 {{fact:scored.eps_error.FQ4FY26}}. 다만 EPS 적중은 매출 상회와 opex 초과가 상쇄된 결과이며, FQ1 방향(보합 예측)은 빗나갔다(SCORED §6·§8)."
-    - "RLE는 세 경로(약세·기준·강세)를 나란히 보인다. 확률과 가중 평균은 두지 않는다. 기준 경로의 FY27E 매출은 {{fact:rle.revenue.FY27E.base}}, GAAP EPS는 {{fact:rle.eps_gaap.FY27E.base}}이며, 약세·강세 EPS는 각각 {{fact:rle.eps_gaap.FY27E.bear}}, {{fact:rle.eps_gaap.FY27E.bull}}다."
-    - "가정 규칙은 발표 전에 정했고(HANDOFF R9), 발표 후에는 세 항목만 바꿨다. GM 기준 경로(회사가 FQ1을 FY27 GM의 바닥이라고 밝힘), opex 총액(회사 가이던스 반영), capex(회사 가이던스로 대체)다. 원안·변경·사유는 부록 표에 그대로 싣는다. 단, 규칙의 SHA 기록이 발표 뒤에 이뤄져 사전등록 증거는 대화 기록뿐이라는 한계가 있다."
-    - "민감도 행은 기준 경로 외 성장률 후보 세 개와 GM 원안을 함께 보인다. 성장률 0/0/0%는 중립값이 아니라, 비트 증가가 이어질 때 가격 하락을 함의하는 방향성 가정이다."
+  - 이 절은 두 층을 분리한다. ① 발표 전에 동결한 FQ4 FY26 예측(PREREG_A)과 그 채점, ② 발표 후 가이던스에 앵커를 둔 FY27E·FY28E 리포트 레이어 추정(RLE)이다. ①은 수정하지 않았고, ②는 예측 성능 근거가 아니다.
+  - 'PREREG_A 채점 결과: 가이던스 범위 라벨 4개 모두 적중, 매출·GAAP EPS 모두 사전 밴드 안, GAAP EPS 오차 {{fact:scored.eps_error.FQ4FY26}}. 다만 EPS 적중은 매출 상회와 opex 초과가 상쇄된 결과이며, FQ1 방향(보합 예측)은 빗나갔다(SCORED §6·§8).'
+  - RLE는 세 경로(약세·기준·강세)를 나란히 보인다. 확률과 가중 평균은 두지 않는다. 기준 경로의 FY27E 매출은 {{fact:rle.revenue.FY27E.base}}, GAAP EPS는 {{fact:rle.eps_gaap.FY27E.base}}이며, 약세·강세 EPS는 각각 {{fact:rle.eps_gaap.FY27E.bear}}, {{fact:rle.eps_gaap.FY27E.bull}}다.
+  - 가정 규칙은 발표 전에 정했고(HANDOFF R9), 발표 후에는 세 항목만 바꿨다. GM 기준 경로(회사가 FQ1을 FY27 GM의 바닥이라고 밝힘), opex 총액(회사 가이던스 반영), capex(회사 가이던스로 대체)다. 원안·변경·사유는 부록 표에 그대로 싣는다. 단, 규칙의 SHA 기록이 발표 뒤에 이뤄져 사전등록 증거는 대화 기록뿐이라는 한계가 있다.
+  - 민감도 행은 기준 경로 외 성장률 후보 세 개와 GM 원안을 함께 보인다. 성장률 0/0/0%는 중립값이 아니라, 비트 증가가 이어질 때 가격 하락을 함의하는 방향성 가정이다.
   en:
-    - "This section keeps two layers apart: ① the FQ4 FY26 forecast frozen before the print (PREREG_A) and its scoring, and ② report-layer estimates (RLE) for FY27E–FY28E anchored on post-print guidance. ① was not altered; ② is not evidence of forecasting skill."
-    - "PREREG_A scoring: all 4 guidance-range labels hit, revenue and GAAP EPS fell inside the pre-registered bands, and the GAAP EPS error was {{fact:scored.eps_error.FQ4FY26}}. The EPS hit came from revenue upside offsetting an opex overrun, and the FQ1 direction call (flat) missed (SCORED §6, §8)."
-    - "RLE shows three paths side by side (bear, base, bull) with no probabilities or weighted average. Base FY27E revenue is {{fact:rle.revenue.FY27E.base}} and GAAP EPS {{fact:rle.eps_gaap.FY27E.base}}; bear and bull EPS are {{fact:rle.eps_gaap.FY27E.bear}} and {{fact:rle.eps_gaap.FY27E.bull}}."
-    - "Assumption rules were set before the print (HANDOFF R9); after the print only three items changed: the base GM path (management called FQ1 the FY27 gross-margin floor), total opex (company guidance), and capex (replaced by guidance). The appendix lists each original rule, the change and the reason. One limitation: the rule hash was recorded after the print, so the only evidence of pre-registration is the conversation log."
-    - "Sensitivity rows show three alternative growth paths and the original GM rule next to the base. A 0/0/0% growth path is not neutral: with continued bit growth it implies falling prices."
-
+  - 'This section keeps two layers apart: ① the FQ4 FY26 forecast frozen before the print (PREREG_A) and its scoring, and ② report-layer estimates (RLE) for FY27E–FY28E anchored on post-print guidance. ① was not altered; ② is not evidence of forecasting skill.'
+  - 'PREREG_A scoring: all 4 guidance-range labels hit, revenue and GAAP EPS fell inside the pre-registered bands, and the GAAP EPS error was {{fact:scored.eps_error.FQ4FY26}}. The EPS hit came from revenue upside offsetting an opex overrun, and the FQ1 direction call (flat) missed (SCORED §6, §8).'
+  - RLE shows three paths side by side (bear, base, bull) with no probabilities or weighted average. Base FY27E revenue is {{fact:rle.revenue.FY27E.base}} and GAAP EPS {{fact:rle.eps_gaap.FY27E.base}}; bear and bull EPS are {{fact:rle.eps_gaap.FY27E.bear}} and {{fact:rle.eps_gaap.FY27E.bull}}.
+  - 'Assumption rules were set before the print (HANDOFF R9); after the print only three items changed: the base GM path (management called FQ1 the FY27 gross-margin floor), total opex (company guidance), and capex (replaced by guidance). The appendix lists each original rule, the change and the reason. One limitation: the rule hash was recorded after the print, so the only evidence of pre-registration is the conversation log.'
+  - 'Sensitivity rows show three alternative growth paths and the original GM rule next to the base. A 0/0/0% growth path is not neutral: with continued bit growth it implies falling prices.'
 risks:
   ko:
-    - {title: "가격 사이클", body: "가격 상승률 둔화가 하락으로 넘어가는 시점이 가장 큰 변수다. 과거 사이클에서는 정점 직후 분기 매출이 두 자릿수 감소했다. 약세 경로는 이 꼬리를 완화해 반영했을 뿐 배제하지 않는다.", src: "REM p.9 · RLE A2·A3"}
-    - {title: "영업이익 위 일회성", body: "FQ4에는 특허 라이선스 비용과 기타 영업비용이 영업이익 위에 나타나 opex가 가이던스를 크게 넘었다. 사전등록의 영업외 감시 항목(SF5)이 보지 못한 영역이며, FY27 인센티브 보상도 같은 경로로 변동할 수 있다.", src: "PR · SCORED §4·§7"}
-    - {title: "투자 확대", body: "FY27 순 capex는 상반기 약 $25B, 하반기는 더 높다고 회사가 밝혔다. RLE는 하반기를 상반기와 같게 두었으므로(하한) FCF가 높게 추정될 수 있다.", src: "REM p.10 · RLE A14"}
-    - {title: "SCA 구조", body: "가격 하한은 하방을, 상한은 상방을 제한한다. 고객 예치금은 재무활동 현금흐름이며 계약 후반부에 돌려준다. 이 보고서의 순현금은 예치금을 조정하지 않은 값이다.", src: "REM p.3·p.8–9"}
-    - {title: "자본환원과 주식수", body: "회사는 2026-12-09부터 자본환원을 늘리고 장기적으로 잉여현금의 100%를 돌려준다고 했다. RLE는 자사주 매입을 넣지 않아 EPS 상방이 빠져 있다.", src: "REM p.9 · RLE A7"}
-    - {title: "FY28", body: "회사는 2028년에도 공급이 빠듯하다고 했지만, 신규 클린룸 산출이 2028년 하반기부터 늘어난다. FY28E는 무가중 스트레스 범위로만 보인다.", src: "REM p.2–3·p.5 · RLE A8–A10"}
+  - title: 가격 사이클
+    body: 가격 상승률 둔화가 하락으로 넘어가는 시점이 가장 큰 변수다. 과거 사이클에서는 정점 직후 분기 매출이 두 자릿수 감소했다. 약세 경로는 이 꼬리를 완화해 반영했을 뿐 배제하지 않는다.
+    src: Micron FQ4 FY26 준비문 p.9 · RLE A2·A3
+  - title: 영업이익 위 일회성
+    body: FQ4에는 특허 라이선스 비용과 기타 영업비용이 영업이익 위에 나타나 opex가 가이던스를 크게 넘었다. 사전등록의 영업외 감시 항목(SF5)이 보지 못한 영역이며, FY27 인센티브 보상도 같은 경로로 변동할 수 있다.
+    src: Micron FQ4 FY26 보도자료(8-K EX-99.1) · SCORED §4·§7
+  - title: 투자 확대
+    body: FY27 순 capex는 상반기 약 $25B, 하반기는 더 높다고 회사가 밝혔다. RLE는 하반기를 상반기와 같게 두었으므로(하한) FCF가 높게 추정될 수 있다.
+    src: Micron FQ4 FY26 준비문 p.10 · RLE A14
+  - title: SCA 구조
+    body: 가격 하한은 하방을, 상한은 상방을 제한한다. 고객 예치금은 재무활동 현금흐름이며 계약 후반부에 돌려준다. 이 보고서의 순현금은 예치금을 조정하지 않은 값이다.
+    src: Micron FQ4 FY26 준비문 p.3·p.8–9
+  - title: 자본환원과 주식수
+    body: 회사는 2026-12-09부터 자본환원을 늘리고 장기적으로 잉여현금의 100%를 돌려준다고 했다. RLE는 자사주 매입을 넣지 않아 EPS 상방이 빠져 있다.
+    src: Micron FQ4 FY26 준비문 p.9 · RLE A7
+  - title: FY28
+    body: 회사는 2028년에도 공급이 빠듯하다고 했지만, 신규 클린룸 산출이 2028년 하반기부터 늘어난다. FY28E는 무가중 스트레스 범위로만 보인다.
+    src: Micron FQ4 FY26 준비문 p.2–3·p.5 · RLE A8–A10
   en:
-    - {title: "Price cycle", body: "The key variable is when slower price increases turn into price declines. In past cycles, quarterly revenue fell by double digits right after the peak. The bear path tempers this tail but does not rule it out.", src: "REM p.9 · RLE A2, A3"}
-    - {title: "One-offs above operating income", body: "In FQ4, a patent license charge and other operating expense sat above operating income and pushed opex well above guidance. The pre-registered below-OP watch item (SF5) did not cover this, and FY27 incentive compensation can move through the same line.", src: "PR · SCORED §4, §7"}
-    - {title: "Rising investment", body: "Management guided FY27 net capex of about $25B in the first half and higher in the second. RLE sets the second half equal to the first (a floor), so FCF may be overstated.", src: "REM p.10 · RLE A14"}
-    - {title: "SCA structure", body: "Price floors limit downside and ceilings limit upside. Customer deposits are financing cash flows and are returned late in each contract. Net cash in this report is not adjusted for deposits.", src: "REM p.3, p.8–9"}
-    - {title: "Capital return and share count", body: "Micron plans to increase capital return from 2026-12-09 and over time return 100% of excess cash. RLE includes no buybacks, so EPS upside from them is omitted.", src: "REM p.9 · RLE A7"}
-    - {title: "FY28", body: "Management expects supply to stay tight in 2028, while new cleanroom output builds from late 2028. FY28E is shown only as an unweighted stress range.", src: "REM p.2–3, p.5 · RLE A8–A10"}
-
+  - title: Price cycle
+    body: The key variable is when slower price increases turn into price declines. In past cycles, quarterly revenue fell by double digits right after the peak. The bear path tempers this tail but does not rule it out.
+    src: Micron FQ4 FY26 prepared remarks p.9 · RLE A2, A3
+  - title: One-offs above operating income
+    body: In FQ4, a patent license charge and other operating expense sat above operating income and pushed opex well above guidance. The pre-registered below-OP watch item (SF5) did not cover this, and FY27 incentive compensation can move through the same line.
+    src: Micron FQ4 FY26 press release (8-K EX-99.1) · SCORED §4, §7
+  - title: Rising investment
+    body: Management guided FY27 net capex of about $25B in the first half and higher in the second. RLE sets the second half equal to the first (a floor), so FCF may be overstated.
+    src: Micron FQ4 FY26 prepared remarks p.10 · RLE A14
+  - title: SCA structure
+    body: Price floors limit downside and ceilings limit upside. Customer deposits are financing cash flows and are returned late in each contract. Net cash in this report is not adjusted for deposits.
+    src: Micron FQ4 FY26 prepared remarks p.3, p.8–9
+  - title: Capital return and share count
+    body: Micron plans to increase capital return from 2026-12-09 and over time return 100% of excess cash. RLE includes no buybacks, so EPS upside from them is omitted.
+    src: Micron FQ4 FY26 prepared remarks p.9 · RLE A7
+  - title: FY28
+    body: Management expects supply to stay tight in 2028, while new cleanroom output builds from late 2028. FY28E is shown only as an unweighted stress range.
+    src: Micron FQ4 FY26 prepared remarks p.2–3, p.5 · RLE A8–A10
 catalysts:
   ko:
-    - {when: "2026-10-14 / 10-29", what: "분기 배당 기준일 / 지급일 (주당 {{fact:dividend.dps.declared_2026-09-30}})", src: "PR"}
-    - {when: "2026-10 (예정)", what: "FY26 10-K 접수 — 사후 채점 provisional → confirm, G0-A·G0-B 확정", src: "SCORED"}
-    - {when: "2026-12-09 이후", what: "자본환원 확대 시작", src: "REM p.9"}
-    - {when: "FQ1 FY27 실적 발표 (날짜 미공시)", what: "가이던스 대비 매출·GM 바닥 진술 검증, RLE 첫 비교", src: "REM p.9"}
-    - {when: "CY2027 초", what: "싱가포르 HBM 첨단 패키징 초기 산출", src: "REM p.3"}
-    - {when: "CY2027 중반", what: "아이다호 ID1 웨이퍼 산출 · 대만 통뤄 시설 의미 있는 출하", src: "REM p.2–3"}
-    - {when: "CY2027 하반기", what: "차세대 DRAM·NAND 노드 양산 시작", src: "REM p.2"}
-    - {when: "CY2028 하반기", what: "ID2·일본 DRAM 확장·싱가포르 NAND 신규 시설 산출", src: "REM p.2–3"}
+  - when: 2026-10-14 / 10-29
+    what: 분기 배당 기준일 / 지급일 (주당 {{fact:dividend.dps.declared_2026-09-30}})
+    src: Micron FQ4 FY26 보도자료(8-K EX-99.1)
+  - when: 2026-10 (예정)
+    what: FY26 10-K 접수 — 8-K 잠정 실적을 10-K와 대조해 사후 채점을 잠정에서 확정으로 바꿈
+    src: SCORED
+  - when: 2026-12-09 이후
+    what: 자본환원 확대 시작
+    src: Micron FQ4 FY26 준비문 p.9
+  - when: FQ1 FY27 실적 발표 (날짜 미공시)
+    what: 가이던스 대비 매출·GM 바닥 진술 검증, RLE 첫 비교
+    src: Micron FQ4 FY26 준비문 p.9
+  - when: CY2027 초
+    what: 싱가포르 HBM 첨단 패키징 초기 산출
+    src: Micron FQ4 FY26 준비문 p.3
+  - when: CY2027 중반
+    what: 아이다호 ID1 웨이퍼 산출 · 대만 통뤄 시설 의미 있는 출하
+    src: Micron FQ4 FY26 준비문 p.2–3
+  - when: CY2027 하반기
+    what: 차세대 DRAM·NAND 노드 양산 시작
+    src: Micron FQ4 FY26 준비문 p.2
+  - when: CY2028 하반기
+    what: ID2·일본 DRAM 확장·싱가포르 NAND 신규 시설 산출
+    src: Micron FQ4 FY26 준비문 p.2–3
   en:
-    - {when: "2026-10-14 / 10-29", what: "Quarterly dividend record / payment date ({{fact:dividend.dps.declared_2026-09-30}} per share)", src: "PR"}
-    - {when: "2026-10 (expected)", what: "FY26 10-K filing — scoring moves from provisional to confirm; G0-A and G0-B close", src: "SCORED"}
-    - {when: "From 2026-12-09", what: "Start of increased capital return", src: "REM p.9"}
-    - {when: "FQ1 FY27 earnings (date not announced)", what: "Check revenue vs guidance and the GM-floor statement; first RLE comparison", src: "REM p.9"}
-    - {when: "Early CY2027", what: "Initial output from Singapore HBM advanced packaging", src: "REM p.3"}
-    - {when: "Mid CY2027", what: "Idaho ID1 wafer output; meaningful shipments from Tongluo, Taiwan", src: "REM p.2–3"}
-    - {when: "Second half of CY2027", what: "Next-generation DRAM and NAND nodes begin volume production", src: "REM p.2"}
-    - {when: "Second half of CY2028", what: "Output from ID2, the Japan DRAM expansion and the new Singapore NAND facility", src: "REM p.2–3"}
-
+  - when: 2026-10-14 / 10-29
+    what: Quarterly dividend record / payment date ({{fact:dividend.dps.declared_2026-09-30}} per share)
+    src: Micron FQ4 FY26 press release (8-K EX-99.1)
+  - when: 2026-10 (expected)
+    what: FY26 10-K filing — 8-K provisional actuals checked against the 10-K; scoring moves from provisional to final
+    src: SCORED
+  - when: From 2026-12-09
+    what: Start of increased capital return
+    src: Micron FQ4 FY26 prepared remarks p.9
+  - when: FQ1 FY27 earnings (date not announced)
+    what: Check revenue vs guidance and the GM-floor statement; first RLE comparison
+    src: Micron FQ4 FY26 prepared remarks p.9
+  - when: Early CY2027
+    what: Initial output from Singapore HBM advanced packaging
+    src: Micron FQ4 FY26 prepared remarks p.3
+  - when: Mid CY2027
+    what: Idaho ID1 wafer output; meaningful shipments from Tongluo, Taiwan
+    src: Micron FQ4 FY26 prepared remarks p.2–3
+  - when: Second half of CY2027
+    what: Next-generation DRAM and NAND nodes begin volume production
+    src: Micron FQ4 FY26 prepared remarks p.2
+  - when: Second half of CY2028
+    what: Output from ID2, the Japan DRAM expansion and the new Singapore NAND facility
+    src: Micron FQ4 FY26 prepared remarks p.2–3
 fact_bindings:
-  - {token: "guidance.revenue_mid.FQ1FY27", value: 61500, unit: USD_million, src: PR, proposed: true}
-  - {token: "guidance.revenue_lo.FQ1FY27", value: 60000, unit: USD_million, src: PR, proposed: true}
-  - {token: "derived.weekly_growth.FQ1FY27_guide", value: 0.221316, unit: fraction, src: "SCORED §8", proposed: true}
-  - {token: "bs.customer_contract_liabilities.FQ4FY26", value: 12895, unit: USD_million, src: "PR 재무상태표 Noncurrent customer contract liabilities", proposed: true}
-  - {token: "scored.opex_gap_pct.FQ4FY26", value: 0.772, unit: fraction, src: "SCORED §3 (3,296 vs 1,860)", proposed: true}
-  - {token: "scored.eps_error.FQ4FY26", value: 0.30, unit: USD_per_share, src: "SCORED §3", proposed: true}
-  - {token: "rle.opex.FY27E", value: 10353, unit: USD_million, src: "RLE A4", proposed: true}
-  - {token: "rle.revenue.FY27E.base", value: 274784.14, unit: USD_million, src: "RLE / rle_values_r1 §5.2", proposed: true}
-  - {token: "rle.eps_gaap.FY27E.base", value: 169.05, unit: USD_per_share, src: "rle_values_r1 §5.2", proposed: true}
-  - {token: "rle.eps_gaap.FY27E.bear", value: 118.95, unit: USD_per_share, src: "rle_values_r1 §5.1", proposed: true}
-  - {token: "rle.eps_gaap.FY27E.bull", value: 199.52, unit: USD_per_share, src: "rle_values_r1 §5.3", proposed: true}
-  - {token: "dividend.dps.declared_2026-09-30", value: 0.15, unit: USD_per_share, src: PR, proposed: true}
+- token: guidance.revenue_mid.FQ1FY27
+  value: 61500
+  unit: USD_million
+  src: Micron FQ4 FY26 보도자료(8-K EX-99.1)
+  proposed: true
+- token: guidance.revenue_lo.FQ1FY27
+  value: 60000
+  unit: USD_million
+  src: Micron FQ4 FY26 보도자료(8-K EX-99.1)
+  proposed: true
+- token: derived.weekly_growth.FQ1FY27_guide
+  value: 0.221316
+  unit: fraction
+  src: SCORED §8
+  proposed: true
+- token: bs.customer_contract_liabilities.FQ4FY26
+  value: 12895
+  unit: USD_million
+  src: Micron FQ4 FY26 보도자료(8-K EX-99.1) 재무상태표 Noncurrent customer contract liabilities
+  proposed: true
+- token: scored.opex_gap_pct.FQ4FY26
+  value: 0.772
+  unit: fraction
+  src: SCORED §3 (3,296 vs 1,860)
+  proposed: true
+- token: scored.eps_error.FQ4FY26
+  value: 0.3
+  unit: USD_per_share
+  src: SCORED §3
+  proposed: true
+- token: rle.opex.FY27E
+  value: 10353
+  unit: USD_million
+  src: RLE A4
+  proposed: true
+- token: rle.revenue.FY27E.base
+  value: 274784.14
+  unit: USD_million
+  src: RLE / rle_values_r1 §5.2
+  proposed: true
+- token: rle.eps_gaap.FY27E.base
+  value: 169.05
+  unit: USD_per_share
+  src: rle_values_r1 §5.2
+  proposed: true
+- token: rle.eps_gaap.FY27E.bear
+  value: 118.95
+  unit: USD_per_share
+  src: rle_values_r1 §5.1
+  proposed: true
+- token: rle.eps_gaap.FY27E.bull
+  value: 199.52
+  unit: USD_per_share
+  src: rle_values_r1 §5.3
+  proposed: true
+- token: dividend.dps.declared_2026-09-30
+  value: 0.15
+  unit: USD_per_share
+  src: Micron FQ4 FY26 보도자료(8-K EX-99.1)
+  proposed: true
+abbreviations:
+  ko:
+  - key: 준비문
+    text: Micron FQ4 FY26 실적 발표 준비문(Prepared Remarks, 2026-09-30, 10쪽)
+  - key: 보도자료
+    text: Micron FQ4 FY26 실적 보도자료(8-K EX-99.1, accession 0000723125-26-000018)
+  - key: SCORED
+    text: 본 저자의 FQ4 FY26 사전등록 예측 사후 채점 문서(forecast/reports/mu_fy2026q4_SCORED.md)
+  - key: RLE
+    text: '리포트 레이어 추정(Report-Layer Estimate): 발표 후 가이던스에 앵커를 둔 본 리포트의 FY27E·FY28E 추정'
+  - key: PREREG_A
+    text: 발표 전에 동결한 FQ4 FY26 사전등록 예측(Freeze A)
+  en:
+  - key: Prepared remarks
+    text: Micron FQ4 FY26 earnings call prepared remarks (2026-09-30, 10 pages)
+  - key: Press release
+    text: Micron FQ4 FY26 earnings press release (8-K EX-99.1, accession 0000723125-26-000018)
+  - key: SCORED
+    text: The author's post-print scoring of the FQ4 FY26 pre-registered forecast (forecast/reports/mu_fy2026q4_SCORED.md)
+  - key: RLE
+    text: 'Report-Layer Estimate: this report''s FY27E–FY28E estimates anchored on post-print guidance'
+  - key: PREREG_A
+    text: The FQ4 FY26 forecast frozen before the print (Freeze A)
+company:
+  ko:
+  - Micron은 DRAM·NAND 메모리와 저장장치를 만드는 미국 반도체 회사다. 사업은 클라우드 메모리(CMBU), 코어 데이터센터(CDBU), 모바일·클라이언트(MCBU), 자동차·임베디드(AEBU) 네 개 사업부로 공시된다. FQ4 FY26 매출은 {{fact:is.revenue.FY2026Q4.A-8K}}였고, DRAM이 매출의 73%를 차지했다(준비문 p.7).
+  - FY2026은 53주이고 FQ4는 14주다. 13주인 다른 분기와 비교할 때는 주당 기준(14주 매출 ÷ 14, 13주 매출 ÷ 13)으로 맞춘 성장률을 함께 적는다.
+  - '이 리포트의 숫자는 세 층으로 나뉜다. ① PREREG_A: 발표 전에 동결한 예측(수정하지 않음). ② A-8K: 회사가 발표한 실적(10-K 접수 전 잠정값). ③ RLE: 발표 후 가이던스에 앵커를 둔 본 저자의 추정. 표와 차트의 열 머리에 어느 층인지 표시한다.'
+  - 'UNAVAILABLE은 계산하지 않기로 정한 칸이다(예: RLE 재무상태표). 값을 지어내지 않기 위한 표시이며, 사유는 각 표 아래 각주에 적는다.'
+  en:
+  - 'Micron is a US semiconductor company making DRAM and NAND memory and storage. It reports four business units: Cloud Memory (CMBU), Core Data Center (CDBU), Mobile and Client (MCBU), and Automotive and Embedded (AEBU). FQ4 FY26 revenue was {{fact:is.revenue.FY2026Q4.A-8K}}, with DRAM at 73% of revenue (prepared remarks p.7).'
+  - FY2026 has 53 weeks and FQ4 has 14. When comparing with 13-week quarters, growth is also shown on a per-week basis (14-week revenue ÷ 14 versus 13-week revenue ÷ 13).
+  - 'Numbers in this report sit in three layers: ① PREREG_A, the forecast frozen before the print (never altered); ② A-8K, company-reported actuals (provisional until the 10-K); ③ RLE, the author''s estimates anchored on post-print guidance. Each table and chart header states its layer.'
+  - UNAVAILABLE marks cells the rules deliberately do not compute (for example, the RLE balance sheet). It avoids inventing values; each table footnote gives the reason.
+fq4_reading:
+  ko:
+  - term: 가이던스 라벨 적중
+    text: 발표 전에 지표마다 '무차이 범위'를 정했다(매출 {{fact:guidance.revenue_lo.FQ4FY26}}–{{fact:guidance.revenue_hi.FQ4FY26}}, GAAP GM 가이던스 ±1pt 등). 실제가 범위 위면 '상단 초과', 안이면 '범위 안', 아래면 '하단 미달'이다. 사전등록 예측이 같은 라벨을 냈으면 적중이다.
+  - term: 밴드 커버리지
+    text: 실제값이 사전등록한 약세–강세 범위 안에 들었는지 본다. 범위 밖이면 예측의 불확실성 폭이 너무 좁았다는 뜻이다.
+  - term: 차기 분기 방향(SF7)
+    text: FQ1 FY27 가이던스가 FQ4 대비 주당 ±2% 안이면 보합, 위면 성장, 아래면 감소로 판정한다. 사전등록 예측은 보합이었고, 실제 가이던스는 주당 {{fact:derived.weekly_growth.FQ1FY27_guide}} 성장이어서 MISS다.
+  en:
+  - term: Guidance-label hit
+    text: Before the print, each metric got a 'no-difference range' (revenue {{fact:guidance.revenue_lo.FQ4FY26}}–{{fact:guidance.revenue_hi.FQ4FY26}}, GAAP GM guidance ±1pt, etc.). Above the range is 'above high', inside is 'in range', below is 'below low'. A hit means the pre-registered forecast gave the same label.
+  - term: Band coverage
+    text: Checks whether the actual fell inside the pre-registered bear–bull range. Falling outside would mean the forecast's uncertainty band was too narrow.
+  - term: Next-quarter direction (SF7)
+    text: FQ1 FY27 guidance within ±2% per week of FQ4 is flat; above is growth; below is decline. The pre-registered call was flat; actual guidance implied {{fact:derived.weekly_growth.FQ1FY27_guide}} per-week growth, so it missed.
+gm_compression:
+  ko:
+  - GAAP 매출총이익률(GM)이 가이던스 중간값을 넘은 폭이 FQ2 FY26 {{fact:derived.gm_beat.FQ2-26}}에서 FQ3 {{fact:derived.gm_beat.FQ3-26}}, FQ4 {{fact:derived.gm_beat.FQ4-26}}로 빠르게 줄었다. 같은 기간 GM의 전 분기 대비 상승 폭도 줄었다.
+  - FQ1 FY27 GAAP GM 가이던스는 {{fact:guidance.gm_gaap.FQ1FY27}}로 FQ4 실제보다 낮다. 회사는 FQ4에 늘린 인센티브 보상이 재고에 흡수되어 FQ1 GM에 반영되기 때문이며, FQ1이 FY27의 바닥이라고 설명했다(준비문 p.9).
+  - '해석: GM은 이미 높은 수준이어서 추가 상승 여지가 작고, 회사도 가격 상승률 둔화를 말했다. 상회 폭이 더 줄거나 음(−)으로 바뀌면 가격 사이클 둔화의 첫 신호로 본다. 이 신호는 리스크 절의 ''가격 사이클'' 관측 항목과 연결된다.'
+  en:
+  - The amount by which GAAP gross margin (GM) beat the guidance midpoint shrank quickly, from {{fact:derived.gm_beat.FQ2-26}} in FQ2 FY26 to {{fact:derived.gm_beat.FQ3-26}} in FQ3 and {{fact:derived.gm_beat.FQ4-26}} in FQ4. The quarter-on-quarter rise in GM narrowed over the same period.
+  - FQ1 FY27 GAAP GM guidance is {{fact:guidance.gm_gaap.FQ1FY27}}, below FQ4 actual. Management attributes this to higher FQ4 incentive compensation absorbed into inventory and flowing into FQ1 GM, and calls FQ1 the FY27 floor (prepared remarks p.9).
+  - 'Reading: GM is already high, leaving little room to rise, and management has flagged slower price increases. A further shrinking or negative beat would be the first sign of a slowing price cycle; this links to the ''price cycle'' watch item in the risks section.'
+price_bit_note:
+  ko:
+  - '회사는 가격·비트 출하 변화를 숫자가 아니라 ''high-teens %'', ''mid-single-digit'' 같은 구간 표현으로만 공개한다(준비문 p.7). 차트는 이 구간을 범위 막대로 그리며, 환산 규칙(예: high-teens = 16–19%)은 차트 각주에 적는다. 환산은 본 저자의 판단이며 회사 수치가 아니다.'
+  en:
+  - Micron discloses price and bit-shipment changes only as range wording such as 'high-teens %' or 'mid-single-digit' (prepared remarks p.7). The chart draws these ranges as bars; the conversion rule (e.g., high-teens = 16–19%) is in the chart footnote. The conversion is the author's judgement, not a company figure.
+business_structure:
+  ko:
+  - FQ4 FY26 사업부별 매출은 CDBU $18.0B(33%), CMBU $16.3B(30%), MCBU $13.1B(24%), AEBU $6.8B(13%)였다. 네 사업부 모두 사상 최대였고, 전 분기 대비 증가율은 CDBU 56%, AEBU 47%, CMBU 18%, MCBU 14%였다(준비문 p.7–8).
+  - 사업부 GM은 CDBU·MCBU 90%, AEBU 84%, CMBU 83%다. CMBU만 전 분기와 같았는데, 회사는 가격 상승을 HBM 비중 증가가 상쇄했다고 설명했다(준비문 p.7). 회사는 2027년 HBM 물량 대부분을 전년보다 크게 오른 가격으로 계약해 일반 DRAM과의 GM 차이가 좁아지고 있다고 했다(준비문 p.4).
+  - 제품별로는 DRAM $39.8B(73%), NAND $14.1B(26%)다. 데이터센터 SSD 매출은 $10B에 가까워 NAND 매출의 2/3를 넘었다(준비문 p.4·p.7).
+  - '해석: 매출의 63%가 데이터센터 사업부(CMBU·CDBU)에서 나온다. 따라서 이 리포트의 핵심 변수는 서버·AI 수요와 DRAM 가격이다. MCBU는 출하 비트가 줄었는데도 가격으로 매출이 늘었다(준비문 p.7). 가격이 꺾이면 비트 성장이 약한 사업부의 매출이 먼저 줄어들 수 있다.'
+  en:
+  - 'FQ4 FY26 revenue by business unit was CDBU $18.0B (33%), CMBU $16.3B (30%), MCBU $13.1B (24%) and AEBU $6.8B (13%). All four were records; sequential growth was CDBU 56%, AEBU 47%, CMBU 18% and MCBU 14% (prepared remarks p.7–8).'
+  - 'Business-unit GM was 90% for CDBU and MCBU, 84% for AEBU and 83% for CMBU. Only CMBU was flat sequentially; management said higher HBM mix offset higher pricing (prepared remarks p.7). Management also said most 2027 HBM supply is contracted at significantly higher prices year over year, narrowing the GM gap with conventional DRAM (prepared remarks p.4).'
+  - 'By product, DRAM was $39.8B (73%) and NAND $14.1B (26%). Data center SSD revenue was close to $10B, over 2/3 of NAND revenue (prepared remarks p.4, p.7).'
+  - 'Reading: 63% of revenue comes from the data center units (CMBU, CDBU), so the key variables in this report are server and AI demand and DRAM pricing. MCBU revenue rose on price despite lower bit shipments (prepared remarks p.7). If pricing turns, units with weak bit growth may see revenue fall first.'
+methodology:
+  ko:
+  - 숫자의 세 층은 섞지 않는다. PREREG_A는 발표 전에 동결해 이후 고치지 않았고, 발표 후 실적(A-8K)과 같은 기준으로 채점했다(SCORED). RLE는 채점이 끝난 뒤 회사 가이던스를 출발점으로 만든 추정이며, 예측 성능의 근거로 쓰지 않는다.
+  - A-8K는 보도자료(8-K)의 잠정 실적이다. 10-K가 접수되면 같은 항목을 대조하고, 차이가 있으면 다음 판에서 고친다. A-10K는 10-K 기준 실적을 뜻한다.
+  - '근거 등급: E는 회사 공시나 사전등록 문서에 있는 값, D는 그 값으로 계산한 값, J는 저자의 판단이다. J가 들어간 값은 표와 그림 각주에 표시한다.'
+  - '정보 경계: 정보 컷오프 이후 자료는 쓰지 않았다. 증권사 리포트의 수치와 의견은 쓰지 않았고, 컨센서스는 무료로 검증할 수 있는 출처가 없어 UNAVAILABLE로 둔다. 투자의견, 목표주가, 시나리오 확률은 제시하지 않는다.'
+  - '검증: KO판과 EN판의 숫자 일치, 재무제표 항등식, 입력 파일 해시를 자동으로 검사하고, 전 쪽을 이미지로 확인한 뒤 발행한다.'
+  en:
+  - The three layers of numbers are never mixed. PREREG_A was frozen before the print and not altered afterwards, then scored against post-print actuals (A-8K) on the same basis (SCORED). RLE is an estimate built after scoring, starting from company guidance, and is not evidence of forecasting skill.
+  - A-8K is the provisional result from the press release (8-K). When the 10-K is filed, the same items are checked and any differences are corrected in the next edition. A-10K means 10-K-based actuals.
+  - 'Evidence grades: E is a value found in company filings or the pre-registration documents, D is a value calculated from those, and J is the author''s judgement. Values involving J are flagged in table and figure footnotes.'
+  - 'Information boundary: no material after the information cutoff is used. Broker report figures and opinions are not used, and consensus is UNAVAILABLE because no free, verifiable source exists. No rating, price target or scenario probabilities are given.'
+  - 'Checks: KO/EN number parity, financial statement identities and input file hashes are tested automatically, and every page is checked as an image before publication.'

@@ -1,6 +1,6 @@
-# Micron Technology, Inc. (NASDAQ: MU)
+# MICRON TECHNOLOGY · NASDAQ: MU
 
-> Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · First edition
+> Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · Edition 1, Revision 1
 
 This is third-party analysis based on public information and has not been prepared, reviewed, or approved by Micron or its affiliates.
 
@@ -13,17 +13,16 @@ Completeness: historical actuals, PREREG_A scoring, post-print actuals and RLE
 - Scenarios are an unweighted range and carry no probabilities.
 - Net cash is not adjusted for SCA deposits.
 
-As of the pre-publication confirmation time (2026-10-04T14:42:00+09:00), the author, Jiwon Kim, does not hold shares of Micron Technology, Inc. (MU).
+As of the pre-publication confirmation time (2026-10-05T19:07:00+09:00), the author, Jiwon Kim, does not hold shares of Micron Technology, Inc. (MU).
 
-The pre-registered forecast and post-print actuals remain separate, while report-layer estimates are explicitly labelled RLE.
 
 ### Market data
 
 | Metric | Value | Basis |
 |---|---:|---|
-| Reference price | $1,097.39 | As of 2026-10-01 |
-| Diluted weighted-average shares (FQ4) | 1,147M | FY2026 Q4 A-8K |
-| Market capitalization | USD 1,258,706 million | Reference price × FQ4 diluted weighted-average shares |
+| Reference price | 1,097.39 | USD/share · 2026-10-01 |
+| Diluted weighted-average shares (FQ4) | 1,147 | million shares · FQ4 A-8K |
+| Market capitalization | 1,258,706 | USD million · price × shares |
 | Fiscal year end | 2026-09-03 | A-8K |
 
 Market capitalization is in USD million and equals the reference price times FQ4 diluted weighted-average shares; it is not based on period-end shares outstanding.
@@ -35,11 +34,13 @@ Market capitalization is in USD million and equals the reference price times FQ4
 | FQ4 revenue | 52,860 | PREREG_A · USD million |
 | FQ4 revenue | 54,229 | A-8K · USD million |
 | FQ4 GAAP EPS | 32.57 | PREREG_A · USD/share |
-| FQ4 GAAP EPS | $32.87 | A-8K · USD/share |
+| FQ4 GAAP EPS | 32.87 | A-8K · USD/share |
 | FY26 revenue | 131,819 | PREREG_A · USD million |
 | FY26 revenue | 133,188 | A-8K · USD million |
-| FY27E revenue / GAAP EPS | 274,784 / $169.05 | RLE base path |
-| FY28E revenue / GAAP EPS | 274,784 / $162.24 | RLE base path |
+| FY27E revenue | 274,784 | RLE base path · USD million |
+| FY27E GAAP EPS | 169.05 | RLE base path · USD/share |
+| FY28E revenue | 274,784 | RLE base path · USD million |
+| FY28E GAAP EPS | 162.24 | RLE base path · USD/share |
 
 <!-- TOC_START -->
 ## Contents
@@ -59,80 +60,149 @@ Market capitalization is in USD million and equals the reference price times FQ4
 
 <!-- TOC_END -->
 
+<!-- BOX_START -->
+### Abbreviations and sources
+
+**Prepared remarks** — Micron FQ4 FY26 earnings call prepared remarks (2026-09-30, 10 pages)
+
+**Press release** — Micron FQ4 FY26 earnings press release (8-K EX-99.1, accession 0000723125-26-000018)
+
+**SCORED** — The author's post-print scoring of the FQ4 FY26 pre-registered forecast (forecast/reports/mu_fy2026q4_SCORED.md)
+
+**RLE** — Report-Layer Estimate: this report's FY27E–FY28E estimates anchored on post-print guidance
+
+**PREREG_A** — The FQ4 FY26 forecast frozen before the print (Freeze A)
+
+<!-- BOX_END -->
+
 <a id="section-company"></a>
 ## 1. Company overview and reading rules
 
 This section sets out the company overview and the report's information boundaries.
 
+Micron is a US semiconductor company making DRAM and NAND memory and storage. It reports four business units: Cloud Memory (CMBU), Core Data Center (CDBU), Mobile and Client (MCBU), and Automotive and Embedded (AEBU). FQ4 FY26 revenue was 54,229, with DRAM at 73% of revenue (prepared remarks p.7).
+
+FY2026 has 53 weeks and FQ4 has 14. When comparing with 13-week quarters, growth is also shown on a per-week basis (14-week revenue ÷ 14 versus 13-week revenue ÷ 13).
+
+Numbers in this report sit in three layers: ① PREREG_A, the forecast frozen before the print (never altered); ② A-8K, company-reported actuals (provisional until the 10-K); ③ RLE, the author's estimates anchored on post-print guidance. Each table and chart header states its layer.
+
+UNAVAILABLE marks cells the rules deliberately do not compute (for example, the RLE balance sheet). It avoids inventing values; each table footnote gives the reason.
+
 ![02_business_unit_mix](mu_report_fy2026q4_ed1_assets/02_business_unit_mix_en.png)
 
-CAPTION: Figure 1. Business-unit revenue mix — USD million · Micron earnings materials [SRC-BU×4, SRC-EX991-FQ4FY26] · 2026-10-04 · GAAP actual (A) business-unit revenue
+CAPTION: Figure 1. Business-unit revenue mix — USD million · Micron quarterly earnings releases (8-K EX-99.1); Micron FQ4 FY26 earnings release (8-K EX-99.1) (FQ1-25, FQ1-26, FQ2-26, FQ4-24) · 2026-10-04 · Evidence grade / accounting basis: GAAP actual (A) business-unit revenue
 
 <a id="section-thesis"></a>
 ## 2. Bull and bear cases
 
 The arguments below are things to monitor, not conclusions. Each one lists what observation would show it to be wrong (falsifier).
 
-### Bull case
+### **Bull case**
 
-#### The company said supply will be tighter in 2027 and 2028 than in 2026.
+#### **The company said supply will be tighter in 2027 and 2028 than in 2026.**
 
-Management expects industry DRAM and NAND to remain supply constrained in both years and sees no line of sight to balance (REM p.5).
+| Year | Company statement | Page |
+|---|---|---|
+| 2027 | DRAM and NAND expected to remain supply constrained | Micron FQ4 FY26 prepared remarks p.5 |
+| 2028 | DRAM and NAND expected to remain supply constrained | Micron FQ4 FY26 prepared remarks p.5 |
+
+
+Management expects industry DRAM and NAND to remain supply constrained in both years and sees no line of sight to balance (prepared remarks p.5).
 
 **Falsifier:** A quarterly script that drops the 'supply constrained' language, or the first quarter in which DRAM price change turns negative.
 
-*Source: REM p.5*
+*Source: Micron FQ4 FY26 prepared remarks p.5*
 
-#### FQ1 FY27 revenue guidance accelerated on a per-week basis.
+#### **FQ1 FY27 revenue guidance accelerated on a per-week basis.**
 
-The guidance midpoint of $61,500M is 22.1% per week above FQ4 actual. Management expects sequential revenue growth in every FY27 quarter (REM p.9).
+![12_fq1_guidance_comparison](mu_report_fy2026q4_ed1_assets/12_fq1_guidance_comparison_en.png)
+
+CAPTION: Figure 2. FQ1 FY27 guidance vs pre-registered forecast — USD million · Micron FQ4 FY26 earnings release (8-K EX-99.1); MU FQ4 FY26 pre-registered forecast (Freeze A) · 2026-10-04 · Evidence grade / accounting basis: GAAP PREREG_A + GUIDANCE · Forecasts are approximate guidance midpoints from the pre-registered forecast §(c-2). The range bar spans company guidance low to high; the point marks the midpoint. % labels are per-week growth: FQ1/13 weeks versus actual FQ4 revenue/14 weeks.
+
+
+The guidance midpoint of $61,500M is 22.1% per week above FQ4 actual. Management expects sequential revenue growth in every FY27 quarter (prepared remarks p.9).
 
 **Falsifier:** FQ1 FY27 actual revenue below the low end of guidance, $60,000M.
 
-*Source: PR Business Outlook · REM p.9 · SCORED §8*
+*Source: Micron FQ4 FY26 press release (8-K EX-99.1) business outlook · Micron FQ4 FY26 prepared remarks p.9 · SCORED §8*
 
-#### Strategic customer agreements (SCAs) put a price floor under part of revenue.
+#### **Strategic customer agreements (SCAs) put a price floor under part of revenue.**
 
-Micron has signed 26 SCAs, which it estimates at over 35% of revenue through 2030. 75% of that has a defined pricing framework, mostly bands with floors and ceilings (REM p.3).
+![16_sca_structure](mu_report_fy2026q4_ed1_assets/16_sca_structure_en.png)
+
+CAPTION: Figure 3. SCA structure — Company statements / USD million / % · Micron FQ4 FY26 prepared remarks · 2026-10-04 · Evidence grade / accounting basis: Company statement · Over 35% is the SCA share of total revenue through 2030; 75%/25% split SCA revenue. Deposits of $12.7B are the prepared-remarks balance, distinct from EX-99.1 noncurrent customer contract liabilities of 12,895.
+
+
+Micron has signed 26 SCAs, which it estimates at over 35% of revenue through 2030. 75% of that has a defined pricing framework, mostly bands with floors and ceilings (prepared remarks p.3).
 
 **Falsifier:** A disclosed SCA termination or renegotiation, or a decline in customer deposit balances of $12,895M.
 
-*Source: REM p.3 · PR balance sheet*
+*Source: Micron FQ4 FY26 prepared remarks p.3 · Micron FQ4 FY26 press release (8-K EX-99.1) balance sheet*
 
-### Bear case
+### **Bear case**
 
-#### Slower price increases are the company's own statement.
+#### **Slower price increases are the company's own statement.**
 
-While guiding to higher gross margin after FQ1, management said price increases will be more moderate (REM p.9).
+![10_price_bit_ranges](mu_report_fy2026q4_ed1_assets/10_price_bit_ranges_en.png)
+
+CAPTION: Figure 4. DRAM and NAND price and bit changes (company ranges) — % · Micron FQ3/FQ4 FY26 prepared remarks p.7 · 2026-10-04 · Evidence grade / accounting basis: Company statement + J (author judgement) · J (judgement) conversion, not company figures: low-single-digit = 1–3%; mid-single-digit = 4–6%; ≈10% = 9–11%; high-teens = 16–19%; ≈30% = 28–32%; low-60s = 60–63%; mid-80s = 84–86%
+
+
+While guiding to higher gross margin after FQ1, management said price increases will be more moderate (prepared remarks p.9).
 
 **Falsifier:** The FQ2 FY27 script reports DRAM price growth above the FQ4 FY26 high-teens percent.
 
-*Source: REM p.7, p.9*
+*Source: Micron FQ4 FY26 prepared remarks p.7, p.9*
 
-#### SCA price ceilings cap upside in a rising market.
+#### **SCA price ceilings cap upside in a rising market.**
 
-Most SCA revenue with a defined framework sits in bands with ceilings; above the ceiling, that revenue does not follow market prices (REM p.3).
+(See Figure 3)
+
+
+Most SCA revenue with a defined framework sits in bands with ceilings; above the ceiling, that revenue does not follow market prices (prepared remarks p.3).
 
 **Falsifier:** The company discloses the share of revenue at the ceiling, and it is small.
 
-*Source: REM p.3*
+*Source: Micron FQ4 FY26 prepared remarks p.3*
 
-#### Costs and investment are rising fast.
+#### **Costs and investment are rising fast.**
 
-FY27 opex rises by about $2.5B (REM p.9) and first-half net capex alone is about $25B (REM p.10). FQ4 GAAP opex ran 77.2% above guidance (SCORED §4).
+![14_opex_net_capex_trend](mu_report_fy2026q4_ed1_assets/14_opex_net_capex_trend_en.png)
+
+CAPTION: Figure 5. Operating expenses and net capex trend — USD million · Micron quarterly earnings releases (8-K EX-99.1); Micron FQ4 FY26 earnings release (8-K EX-99.1); This report's FY27E–FY28E estimates (RLE) (FQ1-25, FQ1-26, FQ2-24, FQ2-25, FQ2-26, FQ3-24, FQ3-25, FQ4-24, FQ4-25) · 2026-10-04 · Evidence grade / accounting basis: GAAP opex / company-adjusted net capex A + RLE · Solid=actual, dashed=RLE; excluded quarters: none (12 quarters verified in sources). Missing source values remain blank, without estimation or interpolation.
+
+
+FY27 opex rises by about $2.5B (prepared remarks p.9) and first-half net capex alone is about $25B (prepared remarks p.10). FQ4 GAAP opex ran 77.2% above guidance (SCORED §4).
 
 **Falsifier:** FY27 quarterly GAAP opex comes in below the RLE path ($10,353M).
 
-*Source: REM p.9–10 · SCORED §4*
+*Source: Micron FQ4 FY26 prepared remarks p.9–10 · SCORED §4*
 
 <a id="section-fq4"></a>
 ## 3. Pre-registration versus actuals
 
 The pre-registered forecast and reported actuals are compared on the same basis.
 
+<!-- BOX_START -->
+### Scoring criteria
+
+**Guidance-label hit** — Before the print, each metric got a 'no-difference range' (revenue $49,000M–$51,000M, GAAP GM guidance ±1pt, etc.). Above the range is 'above high', inside is 'in range', below is 'below low'. A hit means the pre-registered forecast gave the same label.
+
+**Band coverage** — Checks whether the actual fell inside the pre-registered bear–bull range. Falling outside would mean the forecast's uncertainty band was too narrow.
+
+**Next-quarter direction (SF7)** — FQ1 FY27 guidance within ±2% per week of FQ4 is flat; above is growth; below is decline. The pre-registered call was flat; actual guidance implied 22.1% per-week growth, so it missed.
+
+<!-- BOX_END -->
+
 ![04_beat_history](mu_report_fy2026q4_ed1_assets/04_beat_history_en.png)
 
-CAPTION: Figure 2. Revenue guidance beat and GAAP EPS above high end — % / USD per share · Micron quarterly guidance and results [SRC-FROZEN, SRC-GUIDANCE×10, SRC-SCORED-FQ4FY26] · 2026-10-04 · GAAP actual and guidance
+CAPTION: Figure 6. Revenue guidance beat and GAAP EPS above high end — % / USD per share · MU FQ4 FY26 pre-registered forecast (Freeze A); Micron quarterly earnings releases (8-K EX-99.1); MU FQ4 FY26 pre-registration scoring document (FQ1-25, FQ1-26, FQ2-24, FQ2-25, FQ2-26, FQ3-24, FQ3-25, FQ3-26, FQ4-24, FQ4-25) · 2026-10-04 · Evidence grade / accounting basis: GAAP actual and guidance
+
+![11_eps_error_waterfall](mu_report_fy2026q4_ed1_assets/11_eps_error_waterfall_en.png)
+
+CAPTION: Figure 7. 4-lever EPS error waterfall — USD per share · MU FQ4 FY26 pre-registration scoring document · 2026-10-04 · Evidence grade / accounting basis: GAAP SCORED
+
+(See Figure 2)
 
 ### Quoted SCORED summary
 
@@ -148,14 +218,34 @@ Band coverage: PASS · 49,000–58,223 · $29.33–$36.66
 Four-lever GAAP EPS attribution: +$0.84 / −$0.73 / +$0.10 / +$0.09 = +$0.30
 Next-quarter direction verdict: MISS
 
+| Metric | No-difference range | Actual | Actual label | Forecast label | Result |
+|---|---|---:|---|---|---|
+| Revenue | 49,000–51,000 | 54,229 | Above high | Above high | HIT |
+| GAAP diluted EPS | 29.73–31.73 | 32.87 | Above high | Above high | HIT |
+| Non-GAAP diluted EPS | 30.00–32.00 | 33.42 | Above high | Above high | HIT |
+| GAAP GM | 85.0–87.0% | 86.76% | In range | In range | HIT |
+| GAAP opex | Not declared | 3,296 | No label (no guidance) | n/a (no guidance) | Narrative failure |
+
+GAAP opex had no company guidance, so it is not label-scored; actual exceeded the pre-registered base by 77%, recorded as a narrative failure (SCORED §4).
+
 <a id="section-outlook"></a>
 ## 4. Outlook
 
 Company guidance and report-layer estimates remain in separate columns.
 
+The amount by which GAAP gross margin (GM) beat the guidance midpoint shrank quickly, from +7.41%p in FQ2 FY26 to +3.56%p in FQ3 and +0.76%p in FQ4. The quarter-on-quarter rise in GM narrowed over the same period.
+
+FQ1 FY27 GAAP GM guidance is 85.95%, below FQ4 actual. Management attributes this to higher FQ4 incentive compensation absorbed into inventory and flowing into FQ1 GM, and calls FQ1 the FY27 floor (prepared remarks p.9).
+
+Reading: GM is already high, leaving little room to rise, and management has flagged slower price increases. A further shrinking or negative beat would be the first sign of a slowing price cycle; this links to the 'price cycle' watch item in the risks section.
+
 ![05_scenario_fan](mu_report_fy2026q4_ed1_assets/05_scenario_fan_en.png)
 
-CAPTION: Figure 3. FQ4 actual to FY27E scenarios — USD million · Micron FQ4 results and RLE [SRC-EX991-FQ4FY26, SRC-RLE-FY27] · 2026-10-04 · GAAP actual (A-8K) + unweighted RLE paths
+CAPTION: Figure 8. FQ4 actual to FY27E scenarios — USD million · Micron FQ4 FY26 earnings release (8-K EX-99.1); This report's FY27E–FY28E estimates (RLE) · 2026-10-04 · Evidence grade / accounting basis: GAAP actual (A-8K) + unweighted RLE paths
+
+![09_gm_beat_compression](mu_report_fy2026q4_ed1_assets/09_gm_beat_compression_en.png)
+
+CAPTION: Figure 9. Compression of GAAP GM beats — %p · Micron FQ4 FY26 earnings release (8-K EX-99.1); MU FQ4 FY26 pre-registered forecast (Freeze A); MU FQ4 FY26 pre-registration scoring document · 2026-10-04 · Evidence grade / accounting basis: GAAP A + GUIDANCE · Bars and lines use left-axis percentage points; FQ1 FY27 guidance uses right-axis GAAP GM %. First-quarter QoQ is blank without a preceding source point.
 
 ### FQ1 FY27 company guidance
 
@@ -172,16 +262,23 @@ CAPTION: Figure 3. FQ4 actual to FY27E scenarios — USD million · Micron FQ4 r
 
 Business-unit mix and pricing and shipment signals are shown in the categories disclosed by the company.
 
+FQ4 FY26 revenue by business unit was CDBU $18.0B (33%), CMBU $16.3B (30%), MCBU $13.1B (24%) and AEBU $6.8B (13%). All four were records; sequential growth was CDBU 56%, AEBU 47%, CMBU 18% and MCBU 14% (prepared remarks p.7–8).
+
+Business-unit GM was 90% for CDBU and MCBU, 84% for AEBU and 83% for CMBU. Only CMBU was flat sequentially; management said higher HBM mix offset higher pricing (prepared remarks p.7). Management also said most 2027 HBM supply is contracted at significantly higher prices year over year, narrowing the GM gap with conventional DRAM (prepared remarks p.4).
+
+By product, DRAM was $39.8B (73%) and NAND $14.1B (26%). Data center SSD revenue was close to $10B, over 2/3 of NAND revenue (prepared remarks p.4, p.7).
+
+Reading: 63% of revenue comes from the data center units (CMBU, CDBU), so the key variables in this report are server and AI demand and DRAM pricing. MCBU revenue rose on price despite lower bit shipments (prepared remarks p.7). If pricing turns, units with weak bit growth may see revenue fall first.
+
 ![03b_guidance_beat_history](mu_report_fy2026q4_ed1_assets/03b_guidance_beat_history_en.png)
 
-CAPTION: Figure 4. GAAP gross-margin guidance versus actual — % · Micron quarterly guidance and results [SRC-FROZEN, SRC-SCORED-FQ4FY26] · 2026-10-04 · GAAP guidance and actual
+CAPTION: Figure 10. GAAP gross-margin guidance versus actual — % · MU FQ4 FY26 pre-registered forecast (Freeze A); MU FQ4 FY26 pre-registration scoring document · 2026-10-04 · Evidence grade / accounting basis: GAAP guidance and actual
 
-### DRAM and NAND qualitative check
+(See Figure 9)
 
-| Business | Period | Pricing | Bit shipments | Treatment |
-|---|---|---|---|---|
-| DRAM | FQ4-26 | ↑ high-teens percentage range | ↑ mid-single-digit percentage range | Verbatim category · not numericized |
-| NAND | FQ4-26 | ↑ approximately 30% | ↑ approximately 10% | Verbatim category · not numericized |
+(See Figure 4)
+
+Micron discloses price and bit-shipment changes only as range wording such as 'high-teens %' or 'mid-single-digit' (prepared remarks p.7). The chart draws these ranges as bars; the conversion rule (e.g., high-teens = 16–19%) is in the chart footnote. The conversion is the author's judgement, not a company figure.
 
 <a id="section-financials"></a>
 ## 6. Financial statements
@@ -190,104 +287,118 @@ The financial statements and key ratios draw from one fact manifest.
 
 ![01_quarterly_revenue_margin](mu_report_fy2026q4_ed1_assets/01_quarterly_revenue_margin_en.png)
 
-CAPTION: Figure 5. Quarterly revenue and GAAP margins — USD million / % · Micron 10-Q and 8-K [SRC-COMPANYFACTS, SRC-EX991-FQ4FY26] · 2026-10-04 · GAAP actual (A); FQ4 has 14 weeks
+CAPTION: Figure 11. Quarterly revenue and GAAP margins — USD million / % · SEC EDGAR Micron financial disclosures; Micron FQ4 FY26 earnings release (8-K EX-99.1) · 2026-10-04 · Evidence grade / accounting basis: GAAP actual (A); FQ4 has 14 weeks
 
 ![06_annual_income](mu_report_fy2026q4_ed1_assets/06_annual_income_en.png)
 
-CAPTION: Figure 6. Annual revenue, operating income and net income — USD million · Micron 10-K, 8-K and RLE [SRC-10K-FY25, SRC-EX991-FQ4FY26, SRC-FROZEN, SRC-RLE-FY27] · 2026-10-04 · GAAP actual (A) + PREREG_A + RLE
+CAPTION: Figure 12. Annual revenue, operating income and net income — USD million · Micron FY2025 Form 10-K; Micron FQ4 FY26 earnings release (8-K EX-99.1); MU FQ4 FY26 pre-registered forecast (Freeze A); This report's FY27E–FY28E estimates (RLE) · 2026-10-04 · Evidence grade / accounting basis: GAAP actual (A) + PREREG_A + RLE
 
 ![08_cash_flow_capex_net_cash](mu_report_fy2026q4_ed1_assets/08_cash_flow_capex_net_cash_en.png)
 
-CAPTION: Figure 7. Adjusted FCF, net capex and net cash (not adjusted for SCA deposits) — USD million · Micron 10-K, 8-K and RLE [SRC-10K-FY23, SRC-10K-FY25, SRC-EX991-FQ4FY26, SRC-RLE-FY27] · 2026-10-04 · GAAP cash-flow framework and RLE; SCA deposits not forecast
+CAPTION: Figure 13. Adjusted FCF, net capex and net cash (not adjusted for SCA deposits) — USD million · Micron FY2023 Form 10-K; Micron FY2025 Form 10-K; Micron FQ4 FY26 earnings release (8-K EX-99.1); This report's FY27E–FY28E estimates (RLE) · 2026-10-04 · Evidence grade / accounting basis: GAAP cash-flow framework and RLE; SCA deposits not forecast
 
 ### Income statement summary (USD million, except per-share data)
 
 | Metric | FY23A | FY24A | FY25A | FY26E PREREG_A | FY26A A-8K | FY27E RLE | FY28E RLE |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Revenue | 15,540 | 25,111 | 37,378 | 131,819 | 133,188 | 274,784 | 274,784 |
-| Cost of revenue | 16,956 | 19,498 | 22,505 | — (not pre-registered) | 25,684 | 38,607 | 46,851 |
-| Gross profit | -1,416 | 5,613 | 14,873 | — (not pre-registered) | 107,504 | 236,177 | 227,933 |
-| Operating expenses | — | — | — | — (not pre-registered) | 8,164 | 10,353 | 11,181 |
-| R&D | 3,114 | 3,430 | 3,798 | — (not pre-registered) | 5,650 | UNAVAILABLE | UNAVAILABLE |
-| SG&A | 920 | 1,129 | 1,205 | — (not pre-registered) | 1,947 | UNAVAILABLE | UNAVAILABLE |
-| Restructuring | 171 | 1 | 39 | — (not pre-registered) | 0 | UNAVAILABLE | UNAVAILABLE |
-| Other operating | 124 | -251 | 61 | — (not pre-registered) | 567 | UNAVAILABLE | UNAVAILABLE |
-| Operating income | -5,745 | 1,304 | 9,770 | — (not pre-registered) | 99,340 | 225,824 | 216,752 |
-| Interest income | 468 | 529 | 496 | — (not pre-registered) | 1,084 | UNAVAILABLE | UNAVAILABLE |
-| Interest expense | -388 | -562 | -477 | — (not pre-registered) | -106 | UNAVAILABLE | UNAVAILABLE |
-| Other non-operating | 7 | -31 | -135 | — (not pre-registered) | -647 | UNAVAILABLE | UNAVAILABLE |
-| Pretax income | -5,658 | 1,240 | 9,654 | — (not pre-registered) | 99,671 | 225,197 | 216,126 |
-| Below-operating items | — | — | — | — (not pre-registered) | 331 | -627 | -627 |
-| Income tax | -177 | -451 | -1,124 | — (not pre-registered) | -14,761 | -30,794 | -29,553 |
-| Equity-method result | 2 | -11 | 9 | — (not pre-registered) | 59 | UNAVAILABLE | UNAVAILABLE |
+| Cost of revenue | 16,956 | 19,498 | 22,505 | —† | 25,684 | 38,607 | 46,851 |
+| Gross profit | -1,416 | 5,613 | 14,873 | —† | 107,504 | 236,177 | 227,933 |
+| Operating expenses | — | — | — | —† | 8,164 | 10,353 | 11,181 |
+| R&D | 3,114 | 3,430 | 3,798 | —† | 5,650 | —‡ | —‡ |
+| SG&A | 920 | 1,129 | 1,205 | —† | 1,947 | —‡ | —‡ |
+| Restructuring | 171 | 1 | 39 | —† | 0 | —‡ | —‡ |
+| Other operating | 124 | -251 | 61 | —† | 567 | —‡ | —‡ |
+| Operating income | -5,745 | 1,304 | 9,770 | —† | 99,340 | 225,824 | 216,752 |
+| Interest income | 468 | 529 | 496 | —† | 1,084 | —‡ | —‡ |
+| Interest expense | -388 | -562 | -477 | —† | -106 | —‡ | —‡ |
+| Other non-operating | 7 | -31 | -135 | —† | -647 | —‡ | —‡ |
+| Pretax income | -5,658 | 1,240 | 9,654 | —† | 99,671 | 225,197 | 216,126 |
+| Below-operating items | — | — | — | —† | 331 | -627 | -627 |
+| Income tax | -177 | -451 | -1,124 | —† | -14,761 | -30,794 | -29,553 |
+| Equity-method result | 2 | -11 | 9 | —† | 59 | —‡ | —‡ |
 | Net income | -5,833 | 778 | 8,539 | 84,720 | 84,969 | 194,404 | 186,572 |
-| Diluted shares | 1,093 | 1,118 | 1,125 | — (not pre-registered) | 1,143M | 1,150M | 1,150M |
+| Diluted shares | 1,093 | 1,118 | 1,125 | —† | 1,143M | 1,150M | 1,150M |
 | Diluted EPS | -5.34 | 0.70 | 7.59 | 73.90 | $74.33 | $169.05 | $162.24 |
+
+† Freeze A forecast only the FQ4 quarter and FY26 revenue, net income and EPS.
+‡ RLE rules estimate only parts of income and cash flow, not the balance sheet (appendix rules A11–A16).
 
 ### Balance sheet summary (USD million)
 
 | Metric | FY23A | FY24A | FY25A | FY26E PREREG_A | FY26A A-8K | FY27E RLE | FY28E RLE |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Cash | 8,577 | 7,041 | 9,642 | — (not pre-registered) | 38,364 | UNAVAILABLE | UNAVAILABLE |
-| Short-term investments | 1,017 | 1,065 | 665 | — (not pre-registered) | 5,070 | UNAVAILABLE | UNAVAILABLE |
-| Receivables | 2,443 | 6,615 | 9,265 | — (not pre-registered) | 36,197 | UNAVAILABLE | UNAVAILABLE |
-| Inventories | 8,387 | 8,875 | 8,355 | — (not pre-registered) | 10,372 | UNAVAILABLE | UNAVAILABLE |
-| Current assets | 21,244 | 24,372 | 28,841 | — (not pre-registered) | 91,070 | UNAVAILABLE | UNAVAILABLE |
-| Long-term investments | 844 | 1,046 | 1,629 | — (not pre-registered) | 30,019 | UNAVAILABLE | UNAVAILABLE |
-| Property, plant and equipment | 37,928 | 39,749 | 46,590 | — (not pre-registered) | 63,310 | UNAVAILABLE | UNAVAILABLE |
-| Total assets | 64,254 | 69,416 | 82,798 | — (not pre-registered) | 195,888 | UNAVAILABLE | UNAVAILABLE |
-| Accounts payable and accrued expenses | 3,958 | 7,299 | 9,649 | — (not pre-registered) | 22,605 | UNAVAILABLE | UNAVAILABLE |
-| Current debt | 278 | 431 | 560 | — (not pre-registered) | 491 | UNAVAILABLE | UNAVAILABLE |
-| Current liabilities | 4,765 | 9,248 | 11,454 | — (not pre-registered) | 27,482 | UNAVAILABLE | UNAVAILABLE |
-| Long-term debt | 13,052 | 12,966 | 14,017 | — (not pre-registered) | 4,688 | UNAVAILABLE | UNAVAILABLE |
-| Total liabilities | 20,134 | 24,285 | 28,633 | — (not pre-registered) | 57,510 | UNAVAILABLE | UNAVAILABLE |
-| Total equity | 44,120 | 45,131 | 54,165 | — (not pre-registered) | 138,378 | UNAVAILABLE | UNAVAILABLE |
+| Cash | 8,577 | 7,041 | 9,642 | —† | 38,364 | —‡ | —‡ |
+| Short-term investments | 1,017 | 1,065 | 665 | —† | 5,070 | —‡ | —‡ |
+| Receivables | 2,443 | 6,615 | 9,265 | —† | 36,197 | —‡ | —‡ |
+| Inventories | 8,387 | 8,875 | 8,355 | —† | 10,372 | —‡ | —‡ |
+| Current assets | 21,244 | 24,372 | 28,841 | —† | 91,070 | —‡ | —‡ |
+| Long-term investments | 844 | 1,046 | 1,629 | —† | 30,019 | —‡ | —‡ |
+| Property, plant and equipment | 37,928 | 39,749 | 46,590 | —† | 63,310 | —‡ | —‡ |
+| Total assets | 64,254 | 69,416 | 82,798 | —† | 195,888 | —‡ | —‡ |
+| Accounts payable and accrued expenses | 3,958 | 7,299 | 9,649 | —† | 22,605 | —‡ | —‡ |
+| Current debt | 278 | 431 | 560 | —† | 491 | —‡ | —‡ |
+| Current liabilities | 4,765 | 9,248 | 11,454 | —† | 27,482 | —‡ | —‡ |
+| Long-term debt | 13,052 | 12,966 | 14,017 | —† | 4,688 | —‡ | —‡ |
+| Total liabilities | 20,134 | 24,285 | 28,633 | —† | 57,510 | —‡ | —‡ |
+| Total equity | 44,120 | 45,131 | 54,165 | —† | 138,378 | —‡ | —‡ |
+
+† Freeze A forecast only the FQ4 quarter and FY26 revenue, net income and EPS.
+‡ RLE rules estimate only parts of income and cash flow, not the balance sheet (appendix rules A11–A16).
 
 ### Cash-flow statement summary (USD million)
 
 | Metric | FY23A | FY24A | FY25A | FY26E PREREG_A | FY26A A-8K | FY27E RLE | FY28E RLE |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Net income | -5,833 | 778 | 8,539 | — (not pre-registered) | 84,969 | 194,404 | 186,572 |
-| Depreciation and amortization | 7,756 | 7,780 | 8,352 | — (not pre-registered) | 9,503 | 14,096 | 19,837 |
-| Stock-based compensation | 596 | 833 | 972 | — (not pre-registered) | 1,333 | 1,972 | 2,130 |
-| Working-capital investment | — | — | — | — (not pre-registered) | UNAVAILABLE | -4,882 | 0 |
-| Change in receivables | 2,763 | -3,581 | -1,776 | — (not pre-registered) | -25,206 | UNAVAILABLE | UNAVAILABLE |
-| Change in inventories | -3,555 | -488 | 520 | — (not pre-registered) | -2,017 | UNAVAILABLE | UNAVAILABLE |
-| Change in accounts payable | -1,302 | 1,915 | 862 | — (not pre-registered) | 8,707 | UNAVAILABLE | UNAVAILABLE |
-| Change in other current liabilities | -817 | 989 | -272 | — (not pre-registered) | 3,141 | UNAVAILABLE | UNAVAILABLE |
-| Operating cash flow | 1,559 | 8,507 | 17,525 | — (not pre-registered) | 89,675 | 205,589 | 208,539 |
-| PPE expenditures | -7,676 | -8,386 | -15,857 | — (not pre-registered) | -30,712 | UNAVAILABLE | UNAVAILABLE |
-| Government incentives | 710 | 315 | 2,005 | — (not pre-registered) | 3,316 | UNAVAILABLE | UNAVAILABLE |
-| PPE disposal proceeds | — | — | — | — (not pre-registered) | 29 | UNAVAILABLE | UNAVAILABLE |
-| Net capex | 6,966 | 8,071 | 13,852 | — (not pre-registered) | 27,367 | 50,000 | 50,000 |
-| Adjusted FCF | -5,407 | 436 | 3,673 | — (not pre-registered) | 62,308 | 155,589 | 158,539 |
-| Investing cash flow | -6,191 | -8,309 | -14,087 | — (not pre-registered) | -61,641 | UNAVAILABLE | UNAVAILABLE |
-| Debt repayments | -761 | -1,897 | -4,619 | — (not pre-registered) | -10,043 | UNAVAILABLE | UNAVAILABLE |
-| Debt issuance | 6,716 | 999 | 4,430 | — (not pre-registered) | 0 | UNAVAILABLE | UNAVAILABLE |
-| Share repurchases | — | — | — | — (not pre-registered) | -1,777 | UNAVAILABLE | UNAVAILABLE |
-| Dividends | -504 | -513 | -522 | — (not pre-registered) | -610 | -690 | -690 |
-| Financing cash flow | 4,983 | -1,842 | -850 | — (not pre-registered) | 630 | UNAVAILABLE | UNAVAILABLE |
-| FX effect | -34 | 40 | 6 | — (not pre-registered) | 81 | UNAVAILABLE | UNAVAILABLE |
-| Change in cash | 317 | -1,604 | 2,594 | — (not pre-registered) | 28,745 | UNAVAILABLE | UNAVAILABLE |
+| Net income | -5,833 | 778 | 8,539 | —† | 84,969 | 194,404 | 186,572 |
+| Depreciation and amortization | 7,756 | 7,780 | 8,352 | —† | 9,503 | 14,096 | 19,837 |
+| Stock-based compensation | 596 | 833 | 972 | —† | 1,333 | 1,972 | 2,130 |
+| Working-capital investment | — | — | — | —† | —‡ | -4,882 | 0 |
+| Change in receivables | 2,763 | -3,581 | -1,776 | —† | -25,206 | —‡ | —‡ |
+| Change in inventories | -3,555 | -488 | 520 | —† | -2,017 | —‡ | —‡ |
+| Change in accounts payable | -1,302 | 1,915 | 862 | —† | 8,707 | —‡ | —‡ |
+| Change in other current liabilities | -817 | 989 | -272 | —† | 3,141 | —‡ | —‡ |
+| Operating cash flow | 1,559 | 8,507 | 17,525 | —† | 89,675 | 205,589 | 208,539 |
+| PPE expenditures | -7,676 | -8,386 | -15,857 | —† | -30,712 | —‡ | —‡ |
+| Government incentives | 710 | 315 | 2,005 | —† | 3,316 | —‡ | —‡ |
+| PPE disposal proceeds | — | — | — | —† | 29 | —‡ | —‡ |
+| Net capex | 6,966 | 8,071 | 13,852 | —† | 27,367 | 50,000 | 50,000 |
+| Adjusted FCF | -5,407 | 436 | 3,673 | —† | 62,308 | 155,589 | 158,539 |
+| Investing cash flow | -6,191 | -8,309 | -14,087 | —† | -61,641 | —‡ | —‡ |
+| Debt repayments | -761 | -1,897 | -4,619 | —† | -10,043 | —‡ | —‡ |
+| Debt issuance | 6,716 | 999 | 4,430 | —† | 0 | —‡ | —‡ |
+| Share repurchases | — | — | — | —† | -1,777 | —‡ | —‡ |
+| Dividends | -504 | -513 | -522 | —† | -610 | -690 | -690 |
+| Financing cash flow | 4,983 | -1,842 | -850 | —† | 630 | —‡ | —‡ |
+| FX effect | -34 | 40 | 6 | —† | 81 | —‡ | —‡ |
+| Change in cash | 317 | -1,604 | 2,594 | —† | 28,745 | —‡ | —‡ |
+
+† Freeze A forecast only the FQ4 quarter and FY26 revenue, net income and EPS.
+‡ RLE rules estimate only parts of income and cash flow, not the balance sheet (appendix rules A11–A16).
 
 ### Key ratios and working capital (%, days, USD million)
 
 | Metric | FY23A | FY24A | FY25A | FY26E PREREG_A | FY26A A-8K | FY27E RLE | FY28E RLE |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Gross margin | -9.1% | 22.4% | 39.8% | — (not pre-registered) | 80.7% | 86.0% | 83.0% |
-| Operating margin | -37.0% | 5.2% | 26.1% | — (not pre-registered) | 74.6% | 82.2% | 78.9% |
-| Effective tax rate | -3.1% | 36.4% | 11.6% | — (not pre-registered) | 14.8% | 13.7% | 13.7% |
-| ROE | -12.4% | 1.7% | 17.2% | — (not pre-registered) | 88.3% | UNAVAILABLE | UNAVAILABLE |
-| Inventory days | 161.5 | 161.1 | 139.3 | — (not pre-registered) | 135.3 | UNAVAILABLE | UNAVAILABLE |
-| Net capex / revenue | 44.8% | 32.1% | 37.1% | — (not pre-registered) | 20.5% | 18.2% | 18.2% |
-| Net cash (not adjusted for SCA deposits) | -2,892 | -4,245 | -2,641 | — (not pre-registered) | 68,274 | 223,173 | 381,022 |
+| Gross margin | -9.1% | 22.4% | 39.8% | —† | 80.7% | 86.0% | 83.0% |
+| Operating margin | -37.0% | 5.2% | 26.1% | —† | 74.6% | 82.2% | 78.9% |
+| Effective tax rate | -3.1% | 36.4% | 11.6% | —† | 14.8% | 13.7% | 13.7% |
+| ROE | -12.4% | 1.7% | 17.2% | —† | 88.3% | —‡ | —‡ |
+| Inventory days | 161.5 | 161.1 | 139.3 | —† | 135.3 | —‡ | —‡ |
+| Net capex / revenue | 44.8% | 32.1% | 37.1% | —† | 20.5% | 18.2% | 18.2% |
+| Net cash (not adjusted for SCA deposits) | -2,892 | -4,245 | -2,641 | —† | 68,274 | 223,173 | 381,022 |
 
-A dash in FY26E PREREG_A means the item was outside the pre-registered scope.
+† Freeze A forecast only the FQ4 quarter and FY26 revenue, net income and EPS.
+‡ RLE rules estimate only parts of income and cash flow, not the balance sheet (appendix rules A11–A16).
 
 <a id="section-margin_bridge"></a>
 ## 7. Margin bridge
 
 The margin bridge separates changes in gross profit from changes in operating expense.
+
+![15_operating_income_waterfall](mu_report_fy2026q4_ed1_assets/15_operating_income_waterfall_en.png)
+
+CAPTION: Figure 14. FY26A to FY27E base operating-income bridge — USD million · Micron FQ4 FY26 earnings release (8-K EX-99.1); This report's FY27E–FY28E estimates (RLE) · 2026-10-04 · Evidence grade / accounting basis: GAAP A + RLE
 
 ### GAAP margin and operating-expense bridge
 
@@ -315,6 +426,10 @@ Assumption rules were set before the print (HANDOFF R9); after the print only th
 
 Sensitivity rows show three alternative growth paths and the original GM rule next to the base. A 0/0/0% growth path is not neutral: with continued bit growth it implies falling prices.
 
+![13_scenario_sensitivity_eps](mu_report_fy2026q4_ed1_assets/13_scenario_sensitivity_eps_en.png)
+
+CAPTION: Figure 15. FY27E scenario and sensitivity EPS — USD per share · This report's FY27E–FY28E estimates (RLE) · 2026-10-04 · Evidence grade / accounting basis: GAAP RLE
+
 <a id="section-valuation"></a>
 ## 9. Valuation
 
@@ -322,7 +437,7 @@ The valuation table shows its reference dates and calculation basis.
 
 ![07_valuation_heatmap](mu_report_fy2026q4_ed1_assets/07_valuation_heatmap_en.png)
 
-CAPTION: Figure 8. Implied P/E sensitivity — multiple; axes in %p · Reference price and RLE [SRC-PRICE-1] · 2026-10-04 · Center cell=base path; fixed reference price; recalculated GAAP EPS RLE
+CAPTION: Figure 16. Implied P/E sensitivity — multiple; axes in %p · Nasdaq MU 2026-10-01 closing-price record 1 · 2026-10-04 · Evidence grade / accounting basis: Center cell=base path; fixed reference price; recalculated GAAP EPS RLE
 
 ### Reference-price implied multiples
 
@@ -337,64 +452,64 @@ CAPTION: Figure 8. Implied P/E sensitivity — multiple; axes in %p · Reference
 | FY2028E.base | 6.76x | 5.03x | 4.33x | 12.6% |
 | FY2028E.bull | 4.95x | 3.79x | 3.45x | 17.9% |
 
-| Metric | Value | Basis |
-|---|---:|---|
-| Trailing P/B | 9.10x | A-8K |
+Trailing P/B: 9.10x · A-8K
 
 Price date 2026-10-01 · equity date 2026-09-03 · shares use FQ4 diluted weighted-average shares
 
 <a id="section-risks"></a>
 ## 10. Risks and swing factors
 
-### Price cycle
+### **Price cycle**
 
 The key variable is when slower price increases turn into price declines. In past cycles, quarterly revenue fell by double digits right after the peak. The bear path tempers this tail but does not rule it out.
 
-*Source: REM p.9 · RLE A2, A3*
+*Source: Micron FQ4 FY26 prepared remarks p.9 · RLE A2, A3*
 
-### One-offs above operating income
+### **One-offs above operating income**
 
 In FQ4, a patent license charge and other operating expense sat above operating income and pushed opex well above guidance. The pre-registered below-OP watch item (SF5) did not cover this, and FY27 incentive compensation can move through the same line.
 
-*Source: PR · SCORED §4, §7*
+*Source: Micron FQ4 FY26 press release (8-K EX-99.1) · SCORED §4, §7*
 
-### Rising investment
+### **Rising investment**
 
 Management guided FY27 net capex of about $25B in the first half and higher in the second. RLE sets the second half equal to the first (a floor), so FCF may be overstated.
 
-*Source: REM p.10 · RLE A14*
+*Source: Micron FQ4 FY26 prepared remarks p.10 · RLE A14*
 
-### SCA structure
+### **SCA structure**
 
 Price floors limit downside and ceilings limit upside. Customer deposits are financing cash flows and are returned late in each contract. Net cash in this report is not adjusted for deposits.
 
-*Source: REM p.3, p.8–9*
+*Source: Micron FQ4 FY26 prepared remarks p.3, p.8–9*
 
-### Capital return and share count
+### **Capital return and share count**
 
 Micron plans to increase capital return from 2026-12-09 and over time return 100% of excess cash. RLE includes no buybacks, so EPS upside from them is omitted.
 
-*Source: REM p.9 · RLE A7*
+*Source: Micron FQ4 FY26 prepared remarks p.9 · RLE A7*
 
-### FY28
+### **FY28**
 
 Management expects supply to stay tight in 2028, while new cleanroom output builds from late 2028. FY28E is shown only as an unweighted stress range.
 
-*Source: REM p.2–3, p.5 · RLE A8–A10*
+*Source: Micron FQ4 FY26 prepared remarks p.2–3, p.5 · RLE A8–A10*
+
+(See Figure 5)
 
 <a id="section-catalysts"></a>
 ## 11. Catalysts and schedule
 
 | When | What to check | Source |
 |---|---|---|
-| 2026-10-14 / 10-29 | Quarterly dividend record / payment date ($0.15 per share) | PR |
-| 2026-10 (expected) | FY26 10-K filing — scoring moves from provisional to confirm; G0-A and G0-B close | SCORED |
-| From 2026-12-09 | Start of increased capital return | REM p.9 |
-| FQ1 FY27 earnings (date not announced) | Check revenue vs guidance and the GM-floor statement; first RLE comparison | REM p.9 |
-| Early CY2027 | Initial output from Singapore HBM advanced packaging | REM p.3 |
-| Mid CY2027 | Idaho ID1 wafer output; meaningful shipments from Tongluo, Taiwan | REM p.2–3 |
-| Second half of CY2027 | Next-generation DRAM and NAND nodes begin volume production | REM p.2 |
-| Second half of CY2028 | Output from ID2, the Japan DRAM expansion and the new Singapore NAND facility | REM p.2–3 |
+| 2026-10-14 / 10-29 | Quarterly dividend record / payment date ($0.15 per share) | Micron FQ4 FY26 press release (8-K EX-99.1) |
+| 2026-10 (expected) | FY26 10-K filing — 8-K provisional actuals checked against the 10-K; scoring moves from provisional to final | SCORED |
+| From 2026-12-09 | Start of increased capital return | Micron FQ4 FY26 prepared remarks p.9 |
+| FQ1 FY27 earnings (date not announced) | Check revenue vs guidance and the GM-floor statement; first RLE comparison | Micron FQ4 FY26 prepared remarks p.9 |
+| Early CY2027 | Initial output from Singapore HBM advanced packaging | Micron FQ4 FY26 prepared remarks p.3 |
+| Mid CY2027 | Idaho ID1 wafer output; meaningful shipments from Tongluo, Taiwan | Micron FQ4 FY26 prepared remarks p.2–3 |
+| Second half of CY2027 | Next-generation DRAM and NAND nodes begin volume production | Micron FQ4 FY26 prepared remarks p.2 |
+| Second half of CY2028 | Output from ID2, the Japan DRAM expansion and the new Singapore NAND facility | Micron FQ4 FY26 prepared remarks p.2–3 |
 
 <a id="section-appendix"></a>
 ## 12. Appendix
@@ -405,53 +520,75 @@ The appendix brings together the prior rules, post-print changes, interpretation
 
 Overall rule confidence: low
 
-| Rule | Inputs | Formula | Input / rule grade | Source |
+Evidence grades: E (company/pre-print input), D (calculated), J (author judgement). Ratios are percentages; amounts are USD million and shares are million shares.
+
+| Item | Rule in words | Applied value | Evidence grade | Source |
 |---|---|---|---|---|
-| A1_fq1_revenue · First-quarter revenue | value: 60000; value: 65036.2; value: 71616.8; value: 61500 | G1_low; G1_mid × (1 + b_med); G1_mid × (1 + b4) | E / J | SRC-EX991-FQ4FY26; SRC-SCORED-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A2_fq2_to_fq4_weekly_revenue_growth · Later-quarter weekly revenue growth | value: -0.1/-0.08/-0.05; value: 0.04/0.035/0.03; value: 0.08/0.05/0.03; value: 0.03/0.02/0.01 | — | E·D / J | SRC-HANDOFF-R9-R12 |
-| A2_prime_decline_parallel_path · Decline parallel path | value: FQ1 weekly direction <= -0.02; value: 0.221316; value: NOT_ACTIVATED | (G1_mid / 13) / (A4_actual / 14) - 1 | E / J | SRC-HANDOFF-R9-R12; SRC-EX991-FQ4FY26 |
-| A3_gaap_gross_margin · GAAP gross margin | value: 0.8495/0.8245/0.7995/0.7745; value: 0.8595/0.8595/0.8595/0.8595; value: 0.8695/0.8745/0.8795/0.8845; value: 0.8595/0.8545/0.8495/0.8445 | — | E / J | SRC-EX991-FQ4FY26; SRC-HANDOFF-R9-R12; SRC-REMARKS-FQ4FY26 |
-| A4_gaap_opex · GAAP operating expenses | value: 2310/2413/2654/2976; value: 10353 | — | D / J | SRC-EX991-FQ4FY26; SRC-REMARKS-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A5_below_operating_pct_of_revenue · Below-operating items | value: -0.00228 | — | E / J | SRC-FROZEN-PREREG-A |
-| A6_gaap_effective_tax_rate · GAAP effective tax rate | value: AVAILABLE_BACKSOLVED; value: 0.15; value: 0.136742; value: 0.131742 | G1_mid × M1 - X1 + A5 × G1_mid; 1 - (fq1_gaap_eps_mid × S1) / pretax_residual_input; base - 0.005 | D / J | SRC-HANDOFF-R9-R12; SRC-EX991-FQ4FY26; SRC-FROZEN-PREREG-A |
-| A7_diluted_shares · Diluted shares | value: 1150/1150/1150/1150; value: 0; value: -0.01/-0.03 | — | E / J | SRC-EX991-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A8_fy2028_revenue_growth · Next-year revenue growth | value: -0.25; value: 0; value: 0.1 | — | D / J | SRC-HANDOFF-R9-R12 |
-| A9_fy2028_gross_margin · Next-year gross margin | value: 0.6245; value: 0.8295; value: 0.8845 | FY2027_bear_FQ4 - 0.15; FY2027_base_FQ4 - 0.03; FY2027_bull_FQ4 | D / J | SRC-HANDOFF-R9-R12 |
-| A10_fy2028_opex · Next-year operating expenses | value: 11181.2 | FY2027_opex × 1.08 | D / J | SRC-HANDOFF-R9-R12 |
-| A11_da · Depreciation and amortization | value: 0.172939; value: 0.0432348; value: 14095.9; value: 99214.1 | FY2026_DA / average(FY2025_ending_PPE, FY2026_ending_PPE); annual_rate_d / 4; sum(FQ1:FQ4_DA) | E / J | SRC-10K-FY25; SRC-EX991-FQ4FY26; SRC-HANDOFF-R9-R12; SRC-REMARKS-FQ4FY26 |
-| A12_sbc · Stock-based compensation | value: 0.190476; value: 1972 | median_rate × FY2027_opex | E / J | SRC-10K-FY25; SRC-EX991-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A13_working_capital · Working capital | value: AVAILABLE; value: 0.0344792 | change_in_balance_sheet_nwc / change_in_revenue | E / J | SRC-HANDOFF-R9-R12; SRC-10K-FY23; SRC-10K-FY25; SRC-EX991-FQ4FY26 |
-| A14_net_capex · Net capital expenditures | value: 11500/13500/12500/12500; value: 50000; value: 50000; value: -0.1/-0.05/0.05/0.1 | — | E(lower bound) / J | SRC-REMARKS-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A15_dividends · Dividends | value: 0.15; value: 690 | quarterly_dps × 4 × S1 | E / — | SRC-EX991-FQ4FY26; SRC-HANDOFF-R9-R12 |
-| A16_sca_deposits · SCA deposits | value: UNAVAILABLE | — | E / — | SRC-HANDOFF-R9-R12 |
-| A17_nongaap_fy2027_fy2028 · Non-GAAP estimates | value: UNAVAILABLE_WITHOUT_ASSUMPTIONS | — | E / — | SRC-HANDOFF-R9-R12 |
+| First-quarter revenue | Bear uses the guidance low end; base and bull apply historical beats to the midpoint. | Bear: 60000; Base: 65036.2; Bull: 71616.8; Company-midpoint sensitivity: 61500 | E / J | Micron FQ4 FY26 earnings release (8-K EX-99.1); MU FQ4 FY26 pre-registration scoring document; Author-approved pre-print rules, post-print changes and interpretation correction |
+| Later-quarter weekly revenue growth | Later-quarter revenue applies each path's growth rate to prior-quarter revenue per week. | Bear: −10.00%/−8.00%/−5.00%; Base: 4.00%/3.50%/3.00%; Bull: 8.00%/5.00%/3.00%; Slowdown sensitivity: 3.00%/2.00%/1.00% | E·D / J | Author-approved pre-print rules, post-print changes and interpretation correction |
+| Decline parallel path | Activate the parallel decline path when FQ1 weekly growth is at most −2%. Weekly growth is (FQ1 revenue / 13) / (FQ4 actual revenue / 14) − 1. | Trigger: FQ1 weekly growth ≤ −2%; Observed growth: 22.13%; Availability: not activated | E / J | Author-approved pre-print rules, post-print changes and interpretation correction; Micron FQ4 FY26 earnings release (8-K EX-99.1) |
+| GAAP gross margin | Quarterly gross profit equals each path's revenue times its GAAP gross margin. | Bear: 84.95%/82.45%/79.95%/77.45%; Base: 85.95%/85.95%/85.95%/85.95%; Bull: 86.95%/87.45%/87.95%/88.45%; Original pre-print sensitivity: 85.95%/85.45%/84.95%/84.45% | E / J | Micron FQ4 FY26 earnings release (8-K EX-99.1); Author-approved pre-print rules, post-print changes and interpretation correction; Micron FQ4 FY26 prepared remarks |
+| GAAP operating expenses | Allocate first-quarter GAAP guidance and the annual expense outlook across quarters. | FQ1–FQ4, all paths: 2310/2413/2654/2976; FY27E total: 10353 | D / J | Micron FQ4 FY26 earnings release (8-K EX-99.1); Micron FQ4 FY26 prepared remarks; Author-approved pre-print rules, post-print changes and interpretation correction |
+| Below-operating items | Below-operating items equal revenue times the pre-registered ratio. | All paths: −0.23% | E / J | MU FQ4 FY26 pre-registered forecast (Freeze A) |
+| GAAP effective tax rate | Pretax income equals gross profit less opex plus below-operating items. Backsolve tax from guided net income and pretax income; the base residual pretax input is 0. | Availability: available (backsolved); Bear: 15.00%; Base: 13.67%; Bull: 13.17% | D / J | Author-approved pre-print rules, post-print changes and interpretation correction; Micron FQ4 FY26 earnings release (8-K EX-99.1); MU FQ4 FY26 pre-registered forecast (Freeze A) |
+| Diluted shares | Hold quarterly diluted weighted-average shares at first-quarter guidance; omit buybacks. | FQ1–FQ4, all paths: 1150/1150/1150/1150; Buybacks: 0; Share-reduction sensitivity: −1.00%/−3.00% | E / J | Micron FQ4 FY26 earnings release (8-K EX-99.1); Author-approved pre-print rules, post-print changes and interpretation correction |
+| Next-year revenue growth | FY28E revenue applies each path's annual growth rate to FY27E revenue. | Bear: −25.00%; Base: 0.00%; Bull: 10.00% | D / J | Author-approved pre-print rules, post-print changes and interpretation correction |
+| Next-year gross margin | Subtract 0.15 in bear and 0.03 in base from FY27 final-quarter margin; hold bull flat. | Bear: 62.45%; Base: 82.95%; Bull: 88.45% | D / J | Author-approved pre-print rules, post-print changes and interpretation correction |
+| Next-year operating expenses | FY28E opex equals FY27E opex times 1.08. | All paths: 11181.2 | D / J | Author-approved pre-print rules, post-print changes and interpretation correction |
+| Depreciation and amortization | Annual D&A rate is FY26 D&A / average opening and closing PP&E; quarterly rate is annual rate / 4. Closing PP&E is opening PP&E plus net capex less D&A. | FY26 annual rate: 17.29%; Quarterly rate: 4.32%; FY27E total: 14095.9; FY27E closing PP&E: 99214.1 | E / J | Micron FY2025 Form 10-K; Micron FQ4 FY26 earnings release (8-K EX-99.1); Author-approved pre-print rules, post-print changes and interpretation correction; Micron FQ4 FY26 prepared remarks |
+| Stock-based compensation | Multiply the historical median SBC / GAAP opex ratio by FY27E opex. | Historical median ratio: 19.05%; FY27E total: 1972 | E / J | Micron FY2025 Form 10-K; Micron FQ4 FY26 earnings release (8-K EX-99.1); Author-approved pre-print rules, post-print changes and interpretation correction |
+| Working capital | Apply the historical median change in working capital / change in revenue to annual revenue growth; subtract it in cash flow. | Availability: available; Historical median ratio: 3.45% | E / J | Author-approved pre-print rules, post-print changes and interpretation correction; Micron FY2023 Form 10-K; Micron FY2025 Form 10-K; Micron FQ4 FY26 earnings release (8-K EX-99.1) |
+| Net capital expenditures | Use company first-quarter and first-half guidance; set second half equal to first half as a lower bound. | FQ1–FQ4, all paths: 11500/13500/12500/12500; FY27E total: 50000; FY28E total: 50000; Sensitivity: −10.00%/−5.00%/5.00%/10.00% | E(lower bound) / J | Micron FQ4 FY26 prepared remarks; Author-approved pre-print rules, post-print changes and interpretation correction |
+| Dividends | Annual dividends equal quarterly dividend per share × 4 quarters × diluted shares. | Quarterly dividend per share: 0.15; FY27E total: 690 | E / — | Micron FQ4 FY26 earnings release (8-K EX-99.1); Author-approved pre-print rules, post-print changes and interpretation correction |
+| SCA deposits | SCA deposits are neither adjusted out of net cash nor forecast. | Estimate periods: not estimated | E / — | Author-approved pre-print rules, post-print changes and interpretation correction |
+| Non-GAAP estimates | No estimate without non-GAAP adjustment assumptions. | Availability: not estimated (no assumption) | E / — | Author-approved pre-print rules, post-print changes and interpretation correction |
 
 The rules were set before the print, but the file and hash were recorded afterward. The conversation record is therefore the only evidence of pre-registration.
 
 ### Post-print changes
 
-| Item | Original | Change | Reason | Source page |
+| Item | Original | Change | Reason | Page |
 |---|---|---|---|---|
-| A3_base | FQ1 = M1; then -0.5 percentage point per quarter | FQ1 = M1; then flat through FQ4; retain -0.5 point path as preregistered sensitivity | Prepared remarks identify FQ1 as the FY2027 gross-margin floor and state that later quarters should be higher; flat is a conservative no-new-number implementation. | 9 |
-| A4_opex | FY2026 GAAP opex * 52/53 + 1000; FQ1=X1; allocate the remainder 30:33:37 | (6841 non-GAAP opex + 2500) + 253*4 = 10353; quarterly 2310/2413/2654/2976 | Prepared remarks give an approximately 2500 FY2027 increase on the document's non-GAAP basis. The 253 quarterly GAAP add-on is the FQ1 stock-compensation difference: R&D 166 plus SG&A 87. | 9 |
-| A14_net_capex | FQ4 actual net capex * 1.05, flat; replace if numerical FY2027 guidance is issued | 11500/13500/12500/12500; FY2027 total 50000; FY2028 total 50000 | Prepared remarks give FQ1 about 11500 and first-half about 25000, and say second-half capex will be higher. Setting second half equal to first half is a disclosed lower bound that biases FCF high. | 10 |
+| Base gross margin | FQ1 = FQ1 GAAP GM guidance; then -0.5 percentage point per quarter | FQ1 = FQ1 GAAP GM guidance; then flat through FQ4; retain -0.5 point path as preregistered sensitivity | Prepared remarks identify FQ1 as the FY2027 gross-margin floor and state that later quarters should be higher; flat is a conservative no-new-number implementation. | 9 |
+| Operating expenses | FY2026 GAAP opex * 52/53 + 1000; FQ1=FQ1 GAAP opex guidance; allocate the remainder 30:33:37 | (6841 non-GAAP opex + 2500) + 253*4 = 10353; quarterly 2310/2413/2654/2976 | Prepared remarks give an approximately 2500 FY2027 increase on the document's non-GAAP basis. The 253 quarterly GAAP add-on is the FQ1 stock-compensation difference: R&D 166 plus SG&A 87. | 9 |
+| Net capex | FQ4 actual net capex * 1.05, flat; replace if numerical FY2027 guidance is issued | 11500/13500/12500/12500; FY2027 total 50000; FY2028 total 50000 | Prepared remarks give FQ1 about 11500 and first-half about 25000, and say second-half capex will be higher. Setting second half equal to first half is a disclosed lower bound that biases FCF high. | 10 |
 
 ### Net-capex roll-forward interpretation correction
 
-Use net capex in the PP&E roll-forward: PPE_end = PPE_begin + net_capex - D&A; quarterly D&A = (d/4) * average(PPE_begin, PPE_end).
+Use net capex in the PP&E roll-forward: closing PP&E equals opening PP&E plus net capex less D&A. Quarterly D&A equals the annual rate divided by 4 quarters times average opening and closing PP&E.
 
-The FY2025 10-K states that government incentives related to capital expenditures reduce property, plant and equipment.
+The FY2025 Form 10-K states that government incentives related to capital expenditures reduce property, plant and equipment.
 
-The timing difference between receipt of incentives and the PP&E reduction, including the FY2026 noncurrent unearned government incentive balance of 786, is not modeled.
+The timing difference between receipt of incentives and the PP&E reduction, including the FY2026 noncurrent unearned government incentive balance of USD 786 million, is not modeled.
 
 The working-capital change applies k to the annual change in revenue.
 
+### Abbreviations and sources
+
+**Prepared remarks** — Micron FQ4 FY26 earnings call prepared remarks (2026-09-30, 10 pages)
+
+**Press release** — Micron FQ4 FY26 earnings press release (8-K EX-99.1, accession 0000723125-26-000018)
+
+**SCORED** — The author's post-print scoring of the FQ4 FY26 pre-registered forecast (forecast/reports/mu_fy2026q4_SCORED.md)
+
+**RLE** — Report-Layer Estimate: this report's FY27E–FY28E estimates anchored on post-print guidance
+
+**PREREG_A** — The FQ4 FY26 forecast frozen before the print (Freeze A)
+
 ### Method and information boundary
 
-FY2026Q4 PREREG_A, A-8K, A-10K and FY2027E–FY2028E RLE are separate columns. FY27 consensus comparison is UNAVAILABLE.
+The three layers of numbers are never mixed. PREREG_A was frozen before the print and not altered afterwards, then scored against post-print actuals (A-8K) on the same basis (SCORED). RLE is an estimate built after scoring, starting from company guidance, and is not evidence of forecasting skill.
+
+A-8K is the provisional result from the press release (8-K). When the 10-K is filed, the same items are checked and any differences are corrected in the next edition. A-10K means 10-K-based actuals.
+
+Evidence grades: E is a value found in company filings or the pre-registration documents, D is a value calculated from those, and J is the author's judgement. Values involving J are flagged in table and figure footnotes.
+
+Information boundary: no material after the information cutoff is used. Broker report figures and opinions are not used, and consensus is UNAVAILABLE because no free, verifiable source exists. No rating, price target or scenario probabilities are given.
+
+Checks: KO/EN number parity, financial statement identities and input file hashes are tested automatically, and every page is checked as an image before publication.
 
 This document is not investment advice.
 
 This is third-party analysis based on public information and has not been prepared, reviewed, or approved by Micron or its affiliates.
 
-As of the pre-publication confirmation time (2026-10-04T14:42:00+09:00), the author, Jiwon Kim, does not hold shares of Micron Technology, Inc. (MU).
+As of the pre-publication confirmation time (2026-10-05T19:07:00+09:00), the author, Jiwon Kim, does not hold shares of Micron Technology, Inc. (MU).

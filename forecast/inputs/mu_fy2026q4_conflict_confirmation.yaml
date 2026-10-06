@@ -1,8 +1,8 @@
-# 이해관계 확인 레코드 (계획 rev-4.3 §4-7, J-2, G-12c) — public 리포 커밋 대상
-# 근거: Jiwon 대화 진술 "지금 MU 주식을 보유하고 있지 않다" (2026-10-04 14:42 KST 메시지). 기록: Claude.
-# 유효: 렌더 시작이 confirmed_at_kst + 24시간(2026-10-05 14:42 KST) 이전일 때만.
+# 이해관계 확인 레코드 (계획 rev-4.4 §4-7, J-2, G-12c) — public 리포 커밋 대상
+# 근거: Jiwon 대화 진술 "MU 주식 보유하고 있지 않다" (2026-10-05 19:07 KST 메시지). 기록: Claude. 대상: 제1판 개정 1.
+# 유효: 렌더 시작이 confirmed_at_kst + 24시간(2026-10-06 19:07 KST) 이전일 때만.
 author: 김지원
 ticker: MU
 status: not_held
-confirmed_at_kst: "2026-10-04T14:42:00+09:00"
+confirmed_at_kst: "2026-10-05T19:07:00+09:00"
 edition: ed1

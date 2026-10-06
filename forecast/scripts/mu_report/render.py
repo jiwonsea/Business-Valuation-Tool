@@ -123,6 +123,10 @@ def _financial_tables(manifest: Manifest, locale: str, strings: dict, refs: list
     locale_index = 0 if locale == "ko" else 1
     columns = strings["financial_tables"]["columns"]
     not_preregistered = strings["financial_tables"]["not_preregistered"]
+    compact = manifest.metadata.get("layer") == "E2-B"
+    def display_cells(values: list[str]) -> list[str]:
+        return ["—†" if value == not_preregistered else "—‡" if value == "UNAVAILABLE" else value for value in values] if compact else values
+    notes = ["† " + strings["financial_tables"]["not_preregistered_note"], "‡ " + strings["financial_tables"]["rle_unavailable_note"]] if compact else []
     out: list[str] = []
 
     def cell(fact_id: str, position: str, fallback: str = "UNAVAILABLE") -> str:
@@ -161,8 +165,8 @@ def _financial_tables(manifest: Manifest, locale: str, strings: dict, refs: list
         out.extend([f"### {title}", "", "| " + " | ".join(columns) + " |", "|---|---:|---:|---:|---:|---:|---:|---:|"])
         for metric in metrics:
             values = income_values(metric) if family == "is" else balance_values(metric) if family == "bs" else cash_values(metric)
-            out.append(f"| {labels[metric][locale_index]} | " + " | ".join(values) + " |")
-        out.append("")
+            out.append(f"| {labels[metric][locale_index]} | " + " | ".join(display_cells(values)) + " |")
+        out.extend(["", *notes, ""])
     add_table(strings["financial_tables"]["income_title"], "is", (
         "revenue", "cogs", "gross_profit", "opex", "r_and_d", "sg_and_a", "restructuring", "other_operating",
         "operating_income", "interest_income", "interest_expense", "other_nonoperating", "pretax_income",
@@ -190,8 +194,8 @@ def _financial_tables(manifest: Manifest, locale: str, strings: dict, refs: list
             actual = cell(f"ratio.{metric}.FY2026.A-8K", f"table:ratio:{metric}:actual")
             fy27 = cell(f"ratio.{metric}.FY2027E.base", f"table:ratio:{metric}:fy27") if metric in {"gross_margin", "operating_margin", "etr", "net_capex_revenue"} else "UNAVAILABLE"
             fy28 = cell(f"ratio.{metric}.FY2028E.base", f"table:ratio:{metric}:fy28") if metric in {"gross_margin", "operating_margin", "etr", "net_capex_revenue"} else "UNAVAILABLE"
-        out.append(f"| {labels[metric][locale_index]} | " + " | ".join([*history, not_preregistered, actual, fy27, fy28]) + " |")
-    out.extend(["", strings["financial_tables"]["not_preregistered_note"], ""])
+        out.append(f"| {labels[metric][locale_index]} | " + " | ".join(display_cells([*history, not_preregistered, actual, fy27, fy28])) + " |")
+    out.extend(["", *(notes if compact else [strings["financial_tables"]["not_preregistered_note"], strings["financial_tables"]["rle_unavailable_note"]]), ""])
     return out
 
 
@@ -317,9 +321,11 @@ def render_markdown(
             "table_cell",
             refs,
         )
+        if ed1:
+            value = value.replace("$", "").replace("USD ", "").removesuffix(" million").removesuffix("M")
         rows.append(f"| {row['label']} | {value} | {row['basis']} |")
     thesis = _replace(strings["thesis"], manifest, locale, "text:thesis", "text_placeholder", refs)
-    methodology = _replace(
+    methodology = "" if ed1 else _replace(
         strings["methodology"],
         manifest,
         locale,
@@ -334,6 +340,10 @@ def render_markdown(
         basis = _replace(row["basis"], manifest, locale, f"table:market:{row_index}:basis", "table_cell", refs)
         if dryrun and value == "UNAVAILABLE":
             basis = strings["dryrun"]["unavailable_price"] if row_index in (0, 2) else strings["dryrun"]["unavailable_input"]
+        if ed1:
+            value = value.replace("$", "").replace("USD ", "").removesuffix(" million").removesuffix("M")
+            if row_index < 3:
+                basis = ["USD/share · 2026-10-01", "million shares · FQ4 A-8K", "USD million · " + ("주가 × 주식수" if locale == "ko" else "price × shares")][row_index]
         market_rows.append(f"| {row['label']} | {value} | {basis} |")
     lines = [
         f"# {strings['dryrun']['title'] if dryrun else (strings['ed1']['title'] if ed1 else strings['title'])}",
@@ -351,7 +361,7 @@ def render_markdown(
         "",
         conflict_full,
         "",
-        thesis,
+        *([] if ed1 else [thesis]),
         "",
         f"### {strings['market_data']['title']}",
         "",
@@ -381,6 +391,37 @@ def render_markdown(
         "financials": ["01_quarterly_revenue_margin", "06_annual_income", "08_cash_flow_capex_net_cash"],
         "valuation": ["07_valuation_heatmap"],
     }
+    emitted_charts: set[str] = set()
+    def chart_lines(chart_id: str) -> list[str]:
+        if not chart_manifest:
+            return []
+        chart = chart_manifest[chart_id]
+        if ed1 and chart_id in emitted_charts:
+            number = re.search(r"\d+", chart["caption"]["number"]).group()
+            return [(f"(그림 {number} 참조)" if locale == "ko" else f"(See Figure {number})"), ""]
+        emitted_charts.add(chart_id)
+        return [f"![{chart_id}]({asset_prefix}/{chart['path']})", "",
+                "CAPTION: " + f"{chart['caption']['number']} {chart['caption']['title']} — "
+                + " · ".join(chart["caption"][key] for key in ("unit", "source", "as_of", "basis"))
+                + (" · " + chart["footnote"] if chart.get("footnote") else ""), ""]
+
+    def narrative_lines(key: str, position_prefix: str) -> list[str]:
+        data = narrative[key][locale]
+        result = []
+        for paragraph_index, paragraph in enumerate(data, 1):
+            text = paragraph if isinstance(paragraph, str) else f"**{paragraph.get('key', paragraph.get('term'))}** — {paragraph['text']}"
+            result.extend([_replace(text, manifest, locale, f"text:{position_prefix}:{paragraph_index}", "text_placeholder", refs), ""])
+        return result
+
+    if ed1:
+        chart_sections["fq4"].extend(["11_eps_error_waterfall", "12_fq1_guidance_comparison"])
+        chart_sections["outlook"].append("09_gm_beat_compression")
+        chart_sections["business"].extend(["09_gm_beat_compression", "10_price_bit_ranges"])
+        chart_sections["scenarios"] = ["13_scenario_sensitivity_eps"]
+        chart_sections["margin_bridge"] = ["15_operating_income_waterfall"]
+        chart_sections["risks"] = ["14_opex_net_capex_trend"]
+        toc_end = lines.index("<!-- TOC_END -->")
+        lines[toc_end + 1:] = ["", "<!-- BOX_START -->", "### " + ("약어와 출처" if locale == "ko" else "Abbreviations and sources"), "", *narrative_lines("abbreviations", "abbreviations:cover"), "<!-- BOX_END -->", ""]
     for index, section in enumerate(strings["sections"], start=1):
         section_id = section["id"]
         lines.extend([f"<a id=\"section-{section_id}\"></a>", f"## {index}. {section['title']}", ""])
@@ -392,31 +433,73 @@ def render_markdown(
             def replace_narrative_fact(value: str, position: str) -> str:
                 return _replace(value, manifest, locale, f"text:{section_id}:{position}", "text_placeholder", refs)
 
-            lines.extend(narrative_section_markdown(section_id, locale, narrative, replace_narrative_fact, strings))
+            assembled = narrative_section_markdown(section_id, locale, narrative, replace_narrative_fact, strings)
+            if section_id == "thesis":
+                evidence = iter([None, "12_fq1_guidance_comparison", "16_sca_structure", "10_price_bit_ranges", "16_sca_structure", "14_opex_net_capex_trend"])
+                with_evidence = []
+                for line in assembled:
+                    with_evidence.append(line)
+                    if line.startswith("#### "):
+                        chart_id = next(evidence)
+                        if chart_id:
+                            with_evidence.extend(["", *chart_lines(chart_id)])
+                        else:
+                            headers = ["연도", "회사 진술", "쪽"] if locale == "ko" else ["Year", "Company statement", "Page"]
+                            statement = "DRAM·NAND 공급 제약 지속 예상" if locale == "ko" else "DRAM and NAND expected to remain supply constrained"
+                            source = "Micron FQ4 FY26 준비문 p.5" if locale == "ko" else "Micron FQ4 FY26 prepared remarks p.5"
+                            with_evidence.extend(["", "| " + " | ".join(headers) + " |", "|---|---|---|", *[f"| {year} | {statement} | {source} |" for year in (2027, 2028)], ""])
+                assembled = with_evidence
+            lines.extend(assembled)
         else:
             lines.extend([strings["section_connectors"][section_id], ""])
             if section_id == "appendix":
                 if assumptions is None:
                     raise ValueError("ed1 appendix requires report-layer assumptions")
                 lines.extend(appendix_markdown(assumptions, locale, strings))
+        if ed1 and section_id == "company":
+            lines.extend(narrative_lines("company", "company"))
+        if ed1 and section_id == "fq4":
+            lines.extend(["<!-- BOX_START -->", "### " + ("판정 기준" if locale == "ko" else "Scoring criteria"), "", *narrative_lines("fq4_reading", "fq4_reading"), "<!-- BOX_END -->", ""])
+        if ed1 and section_id == "outlook":
+            lines.extend(narrative_lines("gm_compression", "gm_compression"))
+        if ed1 and section_id == "business":
+            lines.extend(narrative_lines("business_structure", "business_structure"))
+        if ed1 and section_id == "appendix":
+            lines.extend(["### " + ("약어와 출처" if locale == "ko" else "Abbreviations and sources"), "", *narrative_lines("abbreviations", "abbreviations:appendix")])
         if chart_manifest:
             for chart_id in chart_sections.get(section["id"], []):
-                chart = chart_manifest[chart_id]
-                lines.extend([
-                    f"![{chart_id}]({asset_prefix}/{chart['path']})",
-                    "",
-                    "CAPTION: "
-                    + f"{chart['caption']['number']} {chart['caption']['title']} — "
-                    + " · ".join(chart["caption"][key] for key in ("unit", "source", "as_of", "basis")),
-                    "",
-                ])
+                lines.extend(chart_lines(chart_id))
         if section_id == "fq4" and narrative is not None and not dryrun:
             lines.extend(_scored_table(manifest, locale, strings, refs))
+            headers = ["지표", "무차이 범위", "실제", "실제 라벨", "예측 라벨", "결과"] if locale == "ko" else ["Metric", "No-difference range", "Actual", "Actual label", "Forecast label", "Result"]
+            lines.extend(["| " + " | ".join(headers) + " |", "|---|---|---:|---|---|---|"])
+            for row in range(5):
+                cells = [_fact_cell(manifest, f"scored.verdict.{row}.{column}.FQ4FY26", locale, f"table:verdict:{row}:{column}", refs) for column in range(6)]
+                if locale == "en":
+                    cells[0] = ["Revenue", "GAAP diluted EPS", "Non-GAAP diluted EPS", "GAAP GM", "GAAP opex"][row]
+                    cells[5] = "HIT" if row < 4 else "Narrative failure"
+                    if row == 4:
+                        cells[1], cells[3], cells[4] = "Not declared", "No label (no guidance)", "(d-1) In range by construction"
+                mapping = {"ABOVE_HIGH": ("상단 초과", "Above high"), "IN_RANGE": ("범위 안", "In range"), "BELOW_LOW": ("하단 미달", "Below low")}
+                for code, translated in mapping.items():
+                    cells = [cell.replace(code, translated[0 if locale == "ko" else 1]) for cell in cells]
+                if locale == "ko" and row == 4:
+                    cells[3] = "라벨 없음(가이던스 없음)"
+                if row == 4:
+                    cells[4] = "해당 없음(가이던스 없음)" if locale == "ko" else "n/a (no guidance)"
+                lines.append("| " + " | ".join(cells) + " |")
+            lines.extend(["", (
+                "GAAP 영업비용은 회사 가이던스가 없어 라벨 채점 대상이 아니다. 실제가 사전등록 기준보다 77% 많아 서술 실패로 기록했다(SCORED §4)."
+                if locale == "ko" else
+                "GAAP opex had no company guidance, so it is not label-scored; actual exceeded the pre-registered base by 77%, recorded as a narrative failure (SCORED §4)."
+            ), ""])
         if section_id == "outlook" and ed1:
             lines.extend(_guidance_table(manifest, locale, strings, refs))
         if section_id == "margin_bridge" and ed1:
             lines.extend(_margin_bridge_table(manifest, locale, strings, refs))
-        if section["id"] == "business" and (dryrun or narrative is not None):
+        if ed1 and section_id == "business":
+            lines.extend(narrative_lines("price_bit_note", "price_bit_note"))
+        if section["id"] == "business" and dryrun:
             qualitative_rows = []
             for product in ("DRAM", "NAND"):
                 period = "FQ3-26" if dryrun else "FQ4-26"
@@ -437,9 +520,7 @@ def render_markdown(
             pb_caption = _replace(strings["valuation"]["pb_caption"], manifest, locale, "caption:valuation:pb", "text_placeholder", refs)
             lines.extend([
                 *_valuation_table(manifest, locale, strings, refs),
-                f"| {strings['table']['metric']} | {strings['table']['value']} | {strings['table']['basis']} |",
-                "|---|---:|---|",
-                f"| {strings['valuation']['trailing_pb']} | {pb_value} | A-8K |",
+                f"{strings['valuation']['trailing_pb']}: {pb_value} · A-8K",
                 "",
                 pb_caption,
                 "",
@@ -447,7 +528,7 @@ def render_markdown(
             if dryrun:
                 lines.extend([strings["dryrun"]["unavailable_price"], ""])
         if section["id"] == "appendix":
-            lines.extend([f"### {strings['methodology_title']}", "", methodology, ""])
+            lines.extend([f"### {strings['methodology_title']}", "", *(narrative_lines("methodology", "methodology") if ed1 else [methodology, ""])])
     lines.extend([
         strings["disclaimer"]["not_advice"],
         "",
@@ -466,6 +547,8 @@ def _html_from_markdown(markdown: str, locale: str, conflict_short: str | None =
     in_table = False
     table_header_pending = False
     in_toc = False
+    in_list = False
+    right_columns: set[int] = set()
     pending_anchor: str | None = None
 
     def inline(value: str) -> str:
@@ -478,11 +561,22 @@ def _html_from_markdown(markdown: str, locale: str, conflict_short: str | None =
     def close_table() -> None:
         nonlocal in_table, table_header_pending
         if in_table:
-            body.append("</table>")
+            body.append("</tbody></table>")
             in_table = False
             table_header_pending = False
-    for line in lines:
-        if line == "<!-- TOC_START -->":
+    def numeric_cell(value: str) -> bool:
+        return re.fullmatch(r"(?:UNAVAILABLE|N/M|—[†‡]?|(?:USD\s*)?[-+−()$€£¥\d,.% ]+(?:M|million|%p|x)?)", value) is not None
+    for line_index, line in enumerate(lines):
+        if in_list and not line.startswith("- "):
+            body.append("</ul>")
+            in_list = False
+        if line == "<!-- BOX_START -->":
+            close_table()
+            body.append("<aside class='reading-box'>")
+        elif line == "<!-- BOX_END -->":
+            close_table()
+            body.append("</aside>")
+        elif line == "<!-- TOC_START -->":
             close_table()
             body.append("</section>")
             body.append("<nav class='toc'>")
@@ -502,6 +596,12 @@ def _html_from_markdown(markdown: str, locale: str, conflict_short: str | None =
         elif line.startswith("# "):
             close_table()
             body.append(f"<h1>{inline(line[2:])}</h1>")
+        elif line.startswith("- "):
+            close_table()
+            if not in_list:
+                body.append("<ul>")
+                in_list = True
+            body.append(f"<li>{inline(line[2:])}</li>")
         elif line.startswith("#### "):
             close_table()
             body.append(f"<h4>{inline(line[5:])}</h4>")
@@ -527,24 +627,48 @@ def _html_from_markdown(markdown: str, locale: str, conflict_short: str | None =
             if set("".join(cells)) <= {"-", ":"}:
                 continue
             if not in_table:
-                body.append("<table>")
+                alignment = lines[line_index + 1].strip("|").split("|") if line_index + 1 < len(lines) else []
+                right_columns = {index for index, value in enumerate(alignment) if value.strip().endswith(":")}
+                data_rows = []
+                for following in lines[line_index + 2:]:
+                    if not following.startswith("|"):
+                        break
+                    data_rows.append([value.strip() for value in following.strip("|").split("|")])
+                right_columns.update(index for index in range(len(cells))
+                                     if data_rows and all(index < len(row) and numeric_cell(row[index]) for row in data_rows))
+                table_class = ""
+                widths = None
+                if len(cells) == 5 and cells[-1] in {"근거쪽", "근거 쪽", "Source page", "쪽", "Page"}:
+                    table_class = " class='post-print-changes'"
+                    widths = (13, 22, 23, 35, 7)
+                elif len(cells) == 5 and cells[0] in {"규칙", "항목", "Rule", "Item"}:
+                    table_class = " class='appendix-rules'"
+                    widths = (16, 28, 20, 10, 26)
+                columns = "<colgroup>" + "".join(f"<col style='width:{width}%'>" for width in widths) + "</colgroup>" if widths else ""
+                body.append(f"<table{table_class}>{columns}<thead>")
                 in_table = True
                 table_header_pending = True
             tag = "th" if table_header_pending else "td"
             rendered_cells = []
             for index, cell in enumerate(cells):
-                is_numeric = re.fullmatch(r"(?:UNAVAILABLE|N/M|—|[-+()$€£¥\d,.% ]+)", cell) is not None
-                css_class = " class='wide-number'" if tag == "td" and index > 0 and is_numeric else ""
+                is_numeric = numeric_cell(cell)
+                css_class = " class='wide-number'" if index in right_columns or (tag == "td" and is_numeric) else ""
                 rendered_cells.append(f"<{tag}{css_class}>{inline(cell)}</{tag}>")
             body.append("<tr>" + "".join(rendered_cells) + "</tr>")
+            if table_header_pending:
+                body.append("</thead><tbody>")
             table_header_pending = False
         elif line:
             close_table()
             if line.startswith("CAPTION: ") and body and body[-1].startswith("<figure>"):
-                body[-1] = body[-1].replace("</figure>", f"<figcaption>{line.removeprefix('CAPTION: ')}</figcaption></figure>")
+                body[-1] = body[-1].replace("</figure>", f"<figcaption>{inline(line.removeprefix('CAPTION: '))}</figcaption></figure>")
             else:
                 body.append(f"<p>{inline(line)}</p>")
+        else:
+            close_table()
     close_table()
+    if in_list:
+        body.append("</ul>")
     if in_toc:
         body.append("</nav>")
     strings = _locale(locale)
@@ -553,22 +677,38 @@ def _html_from_markdown(markdown: str, locale: str, conflict_short: str | None =
         footer_parts.append(conflict_short)
     footer = " · ".join(footer_parts).replace("'", "\\'")
     section_break = "h2[id] { break-before:page; }" if dryrun else ""
-    css = f"@page {{ size: A4; margin: 20mm 16mm 19mm; @bottom-center {{ content: '{footer} · ' counter(page) '/' counter(pages); color:{COLORS['gray_dark']}; font-family:{FONT_STACK}; font-size:5.7pt; white-space:nowrap; }} }}\n" + f"""
+    font_css = ""
+    font_dir = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+    for weight, filename in ((400, "NotoSansKR-Regular.ttf"), (700, "NotoSansKR-Bold.ttf")):
+        font_path = font_dir / filename
+        if font_path.is_file():
+            font_css += f"@font-face {{ font-family:'Noto Sans KR'; src:url('{font_path.as_uri()}'); font-weight:{weight}; }}\n"
+    css = font_css + f"@page {{ size: A4; margin: 20mm 16mm 19mm; @bottom-center {{ content: '{footer} · ' counter(page) '/' counter(pages); color:{COLORS['gray_dark']}; font-family:{FONT_STACK}; font-size:5.7pt; white-space:nowrap; }} }}\n" + f"""
 body {{ font-family: {FONT_STACK}; color:{COLORS['ink']}; background:{COLORS['paper']}; font-size:10pt; line-height:1.5; }}
 p {{ margin:2mm 0; }}
-h1 {{ color:{COLORS['ink']}; border-left:8px solid {COLORS['primary']}; padding-left:12px; font-size:21pt; line-height:1.18; margin:0 0 5mm; }}
+h1 {{ font-weight:700; color:{COLORS['ink']}; border-left:8px solid {COLORS['primary']}; padding-left:12px; font-size:21pt; line-height:1.18; margin:0 0 5mm; }}
 h2 {{ color:{COLORS['primary']}; border-bottom:1px solid {COLORS['gray_mid']}; padding-bottom:2mm; margin-top:9mm; }}
 h4 {{ font-weight:700; font-size:10pt; margin:4mm 0 1mm; }}
+h3 {{ font-weight:700; }}
+strong {{ font-weight:700; }}
 {section_break}
 aside {{ background:{COLORS['blue_pale']}; border-left:3px solid {COLORS['warning']}; padding:8px 12px; color:{COLORS['gray_dark']}; }}
-table {{ width:100%; table-layout:fixed; border-collapse:collapse; margin:4mm 0; background:white; font-size:8pt; }}
+table {{ width:100%; table-layout:fixed; border-collapse:collapse; margin:4mm 0; background:white; font-size:8pt; break-inside:avoid; }}
+thead {{ display:table-header-group; }}
+tr {{ break-inside:avoid; }}
 th {{ background:{COLORS['primary']}; color:white; text-align:left; padding:5px; overflow-wrap:anywhere; }}
 td {{ border-bottom:1px solid {COLORS['gray_mid']}; padding:5px; overflow-wrap:anywhere; }}
 th:first-child, td:first-child {{ width:18%; }}
 tr:nth-child(even) td {{ background:{COLORS['gray_pale']}; }}
 td:not(:first-child) {{ font-size:7.2pt; }}
-td.wide-number {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
+.wide-number {{ text-align:right; font-variant-numeric:tabular-nums; }}
+td.wide-number {{ white-space:nowrap; }}
+th {{ white-space:normal; }}
+.appendix-rules th, .appendix-rules td, .post-print-changes th, .post-print-changes td {{ width:auto; }}
+.post-print-changes th:last-child, .post-print-changes td:last-child {{ text-align:center; }}
+.post-print-changes th, .post-print-changes td {{ word-break:keep-all; overflow-wrap:normal; hyphens:none; }}
 .cover {{ font-size:9pt; line-height:1.35; }}
+.cover h1 {{ color:{COLORS['primary']}; border-left-width:12px; }}
 .cover p {{ margin:1.5mm 0; }}
 .cover table {{ margin:2.5mm 0; }}
 .cover th, .cover td {{ padding:4px; }}
@@ -614,6 +754,8 @@ def _write_ed1_xlsx_summary(summary, conflict: ConflictConfirmation, render_date
         for cell in row:
             cell.value = None
     summary["A1"] = locales["ko"]["ed1"]["title"]
+    summary.row_dimensions[1].height = summary["A1"].font.sz * 1.5 + 8
+    summary["A1"].alignment = Alignment(vertical="center")
     summary["A3"], summary["B3"], summary["E3"] = "Field", "KO", "EN"
     for column in "BCDEFG":
         summary.column_dimensions[column].width = 20

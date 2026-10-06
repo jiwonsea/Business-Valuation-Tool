@@ -30,7 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 E2B_BASELINES = {
     "forecast/inputs/mu_fy2026q4_report_assumptions.yaml": "292f4dce0ef5242e8072ce14d87320e022aa68ecb828712a8dd647752592c539",
     "forecast/REVIEW_CODEX_mu_report_rle_values_r2.md": "8012d34a8881567568b20fc440771156390f2426b942c36c8b9f33f0847fa74a",
-    "forecast/inputs/mu_fy2026q4_narrative_ed1.yaml": "85e4d0c9bcf84adca608a7aaf1211a59f5c320bbc32c1ae299b172200792df0d",
+    "forecast/inputs/mu_fy2026q4_narrative_ed1.yaml": "8fee9e26f59222ae062a83c450759e91fb90f6a69e1cbceea156f549478bbec0",
 }
 
 
@@ -153,6 +153,30 @@ def _run_e2b_preflight() -> dict[str, object]:
         assumptions_path,
     ]
     gate_g18_hygiene(hygiene_paths)
+    from forecast.scripts.mu_report.charts import chart_data_contract, e2b_specs
+    from forecast.scripts.mu_report.render import render_markdown
+    from forecast.scripts.mu_report.gates import (
+        gate_ed1_rendered, gate_g13_charts, gate_g13b_chart_identity, gate_g13c_chart_semantics,
+        gate_g15_parity, gate_g15b_localized_ui, gate_g16_caption, gate_g23_availability,
+    )
+
+    charts, texts, references = {}, {}, {}
+    for locale, config in locale_configs.items():
+        specs = e2b_specs(manifest, locale, config)
+        charts[locale] = {spec.chart_id: chart_data_contract(manifest, spec, locale) for spec in specs}
+        gate_g13_charts(charts[locale])
+        gate_g13b_chart_identity(manifest, charts[locale])
+        gate_g13c_chart_semantics(manifest, charts[locale])
+        for chart in charts[locale].values():
+            gate_g16_caption(chart["caption"])
+        texts[locale], references[locale] = render_markdown(
+            manifest, locale, chart_manifest=charts[locale], narrative=narrative, assumptions=assumptions,
+            render_date=datetime.now(timezone(timedelta(hours=9))).date().isoformat(),
+        )
+    gate_ed1_rendered(texts)
+    gate_g15_parity(references, manifest, texts)
+    gate_g15b_localized_ui(charts, texts)
+    availability = gate_g23_availability(manifest, charts, texts)
     return {
         "phase": "E2B",
         "fact_bindings": values,
@@ -160,13 +184,18 @@ def _run_e2b_preflight() -> dict[str, object]:
         "narrative": narrative,
         "assumptions": assumptions,
         "reader": reader,
+        "chart_count_per_locale": {locale: len(data) for locale, data in charts.items()},
+        "c14_missing": manifest.metadata["c14_missing"],
+        "required_available_failures": availability["required_available_failures"],
         "gates": {
             "G-1": "PASS", "G-2": "PASS", "G-3": "PASS", "G-3f": "PASS", "G-4": "NOT_APPLICABLE_PRE_RENDER",
             "G-5": "NOT_APPLICABLE_PRE_RENDER", "G-6": "NOT_APPLICABLE_PRE_RENDER", "G-7": "PASS",
             "G-8": "NOT_APPLICABLE_PRE_RENDER", "G-9": "PASS", "G-10": "NOT_APPLICABLE_PRE_RENDER",
             "G-11": "NOT_APPLICABLE_PRE_RENDER", "G-12": "PASS", "G-12b": "DEFERRED_RENDER",
             "G-12c": "PENDING_CONFLICT_CONFIRMATION", "G-13": "DEFERRED_RENDER", "G-14": "PASS",
-            "G-15": "PASS_STRUCTURE", "G-16": "DEFERRED_RENDER", "G-17": "PASS_CONFIG",
+            "G-13-data": "PASS_16_PER_LOCALE", "G-13b-data": "PASS", "G-13c-data": "PASS", "G-16-data": "PASS",
+            "G-10-data": "PASS", "G-11-data": "PASS", "G-15": "PASS_IN_MEMORY", "G-15b-data": "PASS", "G-23-data": "PASS",
+            "G-16": "DEFERRED_RENDER", "G-17": "PASS_CONFIG",
             "G-18": "PASS", "G-19": "PASS", "G-20": "PASS", "G-21": "DEFERRED_RENDER",
         },
     }
@@ -290,6 +319,7 @@ def main() -> int:
     parser.add_argument("--phase", required=True, choices=["E2-A", "E2-B", "E2B", "E2-C", "DRYRUN"])
     parser.add_argument("--edition", default="1", choices=["1", "2", "dryrun"])
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--preflight-only", action="store_true", help="Stop before reading conflict confirmation or rendering")
     args = parser.parse_args()
     if args.phase == "DRYRUN":
         if args.edition != "dryrun" or args.output_dir is not None:
@@ -303,6 +333,11 @@ def main() -> int:
         if args.edition != "1" or args.output_dir is not None:
             parser.error("E2B preflight requires --edition 1 and does not accept --output-dir")
         result = _run_e2b_preflight()
+        if args.preflight_only:
+            printable = {key: value for key, value in result.items() if key not in {"manifest", "narrative", "assumptions", "reader"}}
+            printable["status"] = "STOPPED_PRE_RENDER_R20"
+            print(json.dumps(printable, ensure_ascii=False, indent=2, sort_keys=True))
+            return 0
         conflict_path = REPO_ROOT / "forecast/inputs/mu_fy2026q4_conflict_confirmation.yaml"
         if not conflict_path.exists():
             printable = {
@@ -361,6 +396,8 @@ def main() -> int:
             gate_g23_availability,
             gate_g24_raw_markup,
             gate_g25_cover_dates,
+            gate_r22_presentation,
+            gate_r23_presentation,
             gate_inventory_days,
             gate_market_data_box,
             gate_narrative_contract,
@@ -416,6 +453,8 @@ def main() -> int:
             outputs["xlsx"],
         )
         run_gate("G-25 cover dates", gate_g25_cover_dates, rendered_texts)
+        run_gate("R22 presentation/glyph/bbox/Bold", gate_r22_presentation, outputs, chart_manifests, result["narrative"], manifest)
+        run_gate("R23 header/table/font geometry", gate_r23_presentation, outputs, chart_manifests)
         for locale in ("ko", "en"):
             for chart_id, chart in chart_manifests[locale].items():
                 run_gate(f"G-16 caption {locale}/{chart_id}", gate_g16_caption, chart["caption"])

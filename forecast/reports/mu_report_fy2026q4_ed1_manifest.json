@@ -1393,6 +1393,77 @@
       "tags": [],
       "unit": "USD_per_share"
     },
+    "bridge.op_amount.gm.FY2026A_to_FY2027E": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "14,382",
+        "ko": "14,382"
+      },
+      "extraction": null,
+      "fact_id": "bridge.op_amount.gm.FY2026A_to_FY2027E",
+      "label": "bridge.op_amount.gm.FY2026A_to_FY2027E",
+      "lineage": {
+        "formula": "op_amount_bridge_v1",
+        "inputs": [
+          "is.revenue.FY2027E.base",
+          "ratio.gross_margin.FY2026.A-8K",
+          "ratio.gross_margin.FY2027E.base"
+        ]
+      },
+      "period": "FY2027E",
+      "raw_value": 14382.255672305633,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "bridge.op_amount.opex.FY2026A_to_FY2027E": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-2,189",
+        "ko": "-2,189"
+      },
+      "extraction": null,
+      "fact_id": "bridge.op_amount.opex.FY2026A_to_FY2027E",
+      "label": "bridge.op_amount.opex.FY2026A_to_FY2027E",
+      "lineage": {
+        "formula": "op_amount_bridge_v1",
+        "inputs": [
+          "is.opex.FY2026A.A-8K",
+          "is.opex.FY2027E.base"
+        ]
+      },
+      "period": "FY2027E",
+      "raw_value": -2189.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "bridge.op_amount.revenue.FY2026A_to_FY2027E": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "114,291",
+        "ko": "114,291"
+      },
+      "extraction": null,
+      "fact_id": "bridge.op_amount.revenue.FY2026A_to_FY2027E",
+      "label": "bridge.op_amount.revenue.FY2026A_to_FY2027E",
+      "lineage": {
+        "formula": "op_amount_bridge_v1",
+        "inputs": [
+          "is.revenue.FY2026A.A-8K",
+          "is.revenue.FY2027E.base",
+          "ratio.gross_margin.FY2026.A-8K"
+        ]
+      },
+      "period": "FY2027E",
+      "raw_value": 114290.71230100188,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "bridge.opex.FY2026A": {
       "basis": "CALCULATED",
       "display": {
@@ -5535,6 +5606,74 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "cf.net_capex.FY2024Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,734",
+        "ko": "1,734"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2024Q1.A",
+      "label": "cf.net_capex.FY2024Q1.A",
+      "lineage": null,
+      "period": "FY2024Q1",
+      "raw_value": 1734.0,
+      "source_id": "SRC-GUIDANCE-cba05d3a7684",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2024Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,248",
+        "ko": "1,248"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2024Q2.A",
+      "label": "cf.net_capex.FY2024Q2.A",
+      "lineage": null,
+      "period": "FY2024Q2",
+      "raw_value": 1248.0,
+      "source_id": "SRC-GUIDANCE-a635cd2a7c38",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2024Q3.A": {
+      "basis": "A",
+      "display": {
+        "en": "2,057",
+        "ko": "2,057"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2024Q3.A",
+      "label": "cf.net_capex.FY2024Q3.A",
+      "lineage": null,
+      "period": "FY2024Q3",
+      "raw_value": 2057.0,
+      "source_id": "SRC-GUIDANCE-51fa896d882d",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2024Q4.A": {
+      "basis": "A",
+      "display": {
+        "en": "3,082",
+        "ko": "3,082"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2024Q4.A",
+      "label": "cf.net_capex.FY2024Q4.A",
+      "lineage": null,
+      "period": "FY2024Q4",
+      "raw_value": 3082.0,
+      "source_id": "SRC-GUIDANCE-3faad63e6c8e",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "cf.net_capex.FY2025A": {
       "basis": "CALCULATED",
       "display": {
@@ -5558,6 +5697,74 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "cf.net_capex.FY2025Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "3,132",
+        "ko": "3,132"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2025Q1.A",
+      "label": "cf.net_capex.FY2025Q1.A",
+      "lineage": null,
+      "period": "FY2025Q1",
+      "raw_value": 3132.0,
+      "source_id": "SRC-GUIDANCE-f1ece4749d1a",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2025Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "3,085",
+        "ko": "3,085"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2025Q2.A",
+      "label": "cf.net_capex.FY2025Q2.A",
+      "lineage": null,
+      "period": "FY2025Q2",
+      "raw_value": 3085.0,
+      "source_id": "SRC-GUIDANCE-503fbf81dc7f",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2025Q3.A": {
+      "basis": "A",
+      "display": {
+        "en": "2,660",
+        "ko": "2,660"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2025Q3.A",
+      "label": "cf.net_capex.FY2025Q3.A",
+      "lineage": null,
+      "period": "FY2025Q3",
+      "raw_value": 2660.0,
+      "source_id": "SRC-GUIDANCE-170cac3d1ae6",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2025Q4.A": {
+      "basis": "A",
+      "display": {
+        "en": "4,927",
+        "ko": "4,927"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2025Q4.A",
+      "label": "cf.net_capex.FY2025Q4.A",
+      "lineage": null,
+      "period": "FY2025Q4",
+      "raw_value": 4927.0,
+      "source_id": "SRC-BU-34478c62e48f",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "cf.net_capex.FY2026A": {
       "basis": "A-8K",
       "display": {
@@ -5570,6 +5777,74 @@
       "lineage": null,
       "period": "FY2026",
       "raw_value": 27367.0,
+      "source_id": "SRC-EX991-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2026Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "4,505",
+        "ko": "4,505"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2026Q1.A",
+      "label": "cf.net_capex.FY2026Q1.A",
+      "lineage": null,
+      "period": "FY2026Q1",
+      "raw_value": 4505.0,
+      "source_id": "SRC-BU-ee2e84a14aef",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2026Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "5,004",
+        "ko": "5,004"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2026Q2.A",
+      "label": "cf.net_capex.FY2026Q2.A",
+      "lineage": null,
+      "period": "FY2026Q2",
+      "raw_value": 5004.0,
+      "source_id": "SRC-BU-18c8475fe645",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2026Q3.A": {
+      "basis": "A",
+      "display": {
+        "en": "7,084",
+        "ko": "7,084"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2026Q3.A",
+      "label": "cf.net_capex.FY2026Q3.A",
+      "lineage": null,
+      "period": "FY2026Q3",
+      "raw_value": 7084.0,
+      "source_id": "SRC-BU-9f7e667a8224",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "cf.net_capex.FY2026Q4.A": {
+      "basis": "A-8K",
+      "display": {
+        "en": "10,774",
+        "ko": "10,774"
+      },
+      "extraction": null,
+      "fact_id": "cf.net_capex.FY2026Q4.A",
+      "label": "cf.net_capex.FY2026Q4.A",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 10774.0,
       "source_id": "SRC-EX991-FQ4FY26",
       "status": "AVAILABLE",
       "tags": [],
@@ -6568,6 +6843,558 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "derived.gm_beat.FQ1-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-0.06%p",
+        "ko": "-0.06%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ1-25",
+      "label": "derived.gm_beat.FQ1-25",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ1-25.CITED",
+          "guidance.gm_gaap.FQ1-25.CITED"
+        ]
+      },
+      "period": "FQ1-25",
+      "raw_value": -0.060000000000002274,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ1-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+5.54%p",
+        "ko": "+5.54%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ1-26",
+      "label": "derived.gm_beat.FQ1-26",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ1-26.CITED",
+          "guidance.gm_gaap.FQ1-26.CITED"
+        ]
+      },
+      "period": "FQ1-26",
+      "raw_value": 5.539999999999999,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ2-24": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+6.53%p",
+        "ko": "+6.53%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ2-24",
+      "label": "derived.gm_beat.FQ2-24",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ2-24.CITED",
+          "guidance.gm_gaap.FQ2-24.CITED"
+        ]
+      },
+      "period": "FQ2-24",
+      "raw_value": 6.530000000000001,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ2-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-0.71%p",
+        "ko": "-0.71%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ2-25",
+      "label": "derived.gm_beat.FQ2-25",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ2-25.CITED",
+          "guidance.gm_gaap.FQ2-25.CITED"
+        ]
+      },
+      "period": "FQ2-25",
+      "raw_value": -0.7100000000000009,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ2-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+7.41%p",
+        "ko": "+7.41%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ2-26",
+      "label": "derived.gm_beat.FQ2-26",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ2-26.CITED",
+          "guidance.gm_gaap.FQ2-26.CITED"
+        ]
+      },
+      "period": "FQ2-26",
+      "raw_value": 7.409999999999997,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ3-24": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+1.40%p",
+        "ko": "+1.40%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ3-24",
+      "label": "derived.gm_beat.FQ3-24",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-24.CITED",
+          "guidance.gm_gaap.FQ3-24.CITED"
+        ]
+      },
+      "period": "FQ3-24",
+      "raw_value": 1.3999999999999986,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ3-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+2.22%p",
+        "ko": "+2.22%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ3-25",
+      "label": "derived.gm_beat.FQ3-25",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-25.CITED",
+          "guidance.gm_gaap.FQ3-25.CITED"
+        ]
+      },
+      "period": "FQ3-25",
+      "raw_value": 2.219999999999999,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ3-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+3.56%p",
+        "ko": "+3.56%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ3-26",
+      "label": "derived.gm_beat.FQ3-26",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-26.CITED",
+          "guidance.gm_gaap.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 3.5600000000000023,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ4-24": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+1.82%p",
+        "ko": "+1.82%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ4-24",
+      "label": "derived.gm_beat.FQ4-24",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-24.CITED",
+          "guidance.gm_gaap.FQ4-24.CITED"
+        ]
+      },
+      "period": "FQ4-24",
+      "raw_value": 1.8200000000000003,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ4-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+3.67%p",
+        "ko": "+3.67%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ4-25",
+      "label": "derived.gm_beat.FQ4-25",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-25.CITED",
+          "guidance.gm_gaap.FQ4-25.CITED"
+        ]
+      },
+      "period": "FQ4-25",
+      "raw_value": 3.6700000000000017,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_beat.FQ4-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+0.76%p",
+        "ko": "+0.76%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_beat.FQ4-26",
+      "label": "derived.gm_beat.FQ4-26",
+      "lineage": {
+        "formula": "actual_minus_guidance_midpoint_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-26.CITED",
+          "guidance.gm_gaap.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 0.756163676261778,
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ1-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+3.1%p",
+        "ko": "+3.1%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ1-25",
+      "label": "derived.gm_qoq.FQ1-25",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ1-25.CITED",
+          "actual.gm_gaap.FQ4-24.CITED"
+        ]
+      },
+      "period": "FQ1-25",
+      "raw_value": 3.1199999999999974,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ1-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+11.4%p",
+        "ko": "+11.4%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ1-26",
+      "label": "derived.gm_qoq.FQ1-26",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ1-26.CITED",
+          "actual.gm_gaap.FQ4-25.CITED"
+        ]
+      },
+      "period": "FQ1-26",
+      "raw_value": 11.369999999999997,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ2-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-1.6%p",
+        "ko": "-1.6%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ2-25",
+      "label": "derived.gm_qoq.FQ2-25",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ2-25.CITED",
+          "actual.gm_gaap.FQ1-25.CITED"
+        ]
+      },
+      "period": "FQ2-25",
+      "raw_value": -1.6499999999999986,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ2-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+18.4%p",
+        "ko": "+18.4%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ2-26",
+      "label": "derived.gm_qoq.FQ2-26",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ2-26.CITED",
+          "actual.gm_gaap.FQ1-26.CITED"
+        ]
+      },
+      "period": "FQ2-26",
+      "raw_value": 18.369999999999997,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ3-24": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+8.4%p",
+        "ko": "+8.4%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ3-24",
+      "label": "derived.gm_qoq.FQ3-24",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-24.CITED",
+          "actual.gm_gaap.FQ2-24.CITED"
+        ]
+      },
+      "period": "FQ3-24",
+      "raw_value": 8.369999999999997,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ3-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+0.9%p",
+        "ko": "+0.9%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ3-25",
+      "label": "derived.gm_qoq.FQ3-25",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-25.CITED",
+          "actual.gm_gaap.FQ2-25.CITED"
+        ]
+      },
+      "period": "FQ3-25",
+      "raw_value": 0.9299999999999997,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ3-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+10.2%p",
+        "ko": "+10.2%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ3-26",
+      "label": "derived.gm_qoq.FQ3-26",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ3-26.CITED",
+          "actual.gm_gaap.FQ2-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 10.150000000000006,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ4-24": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+8.4%p",
+        "ko": "+8.4%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ4-24",
+      "label": "derived.gm_qoq.FQ4-24",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-24.CITED",
+          "actual.gm_gaap.FQ3-24.CITED"
+        ]
+      },
+      "period": "FQ4-24",
+      "raw_value": 8.420000000000002,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ4-25": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+7.0%p",
+        "ko": "+7.0%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ4-25",
+      "label": "derived.gm_qoq.FQ4-25",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-25.CITED",
+          "actual.gm_gaap.FQ3-25.CITED"
+        ]
+      },
+      "period": "FQ4-25",
+      "raw_value": 6.950000000000003,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.gm_qoq.FQ4-26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "+2.2%p",
+        "ko": "+2.2%p"
+      },
+      "extraction": null,
+      "fact_id": "derived.gm_qoq.FQ4-26",
+      "label": "derived.gm_qoq.FQ4-26",
+      "lineage": {
+        "formula": "gm_qoq_v1",
+        "inputs": [
+          "actual.gm_gaap.FQ4-26.CITED",
+          "actual.gm_gaap.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 2.1961636762617758,
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percentage_points"
+    },
+    "derived.guide_weekly.FQ1FY27.base": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-3.2%",
+        "ko": "-3.2%"
+      },
+      "extraction": null,
+      "fact_id": "derived.guide_weekly.FQ1FY27.base",
+      "label": "derived.guide_weekly.FQ1FY27.base",
+      "lineage": {
+        "formula": "per_week_vs_actual_fq4_v1",
+        "inputs": [
+          "prereg.guide_mid.FQ1FY27.base",
+          "is.revenue.FY2026Q4.A-8K"
+        ]
+      },
+      "period": "FQ1FY27",
+      "raw_value": -0.0318833096682587,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "fraction"
+    },
+    "derived.guide_weekly.FQ1FY27.bear": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "-21.4%",
+        "ko": "-21.4%"
+      },
+      "extraction": null,
+      "fact_id": "derived.guide_weekly.FQ1FY27.bear",
+      "label": "derived.guide_weekly.FQ1FY27.bear",
+      "lineage": {
+        "formula": "per_week_vs_actual_fq4_v1",
+        "inputs": [
+          "prereg.guide_mid.FQ1FY27.bear",
+          "is.revenue.FY2026Q4.A-8K"
+        ]
+      },
+      "period": "FQ1FY27",
+      "raw_value": -0.21359136539206247,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "fraction"
+    },
+    "derived.guide_weekly.FQ1FY27.bull": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "13.8%",
+        "ko": "13.8%"
+      },
+      "extraction": null,
+      "fact_id": "derived.guide_weekly.FQ1FY27.bull",
+      "label": "derived.guide_weekly.FQ1FY27.bull",
+      "lineage": {
+        "formula": "per_week_vs_actual_fq4_v1",
+        "inputs": [
+          "prereg.guide_mid.FQ1FY27.bull",
+          "is.revenue.FY2026Q4.A-8K"
+        ]
+      },
+      "period": "FQ1FY27",
+      "raw_value": 0.1379094637130005,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "fraction"
+    },
     "derived.weekly_growth.FQ1FY27_guide": {
       "basis": "CALCULATED",
       "display": {
@@ -7118,6 +7945,46 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "guidance.revenue_hi.FQ1FY27": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "63,000",
+        "ko": "63,000"
+      },
+      "extraction": null,
+      "fact_id": "guidance.revenue_hi.FQ1FY27",
+      "label": "guidance.revenue_hi.FQ1FY27",
+      "lineage": {
+        "formula": "midpoint_plus_tolerance_v1",
+        "inputs": [
+          "guidance.revenue_mid.FQ1FY27",
+          "guidance.revenue_tolerance.FQ1FY27"
+        ]
+      },
+      "period": "FQ1FY27",
+      "raw_value": 63000.0,
+      "source_id": "SRC-EX991-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "guidance.revenue_hi.FQ4FY26": {
+      "basis": "PREREG_A",
+      "display": {
+        "en": "$51,000M",
+        "ko": "$51,000M"
+      },
+      "extraction": null,
+      "fact_id": "guidance.revenue_hi.FQ4FY26",
+      "label": "guidance.revenue_hi.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 51000,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million_compact"
+    },
     "guidance.revenue_lo.FQ1FY27": {
       "basis": "GUIDANCE",
       "display": {
@@ -7134,6 +8001,23 @@
       "status": "AVAILABLE",
       "tags": [],
       "unit": "USD_million"
+    },
+    "guidance.revenue_lo.FQ4FY26": {
+      "basis": "PREREG_A",
+      "display": {
+        "en": "$49,000M",
+        "ko": "$49,000M"
+      },
+      "extraction": null,
+      "fact_id": "guidance.revenue_lo.FQ4FY26",
+      "label": "guidance.revenue_lo.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 49000,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million_compact"
     },
     "guidance.revenue_mid.FQ1FY27": {
       "basis": "GUIDANCE",
@@ -9576,6 +10460,142 @@
       "tags": [],
       "unit": "fraction"
     },
+    "is.opex.FY2024Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,093",
+        "ko": "1,093"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2024Q1.A",
+      "label": "is.opex.FY2024Q1.A",
+      "lineage": null,
+      "period": "FY2024Q1",
+      "raw_value": 1093.0,
+      "source_id": "SRC-GUIDANCE-cba05d3a7684",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2024Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "888",
+        "ko": "888"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2024Q2.A",
+      "label": "is.opex.FY2024Q2.A",
+      "lineage": null,
+      "period": "FY2024Q2",
+      "raw_value": 888.0,
+      "source_id": "SRC-GUIDANCE-a635cd2a7c38",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2024Q3.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,113",
+        "ko": "1,113"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2024Q3.A",
+      "label": "is.opex.FY2024Q3.A",
+      "lineage": null,
+      "period": "FY2024Q3",
+      "raw_value": 1113.0,
+      "source_id": "SRC-GUIDANCE-51fa896d882d",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2024Q4.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,215",
+        "ko": "1,215"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2024Q4.A",
+      "label": "is.opex.FY2024Q4.A",
+      "lineage": null,
+      "period": "FY2024Q4",
+      "raw_value": 1215.0,
+      "source_id": "SRC-GUIDANCE-3faad63e6c8e",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2025Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,174",
+        "ko": "1,174"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2025Q1.A",
+      "label": "is.opex.FY2025Q1.A",
+      "lineage": null,
+      "period": "FY2025Q1",
+      "raw_value": 1174.0,
+      "source_id": "SRC-GUIDANCE-f1ece4749d1a",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2025Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,190",
+        "ko": "1,190"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2025Q2.A",
+      "label": "is.opex.FY2025Q2.A",
+      "lineage": null,
+      "period": "FY2025Q2",
+      "raw_value": 1190.0,
+      "source_id": "SRC-GUIDANCE-503fbf81dc7f",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2025Q3.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,339",
+        "ko": "1,339"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2025Q3.A",
+      "label": "is.opex.FY2025Q3.A",
+      "lineage": null,
+      "period": "FY2025Q3",
+      "raw_value": 1339.0,
+      "source_id": "SRC-GUIDANCE-170cac3d1ae6",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2025Q4.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,400",
+        "ko": "1,400"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2025Q4.A",
+      "label": "is.opex.FY2025Q4.A",
+      "lineage": null,
+      "period": "FY2025Q4",
+      "raw_value": 1400.0,
+      "source_id": "SRC-BU-34478c62e48f",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "is.opex.FY2026A.A-8K": {
       "basis": "A-8K",
       "display": {
@@ -9593,25 +10613,53 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "is.opex.FY2026Q1.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,510",
+        "ko": "1,510"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2026Q1.A",
+      "label": "is.opex.FY2026Q1.A",
+      "lineage": null,
+      "period": "FY2026Q1",
+      "raw_value": 1510.0,
+      "source_id": "SRC-BU-ee2e84a14aef",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "is.opex.FY2026Q2.A": {
+      "basis": "A",
+      "display": {
+        "en": "1,620",
+        "ko": "1,620"
+      },
+      "extraction": null,
+      "fact_id": "is.opex.FY2026Q2.A",
+      "label": "is.opex.FY2026Q2.A",
+      "lineage": null,
+      "period": "FY2026Q2",
+      "raw_value": 1620.0,
+      "source_id": "SRC-BU-18c8475fe645",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "is.opex.FY2026Q3.A": {
-      "basis": "CALCULATED",
+      "basis": "A",
       "display": {
         "en": "1,738",
         "ko": "1,738"
       },
       "extraction": null,
       "fact_id": "is.opex.FY2026Q3.A",
-      "label": "GAAP operating expenses",
-      "lineage": {
-        "formula": "gross_profit_minus_operating_income_v1",
-        "inputs": [
-          "is.gross_profit.FY2026Q3.A",
-          "is.operating_income.FY2026Q3.A"
-        ]
-      },
+      "label": "is.opex.FY2026Q3.A",
+      "lineage": null,
       "period": "FY2026Q3",
       "raw_value": 1738.0,
-      "source_id": "SRC-EX991-FQ4FY26",
+      "source_id": "SRC-BU-9f7e667a8224",
       "status": "AVAILABLE",
       "tags": [],
       "unit": "USD_million"
@@ -11096,6 +12144,390 @@
       "tags": [],
       "unit": "USD_million"
     },
+    "judgment.price_bit.dram.bit_shipments.FQ3-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "3.0%",
+        "ko": "3.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.bit_shipments.FQ3-26.high",
+      "label": "judgment.price_bit.dram.bit_shipments.FQ3-26.high",
+      "lineage": {
+        "company_wording": "low-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.bit_shipments.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 3,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.bit_shipments.FQ3-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "1.0%",
+        "ko": "1.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.bit_shipments.FQ3-26.low",
+      "label": "judgment.price_bit.dram.bit_shipments.FQ3-26.low",
+      "lineage": {
+        "company_wording": "low-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.bit_shipments.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 1,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.bit_shipments.FQ4-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "6.0%",
+        "ko": "6.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.bit_shipments.FQ4-26.high",
+      "label": "judgment.price_bit.dram.bit_shipments.FQ4-26.high",
+      "lineage": {
+        "company_wording": "mid-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.bit_shipments.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 6,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.bit_shipments.FQ4-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "4.0%",
+        "ko": "4.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.bit_shipments.FQ4-26.low",
+      "label": "judgment.price_bit.dram.bit_shipments.FQ4-26.low",
+      "lineage": {
+        "company_wording": "mid-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.bit_shipments.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 4,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.pricing.FQ3-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "63.0%",
+        "ko": "63.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.pricing.FQ3-26.high",
+      "label": "judgment.price_bit.dram.pricing.FQ3-26.high",
+      "lineage": {
+        "company_wording": "low-60s percentage range, driven by tight industry conditions and favorable mix",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.pricing.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 63,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.pricing.FQ3-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "60.0%",
+        "ko": "60.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.pricing.FQ3-26.low",
+      "label": "judgment.price_bit.dram.pricing.FQ3-26.low",
+      "lineage": {
+        "company_wording": "low-60s percentage range, driven by tight industry conditions and favorable mix",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.pricing.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 60,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.pricing.FQ4-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "19.0%",
+        "ko": "19.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.pricing.FQ4-26.high",
+      "label": "judgment.price_bit.dram.pricing.FQ4-26.high",
+      "lineage": {
+        "company_wording": "high-teens percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.pricing.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 19,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.dram.pricing.FQ4-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "16.0%",
+        "ko": "16.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.dram.pricing.FQ4-26.low",
+      "label": "judgment.price_bit.dram.pricing.FQ4-26.low",
+      "lineage": {
+        "company_wording": "high-teens percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.dram.pricing.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 16,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.bit_shipments.FQ3-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "6.0%",
+        "ko": "6.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.bit_shipments.FQ3-26.high",
+      "label": "judgment.price_bit.nand.bit_shipments.FQ3-26.high",
+      "lineage": {
+        "company_wording": "mid-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.bit_shipments.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 6,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.bit_shipments.FQ3-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "4.0%",
+        "ko": "4.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.bit_shipments.FQ3-26.low",
+      "label": "judgment.price_bit.nand.bit_shipments.FQ3-26.low",
+      "lineage": {
+        "company_wording": "mid-single-digit percentage range",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.bit_shipments.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 4,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.bit_shipments.FQ4-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "11.0%",
+        "ko": "11.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.bit_shipments.FQ4-26.high",
+      "label": "judgment.price_bit.nand.bit_shipments.FQ4-26.high",
+      "lineage": {
+        "company_wording": "approximately 10%",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.bit_shipments.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 11,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.bit_shipments.FQ4-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "9.0%",
+        "ko": "9.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.bit_shipments.FQ4-26.low",
+      "label": "judgment.price_bit.nand.bit_shipments.FQ4-26.low",
+      "lineage": {
+        "company_wording": "approximately 10%",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.bit_shipments.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 9,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.pricing.FQ3-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "86.0%",
+        "ko": "86.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.pricing.FQ3-26.high",
+      "label": "judgment.price_bit.nand.pricing.FQ3-26.high",
+      "lineage": {
+        "company_wording": "mid-80s percentage range, driven by tight NAND industry conditions and a favorable mix",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.pricing.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 86,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.pricing.FQ3-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "84.0%",
+        "ko": "84.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.pricing.FQ3-26.low",
+      "label": "judgment.price_bit.nand.pricing.FQ3-26.low",
+      "lineage": {
+        "company_wording": "mid-80s percentage range, driven by tight NAND industry conditions and a favorable mix",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.pricing.FQ3-26.CITED"
+        ]
+      },
+      "period": "FQ3-26",
+      "raw_value": 84,
+      "source_id": "SRC-REMARKS-FQ3-FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.pricing.FQ4-26.high": {
+      "basis": "J",
+      "display": {
+        "en": "32.0%",
+        "ko": "32.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.pricing.FQ4-26.high",
+      "label": "judgment.price_bit.nand.pricing.FQ4-26.high",
+      "lineage": {
+        "company_wording": "approximately 30%",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.pricing.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 32,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "judgment.price_bit.nand.pricing.FQ4-26.low": {
+      "basis": "J",
+      "display": {
+        "en": "28.0%",
+        "ko": "28.0%"
+      },
+      "extraction": null,
+      "fact_id": "judgment.price_bit.nand.pricing.FQ4-26.low",
+      "label": "judgment.price_bit.nand.pricing.FQ4-26.low",
+      "lineage": {
+        "company_wording": "approximately 30%",
+        "formula": "R20_J_range_conversion",
+        "grade": "J",
+        "inputs": [
+          "qual.nand.pricing.FQ4-26.CITED"
+        ]
+      },
+      "period": "FQ4-26",
+      "raw_value": 28,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
     "market.market_cap.2026-10-01.CALCULATED": {
       "basis": "CALCULATED",
       "display": {
@@ -11288,6 +12720,57 @@
       "status": "AVAILABLE",
       "tags": [],
       "unit": "date"
+    },
+    "prereg.guide_mid.FQ1FY27.base": {
+      "basis": "PREREG_A",
+      "display": {
+        "en": "48,750",
+        "ko": "48,750"
+      },
+      "extraction": null,
+      "fact_id": "prereg.guide_mid.FQ1FY27.base",
+      "label": "prereg.guide_mid.FQ1FY27.base",
+      "lineage": null,
+      "period": "FQ1FY27",
+      "raw_value": 48750.0,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "prereg.guide_mid.FQ1FY27.bear": {
+      "basis": "PREREG_A",
+      "display": {
+        "en": "39,600",
+        "ko": "39,600"
+      },
+      "extraction": null,
+      "fact_id": "prereg.guide_mid.FQ1FY27.bear",
+      "label": "prereg.guide_mid.FQ1FY27.bear",
+      "lineage": null,
+      "period": "FQ1FY27",
+      "raw_value": 39600.0,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "prereg.guide_mid.FQ1FY27.bull": {
+      "basis": "PREREG_A",
+      "display": {
+        "en": "57,300",
+        "ko": "57,300"
+      },
+      "extraction": null,
+      "fact_id": "prereg.guide_mid.FQ1FY27.bull",
+      "label": "prereg.guide_mid.FQ1FY27.bull",
+      "lineage": null,
+      "period": "FQ1FY27",
+      "raw_value": 57300.0,
+      "source_id": "SRC-FROZEN",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
     },
     "prereg.revenue.base.FY2026Q4.PREREG_A": {
       "basis": "PREREG_A",
@@ -13142,6 +14625,142 @@
       "tags": [],
       "unit": "USD_per_share"
     },
+    "rle.net_capex.FY2027Q1.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "11,500",
+        "ko": "11,500"
+      },
+      "extraction": null,
+      "fact_id": "rle.net_capex.FY2027Q1.base",
+      "label": "rle.net_capex.FY2027Q1.base",
+      "lineage": null,
+      "period": "FY2027Q1",
+      "raw_value": 11500.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.net_capex.FY2027Q2.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "13,500",
+        "ko": "13,500"
+      },
+      "extraction": null,
+      "fact_id": "rle.net_capex.FY2027Q2.base",
+      "label": "rle.net_capex.FY2027Q2.base",
+      "lineage": null,
+      "period": "FY2027Q2",
+      "raw_value": 13500.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.net_capex.FY2027Q3.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "12,500",
+        "ko": "12,500"
+      },
+      "extraction": null,
+      "fact_id": "rle.net_capex.FY2027Q3.base",
+      "label": "rle.net_capex.FY2027Q3.base",
+      "lineage": null,
+      "period": "FY2027Q3",
+      "raw_value": 12500.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.net_capex.FY2027Q4.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "12,500",
+        "ko": "12,500"
+      },
+      "extraction": null,
+      "fact_id": "rle.net_capex.FY2027Q4.base",
+      "label": "rle.net_capex.FY2027Q4.base",
+      "lineage": null,
+      "period": "FY2027Q4",
+      "raw_value": 12500.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.opex.FY2027Q1.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "2,310",
+        "ko": "2,310"
+      },
+      "extraction": null,
+      "fact_id": "rle.opex.FY2027Q1.base",
+      "label": "rle.opex.FY2027Q1.base",
+      "lineage": null,
+      "period": "FY2027Q1",
+      "raw_value": 2310.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.opex.FY2027Q2.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "2,413",
+        "ko": "2,413"
+      },
+      "extraction": null,
+      "fact_id": "rle.opex.FY2027Q2.base",
+      "label": "rle.opex.FY2027Q2.base",
+      "lineage": null,
+      "period": "FY2027Q2",
+      "raw_value": 2413.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.opex.FY2027Q3.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "2,654",
+        "ko": "2,654"
+      },
+      "extraction": null,
+      "fact_id": "rle.opex.FY2027Q3.base",
+      "label": "rle.opex.FY2027Q3.base",
+      "lineage": null,
+      "period": "FY2027Q3",
+      "raw_value": 2654.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "rle.opex.FY2027Q4.base": {
+      "basis": "RLE",
+      "display": {
+        "en": "2,976",
+        "ko": "2,976"
+      },
+      "extraction": null,
+      "fact_id": "rle.opex.FY2027Q4.base",
+      "label": "rle.opex.FY2027Q4.base",
+      "lineage": null,
+      "period": "FY2027Q4",
+      "raw_value": 2976.0,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
     "rle.opex.FY27E": {
       "basis": "RLE",
       "display": {
@@ -13379,6 +14998,118 @@
       "status": "AVAILABLE",
       "tags": [],
       "unit": "USD_million"
+    },
+    "sca.commitments.FQ4FY26": {
+      "basis": "CITED",
+      "display": {
+        "en": "32,000",
+        "ko": "32,000"
+      },
+      "extraction": null,
+      "fact_id": "sca.commitments.FQ4FY26",
+      "label": "sca.commitments.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 32000.0,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "sca.contracts.FQ4FY26": {
+      "basis": "CITED",
+      "display": {
+        "en": "26",
+        "ko": "26"
+      },
+      "extraction": null,
+      "fact_id": "sca.contracts.FQ4FY26",
+      "label": "sca.contracts.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 26.0,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "count"
+    },
+    "sca.defined_pricing.FQ4FY26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "75.0%",
+        "ko": "75.0%"
+      },
+      "extraction": null,
+      "fact_id": "sca.defined_pricing.FQ4FY26",
+      "label": "sca.defined_pricing.FQ4FY26",
+      "lineage": {
+        "formula": "verbatim_fraction_to_percent_v1",
+        "inputs": [
+          "sca.revenue_floor.FQ4FY26"
+        ]
+      },
+      "period": "FY2026Q4",
+      "raw_value": 75,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "sca.deposits.FQ4FY26": {
+      "basis": "CITED",
+      "display": {
+        "en": "12,700",
+        "ko": "12,700"
+      },
+      "extraction": null,
+      "fact_id": "sca.deposits.FQ4FY26",
+      "label": "sca.deposits.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 12700.0,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_million"
+    },
+    "sca.market_pricing.FQ4FY26": {
+      "basis": "CALCULATED",
+      "display": {
+        "en": "25.0%",
+        "ko": "25.0%"
+      },
+      "extraction": null,
+      "fact_id": "sca.market_pricing.FQ4FY26",
+      "label": "sca.market_pricing.FQ4FY26",
+      "lineage": {
+        "formula": "verbatim_fraction_to_percent_v1",
+        "inputs": [
+          "sca.revenue_floor.FQ4FY26"
+        ]
+      },
+      "period": "FY2026Q4",
+      "raw_value": 25,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
+    },
+    "sca.revenue_floor.FQ4FY26": {
+      "basis": "CITED",
+      "display": {
+        "en": "35.0%",
+        "ko": "35.0%"
+      },
+      "extraction": null,
+      "fact_id": "sca.revenue_floor.FQ4FY26",
+      "label": "sca.revenue_floor.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": 35.0,
+      "source_id": "SRC-REMARKS-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "percent"
     },
     "scored.band_coverage.FQ4FY26": {
       "basis": "SCORED",
@@ -13884,6 +15615,584 @@
       "status": "AVAILABLE",
       "tags": [],
       "unit": "categorical"
+    },
+    "scored.verdict.0.0.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "매출",
+        "ko": "매출"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.0.FQ4FY26",
+      "label": "scored.verdict.0.0.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "매출",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.0.1.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "49,000–51,000",
+        "ko": "49,000–51,000"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.1.FQ4FY26",
+      "label": "scored.verdict.0.1.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "49,000–51,000",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.0.2.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "54,229",
+        "ko": "54,229"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.2.FQ4FY26",
+      "label": "scored.verdict.0.2.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "54,229",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.0.3.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.3.FQ4FY26",
+      "label": "scored.verdict.0.3.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.0.4.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.4.FQ4FY26",
+      "label": "scored.verdict.0.4.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.0.5.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "적중",
+        "ko": "적중"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.0.5.FQ4FY26",
+      "label": "scored.verdict.0.5.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "적중",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.0.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "GAAP 희석 EPS",
+        "ko": "GAAP 희석 EPS"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.0.FQ4FY26",
+      "label": "scored.verdict.1.0.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "GAAP 희석 EPS",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.1.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "29.73–31.73",
+        "ko": "29.73–31.73"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.1.FQ4FY26",
+      "label": "scored.verdict.1.1.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "29.73–31.73",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.2.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "32.87",
+        "ko": "32.87"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.2.FQ4FY26",
+      "label": "scored.verdict.1.2.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "32.87",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.3.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.3.FQ4FY26",
+      "label": "scored.verdict.1.3.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.4.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.4.FQ4FY26",
+      "label": "scored.verdict.1.4.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.1.5.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "적중",
+        "ko": "적중"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.1.5.FQ4FY26",
+      "label": "scored.verdict.1.5.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "적중",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.0.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "비GAAP 희석 EPS",
+        "ko": "비GAAP 희석 EPS"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.0.FQ4FY26",
+      "label": "scored.verdict.2.0.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "비GAAP 희석 EPS",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.1.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "30.00–32.00",
+        "ko": "30.00–32.00"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.1.FQ4FY26",
+      "label": "scored.verdict.2.1.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "30.00–32.00",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.2.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "33.42",
+        "ko": "33.42"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.2.FQ4FY26",
+      "label": "scored.verdict.2.2.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "33.42",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.3.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.3.FQ4FY26",
+      "label": "scored.verdict.2.3.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.4.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "ABOVE_HIGH",
+        "ko": "ABOVE_HIGH"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.4.FQ4FY26",
+      "label": "scored.verdict.2.4.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "ABOVE_HIGH",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.2.5.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "적중",
+        "ko": "적중"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.2.5.FQ4FY26",
+      "label": "scored.verdict.2.5.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "적중",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.0.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "GAAP GM",
+        "ko": "GAAP GM"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.0.FQ4FY26",
+      "label": "scored.verdict.3.0.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "GAAP GM",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.1.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "85.0–87.0%",
+        "ko": "85.0–87.0%"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.1.FQ4FY26",
+      "label": "scored.verdict.3.1.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "85.0–87.0%",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.2.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "86.76%",
+        "ko": "86.76%"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.2.FQ4FY26",
+      "label": "scored.verdict.3.2.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "86.76%",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.3.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "IN_RANGE",
+        "ko": "IN_RANGE"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.3.FQ4FY26",
+      "label": "scored.verdict.3.3.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "IN_RANGE",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.4.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "IN_RANGE",
+        "ko": "IN_RANGE"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.4.FQ4FY26",
+      "label": "scored.verdict.3.4.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "IN_RANGE",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.3.5.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "적중",
+        "ko": "적중"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.3.5.FQ4FY26",
+      "label": "scored.verdict.3.5.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "적중",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.0.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "GAAP opex",
+        "ko": "GAAP opex"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.0.FQ4FY26",
+      "label": "scored.verdict.4.0.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "GAAP opex",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.1.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "(선언 없음)",
+        "ko": "(선언 없음)"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.1.FQ4FY26",
+      "label": "scored.verdict.4.1.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "(선언 없음)",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.2.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "3,296",
+        "ko": "3,296"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.2.FQ4FY26",
+      "label": "scored.verdict.4.2.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "3,296",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.3.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "라벨 없음",
+        "ko": "라벨 없음"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.3.FQ4FY26",
+      "label": "scored.verdict.4.3.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "라벨 없음",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.4.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "(d-1) \"IN_RANGE 구성상 동일\"",
+        "ko": "(d-1) \"IN_RANGE 구성상 동일\""
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.4.FQ4FY26",
+      "label": "scored.verdict.4.4.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "(d-1) \"IN_RANGE 구성상 동일\"",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "scored.verdict.4.5.FQ4FY26": {
+      "basis": "SCORED",
+      "display": {
+        "en": "서술 실패",
+        "ko": "서술 실패"
+      },
+      "extraction": null,
+      "fact_id": "scored.verdict.4.5.FQ4FY26",
+      "label": "scored.verdict.4.5.FQ4FY26",
+      "lineage": null,
+      "period": "FY2026Q4",
+      "raw_value": "서술 실패",
+      "source_id": "SRC-SCORED-FQ4FY26",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "categorical"
+    },
+    "sensitivity.eps.original_gm.FY2027E": {
+      "basis": "RLE",
+      "display": {
+        "en": "$167.46",
+        "ko": "$167.46"
+      },
+      "extraction": null,
+      "fact_id": "sensitivity.eps.original_gm.FY2027E",
+      "label": "sensitivity.eps.original_gm.FY2027E",
+      "lineage": null,
+      "period": "FY2027E",
+      "raw_value": 167.4552762620385,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_per_share"
+    },
+    "sensitivity.eps.r8.FY2027E": {
+      "basis": "RLE",
+      "display": {
+        "en": "$170.14",
+        "ko": "$170.14"
+      },
+      "extraction": null,
+      "fact_id": "sensitivity.eps.r8.FY2027E",
+      "label": "sensitivity.eps.r8.FY2027E",
+      "lineage": null,
+      "period": "FY2027E",
+      "raw_value": 170.13931064005695,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_per_share"
+    },
+    "sensitivity.eps.slowdown.FY2027E": {
+      "basis": "RLE",
+      "display": {
+        "en": "$165.56",
+        "ko": "$165.56"
+      },
+      "extraction": null,
+      "fact_id": "sensitivity.eps.slowdown.FY2027E",
+      "label": "sensitivity.eps.slowdown.FY2027E",
+      "lineage": null,
+      "period": "FY2027E",
+      "raw_value": 165.55687091833488,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_per_share"
+    },
+    "sensitivity.eps.zero.FY2027E": {
+      "basis": "RLE",
+      "display": {
+        "en": "$159.63",
+        "ko": "$159.63"
+      },
+      "extraction": null,
+      "fact_id": "sensitivity.eps.zero.FY2027E",
+      "label": "sensitivity.eps.zero.FY2027E",
+      "lineage": null,
+      "period": "FY2027E",
+      "raw_value": 159.62654156796907,
+      "source_id": "SRC-RLE-FY27",
+      "status": "AVAILABLE",
+      "tags": [],
+      "unit": "USD_per_share"
     },
     "val.ev.FY2026.A-8K": {
       "basis": "CALCULATED",
@@ -15280,24 +17589,44 @@
     }
   },
   "metadata": {
+    "c14_missing": [],
     "document": {
       "edition": "ed1",
       "mode": "E2-B",
       "total_pages": {
-        "en": 18,
-        "ko": 17
+        "en": 26,
+        "ko": 24
       }
+    },
+    "figure_numbers": {
+      "01_quarterly_revenue_margin": 11,
+      "02_business_unit_mix": 1,
+      "03b_guidance_beat_history": 10,
+      "04_beat_history": 6,
+      "05_scenario_fan": 8,
+      "06_annual_income": 12,
+      "07_valuation_heatmap": 16,
+      "08_cash_flow_capex_net_cash": 13,
+      "09_gm_beat_compression": 9,
+      "10_price_bit_ranges": 4,
+      "11_eps_error_waterfall": 7,
+      "12_fq1_guidance_comparison": 2,
+      "13_scenario_sensitivity_eps": 15,
+      "14_opex_net_capex_trend": 5,
+      "15_operating_income_waterfall": 14,
+      "16_sca_structure": 3
     },
     "fixture_values": false,
     "information_cutoff": "2026-10-04",
     "internal_configs": [
       {
-        "git_blob_sha": "393cb05876f6f5aabf6fbdb98778c69b8c5d06b6",
+        "git_blob_sha": "5248dd717931e990b427df597b7e433a13f359a4",
         "kind": "internal_config",
         "path": "forecast/inputs/mu_fy2026q4_conflict_confirmation.yaml"
       }
     ],
-    "layer": "E2-B"
+    "layer": "E2-B",
+    "revision": 1
   },
   "sources": {
     "SRC-10K-FY23": {

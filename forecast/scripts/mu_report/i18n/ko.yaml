@@ -83,8 +83,8 @@ scored:
   lever: "GAAP EPS 네 레버 귀인"
   sf7: "차기 분기 방향 판정"
 ed1:
-  title: "Micron Technology, Inc. (NASDAQ: MU)"
-  ribbon: "Review & Outlook — FY2026Q4 · 14주 · FY2026 53주 · 제1판"
+  title: "MICRON TECHNOLOGY · NASDAQ: MU"
+  ribbon: "Review & Outlook — FY2026Q4 · 14주 · FY2026 53주 · 제1판 개정 1"
   summary_title: "핵심 수치"
   cover:
     author: "작성자: 김지원"
@@ -122,8 +122,10 @@ summary_rows:
   - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.A-8K}}", basis: "A-8K · USD/share"}
   - {label: "FY26 매출", value: "{{fact:is.revenue.FY2026E.PREREG_A}}", basis: "PREREG_A · USD million"}
   - {label: "FY26 매출", value: "{{fact:is.revenue.FY2026A.A-8K}}", basis: "A-8K · USD million"}
-  - {label: "FY27E 매출 / GAAP EPS", value: "{{fact:is.revenue.FY2027E.base}} / {{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE 기준 경로"}
-  - {label: "FY28E 매출 / GAAP EPS", value: "{{fact:is.revenue.FY2028E.base}} / {{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE 기준 경로"}
+  - {label: "FY27E 매출", value: "{{fact:is.revenue.FY2027E.base}}", basis: "RLE 기준 경로 · USD million"}
+  - {label: "FY27E GAAP EPS", value: "{{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE 기준 경로 · USD/share"}
+  - {label: "FY28E 매출", value: "{{fact:is.revenue.FY2028E.base}}", basis: "RLE 기준 경로 · USD million"}
+  - {label: "FY28E GAAP EPS", value: "{{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE 기준 경로 · USD/share"}
 disclaimer:
   not_advice: "본 문서는 투자 자문이 아닙니다."
   third_party: "공개 자료 기반 제3자 분석이며 Micron 및 계열사가 작성·검토·승인한 자료가 아닙니다."
@@ -170,7 +172,8 @@ financial_tables:
   dram_nand_headers: ["사업", "기간", "가격", "비트 출하", "판정"]
   verbatim_treatment: "원문 범주 · 수치화하지 않음"
   not_preregistered: "—(사전등록 범위 밖)"
-  not_preregistered_note: "FY26E PREREG_A의 대시 표시는 해당 항목이 사전등록 범위 밖이었음을 뜻한다."
+  not_preregistered_note: "사전등록(Freeze A)은 FQ4 분기와 FY26 매출·순이익·EPS만 예측했다."
+  rle_unavailable_note: "RLE 규칙은 손익·현금흐름 일부만 추정하고 재무상태표는 추정하지 않는다(부록 규칙표 A11–A16)."
 guidance_table:
   title: "FQ1 FY27 회사 가이던스"
   headers: ["항목", "GAAP", "비GAAP", "기준"]
@@ -191,3 +194,77 @@ charts:
   06_annual_income: {figure: "그림 6.", title: "연간 매출·영업이익·순이익", x_axis: "회계연도", y_axis: "USD million", series: ["매출", "영업이익", "순이익"], unit: "USD million", basis: "GAAP 실제(A) + PREREG_A + RLE", source: "Micron 10-K·8-K·RLE"}
   07_valuation_heatmap: {figure: "그림 8.", title: "암시 P/E 민감도", x_axis: "FY27 FQ2–FQ4 주당 성장 오프셋(%p, 기준 경로 대비)", y_axis: "FY27 GM 오프셋(%p, 기준 경로 대비)", series: ["암시 P/E"], unit: "배; 축 단위 %p", basis: "중앙 셀=기준 경로 · 기준 주가 고정·GAAP EPS RLE 재계산", source: "기준 주가·RLE"}
   08_cash_flow_capex_net_cash: {figure: "그림 7.", title: "조정 FCF·순설비투자·순현금(SCA 예치금 미조정)", x_axis: "회계연도", y_axis: "USD million", series: ["조정 FCF", "순설비투자", "순현금(SCA 예치금 미조정)"], unit: "USD million", basis: "GAAP 현금흐름 틀·RLE, SCA 예치금 미예측", source: "Micron 10-K·8-K·RLE"}
+
+revision_charts:
+  09_gm_beat_compression:
+    figure: "그림 9."
+    title: "GM 상회 폭 압축"
+    x_axis: "분기"
+    y_axis: "%p"
+    series: ["상회 폭","GM 전분기 변화","FQ1 FY27 가이던스"]
+    unit: "%p"
+    basis: "GAAP A + GUIDANCE"
+    source: "Micron 분기별 보도자료(8-K EX-99.1)"
+  10_price_bit_ranges:
+    figure: "그림 10."
+    title: "DRAM·NAND 가격·비트 변화(회사 공시 구간)"
+    x_axis: "변화율 (%)"
+    y_axis: "제품·분기"
+    series: ["하단","상단"]
+    unit: "%"
+    basis: "CITED + J"
+    source: "Micron FQ3·FQ4 FY26 준비문 p.7 · J 환산"
+  11_eps_error_waterfall:
+    figure: "그림 11."
+    title: "EPS 오차 4-lever 폭포"
+    x_axis: "귀인 단계"
+    y_axis: "USD/주"
+    series: ["GAAP EPS","귀인"]
+    unit: "USD/주"
+    basis: "GAAP SCORED"
+    source: "SCORED §6"
+  12_fq1_guidance_comparison:
+    figure: "그림 12."
+    title: "FQ1 FY27 가이던스 vs 사전등록 예측"
+    x_axis: "시나리오·가이던스"
+    y_axis: "USD 백만"
+    series: ["가이던스 중간값","주당 성장 (%)"]
+    unit: "USD 백만"
+    basis: "GAAP PREREG_A + GUIDANCE"
+    source: "FROZEN §(c-2) · Micron FQ4 FY26 보도자료"
+  13_scenario_sensitivity_eps:
+    figure: "그림 13."
+    title: "FY27E 시나리오·민감도 EPS"
+    x_axis: "경로·민감도"
+    y_axis: "USD/주"
+    series: ["GAAP EPS","민감도"]
+    unit: "USD/주"
+    basis: "GAAP RLE"
+    source: "RLE A1–A7"
+  14_opex_net_capex_trend:
+    figure: "그림 14."
+    title: "영업비용·순 capex 추이"
+    x_axis: "분기"
+    y_axis: "USD 백만"
+    series: ["영업비용 실제","순 capex 실제"]
+    unit: "USD 백만"
+    basis: "GAAP 영업비용 / 회사 조정 순 capex 실제(A) + RLE"
+    source: "Micron pin된 EX-99.1·10-K·10-Q · RLE"
+  15_operating_income_waterfall:
+    figure: "그림 15."
+    title: "FY26A → FY27E base 영업이익 브리지"
+    x_axis: "기여 단계"
+    y_axis: "USD 백만"
+    series: ["영업이익","기여"]
+    unit: "USD 백만"
+    basis: "GAAP A + RLE"
+    source: "Micron FQ4 FY26 보도자료 · RLE"
+  16_sca_structure:
+    figure: "그림 16."
+    title: "SCA 구조"
+    x_axis: "지표별 분리"
+    y_axis: "회사 진술·USD 백만·%"
+    series: ["가격 구조","재무 약정"]
+    unit: "회사 진술·USD 백만·%"
+    basis: "CITED"
+    source: "Micron FQ4 FY26 준비문 p.3·p.8–9"

@@ -509,7 +509,7 @@ def _e2b_narrative_inputs():
 def test_r14_fact_bindings_recompute_from_original_sources_and_rle():
     manifest, narrative, assumptions, values = _e2b_narrative_inputs()
     gate_narrative_contract(narrative, manifest)
-    assert len(values) == 12
+    assert len(values) == 19
     assert values["guidance.revenue_mid.FQ1FY27"] == 61500
     assert values["derived.weekly_growth.FQ1FY27_guide"] == pytest.approx(0.2213164401108121)
     assert values["scored.opex_gap_pct.FQ4FY26"] == pytest.approx(3296 / 1860 - 1)
@@ -523,7 +523,7 @@ def test_r14_fact_bindings_recompute_from_original_sources_and_rle():
 
 def test_r14_fact_binding_mismatch_and_structure_fail_closed():
     manifest, narrative, assumptions, _ = _e2b_narrative_inputs()
-    broken_value = copy.deepcopy(narrative)
+    broken_value = yaml.safe_load(Path("forecast/inputs/mu_fy2026q4_narrative_ed1.yaml").read_text(encoding="utf-8"))
     broken_value["fact_bindings"][0]["value"] = 1
     with pytest.raises(ValueError, match="proposed value mismatch"):
         recompute_fact_bindings(
@@ -1119,9 +1119,11 @@ def test_r17_f5_market_data_labels_units_and_formula_match_facts():
     assert cap.display == {"ko": "USD 1,258,706 million", "en": "USD 1,258,706 million"}
     for locale in ("ko", "en"):
         text, _ = render_markdown(manifest, locale, narrative=narrative, assumptions=assumptions)
-        assert cap.display[locale] in text
+        assert "| 1,258,706 |" in text
+        assert "USD million" in text
         assert ("희석 가중평균 주식수(FQ4)" if locale == "ko" else "Diluted weighted-average shares (FQ4)") in text
-        assert ("기준 주가 × FQ4 희석 가중평균 주식수" if locale == "ko" else "Reference price × FQ4 diluted weighted-average shares") in text
+        assert ("USD million · 주가 × 주식수" if locale == "ko" else "USD million · price × shares") in text
+        assert "million shares · FQ4 A-8K" in text
 
 
 def test_r17_table_cell_english_and_python_tuple_are_rejected():
@@ -1153,7 +1155,9 @@ def test_r17_fq4_categories_guidance_and_bridge_are_source_bound():
     for locale in ("ko", "en"):
         text, _ = render_markdown(manifest, locale, narrative=narrative, assumptions=assumptions)
         assert "NOT_IN_SOURCE" not in text
-        assert "FQ4-26" in text
+        specs = e2b_specs(manifest, locale, yaml.safe_load(Path(f"forecast/scripts/mu_report/i18n/{locale}.yaml").read_text(encoding="utf-8")))
+        price_bit = next(spec for spec in specs if spec.chart_id == "10_price_bit_ranges")
+        assert {point.label for point in price_bit.points} == {"FQ3-26", "FQ4-26"}
         assert "(786,)" not in text
         assert "E·D / J" in text
         assert "85.95%" in text and "86.25%" in text
@@ -1181,12 +1185,13 @@ def test_r18_required_rle_cells_and_appendix(locale):
             broken_lines[index] = "|".join(cells)
             with pytest.raises(GateError, match="required rendered cell"):
                 gate_g23_availability(manifest, {}, {locale: "\n".join(broken_lines)})
-    assert "quarterly_dps × 4 × S1" in text
+    dividend_rule = "분기 주당 배당×4분기×희석주식수" if locale == "ko" else "quarterly dividend per share × 4 quarters × diluted shares"
+    assert dividend_rule in text
     assert "quarterly_dps * 4 * S1" not in text
-    assert ("값: " if locale == "ko" else "value: ") in text
+    assert ("분기 주당 배당: " if locale == "ko" else "Quarterly dividend per share: ") in text
     assert "quarterly_dps.value=" not in text
     html = _html_from_markdown(text, locale)
-    assert "quarterly_dps × 4 × S1" in html
+    assert dividend_rule in html
     assert "quarterly_dps.value=" not in html
 
 

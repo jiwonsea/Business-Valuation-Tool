@@ -14,7 +14,7 @@ COLORS = {
     "paper": "#FFFFFF",
 }
 
-FONT_STACK = "'Noto Sans CJK KR','Noto Sans KR',sans-serif"
+FONT_STACK = "'Noto Sans KR','Noto Sans CJK KR',sans-serif"
 
 
 def contrast_ratio(foreground: str, background: str) -> float:

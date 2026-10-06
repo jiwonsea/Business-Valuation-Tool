@@ -83,8 +83,8 @@ scored:
   lever: "Four-lever GAAP EPS attribution"
   sf7: "Next-quarter direction verdict"
 ed1:
-  title: "Micron Technology, Inc. (NASDAQ: MU)"
-  ribbon: "Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · First edition"
+  title: "MICRON TECHNOLOGY · NASDAQ: MU"
+  ribbon: "Review & Outlook — FY2026Q4 · 14 weeks · FY2026 53 weeks · Edition 1, Revision 1"
   summary_title: "Key figures"
   cover:
     author: "Author: Jiwon Kim"
@@ -122,8 +122,10 @@ summary_rows:
   - {label: "FQ4 GAAP EPS", value: "{{fact:is.eps_gaap.FY2026Q4.A-8K}}", basis: "A-8K · USD/share"}
   - {label: "FY26 revenue", value: "{{fact:is.revenue.FY2026E.PREREG_A}}", basis: "PREREG_A · USD million"}
   - {label: "FY26 revenue", value: "{{fact:is.revenue.FY2026A.A-8K}}", basis: "A-8K · USD million"}
-  - {label: "FY27E revenue / GAAP EPS", value: "{{fact:is.revenue.FY2027E.base}} / {{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE base path"}
-  - {label: "FY28E revenue / GAAP EPS", value: "{{fact:is.revenue.FY2028E.base}} / {{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE base path"}
+  - {label: "FY27E revenue", value: "{{fact:is.revenue.FY2027E.base}}", basis: "RLE base path · USD million"}
+  - {label: "FY27E GAAP EPS", value: "{{fact:is.diluted_eps.FY2027E.base}}", basis: "RLE base path · USD/share"}
+  - {label: "FY28E revenue", value: "{{fact:is.revenue.FY2028E.base}}", basis: "RLE base path · USD million"}
+  - {label: "FY28E GAAP EPS", value: "{{fact:is.diluted_eps.FY2028E.base}}", basis: "RLE base path · USD/share"}
 disclaimer:
   not_advice: "This document is not investment advice."
   third_party: "This is third-party analysis based on public information and has not been prepared, reviewed, or approved by Micron or its affiliates."
@@ -170,7 +172,8 @@ financial_tables:
   dram_nand_headers: ["Business", "Period", "Pricing", "Bit shipments", "Treatment"]
   verbatim_treatment: "Verbatim category · not numericized"
   not_preregistered: "— (not pre-registered)"
-  not_preregistered_note: "A dash in FY26E PREREG_A means the item was outside the pre-registered scope."
+  not_preregistered_note: "Freeze A forecast only the FQ4 quarter and FY26 revenue, net income and EPS."
+  rle_unavailable_note: "RLE rules estimate only parts of income and cash flow, not the balance sheet (appendix rules A11–A16)."
 guidance_table:
   title: "FQ1 FY27 company guidance"
   headers: ["Metric", "GAAP", "Non-GAAP", "Basis"]
@@ -191,3 +194,77 @@ charts:
   06_annual_income: {figure: "Figure 6.", title: "Annual revenue, operating income and net income", x_axis: "Fiscal year", y_axis: "USD million", series: ["Revenue", "Operating income", "Net income"], unit: "USD million", basis: "GAAP actual (A) + PREREG_A + RLE", source: "Micron 10-K, 8-K and RLE"}
   07_valuation_heatmap: {figure: "Figure 8.", title: "Implied P/E sensitivity", x_axis: "FY27 FQ2–FQ4 per-share growth offset (%p vs base)", y_axis: "FY27 GM offset (%p vs base)", series: ["Implied P/E"], unit: "multiple; axes in %p", basis: "Center cell=base path; fixed reference price; recalculated GAAP EPS RLE", source: "Reference price and RLE"}
   08_cash_flow_capex_net_cash: {figure: "Figure 7.", title: "Adjusted FCF, net capex and net cash (not adjusted for SCA deposits)", x_axis: "Fiscal year", y_axis: "USD million", series: ["Adjusted FCF", "Net capex", "Net cash (not adjusted for SCA deposits)"], unit: "USD million", basis: "GAAP cash-flow framework and RLE; SCA deposits not forecast", source: "Micron 10-K, 8-K and RLE"}
+
+revision_charts:
+  09_gm_beat_compression:
+    figure: "Figure 9."
+    title: "Compression of GAAP GM beats"
+    x_axis: "Quarter"
+    y_axis: "Percentage points"
+    series: ["GM beat","GM QoQ change","FQ1 FY27 guidance"]
+    unit: "%p"
+    basis: "GAAP A + GUIDANCE"
+    source: "Micron quarterly press releases (8-K EX-99.1)"
+  10_price_bit_ranges:
+    figure: "Figure 10."
+    title: "DRAM and NAND price and bit changes (company ranges)"
+    x_axis: "Change (%)"
+    y_axis: "Product and quarter"
+    series: ["Low","High"]
+    unit: "%"
+    basis: "CITED + J"
+    source: "Micron FQ3/FQ4 FY26 prepared remarks p.7 · J conversion"
+  11_eps_error_waterfall:
+    figure: "Figure 11."
+    title: "4-lever EPS error waterfall"
+    x_axis: "Attribution step"
+    y_axis: "USD per share"
+    series: ["GAAP EPS","Contribution"]
+    unit: "USD per share"
+    basis: "GAAP SCORED"
+    source: "SCORED §6"
+  12_fq1_guidance_comparison:
+    figure: "Figure 12."
+    title: "FQ1 FY27 guidance vs pre-registered forecast"
+    x_axis: "Scenario and guidance"
+    y_axis: "USD million"
+    series: ["Guidance midpoint","Per-week growth (%)"]
+    unit: "USD million"
+    basis: "GAAP PREREG_A + GUIDANCE"
+    source: "FROZEN §(c-2) · Micron FQ4 FY26 press release"
+  13_scenario_sensitivity_eps:
+    figure: "Figure 13."
+    title: "FY27E scenario and sensitivity EPS"
+    x_axis: "Path and sensitivity"
+    y_axis: "USD per share"
+    series: ["GAAP EPS","Sensitivity"]
+    unit: "USD per share"
+    basis: "GAAP RLE"
+    source: "RLE A1–A7"
+  14_opex_net_capex_trend:
+    figure: "Figure 14."
+    title: "Operating expenses and net capex trend"
+    x_axis: "Quarter"
+    y_axis: "USD million"
+    series: ["Actual opex","Actual net capex"]
+    unit: "USD million"
+    basis: "GAAP opex / company-adjusted net capex A + RLE"
+    source: "Micron pinned EX-99.1/10-K/10-Q · RLE"
+  15_operating_income_waterfall:
+    figure: "Figure 15."
+    title: "FY26A to FY27E base operating-income bridge"
+    x_axis: "Contribution step"
+    y_axis: "USD million"
+    series: ["Operating income","Contribution"]
+    unit: "USD million"
+    basis: "GAAP A + RLE"
+    source: "Micron FQ4 FY26 press release · RLE"
+  16_sca_structure:
+    figure: "Figure 16."
+    title: "SCA structure"
+    x_axis: "Separate metrics"
+    y_axis: "Company statements / USD million / %"
+    series: ["Pricing structure","Financial commitments"]
+    unit: "Company statements / USD million / %"
+    basis: "CITED"
+    source: "Micron FQ4 FY26 prepared remarks p.3, p.8–9"

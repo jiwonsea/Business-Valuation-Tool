@@ -1,0 +1,29 @@
+SK hynix 3Q26 pre-registration (Freeze) seal
+
+Sealed (file created): 2026-10-08 14:52 KST
+Approved: 2026-10-08 14:51 KST by Jiwon (chat: "v2 §6의 다섯 항목을 승인합니다")
+Information cutoff: 2026-10-06 17:00 KST
+Proof of time: the git commit/push timestamp of this file. Must precede the 3Q26 earnings release.
+Files under logs/ are git-ignored on purpose (consensus_lock_internal.yaml holds FnGuide data and must not be published). They are kept locally; this list fixes their content by SHA-256.
+
+## Approved document (tracked)
+fa133ee9783da8f5cdbd90dc983b3e276d951f6265835facb17ac1a500f50f20  FREEZE_hynix_3q26_prereg.md
+
+## Core sealed inputs (git-ignored, local)
+b3efda950dc98dae5c11eba36808f1fe5031f36b67176ea6c65036c3dba92867  logs/sk_hynix/2026q3/freeze_3q26/out/rle_3q26_paths.json
+2dee20b61f6b4fb8f3c99aa6cac4b3a8ecaf121c57b587b0ef552f6365044ccf  logs/sk_hynix/2026q3/freeze_3q26/out/freeze_3q26_inputs.json
+17c7c65bea1e2da8d945cc2ab0007ed8a9dd5343e19ed2439c273dc745976042  logs/sk_hynix/2026q3/freeze_3q26/facts.yaml
+53a93922a0e4ac28dd6cd18fa792638e6d91cadb9362a606313e26bd29d924f9  logs/sk_hynix/2026q3/freeze_3q26/consensus_lock_internal.yaml
+
+## Reproduction files (git-ignored, local)
+8c4490b4cf4f6c41ff3450988ebba6b6876ca8cb593d181139a06e633b141859  logs/sk_hynix/2026q3/freeze_3q26/input_pins.yaml
+f9c934d492c634b4ed8014fcd42e87d1a002178d60348cf3cfdb65b1ff1ed7c8  logs/sk_hynix/2026q3/freeze_3q26/scripts/build.py
+0507166fbafc27d9be0c859b11b0484d3a1f98dbda49cde197c9ac4291218ea6  logs/sk_hynix/2026q3/freeze_3q26/scripts/test_inputs.py
+7bf8444a3bdb62a872b3a7d5199a025dc401b16ef5dabdc805f176037f125b70  logs/sk_hynix/2026q3/freeze_3q26/raw/ecos_jpy_20260630.json
+fcdef3a6423345e7ed58960ea1d76061792f92c431bc49d94f3eedc7819f539b  logs/sk_hynix/2026q3/freeze_3q26/raw/ecos_jpy_20260930.json
+945e0112ee648c541b30163ad392b2ebcee731b269f3055f7ad6675342afb3b9  logs/sk_hynix/2026q3/freeze_3q26/raw/fx_source_metadata.json
+497d7ccf55bc89960c05982f5032abbee361690aebf340ef2594d89749a24fba  logs/sk_hynix/2026q3/freeze_3q26/raw/source_coordinates.json
+bcea87a9fd835236c9593175c66776bddd7902422144d2ebe947eb98480b3a0b  logs/sk_hynix/2026q3/freeze_3q26/verbal_ranges.yaml
+
+Note: verbal_ranges_draft inside freeze_3q26_inputs.json and verbal_ranges.yaml are superseded by §5 of the approved document.
+Not investment advice. No price target, rating or scenario probabilities.

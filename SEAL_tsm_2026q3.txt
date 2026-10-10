@@ -1,0 +1,68 @@
+TSMC (2330.TW / NYSE:TSM) 3Q26 pre-registration (Freeze) seal
+
+Sealed (file created): 2026-10-10 19:4x KST by Claude
+Approved: 2026-10-10 19:38 KST (+09:00) by Jiwon (chat: "1. 승인할게.")
+frozen_at = information_cutoff: 2026-10-10T19:38+09:00 (minute precision)
+Freeze deadline: 2026-10-12 13:00 KST. Expected first public release: 2026-10-15 ~14:30-14:53 KST (ESTIMATED); conference 15:00 KST.
+lead_hours: PENDING_POSTPRINT
+
+Proof of time, two grades (kept separate):
+  commit_at          = local git commit time of this file (author-settable; local procedure record only)
+  remote_received_at = time GitHub received the push of that commit hash (recorded after push)
+Both must precede the 3Q26 release.
+
+Headline: core hypothesis GM >= 67.0% AND OPM >= 60.3%; EPS point NT$30.06 (reported, per common share, IFRS).
+Manual pre-registration: not a GenericProfile, not passed through the FROZEN gate. No consensus collected (NO_CONSENSUS).
+Files under logs/ are git-ignored on purpose; they are kept locally and this list fixes their content by SHA-256.
+Not investment advice. No price target, rating or scenario probabilities.
+
+## Approved documents (tracked)
+4f8395e34629883a4a2dcc033ac7a3815aefc8c13866a23d9988381fb647f35d  FREEZE_tsm_2026q3_prereg.md
+e02ee2f6038a333882a1f8d0d1e1e62d64d490bcb538adf392a9dd8840be3a4c  CONSENSUS_tsm_2026Q3_hypotheses.md
+
+## Core sealed inputs and seal run (git-ignored, local)
+c27ff60db7a061c923462027ecd695dc987446c68e6315ccdefb7820e73476ba  logs/tsm/2026Q3/freeze/inputs.json
+887a31df6b998d43952feb0c86537f7fcf1cfefbc15757e9c54222ff7cd360a9  logs/tsm/2026Q3/freeze/build.py
+1f159ee19915950f3cf12a42a821b2db1db4803683ec29acf3a66574f35a019c  logs/tsm/2026Q3/freeze/test_inputs.py
+3b3e800bef3b175b4434b8a157c6a857c7fc098d8a484e9f254aea411d11f620  logs/tsm/2026Q3/freeze/seal_run/freeze_tsm_2026q3.json
+ceeea765e8052e6826444732790dddd6c7f6070f66ffd8795f3819ecc8bf9124  logs/tsm/2026Q3/freeze/seal_run/run_log.txt
+
+## Sources and evidence (git-ignored, local)
+bf82a6e1be9e13ccd80723f616ea71d9be5813f2d7e9b8e74f2f9c1a769424f9  logs/tsm/2026Q3/SOURCE_LEDGER_tsm_2026Q3_2026-10-09.md
+c4948089997bfa5902d0e6ac510e98568c889570c8d6f83941155b066bb10cfe  logs/tsm/2026Q3/SOURCE_LEDGER_tsm_2026Q3_2pass_2026-10-10.md
+7a988ca7db19da5a568095f6bf66f2e10247b34b21e515bdb85d9a5a83afb143  logs/tsm/2026Q3/guidance_history_8q.md
+5e0153ce51573dda579dd74659a1d1492534b8bbaa51639d91e868b21e32670d  logs/tsm/2026Q3/fx_cbc_daily_2026Q3.csv
+17c87c6798ea5d2fa93d789e0b694bafbd2795fd2f6110dc31c98c1e0eb65da5  logs/tsm/2026Q3/raw_manifest.json
+c17a343b64090c018490f117446dad21f75b53be6cdaa964cf4193510a95557d  logs/tsm/2026Q3/raw_manifest_supplement_2026-10-10.json
+87f3b5e2afec073008509204a06e7cfffc3a84b478a2ee3b2471df8ae3b015e5  logs/tsm/2026Q3/fetch_sources_host.ps1
+2abfd589f43c0a8451a7518b01761564cb7dd4aba31c4f377851c63e224a6311  logs/tsm/2026Q3/raw/A1_annual_report_2024_p84-85.pdf
+f057357b8fb9ea77e18ceae1f247c3e7355b59c19a9774584ec6b3d2436fd6ec  logs/tsm/2026Q3/raw/A3_cbc_fx_p1.html
+a54f177911fecf9bb8120dd3d049c31885780b6022717a6eee1c3e7a4269f787  logs/tsm/2026Q3/raw/A3_cbc_fx_p2.html
+23398d3f7dc2c0fc4a87b0fb9cf26dfdce00e01319b9f35ab7256eef01f1cd48  logs/tsm/2026Q3/raw/A3_cbc_fx_p3.html
+04e1952b9383de475704ac50292de44eae00fbc55336302a0ea15d5b30da13ae  logs/tsm/2026Q3/raw/G1_6k_2q26_ex991.htm
+17947a4c33c3ef2153641706eef7051422ab8594251dfbb64646b92d9a4cc915  logs/tsm/2026Q3/raw/G5_2q26_transcript.pdf
+c3000442b7e0df463b8d56a507ed0103375548a2bf584645fa315fecdb697845  logs/tsm/2026Q3/raw/M1_6k_rev_2026-07.htm
+f3df3ccc4352f81515bfaa101afbf7657cbb68c15573937e4301362b1681bcfc  logs/tsm/2026Q3/raw/M2_6k_rev_2026-08.htm
+6a1d15cdb82c2ced95370a6b1f87bc7fc28262ae985e00610dbb798d94b72dc0  logs/tsm/2026Q3/raw/M3_6k_rev_2026-09.htm
+1b40fc253289559b0f62a3182e58fb73ed337fe41205dac9db0878dece665758  logs/tsm/2026Q3/raw/M3_6k_rev_2026-09_index.html
+fad79c6a6ec870357df9eae00e680256956e34083ec84a226959c693eccb1a5f  logs/tsm/2026Q3/raw/P_2q26_management_report.pdf
+97f077762cece4dfd95926784177d65ac67cdb48c498ba9205e4af1b67b6e485  logs/tsm/2026Q3/raw/S1_ir_3q26_page_screenshot_2026-10-10.png
+820f3513f7382df7b688d426cce48a6e7a6f5664d08e3c5e8ae33798683a4b2b  logs/tsm/2026Q3/raw/S3_6k_2q26_index.html
+
+## Process record (untracked, root; fixed here for audit, not part of the commit)
+88c9f792606f271f3842bb9ac56c40a1df4ab55d1c8177a682500ed1697eee51  PLAN_forecast_TSM_2026Q3.md
+a068fff922f080e7b8d2f510e0287dcc6d80dec421cbae98a9a9f7ba1441c9ba  PLAN_forecast_TSM_2026Q3_v0.1.md
+7627d8f82dc1dbbf3a4b21b5464143cddc1ff4bf9ef7785a1b5f7cc7cfc42a64  PLAN_forecast_TSM_2026Q3_v1.md
+8530acfcd9e663059862222fdb499c20f6b3b33cfc25693ea53c683ab8b6f441  REPORT_CODEX_plan_review_TSM_2026Q3_result.md
+5613c6157f421d7ab1da4696ad75e29b3669a3c9a648887b0fbb9a698b020128  VERIFY_CLAUDE_plan_review_TSM_2026Q3.md
+2e3228a5093d1840fdcc222f16456107ae9f942c42f24851e27580501d317ad2  HANDOFF_CODEX_hypothesis_debate_TSM_2026Q3.md
+2c3e919f0f2e485b3f15139b082ad30f7f69b5ec1c3926079917c8f70510c635  REPLY_CODEX_hypothesis_debate_TSM_2026Q3_r1.md
+04596a0e3d124077cde4e5d8c0156c0c7ed838ae29a2fcf18bcc0b9ee6ce6694  REPLY_CLAUDE_hypothesis_debate_TSM_2026Q3_r1.md
+c3936b5a41903ae52931d60b5b7ede659d76a7f318e839ed9636927209983edb  HANDOFF_CODEX_hypothesis_debate_TSM_2026Q3_r2.md
+d8368edf72fda5c7bbe2fbdc15ac5d907f2e0605e6ea39571837736b43806956  REPLY_CODEX_hypothesis_debate_TSM_2026Q3_r2.md
+8ef1bae8e6a496c0546310f92503e4a39da5d067a1f82c809e9222c59b5da38a  FREEZE_CLAUDE_tsm_2026q3_prereg_draft.md
+6e63ea1b6907cd23aaf2a6879e78e5da5687ecd1d23232dd4915ad90de0867ae  REVIEW_CODEX_prereg_TSM_2026Q3.md
+2632698bdaa58f7f63cf5d682f6d6818166ab3cafdd7db0e0364e712ef29b12c  FREEZE_CLAUDE_tsm_2026q3_prereg_draft_r2.md
+
+Excluded: logs/tsm/2026Q3/freeze/out/ (stale r1 output, sha256 deac2d25...), freeze/__pycache__/.
+Corrections after sealing go to AMEND_tsm_2026q3_<n>.md; this file and the approved document are not edited.

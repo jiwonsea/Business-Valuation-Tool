@@ -1,0 +1,13 @@
+TSMC 3Q26 scoring preparation — written BEFORE the 3Q26 release
+
+Purpose: fix the scoring code (git-ignored) by SHA-256 before results exist, so the scoring mechanics cannot be tuned after the print.
+Implements FREEZE_tsm_2026q3_prereg.md sections 2-4 (sealed in commit 949dd44). It does not change any sealed content.
+score.py refuses to run if inputs.json / build.py / seal_run output differ from SEAL_tsm_2026q3.txt.
+Tests: test_score.py 35/35 PASS on synthetic actuals (VM run, 2026-10-10 KST). Synthetic only; no real 3Q26 data.
+Also listed: the pre-print Korean report (restates the sealed content; adds no new information).
+Not investment advice.
+
+2619806a68a8bc01738c9e05c7c609f003fc5cf11957adafe4e53ed8b2335de0  logs/tsm/2026Q3/score/score.py
+84115d75544b88612b07094f904916db511620db7755cc0d326f0bc5dcbb5782  logs/tsm/2026Q3/score/test_score.py
+9d74ca0dbe73e1fd77dfeffd016fc456985ca610781bfeb9080b50e8250cc24b  logs/tsm/2026Q3/score/actuals_TEMPLATE.json
+a418ba17df1a1dd6fe49fc2fe2de0f708a6b9393c28c8868677a93a4524184bb  forecast/reports/tsm_2026q3_preprint_ko.md

@@ -259,7 +259,7 @@ tenacity==9.1.4
     #   streamlit
 toml==0.10.2
     # via streamlit
-tornado==6.5.5
+tornado==6.5.7
     # via streamlit
 tqdm==4.67.3
     # via openai

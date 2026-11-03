@@ -19,7 +19,7 @@ class MultipleValuation:
     multiple: float  # Applied multiple
     enterprise_value: int  # EV (or equity value for P/E, P/BV)
     equity_value: int  # EV - net debt (EV methods) or direct
-    per_share: int  # Per-share value
+    per_share: float  # Per-share value
 
 
 def calc_ev_revenue(

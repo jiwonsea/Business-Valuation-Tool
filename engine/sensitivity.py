@@ -189,7 +189,7 @@ def sensitivity_irr_dlom(
         base_ps = per_share(eq, unit_multiplier, shares)
         for dlom in dlom_range:
             # DLOM not applied to negative equity (consistent with calc_scenario)
-            ps = round(base_ps * (1 - dlom / 100)) if base_ps > 0 else base_ps
+            ps = base_ps * (1 - dlom / 100) if base_ps > 0 else base_ps
             rows.append(SensitivityRow(row_val=irr, col_val=dlom, value=ps))
     return rows, irr_range, dlom_range
 
@@ -358,7 +358,7 @@ def sensitivity_nav(
             total_assets, total_liabilities, shares, int(reval), unit_multiplier
         )
         for disc in discount_range:
-            ps = round(r.per_share * (1 - disc / 100))
+            ps = r.per_share * (1 - disc / 100)
             rows.append(SensitivityRow(row_val=reval, col_val=disc, value=ps))
     return rows
 
@@ -384,7 +384,7 @@ def sensitivity_multiple_range(
         eq = ev - net_debt
         for disc in discount_range:
             if shares > 0:
-                ps = round(per_share(eq, unit_multiplier, shares) * (1 - disc / 100))
+                ps = per_share(eq, unit_multiplier, shares) * (1 - disc / 100)
             else:
                 ps = 0
             rows.append(SensitivityRow(row_val=m, col_val=disc, value=ps))

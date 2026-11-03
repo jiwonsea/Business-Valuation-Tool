@@ -41,6 +41,7 @@ def _parse_scenarios(scenario_values: dict) -> list[ScenarioSnapshot]:
                 code=code,
                 name=vals.get("name", code),
                 prob=vals.get("prob", 0),
+                prob_input=vals.get("prob_input"),
                 pre_dlom=vals.get("pre_dlom", 0),
                 post_dlom=vals.get("post_dlom", 0),
                 growth_adj_pct=vals.get("growth_adj_pct", 0),

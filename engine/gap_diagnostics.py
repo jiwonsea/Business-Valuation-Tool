@@ -274,7 +274,7 @@ def solve_implied_growth_multiplier(
 def diagnose_gap(
     gap_ratio: float,
     market_price: float,
-    intrinsic_per_share: int,
+    intrinsic_per_share: float,
     market_ev: float,
     ebitda_base: int,
     da_base: int,

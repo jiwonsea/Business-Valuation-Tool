@@ -27,7 +27,7 @@ def detect_unit(revenue: int, market: str) -> tuple[str, int]:
     return "백만원", 1_000_000
 
 
-def per_share(equity: int, unit_multiplier: int, shares: int) -> int:
+def per_share(equity: int, unit_multiplier: int, shares: int) -> float:
     """Convert equity value to per-share value.
 
     Args:
@@ -39,5 +39,26 @@ def per_share(equity: int, unit_multiplier: int, shares: int) -> int:
         Per-share value (KRW or $)
     """
     if shares <= 0:
-        return 0
-    return round(equity * unit_multiplier / shares)
+        return 0.0
+    return equity * unit_multiplier / shares
+
+
+def display_decimals(currency: str) -> int:
+    """Display precision only; calculation precision is independent."""
+    return 0 if currency in {"KRW", "JPY"} else 2
+
+
+def currency_symbol(currency: str) -> str:
+    """Return a display symbol without inferring currency from listing market."""
+    return {"KRW": "원", "USD": "$", "JPY": "¥", "EUR": "€"}.get(currency, currency)
+
+
+def format_per_share(value: float, currency: str) -> str:
+    """Format native per-share values with explicit half-up display rounding."""
+    from decimal import Decimal, ROUND_HALF_UP
+
+    decimals = display_decimals(currency)
+    rounded = Decimal(str(value)).quantize(
+        Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP
+    )
+    return f"{rounded:,.{decimals}f}"

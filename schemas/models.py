@@ -612,9 +612,11 @@ class ScenarioResult(BaseModel):
     receivable_recovery_value: int = 0
     equity_value: int
     shares: int
-    pre_dlom: int
-    post_dlom: int
-    weighted: int
+    pre_dlom: float
+    post_dlom: float
+    weighted: float
+    prob_input_pct: float = 0.0
+    prob_effective_pct: float = 0.0
     adjustments: list[
         AdjustmentItem
     ] = []  # Dynamic Equity Bridge (for Excel Waterfall)
@@ -721,7 +723,7 @@ class RNPVValuationResult(BaseModel):
         0  # Value of currently marketed drugs (DCF of existing revenue)
     )
     enterprise_value: int = 0  # pipeline_value + existing_revenue_value
-    per_share: int = 0
+    per_share: float = 0
     discount_rate: float = 0.0  # Applied discount rate (%)
 
 
@@ -737,9 +739,9 @@ class RNPVTornadoItem(BaseModel):
     """Single drug's tornado sensitivity result."""
 
     name: str
-    base_value: int = 0
-    low_value: int = 0
-    high_value: int = 0
+    base_value: float = 0.0
+    low_value: float = 0.0
+    high_value: float = 0.0
     low_peak: int = 0
     high_peak: int = 0
 
@@ -794,7 +796,7 @@ class DDMValuationResult(BaseModel):
     total_payout: float = 0.0
     growth: float  # (%)
     ke: float  # (%)
-    equity_per_share: int
+    equity_per_share: float
     warnings: list[str] = []  # Valuation warnings (e.g., narrow ke-growth spread)
 
 
@@ -831,7 +833,7 @@ class RIMValuationResult(BaseModel):
     terminal_ri: int = 0
     pv_terminal: int = 0
     equity_value: int = 0
-    per_share: int = 0
+    per_share: float = 0
 
 
 # ── NAV (Net Asset Value) ──
@@ -851,7 +853,7 @@ class NAVResult(BaseModel):
     adjusted_assets: int = 0
     total_liabilities: int = 0
     nav: int = 0  # Net asset value
-    per_share: int = 0
+    per_share: float = 0
 
 
 class ListedSubsidiary(BaseModel):
@@ -916,7 +918,7 @@ class MultiplesResult(BaseModel):
     multiple: float = 0.0
     enterprise_value: int = 0
     equity_value: int = 0
-    per_share: int = 0
+    per_share: float = 0
 
 
 # ── DCF ──
@@ -1268,26 +1270,26 @@ class SensitivityRow(BaseModel):
 class MCScenarioSummary(BaseModel):
     """Per-scenario MC summary (lightweight — no histogram)."""
 
-    mean: int = 0
-    median: int = 0
-    p5: int = 0
-    p95: int = 0
+    mean: float = 0.0
+    median: float = 0.0
+    p5: float = 0.0
+    p95: float = 0.0
 
 
 class MonteCarloResult(BaseModel):
     """Monte Carlo simulation result (for serialization)."""
 
     n_sims: int = 0
-    mean: int = 0
-    median: int = 0
-    std: int = 0
-    p5: int = 0
-    p25: int = 0
-    p75: int = 0
-    p95: int = 0
-    min_val: int = 0
-    max_val: int = 0
-    histogram_bins: list[int] = []
+    mean: float = 0.0
+    median: float = 0.0
+    std: float = 0.0
+    p5: float = 0.0
+    p25: float = 0.0
+    p75: float = 0.0
+    p95: float = 0.0
+    min_val: float = 0.0
+    max_val: float = 0.0
+    histogram_bins: list[float] = []
     histogram_counts: list[int] = []
     pct_negative: float = 0.0  # Percentage of simulations with negative/zero equity
     scenario_mc: dict[str, MCScenarioSummary] = {}  # {scenario_code: summary}
@@ -1297,7 +1299,7 @@ class MonteCarloResult(BaseModel):
 class MarketComparisonResult(BaseModel):
     """Market price comparison result."""
 
-    intrinsic_value: int = 0  # Intrinsic value (per share)
+    intrinsic_value: float = 0  # Intrinsic value (per share)
     market_price: float = 0.0  # Current market price
     price_source: str = ""  # "profile_as_of" | "live"
     price_as_of: Optional[date] = None
@@ -1311,7 +1313,7 @@ class CrossValidationItem(BaseModel):
     multiple: float  # Applied multiple
     enterprise_value: int  # EV
     equity_value: int  # Equity Value
-    per_share: int  # Per-share value
+    per_share: float  # Per-share value
 
 
 class QualityScore(BaseModel):
@@ -1401,7 +1403,8 @@ class ValuationResult(BaseModel):
     sotp: dict[str, SOTPSegmentResult] = {}  # For SOTP (empty dict = not used)
     total_ev: int = 0
     scenarios: dict[str, ScenarioResult] = {}  # Empty dict when scenarios not used
-    weighted_value: int = 0  # Probability-weighted per-share value
+    prob_normalization_factor: float = 1.0
+    weighted_value: float = 0.0  # Probability-weighted per-share value
     dcf: Optional[DCFResult] = None
     ddm: Optional[DDMValuationResult] = None
     rim: Optional[RIMValuationResult] = None

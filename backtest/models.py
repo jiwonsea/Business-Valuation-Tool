@@ -13,9 +13,10 @@ class ScenarioSnapshot(BaseModel):
 
     code: str
     name: str
-    prob: float  # Probability (%)
-    pre_dlom: int  # Per-share value before DLOM
-    post_dlom: int  # Per-share value after DLOM
+    prob: float  # Effective probability (%)
+    prob_input: Optional[float] = None  # Absent for legacy snapshots
+    pre_dlom: float  # Per-share value before DLOM
+    post_dlom: float  # Per-share value after DLOM
     growth_adj_pct: float = 0.0
     wacc_adj: float = 0.0
     terminal_growth_adj: float = 0.0
@@ -34,7 +35,7 @@ class BacktestRecord(BaseModel):
     company_name: str
     legal_status: str
     analysis_date: date
-    predicted_value: int  # weighted_value in native currency per share
+    predicted_value: float  # weighted_value in native currency per share
     predicted_gap_ratio: Optional[float] = None
     price_at_prediction: Optional[float] = None  # T0 market price
     wacc_pct: Optional[float] = None

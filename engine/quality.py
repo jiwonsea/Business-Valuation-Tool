@@ -605,7 +605,7 @@ def _wacc_plausibility_score(
 def _scenario_consistency_score(
     scenarios_in: dict,
     scenarios_out: dict,
-    weighted_value: int,
+    weighted_value: float,
     multiples_clamped: bool = False,
 ) -> tuple[int, list[str]]:
     """Score scenario design quality (0-25).

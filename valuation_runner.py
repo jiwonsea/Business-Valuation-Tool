@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import math
 from datetime import date
 
 import yaml
@@ -84,6 +85,19 @@ _HEALTHY_MIN_ASSET_SHARE_PCT = 20.0
 def _seg_names(vi: ValuationInput) -> dict[str, str]:
     """Extract {code: name} mapping from segments dictionary."""
     return {code: info["name"] for code, info in vi.segments.items()}
+
+
+def _probability_factor(scenarios) -> float:
+    """Normalize admitted probability rounding noise without mutating inputs."""
+    if not scenarios:
+        return 1.0
+    probabilities = [sc.prob for sc in scenarios.values()]
+    if not all(math.isfinite(p) and p >= 0 for p in probabilities):
+        raise ValueError("Scenario probabilities must be finite and nonnegative")
+    total = math.fsum(probabilities)
+    if not math.isfinite(total) or total <= 0:
+        raise ValueError("Scenario probability total must be finite and positive")
+    return 100.0 / total
 
 
 def _adjust_wacc(base: WACCResult, wacc_adj: float, eq_w: float = 100.0) -> WACCResult:
@@ -1127,7 +1141,7 @@ def _apply_holding_discount_to_scenario(
     """Replace scenario equity/per-share outputs with holding-discounted net equity."""
     pre_dlom = per_share(net_equity_value, unit_multiplier, scenario_result.shares)
     if net_equity_value > 0:
-        post_dlom = round(pre_dlom * (1 - dlom_pct / 100))
+        post_dlom = pre_dlom * (1 - dlom_pct / 100)
     else:
         post_dlom = pre_dlom
     return scenario_result.model_copy(
@@ -1135,7 +1149,7 @@ def _apply_holding_discount_to_scenario(
             "equity_value": net_equity_value,
             "pre_dlom": pre_dlom,
             "post_dlom": post_dlom,
-            "weighted": round(post_dlom * prob_pct / 100),
+            "weighted": post_dlom * prob_pct / 100,
         }
     )
 
@@ -1285,7 +1299,8 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     # Scenarios -- apply per-scenario SOTP overrides + market_sentiment_pct
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in resolved_scenarios.items():
         # Per-scenario SOTP: recalculate if drivers are set
         needs_recalc = (
@@ -1357,6 +1372,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             um,
             vi.cps_dividend_rate,
             vi.rcps_dividend_rate,
+            prob_weight=sc.prob * prob_factor,
         )
         if vi.company.holding_structure and vi.company.holding_structure.enabled:
             bridge = build_holding_discount_bridge(
@@ -1369,13 +1385,13 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                     r,
                     bridge.net_equity_value,
                     sc.dlom,
-                    sc.prob,
+                    sc.prob * prob_factor,
                     um,
                 )
                 if code == "Base" or base_holding_bridge is None:
                     base_holding_bridge = bridge
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     # DCF cross-validation -- for mixed SOTP, manufacturing segments only
     total_da_base = cons["dep"] + cons["amort"]
@@ -1546,6 +1562,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         total_ev=total_ev,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         dcf=dcf_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,
@@ -1600,7 +1617,8 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # Scenarios (DCF EV-based, per-scenario DCF driver + WACC adjustment applied)
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev  # Default: base DCF EV
@@ -1659,9 +1677,10 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             um,
             vi.cps_dividend_rate,
             vi.rcps_dividend_rate,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     # DCF sensitivity
     sens_dcf_rows = []
@@ -1732,6 +1751,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         total_ev=total_ev,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         dcf=dcf_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,
@@ -1777,7 +1797,8 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # Per-scenario DDM: recalculate with ddm_growth + wacc_adj (Ke adjustment)
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_growth = sc.ddm_growth if sc.ddm_growth is not None else base_growth
@@ -1793,12 +1814,12 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                 buyback_per_share=buyback_ps,
             )
             # DDM yields equity directly; add net_debt to get EV for calc_scenario bridge
-            sc_eq = sc_ddm.equity_per_share * vi.valuation_shares // (um or 1)
+            sc_eq = round(sc_ddm.equity_per_share * vi.valuation_shares / (um or 1))
         except ValueError:
             logger.warning(
                 "DDM scenario '%s' failed (growth>=Ke or Ke<=0), using base DDM", code
             )
-            sc_eq = ddm_raw.equity_per_share * vi.valuation_shares // (um or 1)
+            sc_eq = round(ddm_raw.equity_per_share * vi.valuation_shares / (um or 1))
 
         # Apply sentiment to equity (not pseudo-EV) — avoids leverage amplification
         # for high-D/E financial companies where equity << net_debt.
@@ -1810,13 +1831,26 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         # from common dividends — passing them to calc_scenario would double-deduct.
         # net_debt cancel-out (added to sc_ev above, subtracted here) is intentional.
         r = calc_scenario(
-            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+            sc,
+            sc_ev,
+            vi.net_debt,
+            vi.eco_frontier,
+            0,
+            0,
+            0,
+            0,
+            um,
+            0.0,
+            0.0,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     # DDM base EV (for cross-validation): DDM equity + net_debt = EV
-    total_ev = ddm_raw.equity_per_share * vi.valuation_shares // (um or 1) + vi.net_debt
+    total_ev = (
+        round(ddm_raw.equity_per_share * vi.valuation_shares / (um or 1)) + vi.net_debt
+    )
 
     # Use DDM value directly when no scenarios are set
     if not scenario_results:
@@ -1850,6 +1884,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         total_ev=total_ev,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         ddm=ddm_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,
@@ -1919,7 +1954,8 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # Scenarios -- recalculate RIM with rim_roe_adj + wacc_adj (Ke adjustment)
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_eq = (
@@ -1952,10 +1988,21 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         # RIM yields common equity value directly; CPS/RCPS are already excluded
         # from book-value-based residual income — passing them would double-deduct.
         r = calc_scenario(
-            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+            sc,
+            sc_ev,
+            vi.net_debt,
+            vi.eco_frontier,
+            0,
+            0,
+            0,
+            0,
+            um,
+            0.0,
+            0.0,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:
         total_weighted = rim_raw.per_share
@@ -1990,6 +2037,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         rim=rim_result,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         cross_validations=cv_items,
         sensitivity_primary=sens_rim,
         sensitivity_primary_label=f"Ke × 영구성장률 → RIM 주당가치 ({vi.company.currency_unit})",
@@ -2067,7 +2115,8 @@ def _run_multiples_valuation(
     is_equity_direct = primary_mv.primary_multiple_method in ("P/E", "P/BV")
 
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
@@ -2090,9 +2139,10 @@ def _run_multiples_valuation(
             um,
             vi.cps_dividend_rate,
             vi.rcps_dividend_rate,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:
         total_weighted = primary_mv.per_share
@@ -2144,6 +2194,7 @@ def _run_multiples_valuation(
         multiples_primary=primary_mv,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         dcf=dcf_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,
@@ -2184,7 +2235,8 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     # Scenarios -- apply holding company discount via nav_discount
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev
@@ -2196,10 +2248,21 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             sc_ev = round(sc_ev * (1 + sc.market_sentiment_pct / 100))
         # NAV liabilities already include CPS/RCPS principal (K-IFRS) → skip to avoid double deduction
         r = calc_scenario(
-            sc, sc_ev, vi.net_debt, vi.eco_frontier, 0, 0, 0, 0, um, 0.0, 0.0
+            sc,
+            sc_ev,
+            vi.net_debt,
+            vi.eco_frontier,
+            0,
+            0,
+            0,
+            0,
+            um,
+            0.0,
+            0.0,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[code] = r
-        total_weighted += r.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:
         total_weighted = nav_raw.per_share
@@ -2253,6 +2316,7 @@ def _run_nav_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         nav=nav_result,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         sensitivity_primary=sens_nav,
         sensitivity_primary_label=f"재평가 조정액 × 지주할인율 → 주당 NAV ({vi.company.currency_unit})",
         dcf=dcf_result,
@@ -2687,7 +2751,7 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     shares = vi.valuation_shares
     ev = rnpv_raw.enterprise_value
     equity_value = ev - vi.net_debt
-    per_share = round(equity_value * um / shares) if shares > 0 else 0
+    per_share = equity_value * um / shares if shares > 0 else 0.0
 
     rnpv_result = RNPVValuationResult(
         drug_results=drug_results,
@@ -2703,7 +2767,8 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
     # Scenarios: adjust success probabilities or peak sales
     total_ev = ev
     scenario_results = {}
-    total_weighted = 0
+    total_weighted = 0.0
+    prob_factor = _probability_factor(vi.scenarios)
 
     for sc_code, sc in vi.scenarios.items():
         # growth_adj_pct adjusts peak sales; wacc_adj adjusts discount rate; pos_override adjusts PoS
@@ -2745,9 +2810,10 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             unit_multiplier=um,
             cps_dividend_rate=vi.cps_dividend_rate,
             rcps_dividend_rate=vi.rcps_dividend_rate,
+            prob_weight=sc.prob * prob_factor,
         )
         scenario_results[sc_code] = sc_result
-        total_weighted += sc_result.weighted
+        total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:
         total_weighted = per_share
@@ -2814,6 +2880,7 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         rnpv=rnpv_result,
         scenarios=scenario_results,
         weighted_value=total_weighted,
+        prob_normalization_factor=prob_factor,
         dcf=dcf_result,
         cross_validations=cv_items,
         peer_stats=peer_stats,

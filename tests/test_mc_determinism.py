@@ -14,7 +14,7 @@ def _nexus_snapshot(hash_seed: int) -> dict:
     code = """
 import json
 from valuation_runner import load_profile, run_valuation
-result = run_valuation(load_profile('profiles/nexus.yaml'))
+result = run_valuation(load_profile('tests/fixtures/nexus_frozen.yaml'))
 mc = result.monte_carlo
 print(json.dumps({
     'weighted_value': result.weighted_value,
@@ -49,8 +49,22 @@ def test_nexus_mc_is_deterministic_across_hash_seeds():
     seed_one = _nexus_snapshot(1)
 
     assert seed_zero == seed_one
-    assert seed_zero["weighted_value"] == 362
-    assert seed_zero["scenarios"] == {"Base": 445, "Bear": 18, "Bull": 891}
+    from math import fsum
+    from valuation_runner import load_profile
+
+    vi = load_profile(str(ROOT / "tests/fixtures/nexus_frozen.yaml"))
+    equities = {"Base": 36_211, "Bear": 1_475, "Bull": 72_524}
+    expected_posts = {
+        code: equity
+        * vi.company.unit_multiplier
+        / vi.scenarios[code].shares
+        * (1 - vi.scenarios[code].dlom / 100)
+        for code, equity in equities.items()
+    }
+    assert seed_zero["scenarios"] == expected_posts
+    assert seed_zero["weighted_value"] == fsum(
+        expected_posts[code] * sc.prob / 100 for code, sc in vi.scenarios.items()
+    )
     assert seed_zero["equity"] == {"Base": 36_211, "Bear": 1_475, "Bull": 72_524}
     assert seed_zero["receivable"] == {
         "Base": 12_440,
@@ -63,7 +77,7 @@ def test_nexus_mc_is_deterministic_across_hash_seeds():
 def test_nexus_mc_assumptions_only_list_active_drivers():
     from valuation_runner import load_profile, run_valuation
 
-    result = run_valuation(load_profile("profiles/nexus.yaml"))
+    result = run_valuation(load_profile("tests/fixtures/nexus_frozen.yaml"))
     assumptions = result.monte_carlo.input_assumptions
 
     assert "Multiple(GAME)" in assumptions

@@ -16,6 +16,7 @@ def calc_scenario(
     unit_multiplier: int = 1_000_000,
     cps_dividend_rate: float = 0.0,
     rcps_dividend_rate: float = 0.0,
+    prob_weight: float | None = None,
 ) -> ScenarioResult:
     """Compute equity value and per-share value for each scenario.
 
@@ -72,12 +73,13 @@ def calc_scenario(
     # Per-share value (negative equity propagates for distress scenarios)
     pre_dlom = per_share(equity_value, unit_multiplier, sc.shares)
     if equity_value > 0:
-        post_dlom = round(pre_dlom * (1 - sc.dlom / 100))
+        post_dlom = pre_dlom * (1 - sc.dlom / 100)
     else:
         # DLOM not applied to negative equity (limited liability: floor at negative value)
         post_dlom = pre_dlom
 
-    weighted = round(post_dlom * sc.prob / 100)
+    effective_prob = sc.prob if prob_weight is None else prob_weight
+    weighted = post_dlom * effective_prob / 100
 
     return ScenarioResult(
         total_ev=total_ev,
@@ -92,5 +94,7 @@ def calc_scenario(
         pre_dlom=pre_dlom,
         post_dlom=post_dlom,
         weighted=weighted,
+        prob_input_pct=sc.prob,
+        prob_effective_pct=effective_prob,
         adjustments=adjustments,
     )

@@ -32,7 +32,7 @@ class RIMResult:
     terminal_ri: int  # RI terminal value
     pv_terminal: int  # PV of terminal value
     equity_value: int  # Total equity value (BV + PV(RI) + PV(TV))
-    per_share: int  # Per-share value
+    per_share: float  # Per-share value
 
 
 def calc_rim(
@@ -114,7 +114,7 @@ def calc_rim(
     pv_terminal = round(terminal_value / (1 + k) ** n) if n > 0 else 0
 
     equity_value = book_value + pv_sum + pv_terminal
-    ps = round(equity_value * unit_multiplier / shares) if shares > 0 else 0
+    ps = equity_value * unit_multiplier / shares if shares > 0 else 0.0
 
     return RIMResult(
         bv_current=book_value,

@@ -5,14 +5,14 @@ from dataclasses import dataclass
 
 @dataclass
 class MarketComparison:
-    intrinsic_value: int  # Intrinsic value per share
+    intrinsic_value: float  # Intrinsic value per share
     market_price: float  # Current market price
     gap_ratio: float  # (intrinsic - market) / market
     flag: str  # Warning message (empty string = normal)
 
 
 def compare_to_market(
-    intrinsic: int,
+    intrinsic: float,
     market_price: float,
     threshold: float = 0.5,
 ) -> MarketComparison:

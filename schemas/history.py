@@ -29,7 +29,7 @@ class ValuationHistoryRecord(BaseModel):
     market: Optional[str] = None
     company_name: Optional[str] = None
     analysis_date: Optional[date] = None
-    weighted_value: Optional[int] = None
+    weighted_value: Optional[float] = None
     market_price: Optional[float] = None
     gap_pct: Optional[float] = None
     wacc_pct: Optional[float] = None

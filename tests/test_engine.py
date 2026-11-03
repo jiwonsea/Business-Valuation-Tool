@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from schemas.models import WACCParams, ScenarioParams, DCFParams, DAAllocation
 from engine.wacc import calc_wacc
 from engine.sotp import allocate_da, calc_sotp
@@ -237,7 +239,8 @@ class TestDDM:
     def test_basic_ddm(self):
         r = calc_ddm(dps=1000, growth=3.0, ke=10.0)
         # DPS * (1.03) / (0.10 - 0.03) = 1030 / 0.07 = 14,714
-        assert r.equity_per_share == 14_714
+        assert r.equity_per_share == pytest.approx(1000 * 1.03 / (0.10 - 0.03))
+        assert abs(r.equity_per_share - 14_714) <= 0.5
 
     def test_ddm_narrow_spread_warning(self):
         """W-5: ke-growth < 2%p emits warning"""
@@ -1949,7 +1952,8 @@ class TestDDMTotalPayout:
     def test_ddm_buyback_zero_backward_compat(self):
         """buyback=0: identical to standard DDM"""
         r = calc_ddm(dps=1000, growth=3.0, ke=10.0, buyback_per_share=0)
-        assert r.equity_per_share == 14_714
+        assert r.equity_per_share == pytest.approx(1000 * 1.03 / (0.10 - 0.03))
+        assert abs(r.equity_per_share - 14_714) <= 0.5
         assert r.total_payout == 1000
 
 

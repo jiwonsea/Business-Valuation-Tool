@@ -39,19 +39,19 @@ class MCResult:
     """Monte Carlo simulation result."""
 
     n_sims: int
-    mean: int
-    median: int
-    std: int
-    p5: int  # 5th percentile
-    p25: int
-    p75: int
-    p95: int
-    min_val: int
-    max_val: int
-    distribution: list[int] = field(
+    mean: float
+    median: float
+    std: float
+    p5: float  # 5th percentile
+    p25: float
+    p75: float
+    p95: float
+    min_val: float
+    max_val: float
+    distribution: list[float] = field(
         default_factory=list
     )  # Full distribution (for histogram)
-    histogram_bins: list[int] = field(default_factory=list)
+    histogram_bins: list[float] = field(default_factory=list)
     histogram_counts: list[int] = field(default_factory=list)
     pct_negative: float = 0.0  # Percentage of simulations with negative/zero equity
 
@@ -227,37 +227,37 @@ def run_monte_carlo(
     else:
         results = np.zeros(n)
 
-    results_int = np.round(results).astype(int)
+    results_float = results
 
     # Count true negatives (before any histogram filtering)
-    neg_mask = results_int < 0
+    neg_mask = results_float < 0
     pct_neg = round(float(neg_mask.sum()) / n * 100, 1) if n > 0 else 0.0
 
     # Histogram uses positive-only set (display: negative equity not plotted)
-    valid = results_int[~neg_mask]
+    valid = results_float[~neg_mask]
     n_bins = min(50, max(10, n // 200))
     if len(valid) > 0:
         counts, bin_edges = np.histogram(valid, bins=n_bins)
-        hist_bins = [int(b) for b in bin_edges[:-1]]
+        hist_bins = [float(b) for b in bin_edges[:-1]]
         hist_counts = [int(c) for c in counts]
     else:
         hist_bins, hist_counts = [], []
 
     # Statistics on full distribution (negatives included) for unbiased percentiles
-    stats_set = results_int if len(results_int) > 0 else valid
+    stats_set = results_float if len(results_float) > 0 else valid
 
     return MCResult(
         n_sims=n,
-        mean=int(np.mean(stats_set)),
-        median=int(np.median(stats_set)),
-        std=int(np.std(stats_set)),
-        p5=int(np.percentile(stats_set, 5)),
-        p25=int(np.percentile(stats_set, 25)),
-        p75=int(np.percentile(stats_set, 75)),
-        p95=int(np.percentile(stats_set, 95)),
-        min_val=int(np.min(stats_set)),
-        max_val=int(np.max(stats_set)),
-        distribution=results_int.tolist(),
+        mean=float(np.mean(stats_set)),
+        median=float(np.median(stats_set)),
+        std=float(np.std(stats_set)),
+        p5=float(np.percentile(stats_set, 5)),
+        p25=float(np.percentile(stats_set, 25)),
+        p75=float(np.percentile(stats_set, 75)),
+        p95=float(np.percentile(stats_set, 95)),
+        min_val=float(np.min(stats_set)),
+        max_val=float(np.max(stats_set)),
+        distribution=results_float.tolist(),
         histogram_bins=hist_bins,
         histogram_counts=hist_counts,
         pct_negative=pct_neg,

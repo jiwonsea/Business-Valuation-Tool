@@ -1,0 +1,170 @@
+# 넥써쓰 (205500, KOSDAQ) — 원스토어 인수 반영 pro-forma  [v4: Codex 44/60 CONDITIONAL GO 조건 반영]
+# 출처: DART 원문(넥써쓰 분기보고서 2026-03, 주요사항보고서 2026-06-18, 원스토어 감사보고서 2025.12,
+#       SK스퀘어 대량보유보고서 2026-07-01) + 거래소 시세 2026-07-10.  단위: 백만원
+# 목적: 리딩자산운용 코벤펀드 보유 링크드 4회차 EB의 교환대상 자산 검증
+
+company:
+  name: 넥써쓰
+  former_name: 액션스퀘어
+  legal_status: 상장
+  market: KR
+  currency: KRW
+  currency_unit: 백만원
+  unit_multiplier: 1000000   # ⚠️ 명시 필수 — detect_unit()의 억원 오판 방지 (engine.md 참조)
+  ticker: '205500'
+  corp_code: null
+  # DART 원문(SK스퀘어 대량보유보고서 2026-07-01): 의결권있는 발행주식 총수 81,385,045주
+  # ⚠️ 64,112,099(유증 전) + 17,171,788(신주) = 81,283,887 → 실제와 101,158주 차이. 출처 미확인
+  shares_total: 81385045
+  shares_ordinary: 81385045
+  shares_preferred: 0
+  # DART '의결권있는 발행주식 총수'는 자기주식이 이미 제외된 수치다(자기주식엔 의결권 없음).
+  # 여기에 treasury_shares를 또 넣으면 이중 차감되어 유통주식수가 81,383,610으로 잘못 계산된다.
+  treasury_shares: 0
+  analysis_date: '2026-07-10'
+
+industry: 게임/플랫폼
+valuation_method: sotp
+curated: true
+allow_wide_scenario_spread: true
+
+segments:
+  GAME:
+    name: 게임 — 넥써쓰 본체
+    method: ev_revenue
+    multiple: 0.35
+    revenue_type: fwd
+  CROSS_SERVICE:
+    name: 블록체인 재단 기술용역 — 기대 추가용역 매출
+    method: ev_revenue
+    multiple: 0.30
+    revenue_type: fwd
+  ONESTORE:
+    name: 원스토어 지분 89.03% (앱마켓)
+    method: pbv
+    multiple: 0.70563       # = 딜가 703.4374억 ÷ 장부자본 996.89억 (정확값. "0.71"은 반올림)
+    book_equity: 88762      # 996.89억 × 89.03%
+
+# GAME과 CROSS_SERVICE는 공시 실측 구성으로 분리한다.
+segment_data:
+  2025:
+    GAME:      {revenue: 7500,   gross_profit: 0, op: 139,   assets: 74000}
+    CROSS_SERVICE: {revenue: 34000, gross_profit: 0, op: 0, assets: 0}
+    ONESTORE:  {revenue: 100907, gross_profit: 0, op: -8625, assets: 151609}   # PBV 세그먼트라 미사용
+
+consolidated:
+  2023: {revenue: 5500,  op: -16200, net_income: -12000, assets: 39600, liabilities: 10200, equity: 29300, dep: 400, amort: 300, gross_borr: 3500,  net_borr: 1000,  de_ratio: 34.9}
+  2024: {revenue: 7600,  op: -8900,  net_income: -8200,  assets: 33800, liabilities: 8000,  equity: 25800, dep: 400, amort: 300, gross_borr: 4100,  net_borr: 1500,  de_ratio: 30.8}
+  2025: {revenue: 36700, op: 1400,   net_income: -3300,  assets: 74000, liabilities: 43900, equity: 30100, dep: 900, amort: 800, gross_borr: 32800, net_borr: 29800, de_ratio: 145.9}
+
+wacc_params:
+  rf: 3.50
+  erp: 7.00
+  bu: 1.000
+  de: 91.4
+  tax: 22.0
+  kd_pre: 6.00
+  eq_w: 52.3
+
+# 순차입금 = 넥써쓰 **본체 + 인수금융** 기준 (연결 순차입금 아님)
+#   차입 32,400 − 현금 3,845 + 신규 CB 23,132 = 51,687
+#   ※ ONESTORE는 PBV라 자기 현금·부채를 장부자본에 이미 반영 → 여기서 중복 차감 금지
+net_debt: 51687
+segment_net_debt:
+  ONESTORE: 0      # 원스토어 무차입(단기차입금 0)
+
+# ⚠️ distress discount 비활성화: 원스토어 PBV는 **실제 딜가**를 앵커로 하므로
+#    딜에 이미 반영된 할인(장부 996.89 → 703.44, 헤어컷 293.45억)에 엔진 할인을 또 얹으면 이중차감.
+#    (기본 SOTP 343원 vs Base 시나리오 420원 불일치의 원인 — Codex [필수-1])
+distress_max_discount: 0.0
+
+# 원스토어 장부 996.89억 분해:
+#   조정순현금 431.34 (현금성 738.44 − 예수금 307.10, 개발사 정산 대기금)
+#   Kuaikan World(Cayman) RCPS 523.02 (공정가치 수준 3, 부채요소 할인율 26~28.11%)
+#   기타 순영업자산 42.53
+# → 딜가 703.44 역산: Kuaikan×회수율 + 앱마켓 영업가치 = 229.57억
+#    앱마켓 영업가치 0 가정 시 Kuaikan 회수율 = 43.9%
+#    즉 이 딜은 "Kuaikan 약 44% 회수 + 앱마켓 영업가치 ≈ 0"과 정합
+# → PBR 시나리오는 Kuaikan 회수율로 설계 (앱마켓 영업가치는 전 시나리오 0 고정)
+scenarios:
+  Base:
+    name: 기준 — 딜가 그대로 (Kuaikan 회수율 ~44%, 앱마켓 영업가치 0)
+    prob: 50.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 81385045
+    receivable_recovery_value: 12440
+    desc: 원스토어는 실제 거래가격, 게임은 소형사 할인, CROSS는 기대 추가용역 매출로 평가. OGF legacy AR은 회수율 85%와 PV 0.867을 적용해 별도 가산.
+    probability_rationale: '기준 50%. CROSS 34,000은 2025 실적과 1Q 연율의 중간값이며 확정 backlog가 아니라 추가 부속합의서 기대 매출이다.'
+    segment_multiples: {GAME: 0.35, CROSS_SERVICE: 0.30, ONESTORE: 0.70563}
+    segment_revenue:   {GAME: 7500, CROSS_SERVICE: 34000}
+  Bull:
+    name: 상승 — Kuaikan 전액 회수 + 크로쓰 트랙션
+    prob: 15.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 81385045
+    receivable_recovery_value: 15564
+    desc: Kuaikan RCPS 장부가 전액 회수, 게임과 기대 추가용역 매출은 1Q 연율 수준을 유지. OGF legacy AR은 100% 회수와 PV 0.922 적용.
+    probability_rationale: '15%. 1Q 연율 유지와 OGF 미수 전액 회수, 원스토어 장부가 회수를 동시에 요구하는 낙관 시나리오.'
+    segment_multiples: {GAME: 0.55, CROSS_SERVICE: 0.40, ONESTORE: 1.00}
+    segment_revenue:   {GAME: 8660, CROSS_SERVICE: 37804}
+  Bear:
+    name: 하락 — Kuaikan 사실상 손상 + 게임 모멘텀 소멸
+    prob: 35.0
+    ipo: N/A
+    irr: null
+    dlom: 0
+    cps_repay: 0
+    rcps_repay: 0
+    buyback: 0
+    shares: 81385045
+    receivable_recovery_value: 5503
+    desc: Kuaikan 사실상 손상, 게임 매출은 2025 실적, 추가 부속합의서 갱신 빈도·규모는 절반 수준으로 축소. OGF legacy AR은 40% 회수와 PV 0.815 적용.
+    probability_rationale: '35%. 확정 backlog가 0이고 거래처 집중도가 높아 추가 부속합의서 축소와 OGF 회수 지연을 반영.'
+    segment_multiples: {GAME: 0.20, CROSS_SERVICE: 0.10, ONESTORE: 0.50}
+    segment_revenue:   {GAME: 6390, CROSS_SERVICE: 20000}
+
+dcf_params:
+  ebitda_growth_rates: [0.15, 0.12, 0.08, 0.05, 0.03]
+  tax_rate: 22.0
+  capex_to_da: 1.00
+  nwc_to_rev_delta: 0.05
+  terminal_growth: 1.5
+
+# 교차검증 배수 전부 0 — 거래 전 실적(2025 넥써쓰 별도)과 거래 후 자본구조를 혼용한
+# 상대가치 패널(P/B·EV/EBITDA·EV/Sales·역산 WACC)은 무효이므로 산출 자체를 끈다 (Codex [필수-8])
+pe_multiple: 0
+ev_revenue_multiple: 0
+pbv_multiple: 0
+ps_multiple: 0
+
+cps_principal: 0
+cps_years: 0
+eco_frontier: 0
+base_year: 2025
+
+market_price: 1505
+price_as_of: '2026-07-10'
+
+mc_enabled: true    # Mixed-method MC: PBV/PER 샘플링 + effective_net_debt 반영
+
+# peer 실측 EV/Sales (시총 + 순차입금 = EV; 순차입금 = 자본총계 × 순부채비율, 2025/12)
+#   위메이드     6,392 + (8,127×−23.28%) =  4,500 / 6,140 = 0.733
+#   컴투스       3,307 + (10,691×+7.74%) =  4,134 / 6,964 = 0.594
+#   데브시스터즈  2,171 + (1,695×−42.34%) =  1,453 / 2,956 = 0.492
+#   네오위즈     4,005 + (5,558×−54.42%) =    980 / 4,327 = 0.227
+#   → 중앙값 0.543  (⚠️ PSR 중앙값 0.830과 혼동 금지)
+peers:
+- {name: 위메이드, segment_code: GAME, ev_ebitda: 8.00, ev_revenue: 0.733, notes: "블록체인 게임 플랫폼(위믹스). 장현국 前대표 — 크로쓰와 사업모형 최근접"}
+- {name: 컴투스, segment_code: GAME, ev_ebitda: 19.02, ev_revenue: 0.594, notes: "블록체인(XPLA) 병행, 매출 정체"}
+- {name: 데브시스터즈, segment_code: GAME, ev_ebitda: 8.95, ev_revenue: 0.492, notes: "단일 IP 의존"}
+- {name: 네오위즈, segment_code: GAME, ev_ebitda: 1.29, ev_revenue: 0.227, notes: "흑자(2025 영업이익 600억)·대규모 순현금"}

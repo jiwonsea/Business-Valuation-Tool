@@ -19,7 +19,7 @@ class NAVRawResult:
     total_liabilities: int  # Total liabilities
     nav: int  # Net asset value (adjusted assets - liabilities)
     shares: int
-    per_share: int  # NAV per share
+    per_share: float  # NAV per share
 
 
 def calc_nav(

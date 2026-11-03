@@ -1,0 +1,181 @@
+{
+  "_note": "Synthetic fixed integer equity/share/DLOM/probability inputs captured for J-1, 2026-11-03; tests never load profiles.",
+  "formula": "pre=equity*unit_multiplier/shares; post=pre*(1-dlom/100) if equity>0 else pre; weighted=fsum(post*prob/fsum(probs))",
+  "cases": [
+    {
+      "name": "stla",
+      "currency": "USD",
+      "unit_multiplier": 1000000,
+      "scenarios": {
+        "Base": {
+          "equity": 30251,
+          "shares": 2897483196,
+          "dlom": 0.0,
+          "prob": 50.0,
+          "pre_exact": "10.440440186766834",
+          "post_exact": "10.440440186766834",
+          "post_int": 10
+        },
+        "Bull": {
+          "equity": 30251,
+          "shares": 2897483196,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "10.440440186766834",
+          "post_exact": "10.440440186766834",
+          "post_int": 10
+        },
+        "Bear": {
+          "equity": 30251,
+          "shares": 2897483196,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "10.440440186766834",
+          "post_exact": "10.440440186766834",
+          "post_int": 10
+        }
+      },
+      "expected_exact": 10.440440186766834
+    },
+    {
+      "name": "mrna",
+      "currency": "USD",
+      "unit_multiplier": 1000000,
+      "scenarios": {
+        "Base": {
+          "equity": 1290,
+          "shares": 396786259,
+          "dlom": 0.0,
+          "prob": 50.0,
+          "pre_exact": "3.251120649316639",
+          "post_exact": "3.251120649316639",
+          "post_int": 3
+        },
+        "Bull": {
+          "equity": 1290,
+          "shares": 396786259,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "3.251120649316639",
+          "post_exact": "3.251120649316639",
+          "post_int": 3
+        },
+        "Bear": {
+          "equity": 1290,
+          "shares": 396786259,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "3.251120649316639",
+          "post_exact": "3.251120649316639",
+          "post_int": 3
+        }
+      },
+      "expected_exact": 3.251120649316639
+    },
+    {
+      "name": "psky",
+      "currency": "USD",
+      "unit_multiplier": 1000000,
+      "scenarios": {
+        "Bull": {
+          "equity": 23398,
+          "shares": 1071666977,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "21.833275170519695",
+          "post_exact": "21.833275170519695",
+          "post_int": 22
+        },
+        "Base": {
+          "equity": 10095,
+          "shares": 1071666977,
+          "dlom": 0.0,
+          "prob": 45.0,
+          "pre_exact": "9.419903959586131",
+          "post_exact": "9.419903959586131",
+          "post_int": 9
+        },
+        "Bear": {
+          "equity": -712,
+          "shares": 1071666977,
+          "dlom": 0.0,
+          "prob": 30.0,
+          "pre_exact": "-0.6643854996756142",
+          "post_exact": "-0.6643854996756142",
+          "post_int": -1
+        }
+      },
+      "expected_exact": 9.497959924540998
+    },
+    {
+      "name": "pfe",
+      "currency": "USD",
+      "unit_multiplier": 1000000,
+      "scenarios": {
+        "Base": {
+          "equity": 198049,
+          "shares": 5699444169,
+          "dlom": 0.0,
+          "prob": 50.0,
+          "pre_exact": "34.748827100932694",
+          "post_exact": "34.748827100932694",
+          "post_int": 35
+        },
+        "Bull": {
+          "equity": 250225,
+          "shares": 5699444169,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "43.90340401279927",
+          "post_exact": "43.90340401279927",
+          "post_int": 44
+        },
+        "Bear": {
+          "equity": 132829,
+          "shares": 5699444169,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "23.305605961099467",
+          "post_exact": "23.305605961099467",
+          "post_int": 23
+        }
+      },
+      "expected_exact": 34.17666604394103
+    },
+    {
+      "name": "7203_t",
+      "currency": "JPY",
+      "unit_multiplier": 1000000,
+      "scenarios": {
+        "Base": {
+          "equity": 34224210,
+          "shares": 11841052480,
+          "dlom": 0.0,
+          "prob": 50.0,
+          "pre_exact": "2890.3013526716504",
+          "post_exact": "2890.3013526716504",
+          "post_int": 2890
+        },
+        "Bull": {
+          "equity": 42841790,
+          "shares": 11841052480,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "3618.07280833874",
+          "post_exact": "3618.07280833874",
+          "post_int": 3618
+        },
+        "Bear": {
+          "equity": 25119017,
+          "shares": 11841052480,
+          "dlom": 0.0,
+          "prob": 25.0,
+          "pre_exact": "2121.350027155694",
+          "post_exact": "2121.350027155694",
+          "post_int": 2121
+        }
+      },
+      "expected_exact": 2880.0063852094336
+    }
+  ]
+}

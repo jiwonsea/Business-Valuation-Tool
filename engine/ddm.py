@@ -15,7 +15,7 @@ class DDMResult:
     total_payout: float  # Total payout per share (DPS + buyback)
     growth: float  # Growth rate (%)
     ke: float  # Cost of equity (%)
-    equity_per_share: int  # Intrinsic value per share
+    equity_per_share: float  # Intrinsic value per share
     warnings: list[str] = field(default_factory=list)  # Valuation warnings
 
 
@@ -68,6 +68,6 @@ def calc_ddm(
         total_payout=total_payout,
         growth=growth,
         ke=ke,
-        equity_per_share=round(value),
+        equity_per_share=value,
         warnings=warnings,
     )

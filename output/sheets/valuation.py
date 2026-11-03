@@ -296,20 +296,16 @@ def valuation_ddm(ctx: Ctx):
     write_cell(ws, r, 1, "DDM 핵심 파라미터", font=SECTION_FONT)
     r += 1
     ddm_items = [
-        ("주당 배당금 (DPS)", f"{ddm.dps:,.0f}", "최근 실적 기반"),
+        ("주당 배당금 (DPS)", ddm.dps, "최근 실적 기반"),
     ]
     if ddm.buyback_per_share > 0:
-        ddm_items.append(
-            ("주당 자사주매입", f"{ddm.buyback_per_share:,.0f}", "Total Payout")
-        )
-        ddm_items.append(
-            ("Total Payout/주", f"{ddm.total_payout:,.0f}", "DPS + Buyback")
-        )
+        ddm_items.append(("주당 자사주매입", ddm.buyback_per_share, "Total Payout"))
+        ddm_items.append(("Total Payout/주", ddm.total_payout, "DPS + Buyback"))
     ddm_items += [
         ("배당 성장률 (g)", f"{ddm.growth:.2f}%", "지속가능 성장률"),
         ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%", "CAPM: Rf + βL × ERP"),
         ("", "", ""),
-        ("주당 내재가치", f"{ddm.equity_per_share:,}", "DPS×(1+g) / (Ke-g)"),
+        ("주당 내재가치", ddm.equity_per_share, "DPS×(1+g) / (Ke-g)"),
     ]
     for label, val, note in ddm_items:
         if not label:
@@ -319,7 +315,15 @@ def valuation_ddm(ctx: Ctx):
         is_result = "내재가치" in label
         fill = GREEN_FILL if is_result else BLUE_FILL
         font = RESULT_FONT if is_result else None
-        write_cell(ws, r, 2, val, fill=fill, font=font)
+        write_cell(
+            ws,
+            r,
+            2,
+            val,
+            fmt=ctx.per_share_fmt if isinstance(val, (int, float)) else None,
+            fill=fill,
+            font=font,
+        )
         write_cell(ws, r, 3, note)
         r += 1
 
@@ -350,7 +354,7 @@ def valuation_rim(ctx: Ctx):
         ("PV(RI)", f"{rim.pv_ri_sum:,}", "예측기간 잔여이익 현재가치"),
         ("PV(TV)", f"{rim.pv_terminal:,}", "잔여이익 Terminal Value 현재가치"),
         ("자기자본가치", f"{rim.equity_value:,}", "BV + PV(RI) + PV(TV)"),
-        ("주당 내재가치", f"{rim.per_share:,}", "자기자본가치 / 주식수"),
+        ("주당 내재가치", rim.per_share, "자기자본가치 / 주식수"),
     ]
     for label, val, note in rim_items:
         write_cell(ws, r, 1, label, fill=GRAY_FILL, font=WHITE_FONT)
@@ -360,6 +364,7 @@ def valuation_rim(ctx: Ctx):
             r,
             2,
             val,
+            fmt=ctx.per_share_fmt if isinstance(val, (int, float)) else None,
             fill=GREEN_FILL if is_result else None,
             font=RESULT_FONT if is_result else None,
         )
@@ -421,7 +426,7 @@ def valuation_nav(ctx: Ctx):
             r,
             2,
             val,
-            fmt=NUM_FMT,
+            fmt=ctx.per_share_fmt if "주당" in label else NUM_FMT,
             fill=GREEN_FILL if is_result else YELLOW_FILL,
             font=RESULT_FONT if "주당" in label else None,
         )
@@ -454,7 +459,7 @@ def valuation_multiples(ctx: Ctx):
         ("적용 멀티플", f"{mp.multiple:.1f}x", "Peer Median 기반"),
         ("Enterprise Value", f"{mp.enterprise_value:,}", ctx.unit),
         ("Equity Value", f"{mp.equity_value:,}", ctx.unit),
-        ("주당 가치", f"{mp.per_share:,}", ctx.currency_sym),
+        ("주당 가치", mp.per_share, ctx.currency_sym),
     ]
     for label, val, note in items:
         write_cell(ws, r, 1, label)
@@ -466,6 +471,7 @@ def valuation_multiples(ctx: Ctx):
             val,
             fill=GREEN_FILL if is_result else BLUE_FILL,
             font=RESULT_FONT if is_result else None,
+            fmt=ctx.per_share_fmt,
         )
         if note:
             write_cell(ws, r, 3, note, font=NOTE_FONT)

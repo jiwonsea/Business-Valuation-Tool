@@ -144,7 +144,15 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
     # Per-share
     r += 1
     write_cell(ws, r, 1, "주당 rNPV 가치", bold=True)
-    write_cell(ws, r, 2, rnpv.per_share, fmt=NUM_FMT, font=RESULT_FONT, fill=GREEN_FILL)
+    write_cell(
+        ws,
+        r,
+        2,
+        rnpv.per_share,
+        fmt=ctx.per_share_fmt,
+        font=RESULT_FONT,
+        fill=GREEN_FILL,
+    )
     write_cell(ws, r, 3, ctx.currency_sym)
 
     # Key assumptions
@@ -325,11 +333,16 @@ def _sheet_pipeline_summary(ctx: Ctx, rnpv):
             r += 1
             swing = t.high_value - t.low_value
             write_cell(ws, r, 1, t.name)
-            write_cell(ws, r, 2, t.low_value, fmt=NUM_FMT, fill=RED_FILL)
-            write_cell(ws, r, 3, t.base_value, fmt=NUM_FMT)
-            write_cell(ws, r, 4, t.high_value, fmt=NUM_FMT, fill=GREEN_FILL)
+            write_cell(ws, r, 2, t.low_value, fmt=ctx.per_share_fmt, fill=RED_FILL)
+            write_cell(ws, r, 3, t.base_value, fmt=ctx.per_share_fmt)
+            write_cell(ws, r, 4, t.high_value, fmt=ctx.per_share_fmt, fill=GREEN_FILL)
             write_cell(
-                ws, r, 5, swing, fmt=NUM_FMT, fill=YELLOW_FILL if swing > 0 else None
+                ws,
+                r,
+                5,
+                swing,
+                fmt=ctx.per_share_fmt,
+                fill=YELLOW_FILL if swing > 0 else None,
             )
 
 

@@ -41,9 +41,10 @@ def save_prediction_snapshot(
             continue
         scenario_values[code] = {
             "name": sc_input.name,
-            "prob": sc_input.prob,
-            "pre_dlom": sc_result.pre_dlom,
-            "post_dlom": sc_result.post_dlom,
+            "prob": getattr(sc_result, "prob_effective_pct", sc_input.prob),
+            "prob_input": sc_input.prob,
+            "pre_dlom": round(sc_result.pre_dlom, 4),
+            "post_dlom": round(sc_result.post_dlom, 4),
             "growth_adj_pct": sc_input.growth_adj_pct,
             "wacc_adj": sc_input.wacc_adj,
             "terminal_growth_adj": sc_input.terminal_growth_adj,
@@ -67,7 +68,7 @@ def save_prediction_snapshot(
         "unit_multiplier": vi.company.unit_multiplier,
         "legal_status": vi.company.legal_status,
         "analysis_date": vi.company.analysis_date.isoformat(),
-        "predicted_weighted_value": result.weighted_value,
+        "predicted_weighted_value": round(result.weighted_value, 4),
         "predicted_gap_ratio": mc.gap_ratio if mc else None,
         "price_at_prediction": mc.market_price if mc else None,
         "wacc_pct": result.wacc.wacc,
@@ -137,7 +138,7 @@ def save_prediction_snapshot(
                     return uid
                 except Exception as exc2:
                     exc = exc2
-            logger.warning(
+            logger.error(
                 "prediction snapshot save failed for %s: %s: %s",
                 vi.company.name,
                 type(exc).__name__,

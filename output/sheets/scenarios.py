@@ -1,5 +1,6 @@
 """Sheet 5: Scenario Analysis — dynamic waterfall bridge."""
 
+from engine.units import format_per_share
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
@@ -42,7 +43,13 @@ def sheet_scenarios(ctx: Ctx):
     r += 1
     write_cell(ws, r, 1, "확률")
     for i, sc_code in enumerate(sc_codes, 2):
-        write_cell(ws, r, i, f"{ctx.vi.scenarios[sc_code].prob}%", fill=BLUE_FILL)
+        write_cell(
+            ws,
+            r,
+            i,
+            f"{ctx.result.scenarios[sc_code].prob_effective_pct:g}%",
+            fill=BLUE_FILL,
+        )
 
     # Method-specific key drivers (figures that differentiate scenarios)
     r = _write_scenario_drivers(ws, r, ctx)
@@ -122,7 +129,9 @@ def sheet_scenarios(ctx: Ctx):
         r += 1
         write_cell(ws, r, 1, "주당 가치 (DLOM 전)")
         for i, sc_code in enumerate(sc_codes, 2):
-            write_cell(ws, r, i, ctx.result.scenarios[sc_code].pre_dlom, fmt=NUM_FMT)
+            write_cell(
+                ws, r, i, ctx.result.scenarios[sc_code].pre_dlom, fmt=ctx.per_share_fmt
+            )
 
         r += 1
         write_cell(ws, r, 1, "주당 가치 (DLOM 후)", bold=True)
@@ -133,7 +142,7 @@ def sheet_scenarios(ctx: Ctx):
                 r,
                 i,
                 sr.post_dlom,
-                fmt=NUM_FMT,
+                fmt=ctx.per_share_fmt,
                 bold=True,
                 fill=GREEN_FILL if sr.post_dlom > 0 else None,
             )
@@ -148,7 +157,7 @@ def sheet_scenarios(ctx: Ctx):
                 r,
                 i,
                 sr.post_dlom,
-                fmt=NUM_FMT,
+                fmt=ctx.per_share_fmt,
                 bold=True,
                 fill=GREEN_FILL if sr.post_dlom > 0 else None,
             )
@@ -156,7 +165,9 @@ def sheet_scenarios(ctx: Ctx):
     r += 1
     write_cell(ws, r, 1, "확률가중 기여")
     for i, sc_code in enumerate(sc_codes, 2):
-        write_cell(ws, r, i, ctx.result.scenarios[sc_code].weighted, fmt=NUM_FMT)
+        write_cell(
+            ws, r, i, ctx.result.scenarios[sc_code].weighted, fmt=ctx.per_share_fmt
+        )
 
     # Probability-weighted conclusion
     r += 2
@@ -168,7 +179,7 @@ def sheet_scenarios(ctx: Ctx):
         r,
         2,
         ctx.result.weighted_value,
-        fmt=NUM_FMT,
+        fmt=ctx.per_share_fmt,
         font=Font(bold=True, size=13, color="27AE60"),
         fill=GREEN_FILL,
     )
@@ -299,7 +310,13 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
         r += 1
         write_cell(ws, r, 1, "DPS (주당배당금)", font=calc_font)
         for i in range(len(sc_codes)):
-            write_cell(ws, r, i + 2, f"{dps:,.0f}원", font=calc_font)
+            write_cell(
+                ws,
+                r,
+                i + 2,
+                f"{format_per_share(dps, ctx.vi.company.currency)}{ctx.currency_sym}",
+                font=calc_font,
+            )
 
         # Calculation: formula (reflecting per-scenario Ke)
         r += 1
@@ -308,10 +325,16 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
             sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
             spread = sc_ke - g
             if spread > 0:
-                val = round(dps * (1 + g / 100) / (spread / 100))
+                val = dps * (1 + g / 100) / (spread / 100)
             else:
                 val = 0
-            write_cell(ws, r, i + 2, f"{val:,.0f}원", font=calc_font)
+            write_cell(
+                ws,
+                r,
+                i + 2,
+                f"{format_per_share(val, ctx.vi.company.currency)}{ctx.currency_sym}",
+                font=calc_font,
+            )
 
     elif method == "rim":
         ke = ctx.result.wacc.ke

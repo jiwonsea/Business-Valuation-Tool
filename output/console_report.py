@@ -1,5 +1,6 @@
 """Console report output."""
 
+from engine.units import currency_symbol, format_per_share
 from schemas.models import ValuationInput, ValuationResult
 from valuation_runner import _seg_names
 
@@ -13,7 +14,11 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     by = vi.base_year
     seg_names = _seg_names(vi)
     unit = vi.company.currency_unit
-    currency_sym = "원" if vi.company.market == "KR" else "$"
+    currency_sym = currency_symbol(vi.company.currency)
+    if vi.company.currency not in {"KRW", "USD", "JPY", "EUR"}:
+        print(f"⚠ 미지원 통화 {vi.company.currency}: 소수 2자리 표시")
+    if abs(result.prob_normalization_factor - 1) > 1e-9:
+        print(f"⚠ 시나리오 확률 정규화: ×{result.prob_normalization_factor:.12g}")
 
     # Dynamic column width for segment names
     _seg_w = max((len(n) for n in seg_names.values()), default=12)
@@ -44,7 +49,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             )
         if forward.eps:
             metrics.append(
-                f"EPS {forward.eps.value:,.2f} {forward.eps.unit} "
+                f"EPS {format_per_share(forward.eps.value, vi.company.currency)} {forward.eps.unit} "
                 f"(n={forward.eps.n_analysts})"
             )
         period_label = forward.fiscal_period or f"컨센서스 {forward.relative_period}"
@@ -227,10 +232,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                         if r.receivable_recovery_value
                         else ""
                     )
-                    + f"주당(DLOM후)={r.post_dlom:>8,}{currency_sym}, "
-                    f"가중기여={r.weighted:>6,}{currency_sym}"
+                    + f"주당(DLOM후)={format_per_share(r.post_dlom, vi.company.currency)}{currency_sym}, "
+                    f"가중기여={format_per_share(r.weighted, vi.company.currency)}{currency_sym}"
                 )
-        print(f"\n  >> 확률가중 주당 가치: {result.weighted_value:,}{currency_sym}")
+        print(
+            f"\n  >> 확률가중 주당 가치: {format_per_share(result.weighted_value, vi.company.currency)}{currency_sym}"
+        )
 
     # DDM
     if result.ddm:
@@ -238,16 +245,18 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print("\n[DDM (Gordon Growth)]")
         if d.buyback_per_share > 0:
             print(
-                f"  DPS: {d.dps:,.0f}{currency_sym}, 자사주매입: {d.buyback_per_share:,.0f}{currency_sym}"
+                f"  DPS: {format_per_share(d.dps, vi.company.currency)}{currency_sym}, 자사주매입: {format_per_share(d.buyback_per_share, vi.company.currency)}{currency_sym}"
             )
             print(
-                f"  Total Payout: {d.total_payout:,.0f}{currency_sym}, 성장률: {d.growth}%, Ke: {d.ke}%"
+                f"  Total Payout: {format_per_share(d.total_payout, vi.company.currency)}{currency_sym}, 성장률: {d.growth}%, Ke: {d.ke}%"
             )
         else:
             print(
-                f"  DPS: {d.dps:,.0f}{currency_sym}, 배당성장률: {d.growth}%, Ke: {d.ke}%"
+                f"  DPS: {format_per_share(d.dps, vi.company.currency)}{currency_sym}, 배당성장률: {d.growth}%, Ke: {d.ke}%"
             )
-        print(f"  주당 내재가치: {d.equity_per_share:,}{currency_sym}")
+        print(
+            f"  주당 내재가치: {format_per_share(d.equity_per_share, vi.company.currency)}{currency_sym}"
+        )
 
     # RIM
     if result.rim:
@@ -256,7 +265,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         print(f"  장부가치(BV): {r.bv_current:,}{unit}, Ke: {r.ke}%")
         print(f"  PV(RI): {r.pv_ri_sum:,}{unit}, PV(TV): {r.pv_terminal:,}{unit}")
         print(f"  자기자본가치: {r.equity_value:,}{unit}")
-        print(f"  주당 내재가치: {r.per_share:,}{currency_sym}")
+        print(
+            f"  주당 내재가치: {format_per_share(r.per_share, vi.company.currency)}{currency_sym}"
+        )
 
     # rNPV
     if result.rnpv:
@@ -279,7 +290,9 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             print(f"  R&D 비용 PV: -{rn.r_and_d_cost_pv:,}{unit}")
         print(f"  파이프라인 가치: {rn.pipeline_value:,}{unit}")
         print(f"  기업가치(EV): {rn.enterprise_value:,}{unit}")
-        print(f"  주당 내재가치: {rn.per_share:,}{currency_sym}")
+        print(
+            f"  주당 내재가치: {format_per_share(rn.per_share, vi.company.currency)}{currency_sym}"
+        )
 
     # Reverse rNPV
     if result.reverse_rnpv:
@@ -352,8 +365,12 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     if result.market_comparison:
         mc = result.market_comparison
         print("\n[시장가격 비교]")
-        print(f"  내재가치: {mc.intrinsic_value:,}{currency_sym}")
-        print(f"  현재 주가: {mc.market_price:,.0f}{currency_sym}")
+        print(
+            f"  내재가치: {format_per_share(mc.intrinsic_value, vi.company.currency)}{currency_sym}"
+        )
+        print(
+            f"  현재 주가: {format_per_share(mc.market_price, vi.company.currency)}{currency_sym}"
+        )
         print(f"  괴리율: {mc.gap_ratio:+.1%}")
         if mc.flag:
             print(f"  ⚠ {mc.flag}")
@@ -375,13 +392,13 @@ def print_report(vi: ValuationInput, result: ValuationResult):
         mc = result.monte_carlo
         print(f"\n[Monte Carlo 시뮬레이션 ({mc.n_sims:,}회)]")
         print(
-            f"  Mean: {mc.mean:>10,}{currency_sym}  |  Median: {mc.median:>10,}{currency_sym}  |  Std: {mc.std:>8,}{currency_sym}"
+            f"  Mean: {format_per_share(mc.mean, vi.company.currency)}{currency_sym}  |  Median: {format_per_share(mc.median, vi.company.currency)}{currency_sym}  |  Std: {format_per_share(mc.std, vi.company.currency)}{currency_sym}"
         )
         print(
-            f"  5th: {mc.p5:>11,}{currency_sym}  |  25th: {mc.p25:>12,}{currency_sym}"
+            f"  5th: {format_per_share(mc.p5, vi.company.currency)}{currency_sym}  |  25th: {format_per_share(mc.p25, vi.company.currency)}{currency_sym}"
         )
         print(
-            f"  75th: {mc.p75:>10,}{currency_sym}  |  95th: {mc.p95:>12,}{currency_sym}"
+            f"  75th: {format_per_share(mc.p75, vi.company.currency)}{currency_sym}  |  95th: {format_per_share(mc.p95, vi.company.currency)}{currency_sym}"
         )
         if mc.scenario_mc:
             print("  시나리오별 MC:")
@@ -389,7 +406,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 sc_name = vi.scenarios.get(sc_code, None)
                 label = sc_name.name if sc_name else sc_code
                 print(
-                    f"    {label:<16} P5={sc_mc.p5:>8,}{currency_sym}  Mean={sc_mc.mean:>8,}{currency_sym}  P95={sc_mc.p95:>8,}{currency_sym}"
+                    f"    {label:<16} P5={format_per_share(sc_mc.p5, vi.company.currency)}{currency_sym}  Mean={format_per_share(sc_mc.mean, vi.company.currency)}{currency_sym}  P95={format_per_share(sc_mc.p95, vi.company.currency)}{currency_sym}"
                 )
 
     # Peer
@@ -439,7 +456,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             label = f"{cv.method}{tag}"
             print(
                 f"{label:<28} {cv.metric_value:>12,.0f} {cv.multiple:>7.1f}x "
-                f"{cv.enterprise_value:>13,} {cv.equity_value:>13,} {cv.per_share:>9,}"
+                f"{cv.enterprise_value:>13,} {cv.equity_value:>13,} {format_per_share(cv.per_share, vi.company.currency)}"
             )
         # Legend
         has_trading = market_ps > 0 and any(

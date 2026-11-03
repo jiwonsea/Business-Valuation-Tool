@@ -120,7 +120,7 @@ def sheet_raw_data(ctx: Ctx):
             r,
             f"기준 주가 ({ctx.currency_sym})",
             price,
-            fmt=NUM_FMT,
+            fmt=ctx.per_share_fmt,
             note="상대가치·괴리율 계산 기준",
         )
         _add_name(ctx, "RD_Price", price_row, 2)

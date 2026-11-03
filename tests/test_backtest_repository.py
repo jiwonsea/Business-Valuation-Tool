@@ -415,8 +415,8 @@ class _RaisingClient:
         return _RaisingQuery(self._exc)
 
 
-def test_save_prediction_snapshot_logs_warning_not_traceback(caplog):
-    """Schema drift / PGRST204 style error should log one WARNING, no traceback."""
+def test_save_prediction_snapshot_logs_error_not_traceback(caplog):
+    """Publication failures must log one ERROR without a traceback dump."""
     import logging
 
     # Simulate supabase-py raising with PGRST204-style message
@@ -437,23 +437,15 @@ def test_save_prediction_snapshot_logs_warning_not_traceback(caplog):
     warnings = [r for r in repo_records if r.levelno == logging.WARNING]
     errors = [r for r in repo_records if r.levelno >= logging.ERROR]
 
-    assert len(warnings) == 1, (
-        f"Expected exactly one WARNING, got {len(warnings)}: "
-        f"{[r.getMessage() for r in warnings]}"
-    )
-    assert errors == [], (
-        f"Expected no ERROR-level records (no traceback dump), got: "
-        f"{[r.getMessage() for r in errors]}"
-    )
-
-    msg = warnings[0].getMessage()
+    assert warnings == []
+    assert len(errors) == 1
+    msg = errors[0].getMessage()
     assert "Acme" in msg
-    assert "RuntimeError" in msg  # exception class surfaced
-    # No explicit exc_info attached → no traceback will be rendered
-    assert warnings[0].exc_info is None
+    assert "RuntimeError" in msg
+    assert errors[0].exc_info is None
 
 
-@pytest.mark.parametrize("market", ["KR", "US"])
+@pytest.mark.parametrize("market", ["KR", "US", "JP"])
 def test_native_snapshot_writer_reader_metrics_round_trip(market):
     """Use the writer's actual row, not a separately invented reader payload."""
     from backtest.dataset import _parse_scenarios
@@ -483,7 +475,7 @@ def test_native_snapshot_writer_reader_metrics_round_trip(market):
         assert repo.save_prediction_snapshot(vi, result, "v-1") == "snap-1"
     row = next(call for call in client.query.calls if call[0] == "upsert")[1][0]
     assert row["unit_multiplier"] == 1_000_000
-    assert row["predicted_weighted_value"] == result.weighted_value
+    assert row["predicted_weighted_value"] == round(result.weighted_value, 4)
     record = BacktestRecord(
         snapshot_id="snap-1",
         valuation_id=row.get("valuation_id", ""),
@@ -505,18 +497,20 @@ def test_native_snapshot_writer_reader_metrics_round_trip(market):
         valuation_bucket=row.get("valuation_bucket", "plain_operating"),
         market_signals_version=row.get("market_signals_version", 0),
     )
-    posts = [sc.post_dlom for sc in scenarios.values()]
-    pres = [sc.pre_dlom for sc in scenarios.values()]
-    assert record.predicted_value_native == result.weighted_value
+    posts = [round(sc.post_dlom, 4) for sc in scenarios.values()]
+    pres = [round(sc.pre_dlom, 4) for sc in scenarios.values()]
+    assert record.predicted_value_native == round(result.weighted_value, 4)
     assert record.scenario_range_native() == (min(posts), max(posts))
     assert record.scenario_pre_dlom_range_native() == (min(pres), max(pres))
     error = calc_forecast_price_error([record], "t6m")
     price = row["price_at_prediction"]
-    assert error["mape"] == pytest.approx(abs(result.weighted_value - price) / price)
+    assert error["mape"] == pytest.approx(
+        abs(record.predicted_value_native - price) / price
+    )
     interval = calc_interval_score([record], "t6m")
     assert interval["coverage_rate"] == int(min(posts) <= price <= max(posts))
     assert interval["mean_interval_width"] == pytest.approx(
-        (max(posts) - min(posts)) / result.weighted_value
+        (max(posts) - min(posts)) / record.predicted_value_native
     )
     means = _role_means(record)
     assert means["bear"] == min(posts)
@@ -524,3 +518,62 @@ def test_native_snapshot_writer_reader_metrics_round_trip(market):
     assert predict_with_probs(record, {"bull": 25, "base": 50, "bear": 25}) == (
         max(posts) * 0.25 + sorted(posts)[1] * 0.5 + min(posts) * 0.25
     )
+
+
+@pytest.mark.parametrize("error_kind", ["valuation", "snapshot"])
+def test_numeric_storage_failure_is_visible_as_error(error_kind, caplog):
+    from db import repository
+
+    vi, result = _make_vi_result("absent")
+    vi.company.analysis_date = date(2026, 11, 3)
+    vi.base_year = 2025
+    vi.model_dump = lambda **kwargs: {}
+    result.total_ev = 100
+    result.model_dump = lambda **kwargs: {}
+    client = _RaisingClient(
+        RuntimeError("400 22P02 invalid input syntax for type bigint")
+    )
+    if error_kind == "snapshot":
+        with patch.object(repo, "get_client", return_value=client):
+            assert repo.save_prediction_snapshot(vi, result, "v-1") is None
+    else:
+        with patch.object(repository, "get_client", return_value=client):
+            assert repository.save_valuation(vi, result) is None
+    assert any(
+        r.levelname == "ERROR" and "22P02" in r.getMessage() for r in caplog.records
+    )
+
+
+def test_effective_probability_and_input_survive_snapshot_round_trip():
+    from backtest.dataset import _parse_scenarios
+
+    vi, result = _make_vi_result("absent")
+    vi.scenarios = {
+        "Base": SimpleNamespace(
+            name="Base",
+            prob=50.05,
+            growth_adj_pct=0,
+            wacc_adj=0,
+            terminal_growth_adj=0,
+            market_sentiment_pct=0,
+        )
+    }
+    result.scenarios = {
+        "Base": SimpleNamespace(
+            pre_dlom=3.25112345,
+            post_dlom=3.25112345,
+            prob_effective_pct=50.05 * 100 / 100.05,
+        )
+    }
+    result.weighted_value = 3.25112345
+    client = _FakeClient([{"id": "snap-1"}])
+    with patch.object(repo, "get_client", return_value=client):
+        repo.save_prediction_snapshot(vi, result, "v-1")
+    row = next(c for c in client.query.calls if c[0] == "upsert")[1][0]
+    sc = _parse_scenarios(row["scenario_values"])[0]
+    assert sc.prob == result.scenarios["Base"].prob_effective_pct
+    assert sc.prob_input == 50.05
+    assert sc.post_dlom == 3.2511
+    legacy = dict(row["scenario_values"]["Base"])
+    legacy.pop("prob_input")
+    assert _parse_scenarios({"Base": legacy})[0].prob_input is None

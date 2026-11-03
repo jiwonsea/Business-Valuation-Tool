@@ -307,7 +307,7 @@ def _implied_multiple_check(ws, r: int, ctx: Ctx) -> int:
         ev, market_mult = _implied_from_price(price)
         r += 1
         write_cell(ws, r, 1, "현재 주가 역산")
-        write_cell(ws, r, 2, price, fmt=NUM_FMT)
+        write_cell(ws, r, 2, price, fmt=ctx.per_share_fmt)
         write_cell(ws, r, 3, ev, fmt=NUM_FMT)
         write_cell(ws, r, 4, market_mult, fmt=MULT_FMT, fill=YELLOW_FILL)
         write_cell(
@@ -326,7 +326,7 @@ def _implied_multiple_check(ws, r: int, ctx: Ctx) -> int:
         r += 1
         n = (ms.analyst_count if ms else None) or "?"
         write_cell(ws, r, 1, f"컨센서스 목표주가 역산 (N={n})")
-        write_cell(ws, r, 2, target, fmt=NUM_FMT)
+        write_cell(ws, r, 2, target, fmt=ctx.per_share_fmt)
         write_cell(ws, r, 3, ev, fmt=NUM_FMT)
         write_cell(ws, r, 4, target_mult, fmt=MULT_FMT, fill=YELLOW_FILL)
         write_cell(

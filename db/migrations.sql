@@ -190,3 +190,7 @@ CREATE POLICY "service_role_all_delivery_log" ON delivery_log
 -- Public: false (access via signed URLs)
 -- File size limit: 50MB
 -- Allowed MIME: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+-- J-1 (2026-11-03): native currency/share; existing integer rows keep their units.
+ALTER TABLE valuations
+    ALTER COLUMN weighted_value TYPE NUMERIC(20,4) USING weighted_value::NUMERIC(20,4);

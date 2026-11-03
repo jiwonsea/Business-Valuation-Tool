@@ -389,6 +389,10 @@ class TestScenarioBridgeAlignment:
             ),
         )
 
+        ctx.per_share_fmt = "#,##0"
+        ctx.vi.company.currency = "KRW"
+        for code, sr in ctx.result.scenarios.items():
+            sr.prob_effective_pct = ctx.vi.scenarios[code].prob
         sheet_scenarios(ctx)
 
         ws = ctx.wb["Scenario Analysis"]
@@ -440,7 +444,11 @@ class TestSensitivityRefLabel:
             multiples_primary=None,
         )
         return SimpleNamespace(
-            method=method, result=result, unit="백만원", currency_sym="원"
+            method=method,
+            result=result,
+            unit="백만원",
+            currency_sym="원",
+            vi=SimpleNamespace(company=SimpleNamespace(currency="KRW")),
         )
 
     def test_sotp_returns_weighted_value(self):
@@ -582,3 +590,119 @@ class TestDraftBlockedRendering:
 
         _, sections = build_blog_sections(self._make_summary(blocked=0))
         assert "게시 차단" not in sections[0]["content"]
+
+
+def test_jpy_display_uses_currency_and_preserves_numeric_cells(tmp_path, capsys):
+    from pathlib import Path
+    from unittest.mock import patch
+
+    from openpyxl import load_workbook
+    from output.excel_builder import export
+    from output.console_report import print_report
+    from output.sheets._ctx import make_ctx
+    from valuation_runner import load_profile, run_valuation
+    from openpyxl import Workbook
+
+    vi = load_profile(str(Path(__file__).parent / "fixtures/nexus_frozen.yaml"))
+    vi = vi.model_copy(
+        update={
+            "company": vi.company.model_copy(
+                update={"market": "US", "currency": "JPY"}
+            ),
+            "market_price": 2879.125,
+        }
+    )
+    result = run_valuation(vi)
+    result = result.model_copy(update={"weighted_value": 2879.125})
+    ctx = make_ctx(vi, result, Workbook())
+    assert ctx.currency_sym == "¥"
+    assert ctx.currency_decimals == 0
+    print_report(vi, result)
+    assert "2,879¥" in capsys.readouterr().out
+    with patch("db.repository.list_valuation_history", return_value=[]):
+        path = export(vi, result, str(tmp_path))
+    workbook = load_workbook(path)
+    ws = workbook["Scenario Analysis"]
+    label = next(c for row in ws for c in row if c.value == "확률가중 주당 가치")
+    cell = ws.cell(label.row, 2)
+    assert cell.value == 2879.125
+    assert cell.number_format == "#,##0"
+    assert ws.cell(label.row, 3).value == "¥"
+    raw = workbook["Raw Data"]
+    price_label = next(c for row in raw for c in row if c.value == "기준 주가 (¥)")
+    assert raw.cell(price_label.row, 2).value == 2879.125
+    assert raw.cell(price_label.row, 2).number_format == "#,##0"
+
+
+def test_us_and_kr_share_cells_preserve_floats_and_currency_precision(tmp_path, capsys):
+    from pathlib import Path
+    from unittest.mock import patch
+    from openpyxl import load_workbook
+    from output.console_report import print_report
+    from output.excel_builder import export
+    from valuation_runner import load_profile, run_valuation
+
+    base = load_profile(str(Path(__file__).parent / "fixtures/nexus_frozen.yaml"))
+    for currency, value, expected, fmt in [
+        ("USD", 113.61234, "113.61$", "#,##0.00"),
+        ("KRW", 314499.5, "314,500원", "#,##0"),
+    ]:
+        vi = base.model_copy(
+            update={"company": base.company.model_copy(update={"currency": currency})}
+        )
+        result = run_valuation(vi).model_copy(update={"weighted_value": value})
+        print_report(vi, result)
+        assert expected in capsys.readouterr().out
+        with patch("db.repository.list_valuation_history", return_value=[]):
+            path = export(vi, result, str(tmp_path))
+        wb = load_workbook(path)
+        for title in ("Scenario Analysis", "Dashboard"):
+            ws = wb[title]
+            label = next(
+                c for row in ws for c in row if c.value == "확률가중 주당 가치"
+            )
+            cell = ws.cell(label.row, 2)
+            assert cell.value == value
+            expected_fmt = (
+                fmt + '"' + ("$" if currency == "USD" else "원") + '"'
+                if title == "Dashboard"
+                else fmt
+            )
+            assert cell.number_format == expected_fmt
+
+
+def test_ddm_share_inputs_keep_raw_numbers_and_display_unit_amounts_stay_integer_formatted():
+    from pathlib import Path
+    from openpyxl import Workbook
+    from output.sheets._ctx import make_ctx
+    from output.sheets.assumptions import sheet_assumptions
+    from output.sheets.dashboard import sheet_dashboard
+    from schemas.models import DDMParams
+    from valuation_runner import load_profile, run_valuation
+
+    vi = load_profile(str(Path(__file__).parent / "fixtures/nexus_frozen.yaml"))
+    vi = vi.model_copy(
+        update={
+            "company": vi.company.model_copy(update={"currency": "USD"}),
+            "ddm_params": DDMParams(dps=2.675, buyback_per_share=0.005),
+        }
+    )
+    result = run_valuation(vi)
+    ctx = make_ctx(vi, result, Workbook())
+    sheet_dashboard(ctx)
+    dashboard = ctx.wb["Dashboard"]
+    debt = next(
+        c
+        for row in dashboard
+        for c in row
+        if isinstance(c.value, str) and c.value.startswith("순차입금")
+    )
+    assert dashboard.cell(debt.row, 2).number_format == "#,##0"
+    ctx.method = "ddm"
+    sheet_assumptions(ctx)
+    ws = ctx.wb["Assumptions"]
+    for label, expected in [("주당 배당금 (DPS)", 2.675), ("주당 자사주매입", 0.005)]:
+        found = next(c for row in ws for c in row if c.value == label)
+        cell = ws.cell(found.row, 2)
+        assert cell.value == expected
+        assert cell.number_format == '#,##0.00"$"'

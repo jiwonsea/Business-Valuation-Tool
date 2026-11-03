@@ -126,8 +126,11 @@ def test_save_valuation_is_append_first():
 def _ctx():
     return SimpleNamespace(
         wb=Workbook(),
+        per_share_fmt="#,##0.00",
         vi=SimpleNamespace(
-            company=SimpleNamespace(ticker="AAA", market="US", name="Company")
+            company=SimpleNamespace(
+                ticker="AAA", market="US", name="Company", currency="USD"
+            )
         ),
     )
 

@@ -1,5 +1,6 @@
 """Sheet 6: Sensitivity — method-specific sensitivity tables + heatmaps."""
 
+from engine.units import format_per_share
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import ColorScaleRule
 from openpyxl.styles import Font
@@ -55,6 +56,7 @@ def sheet_sensitivity(ctx: Ctx):
             f"{row_name} \\ {col_name}",
             _fmt_multiple,
             _fmt_multiple,
+            number_format=ctx.per_share_fmt,
         )
         r += 2
 
@@ -68,6 +70,7 @@ def sheet_sensitivity(ctx: Ctx):
             "IRR \\ DLOM",
             lambda v: f"{v:.0f}%",
             lambda v: f"{int(v)}%",
+            number_format=ctx.per_share_fmt,
         )
         r += 2
 
@@ -82,7 +85,7 @@ def sheet_sensitivity(ctx: Ctx):
         r = _write_sensitivity_table(
             ws,
             r,
-            f"{'③' if label_n == 3 else '②' if label_n == 2 else '①'} WACC × 영구성장률 → 주당가치 ({ctx.unit})",
+            f"{'③' if label_n == 3 else '②' if label_n == 2 else '①'} WACC × 영구성장률 → 주당가치 ({ctx.currency_sym})",
             ctx.result.sensitivity_dcf,
             "WACC \\ Tg",
             lambda v: f"{v:.1f}%",
@@ -90,6 +93,7 @@ def sheet_sensitivity(ctx: Ctx):
             ref_value=ctx.result.weighted_value
             if method in ("sotp", "dcf_primary")
             else None,
+            number_format=ctx.per_share_fmt,
         )
         r += 2
 
@@ -115,6 +119,7 @@ def sheet_sensitivity(ctx: Ctx):
             corner,
             row_fmt,
             col_fmt,
+            number_format=ctx.per_share_fmt,
         )
         r += 2
 
@@ -162,7 +167,8 @@ def _write_sensitivity_table(
     corner_label: str,
     row_fmt,
     col_fmt,
-    ref_value: int | None = None,
+    ref_value: float | None = None,
+    number_format: str = NUM_FMT,
 ) -> int:
     """Write a generic 2D sensitivity table. Returns the last row number written."""
     lookup = {(x.row_val, x.col_val): x.value for x in data}
@@ -191,7 +197,7 @@ def _write_sensitivity_table(
                 fill = GREEN_FILL if val >= ref_value else RED_FILL
             else:
                 fill = GREEN_FILL if val > 0 else RED_FILL
-            write_cell(ws, r, j, val, fmt=NUM_FMT, fill=fill)
+            write_cell(ws, r, j, val, fmt=number_format, fill=fill)
     sens_end = r
 
     # Heatmap
@@ -215,18 +221,30 @@ def _write_sensitivity_table(
 
 def _get_ref_label_value(ctx: Ctx) -> tuple[str, str]:
     if ctx.method == "ddm" and ctx.result.ddm:
-        return "DDM 주당가치", f"{ctx.result.ddm.equity_per_share:,}{ctx.currency_sym}"
+        return (
+            "DDM 주당가치",
+            f"{format_per_share(ctx.result.ddm.equity_per_share, ctx.vi.company.currency)}{ctx.currency_sym}",
+        )
     elif ctx.method == "rim" and ctx.result.rim:
-        return "RIM 주당가치", f"{ctx.result.rim.per_share:,}{ctx.currency_sym}"
+        return (
+            "RIM 주당가치",
+            f"{format_per_share(ctx.result.rim.per_share, ctx.vi.company.currency)}{ctx.currency_sym}",
+        )
     elif ctx.method == "nav" and ctx.result.nav:
-        return "NAV 주당가치", f"{ctx.result.nav.per_share:,}{ctx.currency_sym}"
+        return (
+            "NAV 주당가치",
+            f"{format_per_share(ctx.result.nav.per_share, ctx.vi.company.currency)}{ctx.currency_sym}",
+        )
     elif ctx.method == "multiples" and ctx.result.multiples_primary:
         return (
             "Multiples 주당가치",
-            f"{ctx.result.multiples_primary.per_share:,}{ctx.currency_sym}",
+            f"{format_per_share(ctx.result.multiples_primary.per_share, ctx.vi.company.currency)}{ctx.currency_sym}",
         )
     elif ctx.method == "sotp" and ctx.result.weighted_value > 0:
-        return "확률가중 주당가치", f"{ctx.result.weighted_value:,}{ctx.currency_sym}"
+        return (
+            "확률가중 주당가치",
+            f"{format_per_share(ctx.result.weighted_value, ctx.vi.company.currency)}{ctx.currency_sym}",
+        )
     elif ctx.result.dcf:
         return "DCF EV", f"{ctx.result.dcf.ev_dcf:,}{ctx.unit}"
     else:

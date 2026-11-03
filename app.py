@@ -3,6 +3,8 @@
 실행: streamlit run app.py
 """
 
+from engine.units import currency_symbol, format_per_share
+
 import _ssl_fix  # noqa: F401 — must run before any yfinance/curl_cffi import
 import hashlib
 from pathlib import Path
@@ -51,7 +53,7 @@ def _unit_label(vi) -> str:
 
 def _currency_sym(vi) -> str:
     """통화 기호 (원, $)."""
-    return "원" if vi.company.market == "KR" else "$"
+    return currency_symbol(vi.company.currency)
 
 
 def _format_ev(value: int, vi) -> str:
@@ -118,6 +120,10 @@ seg_names = _seg_names(vi)
 by = vi.base_year
 unit = _unit_label(vi)
 sym = _currency_sym(vi)
+if vi.company.currency not in {"KRW", "USD", "JPY", "EUR"}:
+    st.warning(f"미지원 통화 {vi.company.currency}: 소수 2자리 표시")
+if abs(result.prob_normalization_factor - 1) > 1e-9:
+    st.warning(f"시나리오 확률 정규화: ×{result.prob_normalization_factor:.12g}")
 is_sotp = result.primary_method == "sotp"
 is_nav = result.primary_method == "nav"
 is_multiples = result.primary_method == "multiples"
@@ -134,7 +140,10 @@ st.caption(
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("확률가중 주당 가치", f"{result.weighted_value:,}{sym}")
+    st.metric(
+        "확률가중 주당 가치",
+        f"{format_per_share(result.weighted_value, vi.company.currency)}{sym}",
+    )
 with col2:
     if is_sotp:
         st.metric("SOTP EV", _format_ev(result.total_ev, vi))
@@ -142,7 +151,10 @@ with col2:
         st.metric("NAV", f"{result.nav.nav:,}{unit}")
     elif is_multiples and result.multiples_primary:
         mp = result.multiples_primary
-        st.metric(f"{mp.primary_multiple_method}", f"{mp.per_share:,}{sym}")
+        st.metric(
+            f"{mp.primary_multiple_method}",
+            f"{format_per_share(mp.per_share, vi.company.currency)}{sym}",
+        )
     else:
         st.metric("DCF EV", _format_ev(result.total_ev, vi))
 with col3:
@@ -159,7 +171,7 @@ with col4:
         st.metric(
             "괴리율",
             f"{gap:+.1%}",
-            delta=f"시장가 {result.market_comparison.market_price:,.0f}{sym}",
+            delta=f"시장가 {format_per_share(result.market_comparison.market_price, vi.company.currency)}{sym}",
             delta_color="inverse",
         )
     elif is_sotp and result.dcf:
@@ -174,8 +186,8 @@ st.divider()
 
 if result.market_comparison and result.market_comparison.flag:
     st.warning(
-        f"⚠ **괴리율 경고**: 내재가치 {result.market_comparison.intrinsic_value:,}{sym} vs "
-        f"시장가 {result.market_comparison.market_price:,.0f}{sym} "
+        f"⚠ **괴리율 경고**: 내재가치 {format_per_share(result.market_comparison.intrinsic_value, vi.company.currency)}{sym} vs "
+        f"시장가 {format_per_share(result.market_comparison.market_price, vi.company.currency)}{sym} "
         f"(괴리율 {result.market_comparison.gap_ratio:+.1%})\n\n"
         f"{result.market_comparison.flag}"
     )
@@ -234,7 +246,7 @@ with tabs[tab_idx]:
                 x=result.weighted_value,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"가중평균 {result.weighted_value:,}{sym}",
+                annotation_text=f"가중평균 {format_per_share(result.weighted_value, vi.company.currency)}{sym}",
             )
             fig_sc.update_layout(
                 title="시나리오별 주당 가치",
@@ -252,9 +264,15 @@ with tabs[tab_idx]:
                 sr = result.scenarios[code]
                 with st.expander(f"{code}: {sc.name} ({sc.prob}%)"):
                     st.write(f"**Equity Value:** {sr.equity_value:,}{unit}")
-                    st.write(f"**주당가치 (DLOM 전):** {sr.pre_dlom:,}{sym}")
-                    st.write(f"**주당가치 (DLOM 후):** {sr.post_dlom:,}{sym}")
-                    st.write(f"**가중 기여:** {sr.weighted:,}{sym}")
+                    st.write(
+                        f"**주당가치 (DLOM 전):** {format_per_share(sr.pre_dlom, vi.company.currency)}{sym}"
+                    )
+                    st.write(
+                        f"**주당가치 (DLOM 후):** {format_per_share(sr.post_dlom, vi.company.currency)}{sym}"
+                    )
+                    st.write(
+                        f"**가중 기여:** {format_per_share(sr.weighted, vi.company.currency)}{sym}"
+                    )
                     if sc.desc:
                         st.caption(sc.desc)
     else:
@@ -331,7 +349,10 @@ if is_multiples and result.multiples_primary:
         with col_m2:
             st.metric("적용 배수", f"{mp.multiple:.1f}x")
         with col_m3:
-            st.metric("주당 가치", f"{mp.per_share:,}{sym}")
+            st.metric(
+                "주당 가치",
+                f"{format_per_share(mp.per_share, vi.company.currency)}{sym}",
+            )
 
         if mp.enterprise_value > 0:
             st.write(
@@ -375,7 +396,10 @@ if is_nav and result.nav:
         with col_n5:
             st.metric("순자산가치(NAV)", f"{nv.nav:,}{unit}")
         with col_n6:
-            st.metric("주당 NAV", f"{nv.per_share:,}{sym}")
+            st.metric(
+                "주당 NAV",
+                f"{format_per_share(nv.per_share, vi.company.currency)}{sym}",
+            )
 
         # 워터폴 차트
         fig_nav = go.Figure(
@@ -562,7 +586,7 @@ with tabs[tab_idx]:
             x=result.weighted_value,
             line_dash="dash",
             line_color="red",
-            annotation_text=f"가중평균 {result.weighted_value:,}{sym}",
+            annotation_text=f"가중평균 {format_per_share(result.weighted_value, vi.company.currency)}{sym}",
         )
         fig_cv.update_layout(
             title="방법론별 주당 가치 비교 (Football Field)",
@@ -581,7 +605,7 @@ with tabs[tab_idx]:
                     "배수": f"{cv.multiple:.1f}x",
                     f"EV ({unit})": f"{cv.enterprise_value:,}",
                     f"Equity ({unit})": f"{cv.equity_value:,}",
-                    f"주당가치 ({sym})": f"{cv.per_share:,}",
+                    f"주당가치 ({sym})": f"{format_per_share(cv.per_share, vi.company.currency)}",
                 }
                 for cv in result.cross_validations
             ]
@@ -656,13 +680,19 @@ if result.monte_carlo:
 
         col_mc1, col_mc2, col_mc3, col_mc4 = st.columns(4)
         with col_mc1:
-            st.metric("Mean", f"{mc.mean:,}{sym}")
+            st.metric("Mean", f"{format_per_share(mc.mean, vi.company.currency)}{sym}")
         with col_mc2:
-            st.metric("Median", f"{mc.median:,}{sym}")
+            st.metric(
+                "Median", f"{format_per_share(mc.median, vi.company.currency)}{sym}"
+            )
         with col_mc3:
-            st.metric("5th %ile", f"{mc.p5:,}{sym}")
+            st.metric(
+                "5th %ile", f"{format_per_share(mc.p5, vi.company.currency)}{sym}"
+            )
         with col_mc4:
-            st.metric("95th %ile", f"{mc.p95:,}{sym}")
+            st.metric(
+                "95th %ile", f"{format_per_share(mc.p95, vi.company.currency)}{sym}"
+            )
 
         # 히스토그램
         if mc.histogram_bins and mc.histogram_counts:
@@ -679,13 +709,13 @@ if result.monte_carlo:
                 x=result.weighted_value,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"가중평균 {result.weighted_value:,}",
+                annotation_text=f"가중평균 {format_per_share(result.weighted_value, vi.company.currency)}",
             )
             fig_mc.add_vline(
                 x=mc.median,
                 line_dash="dot",
                 line_color="orange",
-                annotation_text=f"Median {mc.median:,}",
+                annotation_text=f"Median {format_per_share(mc.median, vi.company.currency)}",
             )
             fig_mc.update_layout(
                 title=f"Monte Carlo 시뮬레이션 ({mc.n_sims:,}회)",
@@ -697,12 +727,18 @@ if result.monte_carlo:
         # 분포 통계 테이블
         with st.expander("분포 통계"):
             st.write(f"- **시뮬레이션 횟수**: {mc.n_sims:,}")
-            st.write(f"- **Mean**: {mc.mean:,}{sym}  |  **Std**: {mc.std:,}{sym}")
             st.write(
-                f"- **5th**: {mc.p5:,}  |  **25th**: {mc.p25:,}  |  **Median**: {mc.median:,}"
+                f"- **Mean**: {format_per_share(mc.mean, vi.company.currency)}{sym}  |  **Std**: {format_per_share(mc.std, vi.company.currency)}{sym}"
             )
-            st.write(f"- **75th**: {mc.p75:,}  |  **95th**: {mc.p95:,}")
-            st.write(f"- **Min**: {mc.min_val:,}  |  **Max**: {mc.max_val:,}")
+            st.write(
+                f"- **5th**: {format_per_share(mc.p5, vi.company.currency)}  |  **25th**: {format_per_share(mc.p25, vi.company.currency)}  |  **Median**: {format_per_share(mc.median, vi.company.currency)}"
+            )
+            st.write(
+                f"- **75th**: {format_per_share(mc.p75, vi.company.currency)}  |  **95th**: {format_per_share(mc.p95, vi.company.currency)}"
+            )
+            st.write(
+                f"- **Min**: {format_per_share(mc.min_val, vi.company.currency)}  |  **Max**: {format_per_share(mc.max_val, vi.company.currency)}"
+            )
 
 # ── Tab: 요약 리포트 ──
 

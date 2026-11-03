@@ -80,7 +80,8 @@ def sheet_dashboard(ctx: Ctx):
         ws,
         r,
         2,
-        f"{primary_value:,}{ctx.currency_sym}",
+        primary_value,
+        fmt=ctx.per_share_fmt + '"' + ctx.currency_sym + '"',
         font=Font(bold=True, size=18, color="27AE60"),
         fill=GREEN_FILL,
     )
@@ -107,19 +108,27 @@ def sheet_dashboard(ctx: Ctx):
                 r,
                 2,
                 sr.post_dlom,
-                fmt=NUM_FMT,
+                fmt=ctx.per_share_fmt,
                 fill=GREEN_FILL if sr.post_dlom > 0 else RED_FILL,
             )
-            write_cell(ws, r, 3, f"{sc.prob}%")
-            write_cell(ws, r, 4, sr.weighted, fmt=NUM_FMT)
+            write_cell(ws, r, 3, f"{sr.prob_effective_pct:g}%")
+            write_cell(ws, r, 4, sr.weighted, fmt=ctx.per_share_fmt)
 
         r += 1
         write_cell(ws, r, 1, "합계", bold=True)
         write_cell(
-            ws, r, 2, ctx.result.weighted_value, fmt=NUM_FMT, bold=True, fill=GREEN_FILL
+            ws,
+            r,
+            2,
+            ctx.result.weighted_value,
+            fmt=ctx.per_share_fmt,
+            bold=True,
+            fill=GREEN_FILL,
         )
         write_cell(ws, r, 3, "100%", bold=True)
-        write_cell(ws, r, 4, ctx.result.weighted_value, fmt=NUM_FMT, bold=True)
+        write_cell(
+            ws, r, 4, ctx.result.weighted_value, fmt=ctx.per_share_fmt, bold=True
+        )
 
     # ── Valuation summary by method ──
     r += 2
@@ -130,14 +139,14 @@ def sheet_dashboard(ctx: Ctx):
         ddm = ctx.result.ddm
         write_cell(ws, r, 1, "DDM 밸류에이션 요약", font=SECTION_FONT)
         r += 1
-        items = [("주당 배당금 (DPS)", f"{ddm.dps:,.0f}")]
+        items = [("주당 배당금 (DPS)", ddm.dps)]
         if ddm.buyback_per_share > 0:
-            items.append(("자사주매입/주", f"{ddm.buyback_per_share:,.0f}"))
-            items.append(("Total Payout/주", f"{ddm.total_payout:,.0f}"))
+            items.append(("자사주매입/주", ddm.buyback_per_share))
+            items.append(("Total Payout/주", ddm.total_payout))
         items += [
             ("배당 성장률", f"{ddm.growth:.2f}%"),
             ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%"),
-            ("주당 내재가치 (DDM)", f"{ddm.equity_per_share:,}"),
+            ("주당 내재가치 (DDM)", ddm.equity_per_share),
         ]
         for label, val in items:
             write_cell(ws, r, 1, label)
@@ -149,6 +158,7 @@ def sheet_dashboard(ctx: Ctx):
                 val,
                 fill=GREEN_FILL if is_result else BLUE_FILL,
                 bold=is_result,
+                fmt=ctx.per_share_fmt,
             )
             r += 1
 
@@ -162,7 +172,7 @@ def sheet_dashboard(ctx: Ctx):
             ("PV(잔여이익)", f"{rim.pv_ri_sum:,}"),
             ("PV(Terminal)", f"{rim.pv_terminal:,}"),
             ("자기자본가치", f"{rim.equity_value:,}"),
-            ("주당 내재가치 (RIM)", f"{rim.per_share:,}"),
+            ("주당 내재가치 (RIM)", rim.per_share),
         ]
         for label, val in items:
             write_cell(ws, r, 1, label)
@@ -174,6 +184,7 @@ def sheet_dashboard(ctx: Ctx):
                 val,
                 fill=GREEN_FILL if is_result else BLUE_FILL,
                 bold=is_result,
+                fmt=ctx.per_share_fmt,
             )
             r += 1
 
@@ -186,7 +197,7 @@ def sheet_dashboard(ctx: Ctx):
             ("(+) 재평가 조정", f"{nav.revaluation:,}"),
             ("(-) 총부채", f"{nav.total_liabilities:,}"),
             ("순자산가치 (NAV)", f"{nav.nav:,}"),
-            ("주당 NAV", f"{nav.per_share:,}"),
+            ("주당 NAV", nav.per_share),
         ]
         for label, val in items:
             write_cell(ws, r, 1, label)
@@ -198,6 +209,7 @@ def sheet_dashboard(ctx: Ctx):
                 val,
                 fill=GREEN_FILL if is_result else BLUE_FILL,
                 bold=is_result,
+                fmt=ctx.per_share_fmt,
             )
             r += 1
 
@@ -209,7 +221,7 @@ def sheet_dashboard(ctx: Ctx):
             ("방법론", mp.primary_multiple_method),
             ("적용 멀티플", f"{mp.multiple:.1f}x"),
             ("Equity Value", f"{mp.equity_value:,}"),
-            ("주당 가치", f"{mp.per_share:,}"),
+            ("주당 가치", mp.per_share),
         ]
         for label, val in items:
             write_cell(ws, r, 1, label)
@@ -221,6 +233,7 @@ def sheet_dashboard(ctx: Ctx):
                 val,
                 fill=GREEN_FILL if is_result else BLUE_FILL,
                 bold=is_result,
+                fmt=ctx.per_share_fmt,
             )
             r += 1
 
@@ -239,7 +252,13 @@ def sheet_dashboard(ctx: Ctx):
             write_cell(ws, r, 1, label)
             is_ev = label == "DCF EV"
             write_cell(
-                ws, r, 2, val, fill=GREEN_FILL if is_ev else BLUE_FILL, bold=is_ev
+                ws,
+                r,
+                2,
+                val,
+                fill=GREEN_FILL if is_ev else BLUE_FILL,
+                bold=is_ev,
+                fmt=ctx.per_share_fmt,
             )
             r += 1
 
@@ -371,7 +390,7 @@ def sheet_dashboard(ctx: Ctx):
                 r,
                 6,
                 cv.per_share,
-                fmt=NUM_FMT,
+                fmt=ctx.per_share_fmt,
                 fill=GREEN_FILL if cv.per_share > 0 else RED_FILL,
             )
 
@@ -409,10 +428,10 @@ def sheet_dashboard(ctx: Ctx):
         write_cell(ws, r, 1, "시장가격 비교", font=SECTION_FONT)
         r += 1
         write_cell(ws, r, 1, "내재가치 (주당)")
-        write_cell(ws, r, 2, mc.intrinsic_value, fmt=NUM_FMT)
+        write_cell(ws, r, 2, mc.intrinsic_value, fmt=ctx.per_share_fmt)
         r += 1
         write_cell(ws, r, 1, "현재 시장가")
-        write_cell(ws, r, 2, mc.market_price, fmt=NUM_FMT)
+        write_cell(ws, r, 2, mc.market_price, fmt=ctx.per_share_fmt)
         r += 1
         write_cell(ws, r, 1, "괴리율")
         gap_fill = RED_FILL if abs(mc.gap_ratio) > 0.5 else GREEN_FILL
@@ -504,7 +523,7 @@ def sheet_dashboard(ctx: Ctx):
             ]
             for label, val in mc_assumptions:
                 write_cell(ws, r, 1, label)
-                write_cell(ws, r, 2, val)
+                write_cell(ws, r, 2, val, fmt=ctx.per_share_fmt)
                 r += 1
         r += 1
 
@@ -522,7 +541,7 @@ def sheet_dashboard(ctx: Ctx):
         for label, val in mc_items:
             write_cell(ws, r, 1, label)
             fill = GREEN_FILL if label.startswith("Med") else None
-            write_cell(ws, r, 2, val, fmt=NUM_FMT, fill=fill)
+            write_cell(ws, r, 2, val, fmt=ctx.per_share_fmt, fill=fill)
             write_cell(ws, r, 3, ctx.currency_sym)
             r += 1
 
@@ -537,7 +556,7 @@ def sheet_dashboard(ctx: Ctx):
             hist_start = r + 1
             for bin_val, cnt in zip(mc.histogram_bins, mc.histogram_counts):
                 r += 1
-                write_cell(ws, r, 1, bin_val, fmt=NUM_FMT)
+                write_cell(ws, r, 1, bin_val, fmt=ctx.per_share_fmt)
                 write_cell(ws, r, 2, cnt, fmt=NUM_FMT)
             hist_end = r
 
@@ -651,7 +670,7 @@ def sheet_dashboard(ctx: Ctx):
     _write_football_field(ws, r, ctx)
 
 
-def _get_primary_value(ctx: Ctx) -> tuple[int, str]:
+def _get_primary_value(ctx: Ctx) -> tuple[float, str]:
     """Return the primary result value by valuation method."""
     if ctx.result.weighted_value > 0 and ctx.result.scenarios:
         return ctx.result.weighted_value, "확률가중 주당 가치"
@@ -726,19 +745,19 @@ def _write_football_field(ws, r: int, ctx: Ctx):
         # Preserve negative values (distressed companies): no clamping to 0.
         # For negative val: lo is more-negative (val*1.2), hi is less-negative (val*0.8)
         if val >= 0:
-            lo = round(val * 0.8)
-            hi = round(val * 1.2)
+            lo = val * 0.8
+            hi = val * 1.2
         else:
-            lo = round(val * 1.2)
-            hi = round(val * 0.8)
+            lo = val * 1.2
+            hi = val * 0.8
 
         r += 1
         write_cell(ws, r, FF_COL_LABEL, label)
-        write_cell(ws, r, FF_COL_LO, lo, fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_LO, lo, fmt=ctx.per_share_fmt)
         val_fill = BLUE_FILL if val >= 0 else RED_FILL
-        write_cell(ws, r, FF_COL_VAL, val, fmt=NUM_FMT, fill=val_fill)
-        write_cell(ws, r, FF_COL_HI, hi, fmt=NUM_FMT)
-        write_cell(ws, r, FF_COL_RANGE, abs(hi - lo), fmt=NUM_FMT)
+        write_cell(ws, r, FF_COL_VAL, val, fmt=ctx.per_share_fmt, fill=val_fill)
+        write_cell(ws, r, FF_COL_HI, hi, fmt=ctx.per_share_fmt)
+        write_cell(ws, r, FF_COL_RANGE, abs(hi - lo), fmt=ctx.per_share_fmt)
         ff_colors_list.append(ff_color_palette[i % len(ff_color_palette)])
 
     ff_data_end = r

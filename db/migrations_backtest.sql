@@ -119,3 +119,9 @@ CREATE POLICY "service_role_all_prediction_snapshots" ON prediction_snapshots
 
 CREATE POLICY "service_role_all_backtest_outcomes" ON backtest_outcomes
     FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- J-1 (2026-11-03): native currency/share; existing integer rows keep their units.
+ALTER TABLE prediction_snapshots
+    ALTER COLUMN predicted_weighted_value TYPE NUMERIC(20,4)
+    USING predicted_weighted_value::NUMERIC(20,4);
+-- scenario_values JSONB gains prob_input and float pre/post_dlom; no DDL.

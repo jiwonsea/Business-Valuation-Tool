@@ -1,6 +1,6 @@
 {
   "_schema": "per-share native, never scaled by unit_multiplier",
-  "_note": "Synthetic values, 2026-11-03 J-13. Fixed writer/reader stubs, not valuation arithmetic oracles. Reusable for J-1; per-share values remain integers.",
+  "_note": "Synthetic values, 2026-11-03 J-13. Fixed writer/reader stubs, not valuation arithmetic oracles. Reusable for J-1; per-share values remain integers. J-1 (2026-11-03): float precision and JPY reader case.",
   "cases": [
     {
       "company": {
@@ -17,8 +17,8 @@
           "code": "Bear",
           "name": "Bear",
           "prob": 25,
-          "pre_dlom": 110125,
-          "post_dlom": 110123,
+          "pre_dlom": 110125.12567,
+          "post_dlom": 110123.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -28,8 +28,8 @@
           "code": "Base",
           "name": "Base",
           "prob": 50,
-          "pre_dlom": 176200,
-          "post_dlom": 176198,
+          "pre_dlom": 176200.12567,
+          "post_dlom": 176198.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -39,8 +39,8 @@
           "code": "Bull",
           "name": "Bull",
           "prob": 25,
-          "pre_dlom": 253246,
-          "post_dlom": 253244,
+          "pre_dlom": 253246.12567,
+          "post_dlom": 253244.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -48,7 +48,7 @@
         }
       ],
       "result": {
-        "weighted_value": 172333,
+        "weighted_value": 172333.123456,
         "wacc": 10,
         "primary_method": "sotp",
         "market_comparison": {
@@ -72,8 +72,8 @@
           "code": "Bear",
           "name": "Bear",
           "prob": 25,
-          "pre_dlom": 12,
-          "post_dlom": 10,
+          "pre_dlom": 12.12567,
+          "post_dlom": 10.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -83,8 +83,8 @@
           "code": "Base",
           "name": "Base",
           "prob": 50,
-          "pre_dlom": 12,
-          "post_dlom": 10,
+          "pre_dlom": 12.12567,
+          "post_dlom": 10.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -94,8 +94,8 @@
           "code": "Bull",
           "name": "Bull",
           "prob": 25,
-          "pre_dlom": 12,
-          "post_dlom": 10,
+          "pre_dlom": 12.12567,
+          "post_dlom": 10.12567,
           "growth_adj_pct": 0,
           "wacc_adj": 0,
           "terminal_growth_adj": 0,
@@ -103,12 +103,67 @@
         }
       ],
       "result": {
-        "weighted_value": 9,
+        "weighted_value": 9.123456,
         "wacc": 10,
         "primary_method": "sotp",
         "market_comparison": {
           "gap_ratio": -0.1,
           "market_price": 10
+        }
+      }
+    },
+    {
+      "company": {
+        "name": "Synthetic JP",
+        "ticker": "J1JP",
+        "market": "JP",
+        "currency": "JPY",
+        "unit_multiplier": 1000000,
+        "legal_status": "listed",
+        "analysis_date": "2026-11-03"
+      },
+      "scenarios": [
+        {
+          "code": "Bear",
+          "name": "Bear",
+          "prob": 25,
+          "pre_dlom": 2881.12567,
+          "post_dlom": 2879.12567,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Base",
+          "name": "Base",
+          "prob": 50,
+          "pre_dlom": 2881.12567,
+          "post_dlom": 2879.12567,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Bull",
+          "name": "Bull",
+          "prob": 25,
+          "pre_dlom": 2881.12567,
+          "post_dlom": 2879.12567,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        }
+      ],
+      "result": {
+        "weighted_value": 2879.123456,
+        "wacc": 10,
+        "primary_method": "sotp",
+        "market_comparison": {
+          "gap_ratio": -0.0402921813333334,
+          "market_price": 3000
         }
       }
     }

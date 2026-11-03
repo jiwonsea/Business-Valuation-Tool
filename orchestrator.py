@@ -7,6 +7,8 @@ Phase 4: Valuation (engine)
 Phase 5: Output (Excel + research note)
 """
 
+from engine.units import currency_symbol, format_per_share
+
 import logging
 from pathlib import Path
 
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 def _save_to_db(
     vi: ValuationInput, result: ValuationResult, profile_path: str | None = None
 ) -> str | None:
-    """Save valuation result to Supabase (silently ignore on failure)."""
+    """Save valuation and snapshot, logging publication failures."""
     if vi.draft or result.draft:
         logger.info("DB publication blocked for draft valuation: %s", vi.company.name)
         return None
@@ -36,17 +38,32 @@ def _save_to_db(
                 profile_data=vi.model_dump(mode="json"),
                 file_name=Path(profile_path).name,
             )
+        if val_id is None:
+            from db.client import get_client
+
+            if get_client() is not None:
+                logger.error("Valuation save failed for %s", vi.company.name)
+                print("[DB] 저장 실패: 밸류에이션 저장 오류 — 로그 확인")
+            return None
         # Capture prediction snapshot for backtesting
         if val_id:
             try:
                 from db.backtest_repository import save_prediction_snapshot
 
-                save_prediction_snapshot(vi, result, val_id)
-            except Exception:
-                logger.debug("Prediction snapshot save skipped")
+                if save_prediction_snapshot(vi, result, val_id) is None:
+                    logger.error(
+                        "Prediction snapshot save failed for %s", vi.company.name
+                    )
+                    print("[DB] 저장 실패: 스냅샷 저장 오류 — 로그 확인")
+                    return None
+            except Exception as exc:
+                logger.error("Prediction snapshot save failed: %s", type(exc).__name__)
+                print("[DB] 저장 실패: 스냅샷 저장 오류 — 로그 확인")
+                return None
         return val_id
-    except Exception:
-        logger.debug("DB save skipped (Supabase not configured or unavailable)")
+    except Exception as exc:
+        logger.error("DB save failed: %s", type(exc).__name__)
+        print("[DB] 저장 실패: 저장 처리 오류 — 로그 확인")
         return None
 
 
@@ -70,7 +87,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     """Generate result summary text (for research notes / UI)."""
     lines = []
     unit = vi.company.currency_unit
-    sym = "원" if vi.company.market == "KR" else "$"
+    sym = currency_symbol(vi.company.currency)
     seg_names = _seg_names(vi)
 
     lines.append(f"# {vi.company.name} 기업가치평가 요약")
@@ -78,6 +95,13 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         f"분석일: {vi.company.analysis_date}  |  방법론: **{result.primary_method.upper()}**"
     )
     lines.append("")
+
+    if abs(result.prob_normalization_factor - 1) > 1e-9:
+        lines.append(
+            f"⚠ 시나리오 확률 정규화: ×{result.prob_normalization_factor:.12g}"
+        )
+    if vi.company.currency not in {"KRW", "USD", "JPY", "EUR"}:
+        lines.append(f"⚠ 미지원 통화 {vi.company.currency}: 소수 2자리 표시")
 
     # WACC section
     w = result.wacc
@@ -90,9 +114,11 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         ddm = result.ddm
         lines.append("## DDM 밸류에이션")
         lines.append(
-            f"- DPS: {ddm.dps:,.0f}{sym}  |  배당성장률: {ddm.growth:.2f}%  |  Ke: {ddm.ke:.2f}%"
+            f"- DPS: {format_per_share(ddm.dps, vi.company.currency)}{sym}  |  배당성장률: {ddm.growth:.2f}%  |  Ke: {ddm.ke:.2f}%"
         )
-        lines.append(f"- **주당 내재가치: {ddm.equity_per_share:,}{sym}**")
+        lines.append(
+            f"- **주당 내재가치: {format_per_share(ddm.equity_per_share, vi.company.currency)}{sym}**"
+        )
         lines.append("")
 
     # Multiples Primary (relative valuation)
@@ -102,7 +128,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(
             f"- 지표값: {mp.metric_value:,.0f}{unit}  |  배수: {mp.multiple:.1f}x"
         )
-        lines.append(f"- **주당 가치: {mp.per_share:,}{sym}**")
+        lines.append(
+            f"- **주당 가치: {format_per_share(mp.per_share, vi.company.currency)}{sym}**"
+        )
         lines.append("")
 
     # NAV (net asset value)
@@ -115,7 +143,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         lines.append(
             f"- 부채: {nv.total_liabilities:,}{unit}  |  NAV: {nv.nav:,}{unit}"
         )
-        lines.append(f"- **주당 NAV: {nv.per_share:,}{sym}**")
+        lines.append(
+            f"- **주당 NAV: {format_per_share(nv.per_share, vi.company.currency)}{sym}**"
+        )
         lines.append("")
 
     # SOTP (if available)
@@ -148,9 +178,11 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
             if code in result.scenarios:
                 sr = result.scenarios[code]
                 lines.append(
-                    f"- {sc.name} ({sc.prob}%): 주당 {sr.post_dlom:,}{sym} → 가중 {sr.weighted:,}{sym}"
+                    f"- {sc.name} ({sc.prob}%): 주당 {format_per_share(sr.post_dlom, vi.company.currency)}{sym} → 가중 {format_per_share(sr.weighted, vi.company.currency)}{sym}"
                 )
-        lines.append(f"- **확률가중 주당 가치: {result.weighted_value:,}{sym}**")
+        lines.append(
+            f"- **확률가중 주당 가치: {format_per_share(result.weighted_value, vi.company.currency)}{sym}**"
+        )
         lines.append("")
 
     # Gap ratio + reverse-DCF diagnostic
@@ -158,7 +190,7 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
         mc = result.market_comparison
         lines.append("## 시장가격 비교")
         lines.append(
-            f"- 내재가치: {mc.intrinsic_value:,}{sym}  |  시장가: {mc.market_price:,.0f}{sym}"
+            f"- 내재가치: {format_per_share(mc.intrinsic_value, vi.company.currency)}{sym}  |  시장가: {format_per_share(mc.market_price, vi.company.currency)}{sym}"
         )
         lines.append(f"- 괴리율: {mc.gap_ratio:+.1%}")
         if mc.flag:
@@ -209,7 +241,9 @@ def format_summary(vi: ValuationInput, result: ValuationResult) -> str:
     if result.cross_validations:
         lines.append("## 교차검증")
         for cv in result.cross_validations:
-            lines.append(f"- {cv.method}: {cv.per_share:,}{sym}")
+            lines.append(
+                f"- {cv.method}: {format_per_share(cv.per_share, vi.company.currency)}{sym}"
+            )
         lines.append("")
 
     return "\n".join(lines)

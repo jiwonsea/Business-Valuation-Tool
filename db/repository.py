@@ -42,7 +42,7 @@ def save_valuation(
         "analysis_date": vi.company.analysis_date.isoformat(),
         "base_year": vi.base_year,
         "total_ev": result.total_ev,
-        "weighted_value": result.weighted_value,
+        "weighted_value": round(result.weighted_value, 4),
         "wacc_pct": result.wacc.wacc,
         "market_price": mc.market_price if mc else None,
         "gap_ratio": mc.gap_ratio if mc else None,
@@ -79,7 +79,12 @@ def save_valuation(
                 return uid
             except Exception:
                 pass
-        logger.warning("Failed to save valuation for %s", vi.company.name)
+        logger.error(
+            "Failed to save valuation for %s: %s: %s",
+            vi.company.name,
+            type(exc).__name__,
+            str(exc).splitlines()[0] if str(exc) else "",
+        )
         return None
 
 

@@ -109,7 +109,13 @@ def sheet_assumptions(ctx: Ctx):
         ]
         for label, val, note in ke_params:
             write_cell(ws, r, 1, label)
-            write_cell(ws, r, 2, val, fill=BLUE_FILL)
+            write_cell(
+                ws,
+                r,
+                2,
+                val,
+                fill=BLUE_FILL,
+            )
             write_cell(ws, r, 3, note)
             r += 1
     else:
@@ -166,7 +172,13 @@ def sheet_assumptions(ctx: Ctx):
             )
         for label, val, note in wacc_params:
             write_cell(ws, r, 1, label)
-            write_cell(ws, r, 2, val, fill=BLUE_FILL)
+            write_cell(
+                ws,
+                r,
+                2,
+                val,
+                fill=BLUE_FILL,
+            )
             write_cell(ws, r, 3, note)
             r += 1
 
@@ -208,7 +220,13 @@ def sheet_assumptions(ctx: Ctx):
             dcf_items.append((f"EBITDA 성장률 Y{i + 1}", f"{g:.1%}", ""))
         for label, val, note in dcf_items:
             write_cell(ws, r, 1, label)
-            write_cell(ws, r, 2, val, fill=BLUE_FILL)
+            write_cell(
+                ws,
+                r,
+                2,
+                val,
+                fill=BLUE_FILL,
+            )
             if note:
                 write_cell(ws, r, 3, note)
             r += 1
@@ -221,7 +239,7 @@ def sheet_assumptions(ctx: Ctx):
             ddm_items = [
                 (
                     "주당 배당금 (DPS)",
-                    f"{ddm_p.dps:,.0f}{ctx.currency_sym}",
+                    ddm_p.dps,
                     "최근 실적",
                 ),
                 ("배당 성장률 (g)", f"{ddm_p.dividend_growth:.2f}%", "지속가능 성장률"),
@@ -230,13 +248,22 @@ def sheet_assumptions(ctx: Ctx):
                 ddm_items.append(
                     (
                         "주당 자사주매입",
-                        f"{ddm_p.buyback_per_share:,.0f}{ctx.currency_sym}",
+                        ddm_p.buyback_per_share,
                         "Total Payout",
                     )
                 )
             for label, val, note in ddm_items:
                 write_cell(ws, r, 1, label)
-                write_cell(ws, r, 2, val, fill=BLUE_FILL)
+                write_cell(
+                    ws,
+                    r,
+                    2,
+                    val,
+                    fmt=ctx.per_share_fmt + '"' + ctx.currency_sym + '"'
+                    if isinstance(val, (int, float))
+                    else None,
+                    fill=BLUE_FILL,
+                )
                 write_cell(ws, r, 3, note)
                 r += 1
 
@@ -257,7 +284,13 @@ def sheet_assumptions(ctx: Ctx):
                 rim_items.append((f"ROE 예측 Y{i + 1}", f"{roe:.1f}%", ""))
             for label, val, note in rim_items:
                 write_cell(ws, r, 1, label)
-                write_cell(ws, r, 2, val, fill=BLUE_FILL)
+                write_cell(
+                    ws,
+                    r,
+                    2,
+                    val,
+                    fill=BLUE_FILL,
+                )
                 if note:
                     write_cell(ws, r, 3, note)
                 r += 1

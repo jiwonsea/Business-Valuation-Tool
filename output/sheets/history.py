@@ -64,7 +64,11 @@ def sheet_valuation_history(ctx: Ctx) -> None:
             record.valuation_bucket,
         ]
         for col, value in enumerate(values, 1):
-            fmt = "#,##0" if col in (2, 3) else ("0.00" if col in (4, 5) else None)
+            fmt = (
+                ctx.per_share_fmt
+                if col in (2, 3)
+                else ("0.00" if col in (4, 5) else None)
+            )
             write_cell(ws, row_no, col, value, fmt=fmt)
 
     chart = LineChart()

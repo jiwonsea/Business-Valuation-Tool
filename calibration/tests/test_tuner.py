@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 from backtest.models import BacktestRecord, ScenarioSnapshot
 
 from calibration.grid import Bucket, BucketKey
 from calibration.tuner import (
     GRID_STEP,
+    _role_means,
     PROB_BOUNDS,
     confidence_tier,
     enumerate_prob_grid,
@@ -176,3 +179,31 @@ class TestSearchSCProb:
         assert rec.baseline_mape is not None
         assert rec.recommended_mape is not None
         assert rec.recommended_mape <= rec.baseline_mape + 1e-9
+
+
+@pytest.mark.parametrize("predicted,price", [(100, 110), (-34, 300), (0, 100)])
+def test_native_role_means_and_baseline_ignore_ev_unit_multiplier(predicted, price):
+    """EV display-unit metadata must not rescale native calibration prices."""
+    scenarios = [
+        _scn("BEAR", 25, predicted - 20),
+        _scn("BASE", 50, predicted),
+        _scn("BULL", 25, predicted + 20),
+    ]
+    record = _record("NATIVE", scenarios=scenarios, price=price)
+    means = {"bull": predicted + 20, "base": predicted, "bear": predicted - 20}
+    probs = {"bull": 25, "base": 50, "bear": 25}
+    baseline = None
+    for multiplier in (1, 1_000_000):
+        candidate = record.model_copy(update={"unit_multiplier": multiplier})
+        assert _role_means(candidate) == means
+        assert predict_with_probs(candidate, probs) == predicted
+        bucket = Bucket(key=BucketKey("US", "dcf_primary", "t12m"), records=[candidate])
+        result = search_sc_prob(bucket)
+        if predicted > 0:
+            assert result.baseline_mape == pytest.approx(abs(predicted - price) / price)
+        else:
+            assert result.baseline_mape is None
+        current = (result.baseline_mape, result.baseline_coverage)
+        if multiplier == 1:
+            baseline = current
+        assert current == baseline

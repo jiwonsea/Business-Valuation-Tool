@@ -1,0 +1,116 @@
+{
+  "_schema": "per-share native, never scaled by unit_multiplier",
+  "_note": "Synthetic values, 2026-11-03 J-13. Fixed writer/reader stubs, not valuation arithmetic oracles. Reusable for J-1; per-share values remain integers.",
+  "cases": [
+    {
+      "company": {
+        "name": "Synthetic KR",
+        "ticker": "J13KR",
+        "market": "KR",
+        "currency": "KRW",
+        "unit_multiplier": 1000000,
+        "legal_status": "listed",
+        "analysis_date": "2026-11-03"
+      },
+      "scenarios": [
+        {
+          "code": "Bear",
+          "name": "Bear",
+          "prob": 25,
+          "pre_dlom": 110125,
+          "post_dlom": 110123,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Base",
+          "name": "Base",
+          "prob": 50,
+          "pre_dlom": 176200,
+          "post_dlom": 176198,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Bull",
+          "name": "Bull",
+          "prob": 25,
+          "pre_dlom": 253246,
+          "post_dlom": 253244,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        }
+      ],
+      "result": {
+        "weighted_value": 172333,
+        "wacc": 10,
+        "primary_method": "sotp",
+        "market_comparison": {
+          "gap_ratio": 0.013723529411764706,
+          "market_price": 170000
+        }
+      }
+    },
+    {
+      "company": {
+        "name": "Synthetic US",
+        "ticker": "J13US",
+        "market": "US",
+        "currency": "USD",
+        "unit_multiplier": 1000000,
+        "legal_status": "listed",
+        "analysis_date": "2026-11-03"
+      },
+      "scenarios": [
+        {
+          "code": "Bear",
+          "name": "Bear",
+          "prob": 25,
+          "pre_dlom": 12,
+          "post_dlom": 10,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Base",
+          "name": "Base",
+          "prob": 50,
+          "pre_dlom": 12,
+          "post_dlom": 10,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        },
+        {
+          "code": "Bull",
+          "name": "Bull",
+          "prob": 25,
+          "pre_dlom": 12,
+          "post_dlom": 10,
+          "growth_adj_pct": 0,
+          "wacc_adj": 0,
+          "terminal_growth_adj": 0,
+          "market_sentiment_pct": 0
+        }
+      ],
+      "result": {
+        "weighted_value": 9,
+        "wacc": 10,
+        "primary_method": "sotp",
+        "market_comparison": {
+          "gap_ratio": -0.1,
+          "market_price": 10
+        }
+      }
+    }
+  ]
+}

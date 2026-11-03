@@ -70,6 +70,17 @@ def _make_scenarios(
 
 
 class TestForecastPriceError:
+    def test_native_us_price_is_not_scaled_by_unit_multiplier(self):
+        """The snapshot writer already stores native per-share prices."""
+        r = _make_record(
+            predicted_value=9,
+            unit_multiplier=1_000_000,
+            price_t6m=10.0,
+            currency="USD",
+        )
+        result = calc_forecast_price_error([r], "t6m")
+        assert result["mape"] == pytest.approx(0.10)
+
     def test_perfect_prediction(self):
         """Predicted == actual → MAPE = 0."""
         r = _make_record(predicted_value=100, unit_multiplier=1, price_t6m=100.0)
@@ -92,35 +103,6 @@ class TestForecastPriceError:
             (math.log(1.2) + math.log(0.8)) / 2, abs=1e-4
         )
         assert result["n"] == 2
-
-    def test_kr_currency_normalization(self):
-        """KR unit_multiplier correctly converts predicted_value to native currency."""
-        # predicted_value=50 in 백만원 (unit_mult=1_000_000) → 50,000,000 KRW
-        # market price = 50,000,000 KRW → MAPE = 0
-        r = _make_record(
-            predicted_value=50,
-            unit_multiplier=1_000_000,
-            price_t6m=50_000_000.0,
-            currency="KRW",
-        )
-        result = calc_forecast_price_error([r], "t6m")
-        assert result["mape"] == pytest.approx(0.0)
-        assert result["n"] == 1
-
-    def test_kr_currency_without_normalization_would_fail(self):
-        """Without normalization, KR MAPE would be ~100% — this verifies it's NOT."""
-        r = _make_record(
-            predicted_value=50,
-            unit_multiplier=1_000_000,
-            price_t6m=55_000_000.0,  # 10% higher
-            currency="KRW",
-        )
-        result = calc_forecast_price_error([r], "t6m")
-        # Should be ~9.09% error, NOT ~100%
-        assert result["mape"] is not None
-        assert result["mape"] < 0.15  # Definitely not near 1.0
-        expected = abs(50_000_000 - 55_000_000) / 55_000_000
-        assert result["mape"] == pytest.approx(expected, abs=1e-4)
 
     def test_empty_records(self):
         result = calc_forecast_price_error([], "t6m")
@@ -280,8 +262,8 @@ class TestIntervalScore:
         result = calc_interval_score([r], "t6m")
         assert result["n"] == 0
 
-    def test_kr_unit_multiplier_applied(self):
-        """Scenario values multiplied by unit_multiplier for range comparison."""
+    def test_kr_native_scenario_values_are_not_scaled(self):
+        """Scenario prices are already native KRW, regardless of EV units."""
         scenarios = _make_scenarios(
             [
                 ("Bear", 25, 40, 40),
@@ -289,11 +271,11 @@ class TestIntervalScore:
                 ("Bull", 25, 60, 60),
             ]
         )
-        # unit_multiplier=1M → range = [40M, 60M], actual = 45M → covered
+        # Native KRW range [40, 60] covers 45; EV units are provenance only.
         r = _make_record(
             predicted_value=50,
             unit_multiplier=1_000_000,
-            price_t6m=45_000_000.0,
+            price_t6m=45.0,
             scenarios=scenarios,
             currency="KRW",
         )
@@ -370,7 +352,7 @@ class TestCalibrationCurve:
 class TestBacktestRecord:
     def test_predicted_value_native(self):
         r = _make_record(predicted_value=50, unit_multiplier=1_000_000)
-        assert r.predicted_value_native == 50_000_000.0
+        assert r.predicted_value_native == 50.0
 
     def test_is_listed(self):
         r1 = _make_record(legal_status="상장")
@@ -389,12 +371,13 @@ class TestBacktestRecord:
         )
         r = _make_record(unit_multiplier=100, scenarios=scenarios)
         lo, hi = r.scenario_range_native()
-        assert lo == 7000
-        assert hi == 13000
+        assert lo == 70
+        assert hi == 130
 
     def test_scenario_range_empty(self):
         r = _make_record(scenarios=[])
         assert r.scenario_range_native() is None
+        assert r.scenario_pre_dlom_range_native() is None
 
     def test_get_price(self):
         r = _make_record(price_t3m=42.0, price_t6m=45.0)
@@ -544,3 +527,71 @@ class TestBucketBreakdown:
         text, report = generate_report(records)
         assert "Bucket Breakdown" in text
         assert "holding_governance_sensitive" in report["bucket_breakdown"]
+
+
+@pytest.mark.parametrize(
+    "currency,predicted,price",
+    [
+        ("KRW", 314_500, 300_000),
+        ("USD", 9, 10),
+        ("JPY", 2_879, 3_000),
+        ("USD", -34, 300),
+        ("USD", 0, 100),
+    ],
+)
+def test_native_metrics_are_invariant_to_ev_unit_multiplier(currency, predicted, price):
+    """Replace legacy KR tests that incorrectly scaled native per-share values."""
+    if predicted > 0:
+        posts = [round(predicted * 0.8), predicted, round(predicted * 1.2)]
+    else:
+        posts = [predicted - 2, predicted - 1, predicted]
+    scenarios = _make_scenarios(
+        [
+            (code, prob, post + 2, post)
+            for code, prob, post in zip(("Bear", "Base", "Bull"), (25, 50, 25), posts)
+        ]
+    )
+    reference = None
+    for multiplier in (1, 1_000_000, 100_000_000):
+        record = _make_record(
+            predicted_value=predicted,
+            unit_multiplier=multiplier,
+            price_at_prediction=price * 0.8,
+            price_t6m=price,
+            currency=currency,
+            scenarios=scenarios,
+        )
+        assert record.predicted_value_native == predicted
+        assert record.scenario_range_native() == (min(posts), max(posts))
+        assert record.scenario_pre_dlom_range_native() == (
+            min(posts) + 2,
+            max(posts) + 2,
+        )
+        records = [record] * 30
+        results = (
+            calc_forecast_price_error(records, "t6m"),
+            calc_gap_closure(records, "t6m"),
+            calc_interval_score(records, "t6m"),
+            calc_calibration_curve(records, "t6m"),
+        )
+        if reference is None:
+            reference = results
+        assert results == reference
+        error, gap, interval, calibration = results
+        assert gap["n"] == 30
+        assert gap["mean_closure"] == pytest.approx(
+            (price - price * 0.8) / (predicted - price * 0.8)
+        )
+        assert interval["n"] == 30
+        if predicted > 0:
+            assert error["n"] == 30
+            assert error["mape"] == pytest.approx(abs(predicted - price) / price)
+            assert interval["mean_interval_width"] == pytest.approx(
+                (max(posts) - min(posts)) / predicted
+            )
+            assert calibration is not None
+        else:
+            assert error["n"] == 0
+            assert error["mape"] is None
+            assert interval["mean_interval_width"] is None
+            assert calibration is None

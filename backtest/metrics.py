@@ -33,7 +33,7 @@ def calc_forecast_price_error(
     records: list[BacktestRecord],
     horizon: str = "t6m",
 ) -> dict:
-    """Compute forecast-to-price error metrics with currency normalization.
+    """Compare stored native per-share predictions with native market prices.
 
     Returns:
         {mape, median_ape, log_ratio_mean, n}
@@ -150,7 +150,7 @@ def calc_interval_score(
 ) -> dict:
     """Evaluate scenario range coverage and precision.
 
-    Uses the scenario value range [min(post_dlom), max(post_dlom)] as
+    Uses the native per-share range [min(post_dlom), max(post_dlom)] as
     the prediction interval. Measures:
     - Coverage rate: fraction of actuals falling within the interval
     - Mean interval width: average width as % of predicted value
@@ -193,7 +193,7 @@ def calc_interval_score(
 
         # Pinball loss for each scenario quantile
         for s in r.scenarios:
-            scenario_val = s.post_dlom * r.unit_multiplier
+            scenario_val = s.post_dlom
             # Treat scenario probability as the quantile level
             tau = s.prob / 100.0
             error = actual - scenario_val
@@ -233,7 +233,7 @@ def calc_calibration_curve(
     """Compute calibration curve: assigned probability vs realized frequency.
 
     A scenario is "realized" if the actual price falls within ±15% of that
-    scenario's post_dlom value (in native currency).
+    scenario's stored native per-share post_dlom value; no unit scaling.
 
     Returns None if insufficient data. Otherwise list of dicts:
     [{bin_label, bin_lo, bin_hi, assigned_prob_mean, realized_freq, count}]
@@ -250,7 +250,7 @@ def calc_calibration_curve(
         if not r.scenarios:
             continue
         for s in r.scenarios:
-            scenario_val = s.post_dlom * r.unit_multiplier
+            scenario_val = s.post_dlom
             if scenario_val <= 0:
                 continue
             # Realized if actual is within ±15% of scenario value

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 
 class ScenarioSnapshot(BaseModel):
-    """Per-scenario prediction snapshot captured at valuation time."""
+    """Snapshot with pre/post-DLOM prices already in native currency per share."""
 
     code: str
     name: str
@@ -30,11 +30,11 @@ class BacktestRecord(BaseModel):
     ticker: str
     market: str
     currency: str
-    unit_multiplier: int
+    unit_multiplier: int  # EV/equity display-unit provenance, not a per-share scale
     company_name: str
     legal_status: str
     analysis_date: date
-    predicted_value: int  # weighted_value (display unit, per-share)
+    predicted_value: int  # weighted_value in native currency per share
     predicted_gap_ratio: Optional[float] = None
     price_at_prediction: Optional[float] = None  # T0 market price
     wacc_pct: Optional[float] = None
@@ -58,8 +58,8 @@ class BacktestRecord(BaseModel):
 
     @property
     def predicted_value_native(self) -> float:
-        """Convert predicted_value to native currency (comparable to market price)."""
-        return float(self.predicted_value * self.unit_multiplier)
+        """Return the stored native per-share value, comparable to market price."""
+        return float(self.predicted_value)
 
     @property
     def is_listed(self) -> bool:
@@ -73,12 +73,12 @@ class BacktestRecord(BaseModel):
         """Min/max post_dlom in native currency. None if no scenarios."""
         if not self.scenarios:
             return None
-        values = [s.post_dlom * self.unit_multiplier for s in self.scenarios]
+        values = [s.post_dlom for s in self.scenarios]
         return (min(values), max(values))
 
     def scenario_pre_dlom_range_native(self) -> tuple[float, float] | None:
         """Min/max pre_dlom in native currency (for IPO-listed comparisons)."""
         if not self.scenarios:
             return None
-        values = [s.pre_dlom * self.unit_multiplier for s in self.scenarios]
+        values = [s.pre_dlom for s in self.scenarios]
         return (min(values), max(values))

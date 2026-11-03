@@ -61,7 +61,7 @@ def enumerate_prob_grid(
 
 
 def _role_means(record: BacktestRecord) -> dict[str, float | None]:
-    """Mean post_dlom in native currency per role for a record. None if role empty."""
+    """Mean stored native per-share post_dlom per role; no EV-unit scaling."""
     classified = classify_scenarios(record.scenarios)
     out: dict[str, float | None] = {}
     for role in ROLES:
@@ -69,9 +69,7 @@ def _role_means(record: BacktestRecord) -> dict[str, float | None]:
         if not members:
             out[role] = None
             continue
-        out[role] = (
-            sum(s.post_dlom for s in members) / len(members) * record.unit_multiplier
-        )
+        out[role] = sum(s.post_dlom for s in members) / len(members)
     return out
 
 

@@ -6,7 +6,9 @@ analysis_date extraction from the prediction_snapshots inner-join.
 
 from __future__ import annotations
 
+import json
 from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -449,3 +451,76 @@ def test_save_prediction_snapshot_logs_warning_not_traceback(caplog):
     assert "RuntimeError" in msg  # exception class surfaced
     # No explicit exc_info attached → no traceback will be rendered
     assert warnings[0].exc_info is None
+
+
+@pytest.mark.parametrize("market", ["KR", "US"])
+def test_native_snapshot_writer_reader_metrics_round_trip(market):
+    """Use the writer's actual row, not a separately invented reader payload."""
+    from backtest.dataset import _parse_scenarios
+    from backtest.metrics import calc_forecast_price_error, calc_interval_score
+    from backtest.models import BacktestRecord
+    from calibration.tuner import _role_means, predict_with_probs
+
+    fixture_path = Path(__file__).parent / "fixtures" / "j13_native_per_share.json"
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    case = next(
+        case for case in fixture["cases"] if case["company"]["market"] == market
+    )
+    company = SimpleNamespace(**case["company"])
+    company.analysis_date = date.fromisoformat(company.analysis_date)
+    scenarios = {sc["code"]: SimpleNamespace(**sc) for sc in case["scenarios"]}
+    vi = SimpleNamespace(company=company, scenarios=scenarios)
+    result_data = case["result"]
+    result = SimpleNamespace(
+        weighted_value=result_data["weighted_value"],
+        wacc=SimpleNamespace(wacc=result_data["wacc"]),
+        primary_method=result_data["primary_method"],
+        market_comparison=SimpleNamespace(**result_data["market_comparison"]),
+        scenarios=scenarios,
+    )
+    client = _FakeClient([{"id": "snap-1"}])
+    with patch.object(repo, "get_client", return_value=client):
+        assert repo.save_prediction_snapshot(vi, result, "v-1") == "snap-1"
+    row = next(call for call in client.query.calls if call[0] == "upsert")[1][0]
+    assert row["unit_multiplier"] == 1_000_000
+    assert row["predicted_weighted_value"] == result.weighted_value
+    record = BacktestRecord(
+        snapshot_id="snap-1",
+        valuation_id=row.get("valuation_id", ""),
+        ticker=row["ticker"],
+        market=row["market"],
+        currency=row.get("currency", "KRW"),
+        unit_multiplier=row.get("unit_multiplier", 1_000_000),
+        company_name=row.get("company_name", ""),
+        legal_status=row.get("legal_status", "상장"),
+        analysis_date=date.fromisoformat(row["analysis_date"]),
+        predicted_value=row.get("predicted_weighted_value", 0),
+        predicted_gap_ratio=row.get("predicted_gap_ratio"),
+        price_at_prediction=row.get("price_at_prediction"),
+        wacc_pct=row.get("wacc_pct"),
+        price_t0=row["price_at_prediction"],
+        price_t6m=row["price_at_prediction"],
+        scenarios=_parse_scenarios(row["scenario_values"]),
+        primary_method=row.get("primary_method"),
+        valuation_bucket=row.get("valuation_bucket", "plain_operating"),
+        market_signals_version=row.get("market_signals_version", 0),
+    )
+    posts = [sc.post_dlom for sc in scenarios.values()]
+    pres = [sc.pre_dlom for sc in scenarios.values()]
+    assert record.predicted_value_native == result.weighted_value
+    assert record.scenario_range_native() == (min(posts), max(posts))
+    assert record.scenario_pre_dlom_range_native() == (min(pres), max(pres))
+    error = calc_forecast_price_error([record], "t6m")
+    price = row["price_at_prediction"]
+    assert error["mape"] == pytest.approx(abs(result.weighted_value - price) / price)
+    interval = calc_interval_score([record], "t6m")
+    assert interval["coverage_rate"] == int(min(posts) <= price <= max(posts))
+    assert interval["mean_interval_width"] == pytest.approx(
+        (max(posts) - min(posts)) / result.weighted_value
+    )
+    means = _role_means(record)
+    assert means["bear"] == min(posts)
+    assert means["bull"] == max(posts)
+    assert predict_with_probs(record, {"bull": 25, "base": 50, "bear": 25}) == (
+        max(posts) * 0.25 + sorted(posts)[1] * 0.5 + min(posts) * 0.25
+    )

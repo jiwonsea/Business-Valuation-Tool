@@ -40,7 +40,10 @@ def test_clamp_is_logged_reported_and_penalized(tmp_path, caplog, capsys):
     assert "66.00x → 44.00x" in warning
     assert "3.00x → 2.00x" in warning
     assert warning in caplog.text
-    assert stdout.index(f"⚠ {warning}") < stdout.index("[WACC]")
+    assert stdout.index(
+        f"⚠ [SCENARIO_MULTIPLE_CLAMPED] scenario:Bull/segment:PBP — {warning}"
+    ) < stdout.index("[WACC]")
+    assert stdout.count(warning) == 1
     assert result.quality is not None
     assert result.quality.scenario_consistency < 25
     assert any("multiple 클램프 발동" in item for item in result.quality.warnings)

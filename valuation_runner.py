@@ -69,6 +69,7 @@ from engine.quality import calc_quality_score
 from engine.nav import calc_nav
 from engine.rnpv import calc_rnpv
 from engine.holding_discount import build_holding_discount_bridge
+from engine.warnings import make_warning
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial, infer_valuation_bucket
 from engine.investability_gate import (
@@ -368,7 +369,7 @@ def load_profile(path: str) -> ValuationInput:
     _allow_wide_spread = bool(
         raw.get("curated", False) and raw.get("allow_wide_scenario_spread", False)
     )
-    _scenario_spread_warnings: list[str] = []
+    _input_warnings = []
     _scenario_multiples_clamped = False
     _sc_mults_map: dict[str, dict[str, float]] = {
         code: dict(sc.segment_multiples)
@@ -410,8 +411,29 @@ def load_profile(path: str) -> ValuationInput:
                             f"(최저 시나리오 대비 {original_ratio:.2f}x → "
                             f"{_SOTP_MAX_RATIO:.2f}x)"
                         )
-                    _scenario_spread_warnings.append(warning)
-                    logger.warning(warning)
+                    scope = f"scenario:{sc_code}/segment:{seg}"
+                    if _allow_wide_spread:
+                        item = make_warning(
+                            "WIDE_SPREAD_ALLOWED",
+                            scope,
+                            warning,
+                            value=val,
+                            original_ratio=original_ratio,
+                            cap_ratio=_SOTP_MAX_RATIO,
+                        )
+                    else:
+                        item = make_warning(
+                            "SCENARIO_MULTIPLE_CLAMPED",
+                            scope,
+                            warning,
+                            original=val,
+                            applied=applied,
+                            floor=floor,
+                            original_ratio=original_ratio,
+                            cap_ratio=_SOTP_MAX_RATIO,
+                        )
+                    _input_warnings.append(item)
+                    logger.warning(item.message)
                 else:
                     clamped[seg] = val
             if changed:
@@ -419,7 +441,6 @@ def load_profile(path: str) -> ValuationInput:
                     update={"segment_multiples": clamped}
                 )
 
-    _share_count_warnings: list[str] = []
     if scenarios:
         reference = max(scenarios.values(), key=lambda scenario: scenario.prob)
         outstanding = company.shares_outstanding
@@ -434,8 +455,17 @@ def load_profile(path: str) -> ValuationInput:
                 f"적용 주식수 {reference.shares:,} ≠ 유통주식수 {outstanding:,}"
                 f"{treasury_note} — 시나리오 shares가 의도적 설정인지 확인"
             )
-            _share_count_warnings.append(warning)
-            logger.warning(warning)
+            item = make_warning(
+                "SHARE_COUNT_MISMATCH",
+                "input",
+                warning,
+                applied_shares=reference.shares,
+                outstanding=outstanding,
+                treasury_shares=company.treasury_shares,
+                difference=difference,
+            )
+            _input_warnings.append(item)
+            logger.warning(item.message)
 
     vi = ValuationInput(
         company=company,
@@ -444,8 +474,15 @@ def load_profile(path: str) -> ValuationInput:
         curated=raw.get("curated", False),
         allow_wide_scenario_spread=raw.get("allow_wide_scenario_spread", False),
         profile_text=profile_text,
-        scenario_spread_warnings=_scenario_spread_warnings,
-        share_count_warnings=_share_count_warnings,
+        engine_warnings=_input_warnings,
+        scenario_spread_warnings=[
+            w.message
+            for w in _input_warnings
+            if w.code in {"SCENARIO_MULTIPLE_CLAMPED", "WIDE_SPREAD_ALLOWED"}
+        ],
+        share_count_warnings=[
+            w.message for w in _input_warnings if w.code == "SHARE_COUNT_MISMATCH"
+        ],
         scenario_multiples_clamped=_scenario_multiples_clamped,
         valuation_method=raw.get("valuation_method", "auto"),
         industry=raw.get("industry", "") or co_raw.get("industry", ""),
@@ -700,6 +737,33 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
         vi.curated and vi.allow_wide_scenario_spread
     )
     result.scenario_spread_warnings = list(vi.scenario_spread_warnings)
+    # Inspect completed scenarios once, after any holding adjustment, for all methods.
+    warnings = list(vi.engine_warnings) + list(result.engine_warnings)
+    for code, scenario in result.scenarios.items():
+        if scenario.equity_value <= 0:
+            warnings.append(
+                make_warning(
+                    "NEGATIVE_SCENARIO_EQUITY",
+                    f"scenario:{code}",
+                    f"시나리오 '{code}' 지분가치가 0 이하입니다 — 음수 가치를 그대로 유지합니다.",
+                    equity_value=scenario.equity_value,
+                    post_dlom=scenario.post_dlom,
+                    prob_effective_pct=scenario.prob_effective_pct,
+                )
+            )
+    factor = result.prob_normalization_factor
+    if abs(factor - 1) > 1e-9:
+        warnings.append(
+            make_warning(
+                "PROB_NORMALIZED",
+                "result",
+                f"시나리오 확률 정규화: ×{factor:.12g}",
+                factor=factor,
+                prob_sum=math.fsum(sc.prob for sc in vi.scenarios.values()),
+            )
+        )
+    result.engine_warnings = warnings
+    result.review_required = any(w.severity == "review" for w in warnings)
 
     # Quality scoring (pure function, zero IO)
     result.quality = calc_quality_score(vi, result)
@@ -1260,6 +1324,17 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         exempt,
         healthy,
     )
+    engine_warnings = [
+        make_warning(
+            "DISTRESS_MULTIPLE_APPLIED",
+            f"segment:{seg}",
+            f"디스트레스 적용 배수 '{seg}': {original:.4g}x → {effective_multiples[seg]:.4g}x",
+            original=original,
+            applied=effective_multiples[seg],
+        )
+        for seg, original in vi.multiples.items()
+        if abs(original - effective_multiples[seg]) > 1e-9
+    ]
     if distress.applied:
         logger.info("[Distress] %s: %s", vi.company.name, distress.detail)
 
@@ -1381,6 +1456,16 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
                 holding_structure=vi.company.holding_structure,
             )
             if bridge is not None:
+                bridge_warnings = [
+                    make_warning(
+                        "HOLDING_BRIDGE", f"scenario:{code}", message, message_index=i
+                    )
+                    for i, message in enumerate(bridge.warnings)
+                ]
+                engine_warnings.extend(bridge_warnings)
+                bridge = bridge.model_copy(
+                    update={"warnings": [w.message for w in bridge_warnings]}
+                )
                 r = _apply_holding_discount_to_scenario(
                     r,
                     bridge.net_equity_value,
@@ -1571,6 +1656,7 @@ def _run_sotp_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
         sensitivity_irr_dlom=sens_irr,
         sensitivity_dcf=sens_dcf_rows,
         holding_discount=base_holding_bridge,
+        engine_warnings=engine_warnings,
     )
 
 
@@ -1616,6 +1702,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     total_ev = dcf_result.ev_dcf
 
     # Scenarios (DCF EV-based, per-scenario DCF driver + WACC adjustment applied)
+    engine_warnings = []
     scenario_results = {}
     total_weighted = 0.0
     prob_factor = _probability_factor(vi.scenarios)
@@ -1640,9 +1727,22 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                     vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
-            except (ValueError, ZeroDivisionError):
+            except (ValueError, ZeroDivisionError) as exc:
                 logger.warning(
                     "DCF scenario '%s' recalc failed (wacc<=tg), using base EV", code
+                )
+                engine_warnings.append(
+                    make_warning(
+                        "DCF_SCENARIO_FALLBACK",
+                        f"scenario:{code}",
+                        f"DCF 시나리오 '{code}' 재계산 실패 — Base EV를 사용합니다.",
+                        reason="wacc<=tg"
+                        if effective_wacc <= sc_dcf_params.terminal_growth
+                        else " ".join(str(exc).splitlines()),
+                        applied_wacc=effective_wacc,
+                        terminal_growth=sc_dcf_params.terminal_growth,
+                        used_base_ev=True,
+                    )
                 )
         elif sc.wacc_adj != 0:
             # Recalculate DCF even without growth adjustment (WACC change alone)
@@ -1656,9 +1756,22 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
                     vi.base_year,
                 )
                 sc_ev = sc_dcf.ev_dcf
-            except (ValueError, ZeroDivisionError):
+            except (ValueError, ZeroDivisionError) as exc:
                 logger.warning(
                     "DCF scenario '%s' WACC recalc failed, using base EV", code
+                )
+                engine_warnings.append(
+                    make_warning(
+                        "DCF_SCENARIO_FALLBACK",
+                        f"scenario:{code}",
+                        f"DCF 시나리오 '{code}' WACC 재계산 실패 — Base EV를 사용합니다.",
+                        reason="wacc<=tg"
+                        if effective_wacc <= vi.dcf_params.terminal_growth
+                        else " ".join(str(exc).splitlines()),
+                        applied_wacc=effective_wacc,
+                        terminal_growth=vi.dcf_params.terminal_growth,
+                        used_base_ev=True,
+                    )
                 )
 
         # Market sentiment post-processing
@@ -1742,6 +1855,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
 
     return ValuationResult(
         primary_method="dcf_primary",
+        engine_warnings=engine_warnings,
         wacc=wacc_result,
         da_allocations={
             yr: {c: a for c, a in allocs.items()}

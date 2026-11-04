@@ -69,6 +69,10 @@ For rNPV specifics see `rnpv.md`; distress see `distress.md`; Monte Carlo see `m
 
 - `load_profile()` caps every scenario's `segment_multiples[seg]` at **2.0× the per-segment minimum across all scenarios** (`valuation_runner.py:315-352`, `_SOTP_MAX_RATIO = 2.0`). The Bear multiple therefore sets the ceiling for Bull.
 - The 2.0× limit is the entire Bear→Bull budget: `(Base/Bear) × (Bull/Base) = Bull/Bear ≤ 2.0`. Because quality scoring requires `Bull/Base ≥ 1.20`, setting `Base/Bear > 2.0/1.20 = 1.667` makes a quality deduction mathematically unavoidable. Keep Base/Bear at or below 1.667 when both the clamp and quality threshold must pass.
-- Consequence: a hand-authored Bull of 3.0 against a Bear of 0.8 is rewritten to **1.6**, collapsing Bull onto Base and producing a degenerate model (Bull/Base EV spread 1.05x) that still *prints as if it ran*. It logs at INFO, which the CLI does not surface.
+- Consequence: a hand-authored Bull of 3.0 against a Bear of 0.8 is rewritten to **1.6**, collapsing Bull onto Base and producing a degenerate model (Bull/Base EV spread 1.05x) that still *prints as if it ran*. `logger.warning` + `ValuationResult.scenario_spread_warnings`/`engine_warnings` + console `[경고]` block + DB persistence surface the clamp. A profile that prints as if it ran still shows the clamp in the warning block.
 - **Design scenarios inside the 2x band from the start** (e.g. Bear 1.0 / Base 1.5 / Bull 2.0). If a genuinely wider spread is warranted, compute it outside the engine and report it explicitly as an uncapped sensitivity — do not raise `_SOTP_MAX_RATIO` to fit one company.
 - Verify after every `load_profile()`: `{k: sc.segment_multiples for k, sc in vi.scenarios.items()}` should equal what the YAML says.
+
+## Engine warnings (`engine/warnings.py`)
+
+- Register each new warning code in the registry and generate it in the runner. Console and Excel consume `ValuationResult.engine_warnings`; they must not recalculate engine facts. Structured warning DB persistence is deferred to J-2b; existing scenario-spread DB fields remain unchanged.

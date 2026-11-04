@@ -668,6 +668,14 @@ def sheet_dashboard(ctx: Ctx):
     # ── Football Field ──
     r += CHART_GAP
     _write_football_field(ws, r, ctx)
+    review_count = sum(w.severity == "review" for w in ctx.result.engine_warnings)
+    write_cell(
+        ws,
+        max(ws.max_row, r) + CHART_ROWS + CHART_GAP + 2,
+        1,
+        f"경고 {len(ctx.result.engine_warnings)}건 / 검토 필요 {review_count}건 — '경고' 시트",
+        font=NOTE_FONT,
+    )
 
 
 def _get_primary_value(ctx: Ctx) -> tuple[float, str]:

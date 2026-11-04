@@ -27,6 +27,7 @@ from .sheets.sensitivity import sheet_sensitivity
 from .sheets.dashboard import sheet_dashboard
 from .sheets.relative import sheet_relative
 from .sheets.history import sheet_valuation_history
+from .sheets.warnings import sheet_warnings
 
 
 def export(
@@ -77,6 +78,7 @@ def export(
     # Per-sheet "build it yourself" notes -- written into reserved blank rows, so
     # no insert_rows() and no broken conditional formatting / chart anchors.
     apply_guides(wb)
+    sheet_warnings(ctx)
 
     if vi.draft or result.draft:
         warning = wb.create_sheet("DRAFT WARNING", 0)

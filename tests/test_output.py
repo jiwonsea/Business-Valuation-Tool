@@ -1,6 +1,101 @@
 """output package tests — dashboard + wp_poster + Excel sheet fixes."""
 
 
+def test_engine_warning_excel_order_rows_and_append_only(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+
+    from openpyxl import load_workbook
+
+    import db.repository
+    from engine.warnings import make_warning
+    from output.excel_builder import export
+    from valuation_runner import load_profile, run_valuation
+
+    monkeypatch.setattr(db.repository, "list_valuation_history", lambda *a, **kw: [])
+    vi = load_profile(str(Path(__file__).parent / "fixtures" / "msft_frozen.yaml"))
+    result = run_valuation(vi)
+    baseline = load_workbook(export(vi, result, str(tmp_path)))
+    warnings = [
+        make_warning(
+            "SCENARIO_MULTIPLE_CLAMPED",
+            f"scenario:Bull/segment:{seg}",
+            f"clamp {seg}",
+            original=66.0,
+            applied=44.0,
+            floor=22.0,
+            original_ratio=3.0,
+            cap_ratio=2.0,
+        )
+        for seg in ["PBP", "IC"]
+    ]
+    result = result.model_copy(update={"engine_warnings": warnings, "draft": True})
+    current = load_workbook(export(vi, result, str(tmp_path)))
+    assert current.sheetnames[:3] == ["DRAFT WARNING", "경고", "Raw Data"]
+    assert [
+        s for s in current.sheetnames if s != "DRAFT WARNING"
+    ] == baseline.sheetnames
+    ws = current["경고"]
+    assert ws.max_row - 1 == len(warnings)
+    assert [cell.value for cell in ws[1]] == [
+        "code",
+        "severity",
+        "scope",
+        "message",
+        "fields(JSON)",
+    ]
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        warning = next(w for w in warnings if w.scope == row[2])
+        assert list(row[:4]) == [
+            warning.code,
+            warning.severity,
+            warning.scope,
+            warning.message,
+        ]
+        assert json.loads(row[4]) == warning.fields
+    scenario = current["Scenario Analysis"]
+    title_row = next(
+        cell.row
+        for row in scenario
+        for cell in row
+        if cell.value == "클램프 원값→적용값"
+    )
+    assert title_row > baseline["Scenario Analysis"].max_row
+    assert scenario.max_row - (title_row + 1) == len(warnings)
+    assert [scenario.cell(title_row + 1, c).value for c in range(1, 6)] == [
+        "scenario",
+        "segment",
+        "original",
+        "applied",
+        "cap_ratio",
+    ]
+    for title in baseline.sheetnames:
+        if title == "경고":
+            continue
+        old, new = baseline[title], current[title]
+        assert (new.min_row, new.min_column) == (old.min_row, old.min_column)
+        for row in old:
+            for cell in row:
+                if isinstance(cell.value, str) and cell.value.startswith("경고 "):
+                    assert (
+                        new[cell.coordinate].value
+                        == "경고 2건 / 검토 필요 0건 — '경고' 시트"
+                    )
+                    continue
+                assert new[cell.coordinate].value == cell.value
+                assert new[cell.coordinate].number_format == cell.number_format
+    assert baseline["경고"].max_row == 1
+    assert baseline.sheetnames[:2] == ["경고", "Raw Data"]
+    dashboard = current["Dashboard"]
+    summary = next(
+        cell
+        for row in dashboard
+        for cell in row
+        if isinstance(cell.value, str) and cell.value.startswith("경고 ")
+    )
+    assert summary.row > dashboard._charts[-1].anchor._from.row + 1 + 18
+
+
 def test_peer_implied_multiple_panel_skips_mixed_sotp():
     from types import SimpleNamespace
 
@@ -342,6 +437,7 @@ class TestScenarioBridgeAlignment:
                 },
             ),
             result=SimpleNamespace(
+                engine_warnings=[],
                 weighted_value=34_745,
                 scenarios={
                     "A": SimpleNamespace(

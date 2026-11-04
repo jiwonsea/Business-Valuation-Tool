@@ -1,6 +1,7 @@
 """Console report output."""
 
 from engine.units import currency_symbol, format_per_share
+from engine.warnings import WARNING_ORDER
 from schemas.models import ValuationInput, ValuationResult
 from valuation_runner import _seg_names
 
@@ -17,8 +18,6 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     currency_sym = currency_symbol(vi.company.currency)
     if vi.company.currency not in {"KRW", "USD", "JPY", "EUR"}:
         print(f"⚠ 미지원 통화 {vi.company.currency}: 소수 2자리 표시")
-    if abs(result.prob_normalization_factor - 1) > 1e-9:
-        print(f"⚠ 시나리오 확률 정규화: ×{result.prob_normalization_factor:.12g}")
 
     # Dynamic column width for segment names
     _seg_w = max((len(n) for n in seg_names.values()), default=12)
@@ -27,6 +26,17 @@ def print_report(vi: ValuationInput, result: ValuationResult):
     print("=" * 60)
     print(f"{vi.company.name} 기업가치평가 모델 [{result.primary_method.upper()}]")
     print("=" * 60)
+    if result.engine_warnings:
+        print(f"[경고 {len(result.engine_warnings)}건]")
+        scopes_by_message: dict[tuple[str, str, str], list[str]] = {}
+        for warning in sorted(
+            result.engine_warnings, key=lambda w: (WARNING_ORDER.index(w.code), w.scope)
+        ):
+            key = (warning.code, warning.severity, warning.message)
+            scopes_by_message.setdefault(key, []).append(warning.scope)
+        for (code, severity, message), scopes in scopes_by_message.items():
+            symbol = "⛔" if severity == "review" else "⚠"
+            print(f"{symbol} [{code}] {', '.join(scopes)} — {message}")
     print(f"재무 앵커: {vi.financial_anchor.upper()} (base year FY{vi.base_year})")
     if vi.financial_anchor == "ttm" and vi.fy_base_financials:
         fy_revenue = vi.fy_base_financials.get("revenue", 0)
@@ -63,27 +73,10 @@ def print_report(vi: ValuationInput, result: ValuationResult):
             f"Peer beta 판정: {judgement.status} "
             f"(raw βL={judgement.company_raw_bl:.3f}, n={judgement.n_qualified})"
         )
-    for warning in vi.scenario_spread_warnings:
-        print(f"⚠ {warning}")
-    for warning in vi.share_count_warnings:
-        print(f"⚠ {warning}")
 
     # WACC
     w = result.wacc
     print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
-
-    # Distress discount (SOTP only) -- report the engine result; never recalculate here.
-    multiple_changes = []
-    if result.primary_method == "sotp":
-        for code, segment_result in result.sotp.items():
-            original = vi.multiples.get(code, 0)
-            applied = segment_result.multiple
-            if abs(original - applied) > 1e-9:
-                multiple_changes.append((code, original, applied))
-    if multiple_changes:
-        print("\n[Distress Haircut] 엔진 적용 배수")
-        for code, original, applied in multiple_changes:
-            print(f"  {seg_names.get(code, code)}: {original:.4g}x → {applied:.4g}x")
 
     # Mixed SOTP determination (any non-default method: ev_revenue, pbv, pe)
     is_mixed = any(
@@ -215,8 +208,6 @@ def print_report(vi: ValuationInput, result: ValuationResult):
                 f"  Overhang Discount:             -{hd.overhang_discount:>14,}{unit}"
             )
             print(f"  Net Parent Equity:              {hd.net_equity_value:>14,}{unit}")
-            for warning in hd.warnings:
-                print(f"  - {warning}")
 
     # Scenarios
     if result.scenarios:

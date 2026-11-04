@@ -237,6 +237,31 @@ def sheet_scenarios(ctx: Ctx):
                 write_cell(ws, r, 1, f"  {label}", font=NOTE_FONT)
                 write_cell(ws, r, 2, rationale, font=NOTE_FONT)
 
+    clamped = [
+        w for w in ctx.result.engine_warnings if w.code == "SCENARIO_MULTIPLE_CLAMPED"
+    ]
+    if clamped:
+        r = ws.max_row + 3
+        write_cell(ws, r, 1, "클램프 원값→적용값", font=SECTION_FONT)
+        r += 1
+        for c, label in enumerate(
+            ["scenario", "segment", "original", "applied", "cap_ratio"], 1
+        ):
+            write_cell(ws, r, c, label)
+        style_header_row(ws, r, 5)
+        for warning in clamped:
+            r += 1
+            scenario, segment = warning.scope.split("/", 1)
+            values = [
+                scenario.removeprefix("scenario:"),
+                segment.removeprefix("segment:"),
+                warning.fields["original"],
+                warning.fields["applied"],
+                warning.fields["cap_ratio"],
+            ]
+            for c, value in enumerate(values, 1):
+                write_cell(ws, r, c, value)
+
 
 def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
     """Write method-specific scenario key drivers and calculation rows."""

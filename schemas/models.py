@@ -602,6 +602,25 @@ class ScenarioParams(BaseModel):
         return v
 
 
+class EngineWarning(BaseModel):
+    """An engine fact carried to reporting boundaries without changing policy."""
+
+    code: str
+    severity: Literal["info", "warning", "review"]
+    scope: str
+    message: str
+    fields: dict[str, float | int | str | bool | None] = Field(default_factory=dict)
+
+    @field_validator("code")
+    @classmethod
+    def _registered_code(cls, value: str) -> str:
+        from engine.warnings import WARNING_CODES
+
+        if value not in WARNING_CODES:
+            raise ValueError(f"Unregistered engine warning code: {value}")
+        return value
+
+
 class ScenarioResult(BaseModel):
     total_ev: int
     net_debt: int
@@ -1098,6 +1117,7 @@ class ValuationInput(BaseModel):
     generated: str = ""
     curated: bool = False
     allow_wide_scenario_spread: bool = False
+    engine_warnings: list[EngineWarning] = Field(default_factory=list, exclude=True)
     profile_text: str = Field(default="", exclude=True, repr=False)
     scenario_spread_warnings: list[str] = Field(default_factory=list, exclude=True)
     share_count_warnings: list[str] = Field(default_factory=list, exclude=True)
@@ -1390,6 +1410,8 @@ class RelativeValuation(BaseModel):
 
 
 class ValuationResult(BaseModel):
+    engine_warnings: list[EngineWarning] = Field(default_factory=list)
+    review_required: bool = False
     primary_method: str = "sotp"  # Primary method used ("sotp"|"dcf_primary"|"multiples"|"ddm"|"rim"|"nav"|"rnpv")
     draft: bool = False
     investability_blockers: list[str] = []

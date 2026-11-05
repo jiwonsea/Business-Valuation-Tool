@@ -1,0 +1,11 @@
+{
+  "corp_code": "00126380",
+  "corp_name": "삼성전자(주)",
+  "induty_code": "264",
+  "stock_code": "005930",
+  "_note": {
+    "source_url": "https://opendart.fss.or.kr/api/company.json?corp_code=00126380",
+    "as_of": "2026-11-05T01:56:10.734799+09:00",
+    "capture": "J-3a authoritative industry; one guarded request; selected public fields only"
+  }
+}

@@ -70,6 +70,7 @@ from engine.nav import calc_nav
 from engine.rnpv import calc_rnpv
 from engine.holding_discount import build_holding_discount_bridge
 from engine.warnings import make_warning
+from engine.financial_advisory import build_financial_routing_advisories
 from engine.units import detect_unit, per_share
 from engine.method_selector import suggest_method, is_financial, infer_valuation_bucket
 from engine.investability_gate import (
@@ -486,6 +487,7 @@ def load_profile(path: str) -> ValuationInput:
         scenario_multiples_clamped=_scenario_multiples_clamped,
         valuation_method=raw.get("valuation_method", "auto"),
         industry=raw.get("industry", "") or co_raw.get("industry", ""),
+        industry_code=company.industry_code,
         segments=segments,
         segment_data=segment_data,
         consolidated=consolidated,
@@ -762,6 +764,7 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
                 prob_sum=math.fsum(sc.prob for sc in vi.scenarios.values()),
             )
         )
+    warnings += build_financial_routing_advisories(vi, result)
     result.engine_warnings = warnings
     result.review_required = any(w.severity == "review" for w in warnings)
 

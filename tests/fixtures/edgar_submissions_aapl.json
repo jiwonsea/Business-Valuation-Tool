@@ -1,0 +1,14 @@
+{
+  "cik": "0000320193",
+  "name": "Apple Inc.",
+  "sic": "3571",
+  "sicDescription": "Electronic Computers",
+  "tickers": [
+    "AAPL"
+  ],
+  "_note": {
+    "source_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+    "as_of": "2026-11-05T01:56:10.290842+09:00",
+    "capture": "J-3a authoritative industry; one guarded request; selected public fields only"
+  }
+}

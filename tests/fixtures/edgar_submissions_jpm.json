@@ -1,0 +1,22 @@
+{
+  "cik": "0000019617",
+  "name": "JPMORGAN CHASE & CO",
+  "sic": "6021",
+  "sicDescription": "National Commercial Banks",
+  "tickers": [
+    "JPM",
+    "JPM-PC",
+    "AMJB",
+    "JPM-PD",
+    "JPM-PJ",
+    "JPM-PK",
+    "JPM-PL",
+    "JPM-PM",
+    "VYLD"
+  ],
+  "_note": {
+    "source_url": "https://data.sec.gov/submissions/CIK0000019617.json",
+    "as_of": "2026-11-05T01:56:10.354827+09:00",
+    "capture": "J-3a authoritative industry; one guarded request; selected public fields only"
+  }
+}

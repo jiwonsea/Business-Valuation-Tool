@@ -189,6 +189,9 @@ class CompanyProfile(BaseModel):
     cps_conversion_shares: int = 0
     analysis_date: date = Field(default_factory=date.today)
     industry: Optional[str] = None
+    industry_code: Optional[str] = None
+    industry_code_label: Optional[str] = None
+    industry_source: Optional[str] = None
     holding_structure: Optional[HoldingStructure] = None
 
     @property
@@ -1123,6 +1126,7 @@ class ValuationInput(BaseModel):
     share_count_warnings: list[str] = Field(default_factory=list, exclude=True)
     scenario_multiples_clamped: bool = Field(default=False, exclude=True)
     valuation_method: str = "auto"  # "sotp" | "dcf_primary" | "multiples" | "ddm" | "rim" | "nav" | "rnpv" | "auto"
+    industry_code: Optional[str] = None
     industry: str = (
         ""  # Industry hint (for method_selector auto-routing, e.g. "은행", "software")
     )

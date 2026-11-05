@@ -1,5 +1,7 @@
 """Pipeline unit tests — exchange classification, CompanyIdentity, schema model validation."""
 
+import pytest
+
 from pipeline.yahoo_finance import classify_exchange
 from pipeline.data_fetcher import CompanyIdentity, _is_korean, _is_likely_ticker
 from schemas.models import (
@@ -197,3 +199,295 @@ class TestSchemaModels:
         )
         assert wp.rf == 3.5
         assert wp.eq_w == 34.2
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "provider, identifier, name, expected_code",
+    [
+        ("edgar", "320193", "aapl", "3571"),
+        ("edgar", "19617", "jpm", "6021"),
+        ("dart", "00126380", "005930", "26"),
+        ("dart", "00688996", "105560", "64"),
+    ],
+)
+def test_authoritative_industry_live(
+    provider, identifier, name, expected_code, monkeypatch, caplog
+):
+    """One request per company; opt-in recording saves only approved public keys."""
+    from dataclasses import replace
+    from datetime import datetime, timedelta, timezone
+    import json
+    import os
+    from pathlib import Path
+
+    from dotenv import load_dotenv
+    from pipeline import dart_client, edgar_client
+    from pipeline.api_guard import ApiGuard
+
+    fixture_name = (
+        f"edgar_submissions_{name}.json"
+        if provider == "edgar"
+        else f"dart_company_{name}.json"
+    )
+    path = Path(__file__).parent / "fixtures" / fixture_name
+    record = os.environ.get("BVT_RECORD_J3_INDUSTRY_FIXTURES") == "1"
+    if record:
+        assert not path.exists(), "Refuse to overwrite an existing live fixture"
+    else:
+        assert path.exists(), "Record the approved fixtures before live comparison"
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    guard = ApiGuard.get()
+    monkeypatch.setitem(
+        guard._configs, provider, replace(guard._configs[provider], max_retries=0)
+    )
+    # Exceptions may contain authenticated URLs: expose only the exception class.
+    caplog.set_level("CRITICAL")
+    try:
+        if provider == "edgar":
+            assert edgar_client._client.headers.get("User-Agent")
+            response = edgar_client.get_submissions(identifier)
+            keys = ["cik", "name", "sic", "sicDescription", "tickers"]
+            assert str(response["sic"]) == expected_code
+            assert str(response["cik"]).lstrip("0") == identifier.lstrip("0")
+            source = f"https://data.sec.gov/submissions/CIK{identifier.zfill(10)}.json"
+        else:
+            response = dart_client.get_single_company_info(identifier)
+            keys = ["corp_code", "corp_name", "induty_code", "stock_code"]
+            assert str(response["induty_code"]).startswith(expected_code)
+            assert response["corp_code"] == identifier
+            assert response["stock_code"] == name
+            source = (
+                f"https://opendart.fss.or.kr/api/company.json?corp_code={identifier}"
+            )
+    except Exception as exc:
+        pytest.fail(f"{provider} {identifier}: {type(exc).__name__}", pytrace=False)
+    extracted = {key: response[key] for key in keys}
+    if record:
+        captured = {
+            **extracted,
+            "_note": {
+                "source_url": source,
+                "as_of": datetime.now(timezone(timedelta(hours=9))).isoformat(),
+                "capture": "J-3a authoritative industry; one guarded request; selected public fields only",
+            },
+        }
+        data = (
+            (json.dumps(captured, ensure_ascii=False, indent=2) + "\n")
+            .replace("\n", "\r\n")
+            .encode("utf-8")
+        )
+        assert b"\0" not in data
+        scratch = path.with_suffix(".json.tmp")
+        scratch.write_bytes(data)
+        scratch.replace(path)
+    fixture = json.loads(path.read_text(encoding="utf-8"))
+    assert extracted == {key: fixture[key] for key in keys}
+
+
+def _stub_industry_auto_fetch(monkeypatch, identity):
+    import pipeline.profile_generator as pg
+    from pipeline.data_fetcher import DataFetcher
+
+    captured = {}
+    monkeypatch.setattr(DataFetcher, "identify", lambda self, *a, **kw: identity)
+    monkeypatch.setattr(
+        DataFetcher,
+        "fetch_financials",
+        lambda self, company: {2025: {"revenue": 1000, "op": 100}},
+    )
+    monkeypatch.setattr(
+        DataFetcher, "fetch_shares", lambda self, company: {"shares_total": 1000}
+    )
+
+    def generate(company, financials, shares, industry_metadata=None):
+        captured.update(industry_metadata)
+        return "profiles/test.yaml"
+
+    monkeypatch.setattr(pg, "_generate_draft_profile", generate)
+    return captured
+
+
+@pytest.mark.parametrize(
+    "filename, market, code, expected",
+    [
+        ("edgar_submissions_aapl.json", "US", "SIC:3571", False),
+        ("edgar_submissions_jpm.json", "US", "SIC:6021", True),
+        ("dart_company_005930.json", "KR", "KSIC:264", False),
+        ("dart_company_105560.json", "KR", "KSIC:64992", True),
+    ],
+)
+@pytest.mark.parametrize("existing_industry", ["", "Manual industry: preserve this"])
+def test_auto_fetch_authoritative_industry_fixture(
+    filename, market, code, expected, existing_industry, monkeypatch
+):
+    import json
+    from pathlib import Path
+
+    from engine.industry_codes import is_financial_code
+    from pipeline import dart_client, edgar_client
+    import pipeline.profile_generator as pg
+
+    payload = json.loads(
+        (Path(__file__).parent / "fixtures" / filename).read_text(encoding="utf-8")
+    )
+    identity = CompanyIdentity(
+        "SyntheticCo",
+        market,
+        cik=payload.get("cik"),
+        corp_code=payload.get("corp_code"),
+    )
+    identity.industry = existing_industry
+    captured = _stub_industry_auto_fetch(monkeypatch, identity)
+    calls = []
+
+    def response(identifier):
+        calls.append(identifier)
+        return payload
+
+    monkeypatch.setattr(edgar_client, "get_submissions", response)
+    monkeypatch.setattr(dart_client, "get_single_company_info", response)
+    fetched = pg.auto_fetch("SyntheticCo", market_hint=market)
+    label = payload.get("sicDescription")
+    assert captured == {
+        "industry": existing_industry or label or "",
+        "industry_code": code,
+        "industry_code_label": label,
+        "industry_source": "edgar_submissions" if market == "US" else "dart_company",
+    }
+    assert is_financial_code(captured["industry_code"]) is expected
+    assert len(calls) == 1
+    assert calls[0] == (identity.cik if market == "US" else identity.corp_code)
+    assert identity.industry == existing_industry
+    assert fetched["yaml_path"] == "profiles/test.yaml"
+
+
+@pytest.mark.parametrize("provider", ["edgar", "dart"])
+def test_industry_failure_warns_once_and_auto_fetch_continues(
+    provider, monkeypatch, caplog
+):
+    import logging
+    from pipeline import dart_client, edgar_client
+    import pipeline.profile_generator as pg
+
+    identity = CompanyIdentity(
+        "SyntheticCo",
+        "US" if provider == "edgar" else "KR",
+        cik="320193",
+        corp_code="00126380",
+    )
+    identity.industry = "Keep manual label"
+    captured = _stub_industry_auto_fetch(monkeypatch, identity)
+
+    def unavailable(identifier):
+        raise RuntimeError("exception text must not enter logs")
+
+    monkeypatch.setattr(edgar_client, "get_submissions", unavailable)
+    monkeypatch.setattr(dart_client, "get_single_company_info", unavailable)
+    with caplog.at_level(logging.WARNING, logger="pipeline.profile_generator"):
+        fetched = pg.auto_fetch("SyntheticCo")
+    assert fetched["yaml_path"] == "profiles/test.yaml"
+    assert captured == {
+        "industry": "Keep manual label",
+        "industry_code": None,
+        "industry_code_label": None,
+        "industry_source": None,
+    }
+    warnings = [r for r in caplog.records if r.name == "pipeline.profile_generator"]
+    assert len(warnings) == 1
+    assert "Authoritative industry unavailable" in warnings[0].message
+    assert "exception text must not enter logs" not in caplog.text
+
+
+def test_industry_missing_code_and_unsupported_market(monkeypatch, caplog):
+    from pipeline import edgar_client, dart_client
+    import pipeline.profile_generator as pg
+
+    calls = []
+
+    def missing(identifier):
+        calls.append(identifier)
+        return {"sicDescription": "Unknown"}
+
+    monkeypatch.setattr(edgar_client, "get_submissions", missing)
+    monkeypatch.setattr(dart_client, "get_single_company_info", missing)
+    metadata = pg._fetch_industry_metadata(
+        CompanyIdentity("Missing", "US", cik="320193")
+    )
+    assert metadata["industry_code"] is None
+    assert metadata["industry_source"] is None
+    assert "Authoritative industry unavailable" in caplog.text
+    metadata = pg._fetch_industry_metadata(CompanyIdentity("JP", "JP"))
+    assert metadata["industry_code"] is None
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    "market, code, source, label",
+    [
+        ("US", "SIC:3571", "edgar_submissions", "Electronic Computers"),
+        ("US", "SIC:6021", "edgar_submissions", "National Commercial Banks"),
+        ("KR", "KSIC:264", "dart_company", None),
+        ("KR", "KSIC:64992", "dart_company", None),
+    ],
+)
+def test_industry_metadata_survives_draft_yaml_and_load(
+    market, code, source, label, monkeypatch, tmp_path
+):
+    import yaml
+    import pipeline.profile_generator as pg
+    import pipeline.macro_data as macro_data
+    from valuation_runner import load_profile
+
+    monkeypatch.setattr(pg, "_PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        pg,
+        "_estimate_wacc_params",
+        lambda *a: {
+            "rf": 3,
+            "erp": 5,
+            "bu": 1,
+            "tax": 22,
+            "kd_pre": 4,
+            "de": 50,
+            "eq_w": 70,
+        },
+    )
+    monkeypatch.setattr(macro_data, "get_terminal_growth", lambda *a, **kw: 2)
+    monkeypatch.setattr(macro_data, "get_diluted_shares", lambda *a, **kw: None)
+    identity = CompanyIdentity("SyntheticCo", market, legal_status="상장")
+    financials = {
+        2025: {
+            "revenue": 1000,
+            "op": 100,
+            "dep": 20,
+            "amort": 0,
+            "assets": 1000,
+            "liabilities": 400,
+            "equity": 600,
+            "net_borr": 0,
+        }
+    }
+    shares = {
+        "shares_total": 1000,
+        "shares_ordinary": 1000,
+        "price": 100,
+        "market_cap": 0.1,
+    }
+    metadata = {
+        "industry": label or "",
+        "industry_code": code,
+        "industry_code_label": label,
+        "industry_source": source,
+    }
+    filename = pg._generate_draft_profile(
+        identity, financials, shares, industry_metadata=metadata
+    )
+    path = tmp_path / filename
+    company = yaml.safe_load(path.read_text(encoding="utf-8"))["company"]
+    assert all(company[key] == value for key, value in metadata.items())
+    vi = load_profile(str(path))
+    assert vi.industry_code == vi.company.industry_code == code
+    assert vi.company.industry_code_label == label
+    assert vi.company.industry_source == source
+    assert vi.industry == (label or "")

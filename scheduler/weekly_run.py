@@ -148,6 +148,83 @@ def _draft_publish_state(summary: dict) -> tuple[bool, str]:
     )
 
 
+# ── Discovery failure contract (K-0B) ────────────────────────────────────────
+# Every requested market gets one row in summary["discovery_status"]. A market
+# whose final target count is zero always has a reason code there; the old
+# summary showed zero companies next to errors: [].
+
+_DISCOVERY_STATUS_CONTRACT = "k0b-1"
+_ERROR_TEXT_LIMIT = 600
+
+
+def _status_row(market: str, result: dict | None = None) -> dict:
+    """One market's row for summary["discovery_status"]["markets"]."""
+    result = result or {}
+    return {
+        "market": market,
+        "path": result.get("path"),
+        "path_fallback": result.get("path_fallback"),
+        "news_count": result.get("news_count", 0),
+        "candidates_raw": result.get("candidates_raw"),
+        "candidates_filtered_out": result.get("candidates_filtered_out"),
+        # companies discover() returned for this *requested* market
+        "discovered": len(result.get("companies") or []),
+        # targets per market *after* ticker re-tagging; companies found through
+        # another market's news count here, so discovered - selected is not a
+        # drop count
+        "selected": 0,
+        "selected_after_budget_trim": None,
+        "reason_code": None,
+        "severity": None,
+        "reason_detail": {},
+    }
+
+
+def _set_reason(row: dict, reason_code: str | None, detail: dict | None = None) -> None:
+    from discovery.discovery_engine import REASON_SEVERITY
+
+    row["reason_code"] = reason_code
+    row["severity"] = REASON_SEVERITY.get(reason_code) if reason_code else None
+    row["reason_detail"] = dict(detail or {})
+
+
+def _reason_error(row: dict, phase: str) -> dict:
+    """errors[] entry for a market row that carries a reason code."""
+    from discovery.discovery_engine import describe_reason
+
+    return {
+        "phase": phase,
+        "market": row["market"],
+        "reason_code": row["reason_code"],
+        "severity": row["severity"],
+        "error": describe_reason(row["reason_code"], row["reason_detail"]),
+    }
+
+
+def _zero_selection_message(status: dict) -> str:
+    """Final warning for a run that selected nothing: the real reason per market.
+
+    The prefix is kept for log searches. The old text told the reader to check
+    NAVER/OpenRouter keys whatever had happened (from 2026-10-03 the actual
+    cause was an Anthropic HTTP 400).
+    """
+    from discovery.discovery_engine import describe_reason, redact_text
+
+    parts = []
+    for row in status.get("markets", []):
+        code = row.get("reason_code") or "REASON_NOT_REPORTED"
+        brief = describe_reason(code, row.get("reason_detail"))
+        parts.append(
+            f"{row['market']}={code} ({brief})" if brief else f"{row['market']}={code}"
+        )
+    return redact_text(
+        "Discovery returned 0 companies — valuation skipped. Reasons: "
+        + "; ".join(parts)
+        + ". Details: discovery_status in _weekly_summary.json.",
+        limit=2000,
+    )
+
+
 def _week_number(dt: datetime) -> int:
     """Calculate which week of the month the date falls in."""
     first_day = dt.replace(day=1)
@@ -262,9 +339,24 @@ def run_weekly(
     6. DB save
 
     Returns:
-        {"run_date", "markets", "discoveries", "scored_companies", "valuations", "errors"}
+        {"run_date", "markets", "discoveries", "scored_companies", "valuations", "errors",
+         "discovery_status"}
+
+    Failure contract (K-0B): summary["discovery_status"]["markets"] has one row
+    per requested market, in request order. errors[] gets one entry per market
+    whose discover() reported a reason or raised (whatever was selected in the
+    end), plus one SELECTION_EMPTY entry per market whose discovery was fine
+    but whose final target count is zero.
     """
-    from discovery.discovery_engine import DiscoveryEngine
+    from discovery.discovery_engine import (
+        DISCOVERY_EXCEPTION,
+        NEWS_EMPTY,
+        REASON_NOT_REPORTED,
+        SELECTION_EMPTY,
+        DiscoveryEngine,
+        describe_error,
+        redact_text,
+    )
 
     _setup_logging()
     markets = markets or ["KR", "US"]
@@ -287,26 +379,47 @@ def run_weekly(
     # ── Phase 1: Per-market news collection + AI analysis (parallel) ──
     engine = DiscoveryEngine()
     all_companies: list[dict] = []
+    # request market of each entry in all_companies (parallel list: the company
+    # dicts are shared with summary["discoveries"] and stay free of bookkeeping)
+    all_company_sources: list[str] = []
     all_news: list[dict] = []
     total_news = 0
+    status_rows: dict[str, dict] = {}
+    raised_markets: set[str] = set()  # discover() raised; errors[] entry already made
 
-    def _discover_market(market: str) -> tuple[str, dict | None, str | None]:
+    def _discover_market(
+        market: str,
+    ) -> tuple[str, dict | None, Exception | None]:
         try:
             return market, engine.discover(market=market), None
         except Exception as e:
-            return market, None, str(e)
+            return market, None, e
 
     with ThreadPoolExecutor(max_workers=len(markets)) as pool:
         futures = {pool.submit(_discover_market, m): m for m in markets}
         for fut in as_completed(futures):
-            market, result, error = fut.result()
-            if error:
+            market, result, exc = fut.result()
+            # `is not None`, not truthiness of str(exc): an exception with an
+            # empty message used to fall through to result.get() and crash.
+            if exc is not None:
+                error = redact_text(exc, limit=_ERROR_TEXT_LIMIT)
                 logger.error("Discovery 실패 [%s]: %s", market, error)
+                row = _status_row(market)
+                _set_reason(
+                    row,
+                    DISCOVERY_EXCEPTION,
+                    {"stage": "discover", **describe_error(exc)},
+                )
+                status_rows[market] = row
+                raised_markets.add(market)
                 summary["errors"].append(
                     {
                         "phase": "discovery",
                         "market": market,
                         "error": error,
+                        "reason_code": DISCOVERY_EXCEPTION,
+                        "severity": row["severity"],
+                        "error_type": type(exc).__name__,
                     }
                 )
                 continue
@@ -314,16 +427,25 @@ def run_weekly(
             total_news += news_count
             market_news = result.get("news", [])
             all_news.extend(market_news)
+            quota_exhausted: bool | None = None
+            news_provider = "naver" if market == "KR" else "google_rss"
             if not market_news:
                 # Distinguish quota exhaustion (expected, don't alert) from real failures.
                 # Silent quota alerts used to flood Gmail when the pipeline ran repeatedly
                 # within a day; see .claude/rules/scheduler.md.
                 from pipeline.api_guard import ApiGuard
 
-                provider = "naver" if market == "KR" else "google_rss"
+                provider = news_provider
                 usage = ApiGuard.get().get_usage_summary().get(provider, {})
                 quota_exhausted = usage.get("remaining", -1) == 0
-                msg = f"[{market}] 뉴스 수집 결과 0건 — API 키/네트워크 확인 필요"
+                # Facts only. The collector returns [] for a missing key, a
+                # guard block and an HTTP error alike, so the cause is unknown
+                # here and the text must not point at one.
+                msg = (
+                    f"[{market}] 뉴스 수집 결과 0건 — provider={provider}, "
+                    f"quota_exhausted={quota_exhausted} "
+                    "(수집기가 세부 원인을 보고하지 않음)"
+                )
                 logger.warning(msg)
                 if quota_exhausted:
                     logger.info(
@@ -346,22 +468,57 @@ def run_weekly(
                 aliases_list.extend(get_aliases(ticker_str))
                 co["_top_news_aliases"] = aliases_list  # stash for phase-2 rerun
                 all_companies.append(co)
+                all_company_sources.append(market)
+
+            # Reason reported by discover(). An empty list without one is a
+            # contract breach by the producer and is recorded as such.
+            row = _status_row(market, result)
+            if not companies_in_market:
+                reason_code = result.get("reason_code") or REASON_NOT_REPORTED
+                reason_detail = dict(result.get("reason_detail") or {})
+                if reason_code == NEWS_EMPTY:
+                    reason_detail.setdefault("provider", news_provider)
+                    reason_detail["quota_exhausted"] = bool(quota_exhausted)
+                _set_reason(row, reason_code, reason_detail)
+                logger.warning(
+                    "[%s] discovery returned 0 companies: %s", market, reason_code
+                )
+            status_rows[market] = row
             summary["discoveries"].append(
                 {
                     "market": market,
                     "news_count": news_count,
                     "companies": companies_in_market,
+                    "reason_code": row["reason_code"],
+                    "path": row["path"],
                 }
             )
 
     # ── Phase 2: Deduplication + importance scoring ──
     seen_names: set[str] = set()
     unique_companies: list[dict] = []
-    for co in all_companies:
+    # per request market: why a discovered company did not reach scoring under
+    # that market (explains SELECTION_EMPTY; the selection itself is unchanged)
+    dropped_empty_name: dict[str, int] = {}
+    dropped_duplicate_name: dict[str, int] = {}
+    retagged_to_other_market: dict[str, int] = {}
+    for co, source_market in zip(all_companies, all_company_sources):
         name = co.get("name", "")
         if name and name not in seen_names:
             seen_names.add(name)
             unique_companies.append(co)
+            if co.get("market") != source_market:
+                retagged_to_other_market[source_market] = (
+                    retagged_to_other_market.get(source_market, 0) + 1
+                )
+        elif not name:
+            dropped_empty_name[source_market] = (
+                dropped_empty_name.get(source_market, 0) + 1
+            )
+        else:
+            dropped_duplicate_name[source_market] = (
+                dropped_duplicate_name.get(source_market, 0) + 1
+            )
 
     # Attach top_news using combined news pool + CJK aliases. Matching against
     # all_news (not per-market) covers US companies mentioned in KR news and
@@ -396,6 +553,53 @@ def run_weekly(
                 max_per_market,
             )
 
+        # Failure contract: record what selection did for this market.
+        row = status_rows.get(market)
+        if row is None:  # defensive: every market has an exception or a result
+            row = _status_row(market)
+            _set_reason(row, REASON_NOT_REPORTED)
+            status_rows[market] = row
+        row["selected"] = len(actual)
+        if row["reason_code"] is not None:
+            # discover() reported a reason (or returned nothing without one).
+            # It is kept whatever was selected: companies re-tagged from another
+            # market's news can fill this market and must not erase the failure.
+            if market not in raised_markets:
+                summary["errors"].append(_reason_error(row, "discovery"))
+        elif not actual:
+            tagged = sum(1 for c in scored if c.get("market") == market)
+            if market_companies:
+                kind = "limit"  # eligible companies existed; the slice left none
+            elif tagged:
+                kind = "sector_like_excluded"
+            else:
+                kind = "no_company_tagged_to_market"
+            _set_reason(
+                row,
+                SELECTION_EMPTY,
+                {
+                    "kind": kind,
+                    "discovered": row["discovered"],
+                    "dropped_empty_name": dropped_empty_name.get(market, 0),
+                    "dropped_duplicate_name": dropped_duplicate_name.get(market, 0),
+                    "retagged_to_other_market": retagged_to_other_market.get(market, 0),
+                    "tagged_to_market": tagged,
+                    "sector_like_excluded": tagged - len(market_companies),
+                    "max_per_market": max_per_market,
+                },
+            )
+            summary["errors"].append(_reason_error(row, "selection"))
+
+    discovery_status: dict = {
+        "contract": _DISCOVERY_STATUS_CONTRACT,
+        "targets_selected": len(targets),
+        # set after the LLM-budget trim; a dry run does not trim
+        "targets_after_budget_trim": None,
+        "zero_selection": not targets,
+        "markets": [status_rows[m] for m in markets],
+    }
+    summary["discovery_status"] = discovery_status
+
     # ── Print results ──
     _print_summary_header(summary["label"], total_news, scored)
 
@@ -409,6 +613,8 @@ def run_weekly(
 
     if dry_run:
         logger.info("Dry run — skipping valuation.")
+        if not targets:
+            logger.warning(_zero_selection_message(discovery_status))
         _save_json_summary(summary, week_dir)
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
@@ -460,6 +666,32 @@ def run_weekly(
             WEEKLY_LLM_BUDGET,
         )
         targets = targets[:max_affordable]
+
+    # Failure contract: per-market counts after the trim. A market that had
+    # targets and lost all of them to the trim gets a reason; the trim itself
+    # is unchanged.
+    for row in discovery_status["markets"]:
+        row["selected_after_budget_trim"] = sum(
+            1 for c in targets if c.get("market") == row["market"]
+        )
+        if (
+            row["selected"] > 0
+            and row["selected_after_budget_trim"] == 0
+            and row["reason_code"] is None
+        ):
+            _set_reason(
+                row,
+                SELECTION_EMPTY,
+                {
+                    "kind": "budget_trim",
+                    "selected": row["selected"],
+                    "selected_after_budget_trim": 0,
+                    "max_affordable": max_affordable,
+                },
+            )
+            summary["errors"].append(_reason_error(row, "selection"))
+    discovery_status["targets_after_budget_trim"] = len(targets)
+    discovery_status["zero_selection"] = not targets
 
     # ── Phase 3: Auto-valuation for top companies ──
     from pipeline.profile_generator import auto_analyze
@@ -534,7 +766,7 @@ def run_weekly(
             }
 
     if not targets:
-        msg = "Discovery returned 0 companies — valuation skipped. Check NAVER/OpenRouter API keys and network."
+        msg = _zero_selection_message(discovery_status)
         logger.warning(msg)
         _alert("Valuation", msg)
     _summary_lock = threading.Lock()

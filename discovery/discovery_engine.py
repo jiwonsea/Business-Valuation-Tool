@@ -7,12 +7,286 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
+
+from pipeline.api_guard import ApiGuardError
 
 from .news_collector import NewsCollector
 from .saveticker_collector import fetch_saveticker_news, get_top_us_tickers
 
 logger = logging.getLogger(__name__)
+
+
+# ── Failure contract (K-0B) ──────────────────────────────────────────────────
+# discover() never returns an empty company list without a reason code.
+# scheduler/weekly_run.py carries the code into _weekly_summary.json, so a week
+# with zero selected companies no longer looks like a clean run.
+
+NEWS_EMPTY = "NEWS_EMPTY"  # no news after dedup; the LLM was not called
+LLM_CALL_FAILED = "LLM_CALL_FAILED"  # ask() raised
+LLM_JSON_INVALID = "LLM_JSON_INVALID"  # response is not the agreed JSON object
+NO_CANDIDATES = "NO_CANDIDATES"  # valid response / collection, zero candidates
+FILTERED_TO_ZERO = "FILTERED_TO_ZERO"  # candidates existed, the post-filter removed all
+DISCOVERY_EXCEPTION = "DISCOVERY_EXCEPTION"  # any other exception
+SELECTION_EMPTY = "SELECTION_EMPTY"  # set by weekly_run: discovered, none selected
+REASON_NOT_REPORTED = "REASON_NOT_REPORTED"  # empty result without a reason
+UNKNOWN_LEGACY = "UNKNOWN_LEGACY"  # only for readers of pre-K-0B summaries
+
+# "failure" = something broke or the contract was breached.
+# "empty"   = processing finished and there was nothing to select.
+REASON_SEVERITY: dict[str, str] = {
+    NEWS_EMPTY: "failure",
+    LLM_CALL_FAILED: "failure",
+    LLM_JSON_INVALID: "failure",
+    DISCOVERY_EXCEPTION: "failure",
+    REASON_NOT_REPORTED: "failure",
+    NO_CANDIDATES: "empty",
+    FILTERED_TO_ZERO: "empty",
+    SELECTION_EMPTY: "empty",
+}
+
+PATH_SAVETICKER = "saveticker"
+PATH_NEWS_LLM = "news_llm"
+
+_MESSAGE_LIMIT = 300
+_REDACT_INPUT_LIMIT = 4000
+_BRIEF_MESSAGE_LIMIT = 160
+
+_SECRET_NAME = (
+    r"[\w.\-]{0,40}"
+    r"(?:key|secret|token|password|passwd|authorization|credential|cookie|client[_\-]?id)"
+    r"[\w.\-]{0,40}"
+)
+# Order matters: whole URL parts first, then named values, then bare token shapes.
+_REDACTIONS: tuple[tuple[re.Pattern, str], ...] = (
+    (re.compile(r"(?i)(https?://)[^\s/'\"@]+@"), r"\1***@"),
+    (re.compile(r"(?i)(https?://[^\s'\"?#]+)\?[^\s'\"]*"), r"\1?***"),
+    (
+        re.compile(
+            r"(?i)\b((?:set-)?cookie['\"]?\s*[:=]\s*)"
+            r"(?:\"[^\"]*(?:\"|$)|'[^']*(?:'|$)|[^\r\n'\"}]*)"
+        ),
+        r"\1***",
+    ),
+    (
+        re.compile(
+            # a quoted value that never closes (cut off upstream or by the
+            # input limit below) is masked to the end of the text
+            r"(?i)(['\"]?" + _SECRET_NAME + r"['\"]?\s*[:=]\s*)"
+            r"(?:\"[^\"]*(?:\"|$)|'[^']*(?:'|$)"
+            r"|(?:bearer|basic)\s+[^\s'\",;}&)]+|[^\s'\",;}&)]+)"
+        ),
+        r"\1***",
+    ),
+    (re.compile(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=\-]+"), r"\1 ***"),
+    (re.compile(r"(?i)\bsk-[A-Za-z0-9_\-]{4,}"), "sk-***"),
+    (re.compile(r"[A-Za-z0-9_\-]{32,}"), "***"),
+)
+
+# Fixed prefixes that ai/llm_client.py puts on the RuntimeErrors it raises itself.
+# A provider name that merely appears somewhere in a message proves nothing: an
+# OpenRouter error body can name "Anthropic" as the upstream.
+_LLM_CLIENT_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("OpenRouter error:", "openrouter"),
+    ("OpenRouter returned empty choices", "openrouter"),
+    ("OPENROUTER_API_KEY", "openrouter"),
+    ("ANTHROPIC_API_KEY", "anthropic"),
+    ("LLM API 키가 설정되지 않았습니다", "none_configured"),
+)
+
+
+def redact_text(text: object, limit: int = _MESSAGE_LIMIT) -> str:
+    """Mask known credential notations, fold to one line, cut to *limit* characters.
+
+    One function for every diagnostic string K-0B adds (reason_detail, errors[],
+    log lines, alert text). Redaction runs before truncation so a secret that
+    straddles the cut cannot leave its head behind. It errs on the side of
+    masking too much. It is not a guarantee that every secret is removed: a
+    short value with no name and no known shape passes through.
+    """
+    try:
+        value = text if isinstance(text, str) else str(text)
+    except Exception:
+        return ""
+    if len(value) > _REDACT_INPUT_LIMIT:
+        # Bound the work. The cut can land inside a secret: the token it splits
+        # is dropped here, and a quoted value that lost its closing quote is
+        # still masked to the end by the named-value pattern.
+        value = re.sub(r"\S+$", "", value[:_REDACT_INPUT_LIMIT])
+    for pattern, replacement in _REDACTIONS:
+        value = pattern.sub(replacement, value)
+    value = " ".join(value.split())  # one line, after the line-based cookie rule
+    return value[:limit]
+
+
+def _token(value: object, limit: int = 64) -> str | None:
+    """Untrusted short identifier -> [A-Za-z0-9_.-] only, or None."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        cleaned = re.sub(r"[^A-Za-z0-9_.\-]", "", str(value))[:limit]
+    except Exception:
+        return None
+    return cleaned or None
+
+
+def _attr(obj: object, name: str) -> object:
+    """getattr that never raises (httpx raises RuntimeError for an unset .request)."""
+    try:
+        return getattr(obj, name, None)
+    except Exception:
+        return None
+
+
+def _text_of(exc: BaseException) -> str:
+    """str(exc) that never raises."""
+    try:
+        return str(exc)
+    except Exception:
+        return ""
+
+
+def _provider_of(exc: BaseException) -> str:
+    if isinstance(exc, ApiGuardError):
+        provider = _token(_attr(exc, "provider"), 40)
+        if provider:
+            return provider
+    module = type(exc).__module__ or ""
+    if module == "anthropic" or module.startswith("anthropic."):
+        return "anthropic"
+    host = str(_attr(_attr(_attr(exc, "request"), "url"), "host") or "").lower()
+    if "openrouter" in host:
+        return "openrouter"
+    if "anthropic" in host:
+        return "anthropic"
+    message = _text_of(exc)
+    for prefix, provider in _LLM_CLIENT_PREFIXES:
+        if message.startswith(prefix):
+            return provider
+    return "unknown"
+
+
+def _http_status_of(exc: BaseException) -> int | None:
+    for status in (
+        _attr(exc, "status_code"),
+        _attr(_attr(exc, "response"), "status_code"),
+    ):
+        if isinstance(status, int) and not isinstance(status, bool):
+            return status
+    return None  # never guessed from digits in the message
+
+
+def _api_error_type_of(exc: BaseException) -> str | None:
+    """body.error.type -> response.error.type -> body.error.code -> response.error.code."""
+    errors: list[dict] = []
+    body = _attr(exc, "body")  # anthropic SDK: the whole decoded JSON body
+    if isinstance(body, dict) and isinstance(body.get("error"), dict):
+        errors.append(body["error"])
+    response = _attr(exc, "response")
+    if response is not None:
+        try:
+            payload = response.json()
+        except Exception:
+            payload = None
+        if isinstance(payload, dict) and isinstance(payload.get("error"), dict):
+            errors.append(payload["error"])
+    for key in ("type", "code"):
+        for error in errors:
+            token = _token(error.get(key))
+            if token:
+                return token
+    return None
+
+
+def _describe_one(exc: BaseException) -> dict:
+    try:
+        return {
+            "provider": _provider_of(exc),
+            "http_status": _http_status_of(exc),
+            "error_type": type(exc).__name__,
+            "api_error_type": _api_error_type_of(exc),
+            "message": redact_text(exc),
+        }
+    except Exception:
+        # Reading the diagnostics must never replace the failure being reported.
+        return {"error_type": type(exc).__name__}
+
+
+def describe_error(exc: BaseException) -> dict:
+    """JSON-safe description of *exc* and up to three ``__cause__`` links.
+
+    When OpenRouter fails and the Anthropic fallback fails too, ask() raises the
+    Anthropic error ``from`` the OpenRouter one: the top level then describes
+    Anthropic and ``caused_by[0]`` describes OpenRouter. The two are never mixed.
+    """
+    described = _describe_one(exc)
+    chain: list[dict] = []
+    try:
+        seen = {id(exc)}
+        cause = exc.__cause__
+        while cause is not None and len(chain) < 3 and id(cause) not in seen:
+            seen.add(id(cause))
+            chain.append(_describe_one(cause))
+            cause = cause.__cause__
+    except Exception:
+        pass  # an unreadable cause is left out; what was read so far stays
+    described["caused_by"] = chain
+    return described
+
+
+def _error_brief(detail: dict) -> str:
+    parts = [str(detail.get("provider") or "unknown")]
+    if detail.get("http_status") is not None:
+        parts.append(f"HTTP {detail['http_status']}")
+    label = detail.get("api_error_type")
+    if not label or label == str(detail.get("http_status")):
+        # OpenRouter's error body carries a numeric code, not a type name
+        label = detail.get("error_type") or "error"
+    parts.append(str(label))
+    return " ".join(parts)
+
+
+def describe_reason(reason_code: str | None, detail: dict | None) -> str:
+    """One line for logs, errors[] and alerts. Built from redacted fields only."""
+    detail = detail or {}
+    if reason_code == NEWS_EMPTY:
+        text = str(detail.get("provider") or "unknown")
+        if "quota_exhausted" in detail:
+            text += f", quota_exhausted={detail['quota_exhausted']}"
+    elif reason_code in (LLM_CALL_FAILED, DISCOVERY_EXCEPTION):
+        text = _error_brief(detail)
+        if reason_code == DISCOVERY_EXCEPTION:
+            text = f"{detail.get('stage') or 'discover'}: {text}"
+        message = str(detail.get("message") or "")[:_BRIEF_MESSAGE_LIMIT]
+        if message:
+            text += f": {message}"
+        for cause in detail.get("caused_by") or []:
+            if isinstance(cause, dict):
+                text += f" <- {_error_brief(cause)}"
+    elif reason_code == LLM_JSON_INVALID:
+        text = f"{detail.get('kind')}, response_chars={detail.get('response_chars')}"
+    elif reason_code == NO_CANDIDATES:
+        text = f"path={detail.get('path')}"
+    elif reason_code == FILTERED_TO_ZERO:
+        text = f"{detail.get('candidates_raw')} candidate(s), all removed by the post-filter"
+    elif reason_code == SELECTION_EMPTY:
+        text = ", ".join(
+            f"{key}={value}" for key, value in detail.items() if value is not None
+        )
+    elif reason_code == REASON_NOT_REPORTED:
+        text = "discover() returned no companies and no reason"
+    else:
+        text = ""
+    return redact_text(text, limit=600)
+
+
+class _LLMCallFailed(Exception):
+    """ask() raised. ``__cause__`` is the original exception.
+
+    Carries no message of its own: building one would call str() on the
+    original, which can raise and would then hide the LLM failure.
+    """
 
 
 # Known media outlets, financial data providers, and non-company entities that
@@ -223,12 +497,21 @@ class DiscoveryEngine:
         3. Output results (for user review)
 
         Returns:
-            {"news_count": int, "analysis": str, "companies": list, "scenarios": list}
+            {"news_count": int, "analysis": str, "companies": list, "scenarios": list,
+             "news": list} plus the K-0B failure contract (keys are only added):
+            "reason_code" (None when companies is non-empty, otherwise a code --
+            an empty list never comes back without one), "reason_detail" (dict),
+            "path" ("saveticker" | "news_llm"), "path_fallback" (None or
+            {"from", "reason_code"}), "candidates_raw", "candidates_filtered_out".
+
+        KR and US call this on one shared instance from two threads, so every
+        diagnostic lives in locals and in the returned dict, never on ``self``.
         """
         _safe_print(f"\n{'=' * 60}")
         _safe_print(f"[Discovery Mode] {market} 시장 뉴스 분석")
         _safe_print(f"{'=' * 60}")
 
+        path_fallback: dict | None = None
         if market == "US":
             # Primary: SaveTicker ticker-tagged news (LLM-free, quota-cheap).
             # SaveTicker changed its feed shape (2026-06): tag_names no longer
@@ -246,6 +529,7 @@ class DiscoveryEngine:
             _safe_print(
                 "[WARN] SaveTicker 0건 — Google News RSS + LLM 경로로 폴백합니다."
             )
+            path_fallback = {"from": PATH_SAVETICKER, "reason_code": NEWS_EMPTY}
             # fall through to the generic news + LLM flow below
 
         # Step 1: Collect news
@@ -272,32 +556,92 @@ class DiscoveryEngine:
 
         if not unique_news:
             _safe_print("[WARN] 수집된 뉴스가 없습니다.")
-            return {
-                "news_count": 0,
-                "analysis": "",
-                "companies": [],
-                "scenarios": [],
-                "news": [],
-            }
+            return self._with_contract(
+                {
+                    "news_count": 0,
+                    "analysis": "",
+                    "companies": [],
+                    "scenarios": [],
+                    "news": [],
+                },
+                market=market,
+                path=PATH_NEWS_LLM,
+                path_fallback=path_fallback,
+                reason_code=NEWS_EMPTY,
+                reason_detail={
+                    "provider": "naver" if market == "KR" else "google_rss",
+                    "queries": len(queries),
+                },
+            )
 
         # Step 2: AI analysis
         _safe_print("[AI 분석 시작]")
         try:
             analysis = self._analyze_with_ai(unique_news, market)
         except Exception as e:
-            _safe_print(f"[ERROR] AI 분석 실패: {e}")
+            # Only the ask() call itself is an LLM failure. Anything else raised
+            # while analysing (prompt building, post-processing) is a different
+            # fault and must not be reported as the provider's.
+            failed: BaseException = e
+            if isinstance(e, _LLMCallFailed) and e.__cause__ is not None:
+                failed = e.__cause__
+                reason_code = LLM_CALL_FAILED
+                reason_detail = describe_error(failed)
+            else:
+                reason_code = DISCOVERY_EXCEPTION
+                reason_detail = {"stage": "analyze", **describe_error(e)}
+            _safe_print(f"[ERROR] AI 분석 실패: {redact_text(failed, limit=600)}")
             _safe_print("[FALLBACK] 수집된 뉴스 제목만 출력합니다.")
             for i, n in enumerate(unique_news[:20], 1):
                 _safe_print(f"  {i}. {n['title']} ({n['pub_date'][:10]})")
-            return {
-                "news_count": len(unique_news),
-                "analysis": "",
-                "companies": [],
-                "scenarios": [],
-                "news": unique_news,
-            }
+            return self._with_contract(
+                {
+                    "news_count": len(unique_news),
+                    "analysis": "",
+                    "companies": [],
+                    "scenarios": [],
+                    "news": unique_news,
+                },
+                market=market,
+                path=PATH_NEWS_LLM,
+                path_fallback=path_fallback,
+                reason_code=reason_code,
+                reason_detail=reason_detail,
+            )
+
+        diag = analysis.pop("_diag", None) or {}
 
         # Step 3: Output results
+        try:
+            self._print_analysis(analysis)
+        except Exception:
+            # Console output only. On the normal path an error here propagates
+            # exactly as it did before K-0B. Once a reason is established, a
+            # printing error (say, a scenario entry that is not an object) must
+            # not replace it.
+            if not diag.get("reason_code"):
+                raise
+
+        return self._with_contract(
+            {
+                "news_count": len(unique_news),
+                "analysis": analysis.get("summary", ""),
+                "companies": analysis.get("companies", []),
+                "scenarios": analysis.get("scenarios", []),
+                "news": unique_news,
+            },
+            market=market,
+            path=PATH_NEWS_LLM,
+            path_fallback=path_fallback,
+            reason_code=diag.get("reason_code"),
+            reason_detail=diag.get("reason_detail"),
+            candidates_raw=diag.get("candidates_raw"),
+            candidates_filtered_out=diag.get("candidates_filtered_out"),
+        )
+
+    @staticmethod
+    def _print_analysis(analysis: dict) -> None:
+        """Console report of one analysis (the pre-K-0B print block, unchanged)."""
         _safe_print(f"\n{'=' * 60}")
         _safe_print("[분석 결과]")
         _safe_print(f"{'=' * 60}")
@@ -322,13 +666,42 @@ class DiscoveryEngine:
         _safe_print("  3. python cli.py --company <기업명> --auto")
         _safe_print(f"{'=' * 60}")
 
-        return {
-            "news_count": len(unique_news),
-            "analysis": analysis.get("summary", ""),
-            "companies": analysis.get("companies", []),
-            "scenarios": analysis.get("scenarios", []),
-            "news": unique_news,
-        }
+    @staticmethod
+    def _with_contract(
+        result: dict,
+        *,
+        market: str,
+        path: str,
+        path_fallback: dict | None = None,
+        reason_code: str | None = None,
+        reason_detail: dict | None = None,
+        candidates_raw: int | None = None,
+        candidates_filtered_out: int | None = None,
+        quiet: bool = False,
+    ) -> dict:
+        """Add the failure-contract keys to a discover() result (existing keys untouched).
+
+        Invariant: an empty ``companies`` list always carries a reason code, and
+        a non-empty one never does.
+        """
+        if result.get("companies"):
+            reason_code, reason_detail = None, {}
+        elif not reason_code:
+            reason_code = REASON_NOT_REPORTED
+        result["reason_code"] = reason_code
+        result["reason_detail"] = dict(reason_detail or {})
+        result["path"] = path
+        result["path_fallback"] = path_fallback
+        result["candidates_raw"] = candidates_raw
+        result["candidates_filtered_out"] = candidates_filtered_out
+        if reason_code and not quiet:
+            logger.warning(
+                "Discovery [%s] returned 0 companies: %s (%s)",
+                market,
+                reason_code,
+                describe_reason(reason_code, result["reason_detail"]),
+            )
+        return result
 
     def _discover_us_saveticker(self) -> dict:
         """Discover US targets from SaveTicker ticker-tagged news without LLM."""
@@ -339,13 +712,22 @@ class DiscoveryEngine:
 
         if not news:
             _safe_print("[WARN] SaveTicker news collection returned no items.")
-            return {
-                "news_count": 0,
-                "analysis": "",
-                "companies": [],
-                "scenarios": [],
-                "news": [],
-            }
+            # discover() does not return this result: it falls back to the
+            # news + LLM path and records the fallback there (hence quiet).
+            return self._with_contract(
+                {
+                    "news_count": 0,
+                    "analysis": "",
+                    "companies": [],
+                    "scenarios": [],
+                    "news": [],
+                },
+                market="US",
+                path=PATH_SAVETICKER,
+                reason_code=NEWS_EMPTY,
+                reason_detail={"provider": "saveticker"},
+                quiet=True,
+            )
 
         summary = (
             "US discovery used SaveTicker ticker-tagged news ranked by mention count."
@@ -354,16 +736,32 @@ class DiscoveryEngine:
         for i, co in enumerate(companies, 1):
             _safe_print(f"  {i}. {co.get('ticker', '')} - {co.get('reason', '')}")
 
-        return {
-            "news_count": len(news),
-            "analysis": summary,
-            "companies": companies,
-            "scenarios": [],
-            "news": news,
-        }
+        # Defensive: _normalize_item() drops items without tickers, so news
+        # without any ticker is not expected from the real collector.
+        return self._with_contract(
+            {
+                "news_count": len(news),
+                "analysis": summary,
+                "companies": companies,
+                "scenarios": [],
+                "news": news,
+            },
+            market="US",
+            path=PATH_SAVETICKER,
+            reason_code=None if companies else NO_CANDIDATES,
+            reason_detail={} if companies else {"path": PATH_SAVETICKER},
+            candidates_raw=len(companies),
+            candidates_filtered_out=0,
+        )
 
     def _analyze_with_ai(self, news: list[dict], market: str) -> dict:
-        """Analyze news via Claude API."""
+        """Analyze news via Claude API.
+
+        Returns {"summary", "companies", "scenarios", "_diag"}. ``_diag`` is the
+        per-call failure diagnosis that discover() pops off and turns into the
+        public contract keys. Raises ``_LLMCallFailed`` (from the original
+        exception) when ask() itself fails.
+        """
         from ai.llm_client import ask
         from ai.analyst import _parse_json
         from ai.prompts import SYSTEM_DISCOVERY
@@ -418,9 +816,33 @@ class DiscoveryEngine:
                     prompt, system=SYSTEM_DISCOVERY, temperature=0.2, max_tokens=2500
                 )
                 emit("step_end", outcome="success")
-            except Exception:
+            except Exception as exc:
                 emit("step_end", outcome="error")
-                raise
+                raise _LLMCallFailed() from exc
+
+        response_chars = len(response) if isinstance(response, str) else 0
+
+        def _invalid(kind: str, keep: dict | None = None) -> dict:
+            # The raw response is untrusted text: only its length and the kind
+            # of breakage go into the diagnosis.
+            #
+            # The values under the old keys stay what they were before K-0B.
+            # Breakage that used to end in the "AI 분석 실패" exception path
+            # returned an empty summary and no scenarios, so that is the
+            # default. `keep` is passed only where the old code returned the
+            # parsed response (or the raw text) with an empty company list.
+            out = keep if keep is not None else {"summary": "", "scenarios": []}
+            out["companies"] = []
+            out["_diag"] = {
+                "reason_code": LLM_JSON_INVALID,
+                "reason_detail": {"kind": kind, "response_chars": response_chars},
+            }
+            return out
+
+        if not isinstance(response, str):
+            return _invalid("empty_response")
+        if not response.strip():
+            return _invalid("empty_response", {"summary": response, "scenarios": []})
 
         try:
             parsed = _parse_json(response)
@@ -431,11 +853,29 @@ class DiscoveryEngine:
                 exc,
                 response,
             )
-            return {"summary": response, "companies": [], "scenarios": []}
+            return _invalid("parse_error", {"summary": response, "scenarios": []})
+
+        if not isinstance(parsed, dict):
+            return _invalid("not_object")
+        if "companies" not in parsed:
+            # old code: parsed.get("companies", []) gave [] and parsed was returned
+            return _invalid("companies_missing", parsed)
+        candidates = parsed["companies"]
+        if candidates is None:
+            return _invalid("companies_missing")
+        if not isinstance(candidates, list):
+            # old code: an empty "" or {} passed as "no companies" and parsed was
+            # returned; any other non-list raised
+            passed_before = isinstance(candidates, (str, dict)) and not candidates
+            return _invalid("companies_not_list", parsed if passed_before else None)
+        if any(not isinstance(co, dict) for co in candidates):
+            # Outcome unchanged from before K-0B (zero companies, empty summary):
+            # this used to surface as a generic "AI 분석 실패".
+            return _invalid("company_entry_not_object")
 
         # Post-processing: remove media outlets and mis-named US companies
-        raw_count = len(parsed.get("companies", []))
-        parsed["companies"] = _filter_companies(parsed.get("companies", []), market)
+        raw_count = len(candidates)
+        parsed["companies"] = _filter_companies(candidates, market)
         filtered_count = raw_count - len(parsed["companies"])
         if filtered_count:
             logger.info(
@@ -443,4 +883,20 @@ class DiscoveryEngine:
                 market,
                 filtered_count,
             )
+        if raw_count == 0:
+            reason_code, reason_detail = NO_CANDIDATES, {"path": PATH_NEWS_LLM}
+        elif not parsed["companies"]:
+            reason_code = FILTERED_TO_ZERO
+            reason_detail = {
+                "candidates_raw": raw_count,
+                "candidates_filtered_out": filtered_count,
+            }
+        else:
+            reason_code, reason_detail = None, {}
+        parsed["_diag"] = {
+            "reason_code": reason_code,
+            "reason_detail": reason_detail,
+            "candidates_raw": raw_count,
+            "candidates_filtered_out": filtered_count,
+        }
         return parsed

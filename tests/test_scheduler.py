@@ -260,7 +260,12 @@ class TestWeeklyRun:
 
             result = run_weekly(markets=["KR", "US"], dry_run=True)
 
-        assert len(result["errors"]) == 1
+        # K-0B: US's empty result without a reason is now recorded as well
+        # (REASON_NOT_REPORTED), so count what was recorded as a raised exception.
+        raised = [
+            e for e in result["errors"] if e.get("reason_code") == "DISCOVERY_EXCEPTION"
+        ]
+        assert len(raised) == 1
         assert result["errors"][0]["market"] == "KR"
         assert len(result["discoveries"]) == 1  # only US succeeded
 

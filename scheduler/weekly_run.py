@@ -20,6 +20,7 @@ import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from itertools import islice
 from pathlib import Path
 
 # Load .env so Task Scheduler (which doesn't inherit shell env) gets all API keys
@@ -225,6 +226,391 @@ def _zero_selection_message(status: dict) -> str:
     )
 
 
+# ── Valuation failure contract (K-0C) ────────────────────────────────────────
+# Every valuations[] entry says why it has no result (reason_code) and which
+# optional steps fell back (degraded). 59 of 108 past entries were a bare
+# "no_result"; the cause had only ever been printed.
+
+_VALUATION_STATUS_CONTRACT = "k0c-1"
+VALUATION_EXCEPTION = "VALUATION_EXCEPTION"  # an exception escaped (status failed)
+ENRICHMENT_DEGRADED = "ENRICHMENT_DEGRADED"  # a result, with optional steps missing
+# What auto_analyze() may report for an empty result under contract k0c-1.
+# Plain strings on purpose: this module imports only auto_analyze from
+# pipeline.profile_generator, and tests replace that module with a stub that
+# has nothing else. tests/test_no_result_failure_contract.py compares the sets.
+_ACCEPTED_NO_RESULT_REASONS = frozenset(
+    {
+        "IDENTITY_NOT_FOUND",
+        "IDENTITY_MISMATCH",
+        "FINANCIALS_EMPTY",
+        "RECONCILIATION_BLOCKED",
+        "DRAFT_NO_YEARS",
+        "DRAFT_NOT_WRITTEN",
+        "REASON_NOT_REPORTED",
+    }
+)
+_DIAG_ITEMS = 20
+_REPORTED_LIMIT = 64
+_IDENTIFIER_LIMIT = 120
+_NUMBER_LIMIT = 1e15
+_INVALID = "<invalid>"
+# What contract k0c-1 allows in each diagnostic field. Nothing the producer
+# hands over reaches the summary, the log or the DB unchecked: only the fields
+# named below are read (the producer's mappings are never iterated), a value
+# outside its shape becomes "<invalid>", numbers are bounded, and free text is
+# masked here again whatever the producer did with it.
+_DEGRADED_STEPS = frozenset(
+    {
+        "industry_metadata",
+        "ttm_anchor",
+        "beta_observation",
+        "ai_module",
+        "segments",
+        "peers",
+        "wacc",
+        "news",
+        "market_signals",
+        "method_selection",
+        "scenarios",
+        "db_save_call",
+    }
+)
+_PRODUCER_STAGES = frozenset(
+    {
+        "start",
+        "identify",
+        "financials",
+        "shares",
+        "draft_profile",
+        "enrichment",
+        "valuation",
+        "export",
+    }
+)
+_MISMATCH_KINDS = frozenset({"ticker_differs", "resolved_ticker_missing"})
+_MARKET_CODES = frozenset({"KR", "US", "JP"})
+_LEGAL_STATUSES = frozenset({"상장", "비상장", "listed", "unlisted", "OTC"})
+_TICKER_SHAPE = re.compile(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,11}")
+_CORP_CODE_SHAPE = re.compile(r"\d{8}")
+_CIK_SHAPE = re.compile(r"\d{1,10}")
+_NAME_SHAPE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")  # check / exception class
+_SEGMENT_SHAPE = re.compile(r"[A-Za-z0-9_.\-]{1,40}")
+
+
+def _checked(value: object, allowed) -> str | None:
+    """A diagnostic identifier: kept only as a plain str of its normal shape.
+
+    None and an empty or blank string are "absent" (None), the same rule as
+    pipeline.profile_generator._diag_checked. Anything longer than
+    _IDENTIFIER_LIMIT characters is invalid whatever it contains, blanks
+    included: telling a long blank string from other text means reading it all.
+    """
+    if value is None:
+        return None
+    if type(value) is not str or len(value) > _IDENTIFIER_LIMIT:
+        return _INVALID  # len() is O(1): an oversized value is never scanned
+    if not value.strip():
+        return None
+    if isinstance(allowed, frozenset):
+        return value if value in allowed else _INVALID
+    return value if allowed.fullmatch(value) else _INVALID
+
+
+def _selection_identifier(value: object) -> str | None:
+    """A selection-stage identifier (company name, selected ticker), copied.
+
+    The summary already holds these verbatim under valuations[], and masking
+    would mangle real names ("SK-Hynix" -> "sk-***"). One line, bounded.
+    """
+    if value is None:
+        return None
+    try:
+        if type(value) is str:
+            value = value[: _IDENTIFIER_LIMIT * 8]  # bound the work, then fold
+        elif _number(value) is None:
+            return _type_name(value)  # never render an arbitrary object
+        return " ".join(str(value).split())[:_IDENTIFIER_LIMIT]
+    except Exception:
+        return None
+
+
+def _number(value: object) -> float | int | None:
+    """A finite number of modest size, else None (a huge int cannot be printed).
+
+    Identity checks on the type and two comparisons with a float: no abs() (it
+    copies a negative int) and no ==. NaN fails both comparisons.
+    """
+    if type(value) is not int and type(value) is not float:
+        return None
+    return value if -_NUMBER_LIMIT <= value <= _NUMBER_LIMIT else None
+
+
+_TYPE_LABELS = (
+    (list, "<list>"),
+    (tuple, "<tuple>"),
+    (dict, "<dict>"),
+    (set, "<set>"),
+    (frozenset, "<frozenset>"),
+    (bytes, "<bytes>"),
+    (bool, "<bool>"),
+    (int, "<int>"),
+    (float, "<float>"),
+)
+
+
+def _type_name(value: object) -> str:
+    """A fixed label for what a value is; never the type's own name.
+
+    A class can be named anything (a secret, a megabyte of text, a line
+    break), so its name is not used: the built-in containers and scalars get
+    a label from the table above and everything else is "<object>". The
+    lookup is by identity, so nothing the class defines (a metaclass __hash__
+    or __eq__) runs.
+    """
+    kind = type(value)
+    for known, label in _TYPE_LABELS:
+        if kind is known:
+            return label
+    return "<object>"
+
+
+def _reported_text(value: object) -> str:
+    """What came in place of a reason code, in bounded time and space.
+
+    A str is masked (redact_text() looks at its first 4,000 characters only),
+    a modest number is printed, and anything else gets a fixed label from
+    _type_name(): str() of a large container would build the whole text
+    before cutting it, and a class name is as untrusted as any other text.
+    """
+    if type(value) is str:
+        return _free_text(value, _REPORTED_LIMIT) or ""
+    if _number(value) is not None:
+        return str(value)
+    return _type_name(value)
+
+
+def _free_text(value: object, limit: int = _ERROR_TEXT_LIMIT) -> str | None:
+    """Free text from the producer: masked, one line, cut. Non-str -> None."""
+    if type(value) is not str:
+        return None
+    from discovery.discovery_engine import redact_text
+
+    return redact_text(value, limit=limit)
+
+
+def _error_detail(exc: BaseException) -> dict:
+    """describe_error() with every field held to this contract's shapes.
+
+    The class name of an exception is as untrusted as its message and a
+    status code can be any int; describe_error() reports both as they are.
+    Here: error_type must look like a class name, http_status must be a modest
+    number, and the remaining text fields are masked (again).
+    """
+    from discovery.discovery_engine import describe_error
+
+    def one(described: object) -> dict:
+        if type(described) is not dict:
+            return {}
+        return {
+            "provider": _free_text(described.get("provider"), _REPORTED_LIMIT),
+            "http_status": _number(described.get("http_status")),
+            "error_type": _checked(described.get("error_type"), _NAME_SHAPE),
+            "api_error_type": _free_text(
+                described.get("api_error_type"), _REPORTED_LIMIT
+            ),
+            "message": _free_text(described.get("message")),
+        }
+
+    try:
+        described = describe_error(exc)
+        detail = one(described)
+        causes = described.get("caused_by")
+        detail["caused_by"] = (
+            [one(cause) for cause in islice(causes, 3)] if type(causes) is list else []
+        )
+        return detail
+    except Exception:
+        return {}
+
+
+def _reason_detail(raw: object, query: object, ticker: object) -> dict:
+    """reason_detail as contract k0c-1 defines it; {} for anything malformed.
+
+    ``query`` and ``expected_ticker`` are not taken from the producer: this
+    module made the selection and passed it on, so it writes its own values.
+    """
+    try:
+        if type(raw) is not dict:
+            return {}
+        detail: dict = {}
+        if "kind" in raw:
+            detail["kind"] = _checked(raw["kind"], _MISMATCH_KINDS)
+        if "query" in raw:
+            detail["query"] = _selection_identifier(query)
+        if "market_hint" in raw:
+            detail["market_hint"] = _checked(raw["market_hint"], _MARKET_CODES)
+        if "expected_ticker" in raw:
+            detail["expected_ticker"] = _selection_identifier(ticker)
+        if "resolved_ticker" in raw:
+            detail["resolved_ticker"] = _checked(raw["resolved_ticker"], _TICKER_SHAPE)
+        if "resolved_market" in raw:
+            detail["resolved_market"] = _checked(raw["resolved_market"], _MARKET_CODES)
+        if "resolved_corp_code" in raw:
+            detail["resolved_corp_code"] = _checked(
+                raw["resolved_corp_code"], _CORP_CODE_SHAPE
+            )
+        if "resolved_cik" in raw:
+            detail["resolved_cik"] = _checked(raw["resolved_cik"], _CIK_SHAPE)
+        if "legal_status" in raw:
+            detail["legal_status"] = _checked(raw["legal_status"], _LEGAL_STATUSES)
+        for flag in ("has_corp_code", "has_cik"):
+            if flag in raw:
+                detail[flag] = raw[flag] if type(raw[flag]) is bool else None
+        if type(raw.get("checks")) is list:
+            detail["checks"] = [
+                {
+                    "check": _checked(item.get("check"), _NAME_SHAPE),
+                    "rel_diff_pct": _number(item.get("rel_diff_pct")),
+                    "message": _free_text(item.get("message")),
+                }
+                for item in islice(raw["checks"], _DIAG_ITEMS)
+                if type(item) is dict
+            ]
+        if "reported" in raw:
+            detail["reported"] = _free_text(raw["reported"], _REPORTED_LIMIT)
+        return detail
+    except Exception:
+        return {}
+
+
+def _degraded_steps(diagnostics: object) -> list[dict]:
+    """The producer's degraded list as contract k0c-1 defines it; [] if malformed."""
+    try:
+        raw = diagnostics.get("degraded") if type(diagnostics) is dict else None
+        if type(raw) is not list:
+            return []
+        steps = []
+        for item in islice(raw, _DIAG_ITEMS):
+            if type(item) is not dict:
+                continue
+            step: dict = {
+                "step": _checked(item.get("step"), _DEGRADED_STEPS) or _INVALID
+            }
+            if "error_type" in item:
+                step["error_type"] = _checked(item["error_type"], _NAME_SHAPE)
+            if "message" in item:
+                step["message"] = _free_text(item["message"])
+            if type(item.get("segments")) is list:
+                step["segments"] = [
+                    code
+                    for code in islice(item["segments"], _DIAG_ITEMS)
+                    if type(code) is str and _SEGMENT_SHAPE.fullmatch(code)
+                ]
+            steps.append(step)
+        return steps
+    except Exception:
+        return []
+
+
+def _no_result_reason(
+    diagnostics: object, query: object, ticker: object
+) -> tuple[str, dict]:
+    """(reason_code, reason_detail) for an empty result. Always a reason.
+
+    A missing, malformed or unknown code becomes REASON_NOT_REPORTED and what
+    was received is shown by _reported_text() (it is not an identifier).
+    """
+    from discovery.discovery_engine import REASON_NOT_REPORTED
+
+    shown = None
+    try:
+        reported = diagnostics.get("reason_code") if type(diagnostics) is dict else None
+        if (
+            type(reported) is str
+            and len(reported) <= _REPORTED_LIMIT
+            and reported in _ACCEPTED_NO_RESULT_REASONS
+        ):
+            detail = _reason_detail(diagnostics.get("reason_detail"), query, ticker)
+            return reported, detail
+        if reported is not None:
+            shown = _reported_text(reported)
+    except Exception:
+        shown = None
+    return REASON_NOT_REPORTED, {"reported": shown}
+
+
+def _valuation_diagnostics(
+    reason_code: str | None, reason_detail: dict, degraded: list[dict]
+) -> dict:
+    """The keys K-0C adds to every valuations[] entry."""
+    return {
+        "reason_code": reason_code,
+        "severity": "failure" if reason_code else None,
+        "reason_detail": reason_detail,
+        "degraded": list(dict.fromkeys(step["step"] for step in degraded)),
+        "degraded_detail": degraded,
+    }
+
+
+def _reason_text(reason_code: str | None, detail: dict | None) -> str:
+    """One line for errors[] and the log, assembled field by field.
+
+    ``detail`` went through _reason_detail(): its free text is masked and its
+    identifiers are checked, so the finished line is not masked again (that
+    would turn a name such as "SK-Hynix" into "sk-***").
+    """
+    try:
+        parts = []
+        for key, value in (detail or {}).items():
+            if type(value) is list:
+                value = "/".join(str(item.get("check")) for item in value)
+            parts.append(f"{key}={value}")
+        text = f"{reason_code}: {', '.join(parts)}" if parts else f"{reason_code}"
+        return " ".join(text.split())[:_ERROR_TEXT_LIMIT]
+    except Exception:
+        return f"{reason_code}"
+
+
+def _valuation_error(entry: dict) -> dict | None:
+    """errors[] entry for one valuations[] entry; at most one each.
+
+    The terminal reason (no_result / failed) wins. A result whose optional
+    steps fell back gets ENRICHMENT_DEGRADED. A clean result gets nothing.
+    """
+    status = entry.get("status")
+    error = {
+        "phase": "valuation",
+        "company": entry.get("company"),
+        "ticker": entry.get("ticker"),
+        "market": entry.get("market"),
+    }
+    detail = entry.get("reason_detail") or {}
+    if status == "failed":
+        error.update(
+            reason_code=entry.get("reason_code"),
+            severity=entry.get("severity"),
+            error=entry.get("error", ""),
+            error_type=detail.get("error_type"),
+            stage=detail.get("stage"),
+        )
+        return error
+    if status == "no_result":
+        error.update(
+            reason_code=entry.get("reason_code"),
+            severity=entry.get("severity"),
+            error=_reason_text(entry.get("reason_code"), detail),
+        )
+        return error
+    if entry.get("degraded"):
+        error.update(
+            reason_code=ENRICHMENT_DEGRADED,
+            severity="degraded",
+            error="steps=" + ", ".join(entry["degraded"]),
+        )
+        return error
+    return None
+
+
 def _week_number(dt: datetime) -> int:
     """Calculate which week of the month the date falls in."""
     first_day = dt.replace(day=1)
@@ -347,6 +733,12 @@ def run_weekly(
     whose discover() reported a reason or raised (whatever was selected in the
     end), plus one SELECTION_EMPTY entry per market whose discovery was fine
     but whose final target count is zero.
+
+    Failure contract (K-0C): every valuations[] entry carries reason_code,
+    severity, reason_detail, degraded and degraded_detail. A no_result or
+    failed entry always has a reason code; errors[] gets at most one entry per
+    valuation (its terminal reason, else ENRICHMENT_DEGRADED when optional
+    steps fell back). summary["valuation_status"] is the roll-up.
     """
     from discovery.discovery_engine import (
         DISCOVERY_EXCEPTION,
@@ -710,13 +1102,22 @@ def run_weekly(
             query = ticker_str
         else:
             query = name
+        # K-0C: a fresh dict per company; auto_analyze() fills in why it has no
+        # result and which optional steps fell back. Never shared across threads.
+        diagnostics: dict = {}
+        returned = False
         try:
             logger.info(
                 "Valuation start: %s %s (query=%r)", co.get("stars", ""), name, query
             )
             analyze_result = auto_analyze(
-                query, output_dir=str(week_dir), scored_data=co
+                query,
+                output_dir=str(week_dir),
+                scored_data=co,
+                diagnostics=diagnostics,
             )
+            returned = True
+            degraded = _degraded_steps(diagnostics)
             if analyze_result:
                 vr = getattr(analyze_result, "validation_report", None)
                 valuation_result = getattr(analyze_result, "result", None)
@@ -746,23 +1147,40 @@ def run_weekly(
                     "scenario_validation_codes": (
                         [e.code for e in vr.errors] if vr is not None else []
                     ),
+                    **_valuation_diagnostics(None, {}, degraded),
                 }
+            reason_code, reason_detail = _no_result_reason(diagnostics, query, ticker)
             return {
                 "company": name,
                 "ticker": ticker,
                 "reason": reason,
                 "market": co.get("market", ""),
                 "status": "no_result",
+                **_valuation_diagnostics(reason_code, reason_detail, degraded),
             }
         except Exception as e:
-            logger.error("Valuation failed [%s]: %s", name, e)
+            # redact_text() never raises; str(e) did for an exception whose
+            # __str__ fails and took the whole run down from this clause.
+            error = redact_text(e, limit=_ERROR_TEXT_LIMIT)
+            logger.error("Valuation failed [%s]: %s", name, error)
+            if returned:
+                stage = "result"  # raised here, while reading what came back
+            else:
+                stage = diagnostics.get("stage")
+                if type(stage) is not str or stage not in _PRODUCER_STAGES:
+                    stage = "start"
             return {
                 "company": name,
                 "ticker": ticker,
                 "reason": reason,
                 "market": co.get("market", ""),
                 "status": "failed",
-                "error": str(e),
+                "error": error,
+                **_valuation_diagnostics(
+                    VALUATION_EXCEPTION,
+                    {"stage": stage, **_error_detail(e)},
+                    _degraded_steps(diagnostics),
+                ),
             }
 
     if not targets:
@@ -774,16 +1192,33 @@ def run_weekly(
         futures = {pool.submit(_run_valuation, co): co for co in targets}
         for fut in as_completed(futures):
             entry = fut.result()
+            try:
+                error_entry = _valuation_error(entry)
+            except Exception:
+                # Describing an outcome must never end the run.
+                error_entry = {
+                    "phase": "valuation",
+                    "company": entry.get("company"),
+                    "reason_code": entry.get("reason_code"),
+                    "severity": entry.get("severity"),
+                    "error": "",
+                }
+            if entry.get("status") == "no_result":
+                logger.warning(
+                    "Valuation no_result [%s]: %s",
+                    entry.get("company"),
+                    (error_entry or {}).get("error"),
+                )
+            elif entry.get("degraded"):
+                logger.warning(
+                    "Valuation degraded [%s]: steps=%s",
+                    entry["company"],
+                    ", ".join(entry["degraded"]),
+                )
             with _summary_lock:
                 summary["valuations"].append(entry)
-                if entry.get("status") == "failed":
-                    summary["errors"].append(
-                        {
-                            "phase": "valuation",
-                            "company": entry["company"],
-                            "error": entry.get("error", ""),
-                        }
-                    )
+                if error_entry is not None:
+                    summary["errors"].append(error_entry)
 
     # ── Phase 3.5: Upload Excel to Supabase Storage ──
     _upload_excels_to_storage(summary, _storage_folder(week_folder_name))
@@ -984,6 +1419,25 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
         "success": success_count,
         "failed": failed_count,
         "draft_blocked": blocked_count,
+    }
+
+    # K-0C roll-up. status_summary above is left exactly as it was.
+    by_status: dict[str, int] = {}
+    by_reason: dict[str, int] = {}
+    degraded_results = 0
+    for v in summary["valuations"]:
+        by_status[v["status"]] = by_status.get(v["status"], 0) + 1
+        if v["status"] in ("no_result", "failed"):
+            code = v.get("reason_code") or "REASON_NOT_REPORTED"
+            by_reason[code] = by_reason.get(code, 0) + 1
+        elif v.get("degraded"):
+            degraded_results += 1
+    summary["valuation_status"] = {
+        "contract": _VALUATION_STATUS_CONTRACT,
+        "total": len(summary["valuations"]),
+        "by_status": by_status,
+        "by_reason": by_reason,
+        "degraded_results": degraded_results,
     }
 
     # Scenario-differentiation validation roll-up (per-company status persisted on each

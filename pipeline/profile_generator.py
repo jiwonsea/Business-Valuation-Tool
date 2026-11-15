@@ -9,6 +9,7 @@ import tempfile
 from copy import deepcopy
 
 logger = logging.getLogger(__name__)
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -35,6 +36,198 @@ class AnalyzeResult:
 _PROJECT_ROOT = Path(__file__).parent.parent
 _DEFAULT_SCENARIO_VALIDATION_RETRIES = 1
 _SCENARIO_VALIDATION_RETRY_CAP = 2
+
+# ── no_result failure contract (K-0C) ────────────────────────────────────────
+# auto_analyze() returned None for several unrelated reasons and a dozen
+# optional steps swallowed their exception; the caller could tell none of them
+# apart. A caller that passes ``diagnostics`` now gets the reason: the dict is
+# bound to the current context for the duration of that one call and the
+# helpers below write to it. With nothing bound (cli, direct calls of the
+# functions in this module) every helper does nothing. No helper may raise or
+# change what a function returns or writes.
+
+DIAGNOSTICS_CONTRACT = "k0c-1"
+
+IDENTITY_NOT_FOUND = "IDENTITY_NOT_FOUND"  # identify() returned nothing
+IDENTITY_MISMATCH = "IDENTITY_MISMATCH"  # resolved, but not as the selected ticker
+FINANCIALS_EMPTY = "FINANCIALS_EMPTY"  # fetch_financials() returned nothing
+RECONCILIATION_BLOCKED = "RECONCILIATION_BLOCKED"  # hard block, no draft written
+DRAFT_NO_YEARS = "DRAFT_NO_YEARS"  # defensive: financials without a year
+DRAFT_NOT_WRITTEN = "DRAFT_NOT_WRITTEN"  # no draft and nobody said why
+REASON_NOT_REPORTED = "REASON_NOT_REPORTED"  # empty result without a reason
+# What auto_analyze() may report for an empty result. scheduler/weekly_run.py
+# keeps its own copy (it imports only auto_analyze from here); a test compares.
+NO_RESULT_REASONS = frozenset(
+    {
+        IDENTITY_NOT_FOUND,
+        IDENTITY_MISMATCH,
+        FINANCIALS_EMPTY,
+        RECONCILIATION_BLOCKED,
+        DRAFT_NO_YEARS,
+        DRAFT_NOT_WRITTEN,
+        REASON_NOT_REPORTED,
+    }
+)
+
+_DIAGNOSTICS: ContextVar[dict | None] = ContextVar("k0c_diagnostics", default=None)
+
+_INVALID = "<invalid>"
+_IDENTIFIER_LIMIT = 120
+_TICKER_SHAPE = re.compile(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,11}")
+_CORP_CODE_SHAPE = re.compile(r"\d{8}")
+_CIK_SHAPE = re.compile(r"\d{1,10}")
+_MARKETS = frozenset({"KR", "US", "JP"})
+_LEGAL_STATUSES = frozenset({"상장", "비상장", "listed", "unlisted", "OTC"})
+
+_KR_TICKER = re.compile(r"(\d{6})(?:\.(?:KS|KQ))?")
+_JP_TICKER = re.compile(r"(\d{4})(?:\.T)?")
+_US_CLASS_TICKER = re.compile(r"([A-Z]{1,5})[.\-]([A-Z])")
+
+
+def _diag_bind(diagnostics: dict | None) -> dict:
+    """Reset the caller's dict (or a throwaway one) for one auto_analyze() call."""
+    target = diagnostics if diagnostics is not None else {}
+    try:
+        target["contract"] = DIAGNOSTICS_CONTRACT
+        target["stage"] = "start"
+        target["reason_code"] = None
+        target["reason_detail"] = {}
+        target["degraded"] = []
+    except Exception:
+        pass  # an unwritable mapping gets no diagnostics, the run is unaffected
+    return target
+
+
+def _diag_stage(stage: str) -> None:
+    """Note the stage now running; it is what remains if an exception escapes."""
+    try:
+        diagnostics = _DIAGNOSTICS.get()
+        if diagnostics is not None:
+            diagnostics["stage"] = stage
+    except Exception:
+        pass
+
+
+def _diag_reason(reason_code: str, detail=None) -> None:
+    """Why an empty result is about to be returned. The first reason is kept.
+
+    ``detail`` is a dict or a zero-argument callable building one; it is only
+    evaluated when a caller is listening, and a failure in it is swallowed.
+    """
+    try:
+        diagnostics = _DIAGNOSTICS.get()
+        if diagnostics is None or diagnostics.get("reason_code"):
+            return
+        diagnostics["reason_code"] = reason_code
+        diagnostics["reason_detail"] = (detail() if callable(detail) else detail) or {}
+    except Exception:
+        pass
+
+
+def _diag_degraded(
+    step: str,
+    exc: BaseException | None = None,
+    *,
+    with_message: bool = True,
+    fields=None,
+) -> None:
+    """An optional step raised and the run carries on with its fallback.
+
+    ``fields`` is a dict or a zero-argument callable building one. Like the
+    detail of _diag_reason() it is evaluated here, inside the guard, and only
+    when a caller is listening: nothing is computed for the diagnostics at the
+    call site.
+    """
+    try:
+        diagnostics = _DIAGNOSTICS.get()
+        if diagnostics is None:
+            return
+        entry: dict = {"step": step}
+        if exc is not None:
+            entry["error_type"] = type(exc).__name__
+            if with_message:
+                from discovery.discovery_engine import redact_text
+
+                entry["message"] = redact_text(exc)
+        entry.update((fields() if callable(fields) else fields) or {})
+        diagnostics["degraded"].append(entry)
+    except Exception:
+        pass
+
+
+def _diag_identifier(value: object) -> str | None:
+    """A selection-stage identifier (company name, selected ticker): copied.
+
+    These already appear verbatim in the weekly summary, so they are only
+    folded to one line and cut. Masking them would mangle real names.
+    """
+    if value is None:
+        return None
+    try:
+        return " ".join(str(value).split())[:_IDENTIFIER_LIMIT]
+    except Exception:
+        return None
+
+
+def _diag_checked(value: object, shape) -> str | None:
+    """An identifier the summary never held before: kept only in its normal shape."""
+    if value is None:
+        return None
+    try:
+        text = str(value).strip()
+    except Exception:
+        return _INVALID
+    if not text:
+        return None
+    if isinstance(shape, frozenset):
+        return text if text in shape else _INVALID
+    return text if shape.fullmatch(text) else _INVALID
+
+
+def _comparable_ticker(value: object) -> str | None:
+    """Normal form used only to compare a selected ticker with a resolved one.
+
+    None for "no ticker": None, a non-string NaN (float, Decimal, numpy), an
+    empty or blank string. Any other string is a symbol, including "N/A" or
+    "NONE". Only the notations that name the same listing are folded together:
+    005930.KS = 005930, 7203.T = 7203, BRK-B = BRK.B. Dots and hyphens are not
+    dropped in general.
+    """
+    if value is None:
+        return None
+    try:
+        if not isinstance(value, str) and value != value:  # NaN of any numeric type
+            return None
+        text = "".join(str(value).split()).upper()
+    except Exception:
+        return None
+    if not text:
+        return None
+    for pattern, form in (
+        (_KR_TICKER, r"\1"),
+        (_JP_TICKER, r"\1"),
+        (_US_CLASS_TICKER, r"\1.\2"),
+    ):
+        match = pattern.fullmatch(text)
+        if match:
+            return match.expand(form)
+    return text
+
+
+def _ticker_mismatch(expected: object, resolved: object) -> str | None:
+    """None when the resolved company is confirmed as the selected listing.
+
+    Without a selected ticker there is nothing to confirm (cli runs, unlisted
+    targets). A different share class or an ADR of the same issuer is a
+    mismatch too: the selection named one listing and another one came back.
+    """
+    want = _comparable_ticker(expected)
+    if want is None:
+        return None
+    have = _comparable_ticker(resolved)
+    if have is None:
+        return "resolved_ticker_missing"
+    return None if have == want else "ticker_differs"
 
 
 def _load_erp_snapshot(market: str, analysis_date: date) -> dict | None:
@@ -332,17 +525,32 @@ def _fetch_industry_metadata(identity) -> dict:
             identity.name,
             type(exc).__name__,
         )
+        # Same rule for the diagnostics: the class name only, never the text.
+        _diag_degraded("industry_metadata", exc, with_message=False)
     return metadata
 
 
-def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
+def auto_fetch(
+    company_query: str,
+    market_hint: str | None = None,
+    *,
+    expected_ticker: str | None = None,
+) -> dict:
     """Company name/ticker input -> auto-detect market -> collect financials -> return raw dict.
 
     Args:
         market_hint: "KR" or "US" — bypasses heuristic detection. Pass when the caller
             already knows the market (e.g. weekly discovery pipeline) to avoid
             Korean-named US companies (e.g. "테슬라") triggering DART lookups.
+        expected_ticker: ticker the caller selected. When given, a company that
+            resolves to a different ticker (or to none) is rejected before any
+            financials are fetched: the name lookup can land on another listed
+            company ("SK Hynix" -> "SK", "LG Electronics" -> "LG"). None = no check.
+
+    Returns {} on failure, as before. The reason goes to the diagnostics a
+    caller of auto_analyze() passed, if any (K-0C).
     """
+    _diag_stage("identify")
     from pipeline.data_fetcher import DataFetcher
 
     fetcher = DataFetcher()
@@ -352,6 +560,14 @@ def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
     identity = fetcher.identify(company_query, market_hint=market_hint)
     if not identity:
         print(f"  [ERROR] 기업을 찾을 수 없습니다: {company_query}")
+        _diag_reason(
+            IDENTITY_NOT_FOUND,
+            lambda: {
+                "query": _diag_identifier(company_query),
+                "market_hint": _diag_checked(market_hint, _MARKETS),
+                "expected_ticker": _diag_identifier(expected_ticker),
+            },
+        )
         return {}
 
     market_label = {
@@ -367,11 +583,46 @@ def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
     if identity.corp_code:
         print(f"    DART corp_code: {identity.corp_code}")
 
+    mismatch = _ticker_mismatch(expected_ticker, identity.ticker)
+    if mismatch:
+        print(
+            "  [ERROR] 식별된 종목이 선정된 종목과 다릅니다 "
+            f"(선정 {_diag_identifier(expected_ticker)} / "
+            f"식별 {_diag_checked(identity.ticker, _TICKER_SHAPE)}) — 평가를 중단합니다."
+        )
+        _diag_reason(
+            IDENTITY_MISMATCH,
+            lambda: {
+                "kind": mismatch,
+                "query": _diag_identifier(company_query),
+                "market_hint": _diag_checked(market_hint, _MARKETS),
+                "expected_ticker": _diag_identifier(expected_ticker),
+                "resolved_ticker": _diag_checked(identity.ticker, _TICKER_SHAPE),
+                "resolved_market": _diag_checked(identity.market, _MARKETS),
+                "resolved_corp_code": _diag_checked(
+                    identity.corp_code, _CORP_CODE_SHAPE
+                ),
+                "resolved_cik": _diag_checked(identity.cik, _CIK_SHAPE),
+            },
+        )
+        return {}
+
     # Step 2: Financial statement collection
+    _diag_stage("financials")
     print("\n[2/3] 재무제표 수집 중...")
     financials = fetcher.fetch_financials(identity)
     if not financials:
         print("  [ERROR] 재무제표를 수집할 수 없습니다.")
+        _diag_reason(
+            FINANCIALS_EMPTY,
+            lambda: {
+                "resolved_market": _diag_checked(identity.market, _MARKETS),
+                "resolved_ticker": _diag_checked(identity.ticker, _TICKER_SHAPE),
+                "legal_status": _diag_checked(identity.legal_status, _LEGAL_STATUSES),
+                "has_corp_code": bool(identity.corp_code),
+                "has_cik": bool(identity.cik),
+            },
+        )
         return {}
 
     for year, data in sorted(financials.items(), reverse=True):
@@ -385,6 +636,7 @@ def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
         print(f"  {year}: 매출 {rev:,}{unit}, 영업이익 {op:,}{unit}")
 
     # Step 3: Share count / market data
+    _diag_stage("shares")
     print("\n[3/3] 시장 데이터 수집 중...")
     shares_info = fetcher.fetch_shares(identity)
     if shares_info.get("shares_total"):
@@ -394,10 +646,14 @@ def auto_fetch(company_query: str, market_hint: str | None = None) -> dict:
         print(f"  현재가: {shares_info['price']:,.2f} {currency}")
 
     # Step 4: Auto-generate YAML profile
+    _diag_stage("draft_profile")
     industry_metadata = _fetch_industry_metadata(identity)
     yaml_path = _generate_draft_profile(
         identity, financials, shares_info, industry_metadata=industry_metadata
     )
+    if not yaml_path:
+        # Kept only if the draft step gave no reason of its own (first one wins).
+        _diag_reason(DRAFT_NOT_WRITTEN)
 
     print(f"\n{'=' * 60}")
     print(f"데이터 수집 완료: {identity.name}")
@@ -554,6 +810,7 @@ def _estimate_wacc_params(cons: dict, shares_info: dict, market: str, identity) 
             logger.warning(
                 "Beta observation unavailable; profile remains draft: %s", exc
             )
+            _diag_degraded("beta_observation", exc)
             bu = default_bu
             beta_provenance = {
                 "status": "blocked_no_provenance",
@@ -603,6 +860,7 @@ def _generate_draft_profile(
     """Auto-generate a draft YAML profile from collected data."""
     years = sorted(financials.keys())
     if not years:
+        _diag_reason(DRAFT_NO_YEARS)
         return None
 
     latest = years[-1]
@@ -624,6 +882,23 @@ def _generate_draft_profile(
             "  [ERROR] 데이터 정합성 하드 블록 — 프로필 생성 중단. "
             "소스 간 주식수/시가총액/단위 불일치를 확인하세요."
         )
+
+        def _blocked_checks() -> dict:
+            from discovery.discovery_engine import redact_text
+
+            return {
+                "checks": [
+                    {
+                        "check": _diag_identifier(finding.check),
+                        "rel_diff_pct": finding.rel_diff_pct,
+                        "message": redact_text(finding.message),
+                    }
+                    for finding in recon.findings
+                    if finding.severity == "block"
+                ]
+            }
+
+        _diag_reason(RECONCILIATION_BLOCKED, _blocked_checks)
         return None
 
     is_us = identity.market == "US"
@@ -694,6 +969,7 @@ def _generate_draft_profile(
                 ).rstrip()
         except Exception as exc:
             logger.warning("TTM anchor unavailable; FY fallback: %s", exc)
+            _diag_degraded("ttm_anchor", exc)
 
     # Generate filename
     safe_name = re.sub(r"[^\w\-]", "_", identity.name.lower().replace(" ", "_"))
@@ -1013,6 +1289,8 @@ def auto_analyze(
     company_query: str,
     output_dir: str | None = None,
     scored_data: dict | None = None,
+    *,
+    diagnostics: dict | None = None,
 ):
     """AI-driven end-to-end automated analysis.
 
@@ -1024,17 +1302,45 @@ def auto_analyze(
     Args:
         scored_data: Pre-computed data from scoring phase (market_cap_usd, etc.)
                      to avoid redundant API calls in the weekly pipeline.
+        diagnostics: optional dict this call fills in (K-0C). Keys: ``contract``,
+            ``stage`` (the stage running last, also when an exception escapes),
+            ``reason_code`` / ``reason_detail`` (set whenever None is returned,
+            one of NO_RESULT_REASONS) and ``degraded`` (optional steps that
+            raised and were replaced by a fallback). Pass a fresh dict per
+            call. The return value does not depend on it.
     """
+    token = _DIAGNOSTICS.set(_diag_bind(diagnostics))
+    try:
+        result = _auto_analyze(company_query, output_dir, scored_data)
+        if result is None:
+            # Only lands if no step gave a reason (a replaced auto_fetch, say).
+            _diag_reason(REASON_NOT_REPORTED, {"reported": None})
+        return result
+    finally:
+        _DIAGNOSTICS.reset(token)
+
+
+def _auto_analyze(
+    company_query: str,
+    output_dir: str | None,
+    scored_data: dict | None,
+):
+    """Body of auto_analyze(); runs with the caller's diagnostics bound."""
     from valuation_runner import load_profile, run_valuation
     from output.console_report import print_report
 
     # Step 1: Data collection — pass market hint from scoring to avoid wrong registry lookups
     _market_hint = (scored_data or {}).get("market")
-    fetch_result = auto_fetch(company_query, market_hint=_market_hint)
+    fetch_result = auto_fetch(
+        company_query,
+        market_hint=_market_hint,
+        expected_ticker=(scored_data or {}).get("ticker"),
+    )
     if not fetch_result or not fetch_result.get("yaml_path"):
         print("[ERROR] 데이터 수집 실패. --auto 중단.")
         return None
 
+    _diag_stage("enrichment")
     yaml_path = str(_PROJECT_ROOT / fetch_result["yaml_path"])
     identity = fetch_result["identity"]
     financials = fetch_result["financials"]
@@ -1050,17 +1356,21 @@ def auto_analyze(
         analyst = AIAnalyst()
     except Exception as e:
         print(f"[WARN] AI 모듈 로드 실패 ({e}). Draft YAML로 진행합니다.")
+        _diag_degraded("ai_module", e)
+        _diag_stage("valuation")
         vi = load_profile(yaml_path)
         result = run_valuation(vi)
         print_report(vi, result)
+        _diag_stage("export")
         from output.excel_builder import export
 
         try:
             from orchestrator import _save_to_db
 
             _save_to_db(vi, result, yaml_path)
-        except Exception:
+        except Exception as db_exc:
             logger.debug("auto_analyze DB save skipped")
+            _diag_degraded("db_save_call", db_exc)
         path = export(vi, result, output_dir)
         print(f"\n[Excel] 저장 완료: {path}")
         from orchestrator import format_summary
@@ -1088,6 +1398,7 @@ def auto_analyze(
         print(f"  → {len(segments)}개 부문 식별")
     except Exception as e:
         print(f"  [WARN] 부문 분류 실패: {e}")
+        _diag_degraded("segments", e)
         segments = []
 
     # AI Step 3: Peer / multiple recommendation (batch)
@@ -1131,6 +1442,8 @@ def auto_analyze(
             )
 
         # Fallback: per-segment calls for any missing segments
+        peer_failures: list = []
+        peer_failure: Exception | None = None
         if not batch_ok:
             for seg in segments:
                 code = seg.get("code", "MAIN")
@@ -1162,6 +1475,21 @@ def auto_analyze(
                 except Exception as e:
                     print(f"  [WARN] {code} Peer 추천 실패: {e}")
                     multiples_ai[code] = 10.0
+                    peer_failures.append(code)
+                    peer_failure = e
+        if peer_failure is not None:
+            # A failed batch that the per-segment calls repaired is not recorded:
+            # only segments left with the 10.0 placeholder are.
+            _diag_degraded(
+                "peers",
+                peer_failure,
+                fields=lambda: {
+                    "segments": [
+                        re.sub(r"[^A-Za-z0-9_.\-]", "", str(code))[:40]
+                        for code in peer_failures[:20]
+                    ]
+                },
+            )
 
         requested_codes = [seg.get("code", "MAIN") for seg in segments]
         _emit_peers_batch_coverage(
@@ -1189,6 +1517,7 @@ def auto_analyze(
         print(f"  → WACC ≈ {wacc_result.get('wacc_estimate', '?')}%")
     except Exception as e:
         print(f"  [WARN] WACC 추정 실패: {e}")
+        _diag_degraded("wacc", e)
         wacc_result = {}
 
     # AI Step 5a: News collection -> key issues summary
@@ -1210,6 +1539,7 @@ def auto_analyze(
             print("  → 관련 뉴스 없음 (범용 시나리오로 진행)")
     except Exception as e:
         print(f"  [WARN] 뉴스 수집 실패: {e}. 범용 시나리오로 진행합니다.")
+        _diag_degraded("news", e)
 
     # Fetch market signals for scenario calibration (Phase 4)
     market_signals = None
@@ -1230,6 +1560,7 @@ def auto_analyze(
             market_signals = None
     except Exception as e:
         print(f"  [WARN] 시장 신호 수집 실패: {e}. 기존 방식으로 진행합니다.")
+        _diag_degraded("market_signals", e)
 
     # AI Step 5b: Scenario design (news-based key_issues + multi-driver)
     print("[AI 6/6] 시나리오 설계 중...")
@@ -1245,7 +1576,8 @@ def auto_analyze(
             industry=getattr(identity, "industry", "") or "",
             de_ratio=cons.get("de_ratio", 0.0),
         )
-    except Exception:
+    except Exception as method_exc:
+        _diag_degraded("method_selection", method_exc)
         val_method = "dcf_primary"
 
     try:
@@ -1288,6 +1620,7 @@ def auto_analyze(
 
         print(f"  [WARN] 시나리오 설계 실패: {e}")
         traceback.print_exc()
+        _diag_degraded("scenarios", e)
         ai_scenarios = []
         opt_segs = []
 
@@ -1563,6 +1896,7 @@ def auto_analyze(
     print("[밸류에이션 실행]")
     print(f"{'=' * 60}")
 
+    _diag_stage("valuation")
     vi = load_profile(yaml_path)
     result = run_valuation(vi)
 
@@ -1573,14 +1907,16 @@ def auto_analyze(
 
     print_report(vi, result)
 
+    _diag_stage("export")
     from output.excel_builder import export
 
     try:
         from orchestrator import _save_to_db
 
         _save_to_db(vi, result, yaml_path)
-    except Exception:
+    except Exception as db_exc:
         logger.debug("auto_analyze DB save skipped")
+        _diag_degraded("db_save_call", db_exc)
     path = export(vi, result, output_dir)
     print(f"\n[Excel] 저장 완료: {path}")
 

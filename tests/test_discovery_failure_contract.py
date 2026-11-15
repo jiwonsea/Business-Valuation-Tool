@@ -1123,9 +1123,13 @@ def test_discovery_reason_is_kept_when_cross_market_target_is_trimmed(
     )
     assert us["reason_code"] == "LLM_CALL_FAILED"  # not replaced by SELECTION_EMPTY
     assert row(saved, "KR")["reason_code"] is None
-    assert [(e["market"], e["phase"], e["reason_code"]) for e in saved["errors"]] == [
-        ("US", "discovery", "LLM_CALL_FAILED")
-    ]
+    # K-0C: the stub auto_analyze() returns None without a reason, which is now
+    # recorded as well (phase "valuation"); this test is about the others.
+    assert [
+        (e["market"], e["phase"], e["reason_code"])
+        for e in saved["errors"]
+        if e["phase"] != "valuation"
+    ] == [("US", "discovery", "LLM_CALL_FAILED")]
     assert saved["discovery_status"]["targets_after_budget_trim"] == 1
     assert harness.analyzed == ["삼성전자"]
 

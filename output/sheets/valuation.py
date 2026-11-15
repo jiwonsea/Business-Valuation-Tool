@@ -271,7 +271,7 @@ def valuation_dcf(ctx: Ctx):
         ws,
         r,
         1,
-        f"WACC: {dcf.wacc:.2f}%  |  Terminal Growth: {dcf.terminal_growth:.1f}%",
+        f"WACC (Base): {dcf.wacc:.2f}%  |  Terminal Growth: {dcf.terminal_growth:.1f}%",
         font=NOTE_FONT,
     )
 
@@ -303,7 +303,7 @@ def valuation_ddm(ctx: Ctx):
         ddm_items.append(("Total Payout/주", ddm.total_payout, "DPS + Buyback"))
     ddm_items += [
         ("배당 성장률 (g)", f"{ddm.growth:.2f}%", "지속가능 성장률"),
-        ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%", "CAPM: Rf + βL × ERP"),
+        ("자기자본비용 (Ke, Base)", f"{ddm.ke:.2f}%", "CAPM: Rf + βL × ERP"),
         ("", "", ""),
         ("주당 내재가치", ddm.equity_per_share, "DPS×(1+g) / (Ke-g)"),
     ]
@@ -349,7 +349,7 @@ def valuation_rim(ctx: Ctx):
     r += 1
     rim_items = [
         ("장부가치 (BV₀)", f"{rim.bv_current:,}", "현재 자기자본"),
-        ("자기자본비용 (Ke)", f"{rim.ke:.2f}%", "CAPM: Rf + βL × ERP"),
+        ("자기자본비용 (Ke, Base)", f"{rim.ke:.2f}%", "CAPM: Rf + βL × ERP"),
         ("영구성장률 (g)", f"{rim.terminal_growth:.2f}%", "RI Terminal Growth"),
         ("PV(RI)", f"{rim.pv_ri_sum:,}", "예측기간 잔여이익 현재가치"),
         ("PV(TV)", f"{rim.pv_terminal:,}", "잔여이익 Terminal Value 현재가치"),

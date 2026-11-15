@@ -42,7 +42,7 @@ def test_clamp_is_logged_reported_and_penalized(tmp_path, caplog, capsys):
     assert warning in caplog.text
     assert stdout.index(
         f"⚠ [SCENARIO_MULTIPLE_CLAMPED] scenario:Bull/segment:PBP — {warning}"
-    ) < stdout.index("[WACC]")
+    ) < stdout.index("[WACC (Base)]")
     assert stdout.count(warning) == 1
     assert result.quality is not None
     assert result.quality.scenario_consistency < 25

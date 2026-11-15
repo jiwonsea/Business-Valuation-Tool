@@ -324,12 +324,14 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
             sc_growths.append(g)
             write_cell(ws, r, i, f"{g:.1f}%", fill=DRIVER_FILL, bold=True)
 
-        # Calculation: Ke (reflecting per-scenario wacc_adj)
+        # Calculation: Ke the engine applied per scenario
         r += 1
         write_cell(ws, r, 1, "Ke (자기자본비용)", font=calc_font)
+        sc_kes = []
         for i, sc_code in enumerate(sc_codes):
-            sc_ke = ke + ctx.vi.scenarios[sc_code].wacc_adj
-            write_cell(ws, r, i + 2, f"{sc_ke:.2f}%", font=calc_font)
+            sc_ke, text = _applied_rate(ctx, sc_code, ke)
+            sc_kes.append(sc_ke)
+            write_cell(ws, r, i + 2, text, font=calc_font)
 
         # Calculation: DPS
         r += 1
@@ -347,8 +349,7 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
         r += 1
         write_cell(ws, r, 1, "산식: DPS×(1+g) / (Ke-g)", font=calc_font)
         for i, g in enumerate(sc_growths):
-            sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
-            spread = sc_ke - g
+            spread = sc_kes[i] - g
             if spread > 0:
                 val = dps * (1 + g / 100) / (spread / 100)
             else:
@@ -386,20 +387,21 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
                 roe1 = base_roes[0] + adj
                 write_cell(ws, r, i + 2, f"{roe1:.1f}%", font=calc_font)
 
-        # Calculation: Ke (reflecting per-scenario wacc_adj)
+        # Calculation: Ke the engine applied per scenario
         r += 1
         write_cell(ws, r, 1, "Ke (자기자본비용)", font=calc_font)
+        sc_kes = []
         for i, sc_code in enumerate(sc_codes):
-            sc_ke = ke + ctx.vi.scenarios[sc_code].wacc_adj
-            write_cell(ws, r, i + 2, f"{sc_ke:.2f}%", font=calc_font)
+            sc_ke, text = _applied_rate(ctx, sc_code, ke)
+            sc_kes.append(sc_ke)
+            write_cell(ws, r, i + 2, text, font=calc_font)
 
         # Calculation: RI Spread = ROE - Ke (per-scenario)
         if base_roes:
             r += 1
             write_cell(ws, r, 1, "RI Spread (ROE-Ke)", font=calc_font)
             for i, adj in enumerate(sc_adjs):
-                sc_ke = ke + ctx.vi.scenarios[sc_codes[i]].wacc_adj
-                spread = base_roes[0] + adj - sc_ke
+                spread = base_roes[0] + adj - sc_kes[i]
                 color = "27AE60" if spread > 0 else "E74C3C"
                 write_cell(
                     ws,
@@ -513,12 +515,12 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
                 adj = ctx.vi.scenarios[sc_code].terminal_growth_adj
                 label = f"{adj:+.1f}%p" if adj != 0 else "기본"
                 write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
-        # Calculation: WACC (reflecting per-scenario wacc_adj)
+        # Calculation: WACC the engine applied per scenario
         r += 1
         write_cell(ws, r, 1, "WACC", font=calc_font)
         for i, sc_code in enumerate(sc_codes):
-            sc_wacc = ctx.result.wacc.wacc + ctx.vi.scenarios[sc_code].wacc_adj
-            write_cell(ws, r, i + 2, f"{sc_wacc:.2f}%", font=calc_font)
+            _, text = _applied_rate(ctx, sc_code, ctx.result.wacc.wacc)
+            write_cell(ws, r, i + 2, text, font=calc_font)
         r += 1
         write_cell(ws, r, 1, "산식: DCF(FCFF, WACC, TGR)", font=calc_font)
 
@@ -531,18 +533,22 @@ def _write_scenario_drivers(ws, r: int, ctx: Ctx) -> int:
             label = f"{adj:+.0f}%" if adj != 0 else "-"
             write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
 
-    # WACC adjustment (cross-cutting -- also shown for methods other than DCF/DDM/RIM)
-    if method in ("sotp", "multiples", "nav"):
-        has_wacc_adj = any(ctx.vi.scenarios[c].wacc_adj != 0 for c in sc_codes)
-        if has_wacc_adj:
-            r += 1
-            write_cell(ws, r, 1, "WACC 조정 (%p)", bold=True)
-            for i, sc_code in enumerate(sc_codes, 2):
-                adj = ctx.vi.scenarios[sc_code].wacc_adj
-                label = f"{adj:+.2f}%p" if adj != 0 else "기본"
-                write_cell(ws, r, i, label, fill=DRIVER_FILL, bold=True)
-
     return r
+
+
+def _applied_rate(ctx: Ctx, sc_code: str, base_rate: float) -> tuple[float, str]:
+    """Discount rate the engine applied to a scenario, and its cell text.
+
+    Read from ScenarioResult.discount_shift, never recomputed here. The Base
+    rate is used only when the result carries no shift.
+    """
+    shift = ctx.result.scenarios[sc_code].discount_shift
+    if shift is None:
+        return base_rate, f"{base_rate:.2f}%"
+    text = f"{shift.applied_rate:.2f}%"
+    if shift.adj != 0:
+        text += f" (Base {shift.base_rate:.2f}% {shift.adj:+.2f}%p)"
+    return shift.applied_rate, text
 
 
 def _ev_label(method: str) -> str:

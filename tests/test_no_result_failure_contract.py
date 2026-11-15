@@ -129,7 +129,7 @@ SCENARIOS = {
             "drivers": {
                 "growth_adj_pct": 0,
                 "terminal_growth_adj": 0.0,
-                "wacc_adj": 0.0,
+                "market_sentiment_pct": 0,
             },
         },
         {
@@ -140,7 +140,7 @@ SCENARIOS = {
             "drivers": {
                 "growth_adj_pct": 30,
                 "terminal_growth_adj": 0.5,
-                "wacc_adj": -0.7,
+                "market_sentiment_pct": 10,
             },
         },
         {
@@ -151,7 +151,7 @@ SCENARIOS = {
             "drivers": {
                 "growth_adj_pct": -30,
                 "terminal_growth_adj": -0.5,
-                "wacc_adj": 0.7,
+                "market_sentiment_pct": -10,
             },
         },
     ],
@@ -176,9 +176,9 @@ LEAKY_MESSAGE = (
 )
 
 # Characterization values for the synthetic company above (the same on HEAD).
-PINNED_WEIGHTED_VALUE = 161142.857142857
+PINNED_WEIGHTED_VALUE = 164417.142857143
 PINNED_QUALITY_GRADE = "C"
-PINNED_DRAFT_VALUE = 148571.428571429
+PINNED_DRAFT_VALUE = 151657.142857143
 PINNED_DRAFT_GRADE = "F"
 
 _MISSING = object()

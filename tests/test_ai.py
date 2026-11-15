@@ -3,9 +3,18 @@
 Does not call the LLM API; tests pure parsing logic and prompt generation only.
 """
 
+import re
+
 import pytest
 from ai.analyst import _parse_json
-from ai.prompts import prompt_scenario_classify, prompt_scenario_refine
+from ai.prompts import (
+    SYSTEM_ANALYST_DRIVERS,
+    _format_market_signals,
+    prompt_scenario_classify,
+    prompt_scenario_design,
+    prompt_scenario_refine,
+)
+from schemas.models import MarketSignals
 
 
 class TestParseJson:
@@ -176,3 +185,116 @@ class TestTwoPassPrompts:
         )
         assert "driver_ranges" in prompt
         assert "[-50, 100]" in prompt  # growth_adj_pct range
+
+
+RATE_SIGNALS = MarketSignals(fed_funds_rate=5.25, us_10y_yield=4.35)
+RATE_GUIDANCE = "wacc_adj should reflect current rate environment"
+# A Pass-1 answer (or an older cached one) that still names wacc_adj
+PASS1_DRAFT = {
+    "news_drivers": [{"id": "rate_hike", "effects": {"wacc_adj": 0.5}}],
+    "scenario_draft": [
+        {
+            "code": "Bull",
+            "prob_range": [25, 35],
+            "driver_directions": {"growth_adj_pct": "up", "wacc_adj": "down"},
+        }
+    ],
+}
+
+
+def _scenario_prompts(method: str, key_issues: str) -> dict[str, str]:
+    """The three scenario prompts for one method, with rate signals attached."""
+    codes = ["SEG1", "SEG2"]
+    return {
+        "design": prompt_scenario_design(
+            "삼성전자",
+            "상장",
+            key_issues,
+            method,
+            signals=RATE_SIGNALS,
+            segment_codes=codes,
+        ),
+        "classify": prompt_scenario_classify(
+            "삼성전자", "상장", key_issues, method, signals=RATE_SIGNALS
+        ),
+        "refine": prompt_scenario_refine(
+            "삼성전자",
+            "상장",
+            key_issues,
+            PASS1_DRAFT,
+            method,
+            signals=RATE_SIGNALS,
+            segment_codes=codes,
+        ),
+    }
+
+
+class TestDiscountRateDriverByMethod:
+    """wacc_adj is offered only to methods that consume a discount rate (J-4)."""
+
+    @pytest.mark.parametrize("method", ["sotp", "multiples", "nav"])
+    @pytest.mark.parametrize("key_issues", ["", "금리 인상 관련 뉴스"])
+    def test_methods_without_a_discount_rate_never_see_wacc_adj(
+        self, method, key_issues
+    ):
+        for name, prompt in _scenario_prompts(method, key_issues).items():
+            assert "wacc_adj" not in prompt, name
+            assert "- Rate environment: reflect through" in prompt, name
+
+    @pytest.mark.parametrize("method", ["dcf_primary", "ddm", "rim", "rnpv"])
+    @pytest.mark.parametrize("key_issues", ["", "금리 인상 관련 뉴스"])
+    def test_discount_rate_methods_keep_wacc_adj(self, method, key_issues):
+        for name, prompt in _scenario_prompts(method, key_issues).items():
+            assert "wacc_adj" in prompt, name
+            assert RATE_GUIDANCE in prompt, name
+            assert "- Rate environment: reflect through" not in prompt, name
+
+    @pytest.mark.parametrize("method", ["sotp", "multiples", "nav"])
+    def test_refine_drops_wacc_adj_from_the_draft_without_changing_it(self, method):
+        import copy
+
+        draft = copy.deepcopy(PASS1_DRAFT)
+
+        prompt = prompt_scenario_refine("삼성전자", "상장", "", draft, method)
+
+        assert "wacc_adj" not in prompt
+        assert (
+            '"driver_directions": {\n        "growth_adj_pct": "up"\n      }' in prompt
+        )
+        assert '"effects": {}' in prompt
+        assert draft == PASS1_DRAFT
+
+    def test_refine_keeps_the_draft_as_is_for_a_discount_rate_method(self):
+        prompt = prompt_scenario_refine("삼성전자", "상장", "", PASS1_DRAFT, "ddm")
+
+        assert '"wacc_adj": "down"' in prompt
+        assert '"wacc_adj": 0.5' in prompt
+
+    def test_market_signal_rate_guidance_follows_the_method(self):
+        assert RATE_GUIDANCE in _format_market_signals(RATE_SIGNALS)
+        assert RATE_GUIDANCE in _format_market_signals(RATE_SIGNALS, "dcf_primary")
+        for method in ("sotp", "multiples", "nav"):
+            block = _format_market_signals(RATE_SIGNALS, method)
+            assert "wacc_adj" not in block
+            assert "- Rate environment: reflect through" in block
+
+    def test_system_driver_reference_lists_wacc_adj_per_method(self):
+        blocks = dict(
+            re.findall(r"^(\w+):\n((?:  - .*\n?)+)", SYSTEM_ANALYST_DRIVERS, re.M)
+        )
+        assert sorted(blocks) == [
+            "dcf_primary",
+            "ddm",
+            "multiples",
+            "nav",
+            "rim",
+            "sotp",
+        ]
+        with_wacc_adj = {m for m, text in blocks.items() if "wacc_adj" in text}
+        assert with_wacc_adj == {"dcf_primary", "ddm", "rim"}
+        assert (
+            "applied WACC = Base WACC + adj; Base includes any distress premium"
+            in blocks["dcf_primary"]
+        )
+        for method in ("ddm", "rim"):
+            assert "applied Ke = Base Ke + adj" in blocks[method]

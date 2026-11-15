@@ -451,6 +451,10 @@ _DRIVER_FIELDS = frozenset(
     }
 )
 
+# Methods that discount with a rate `wacc_adj` can shift (single source for the
+# runner, the scenario validator, the AI prompts/validators and the pipeline).
+DISCOUNT_RATE_METHODS = frozenset({"dcf_primary", "dcf", "ddm", "rim", "rnpv"})
+
 
 class NewsDriver(BaseModel):
     """News-based independent driver (independent variable in multiple regression).
@@ -516,10 +520,10 @@ class ScenarioParams(BaseModel):
         0.0  # Market sentiment premium/discount (EV % adjustment)
     )
 
-    # Cross-cutting driver (all discount-rate methods)
-    wacc_adj: float = (
-        0.0  # WACC %p adjustment (e.g., +0.5 -> WACC + 0.5%p; DDM/RIM applied to Ke)
-    )
+    # Shift (%p) of the primary discount rate: DCF -> WACC (added to the Base WACC,
+    # distress premium included), DDM/RIM -> Ke, rNPV -> discount_rate.
+    # Not applied by SOTP/NAV/Multiples (UNSUPPORTED_DRIVER).
+    wacc_adj: float = 0.0
 
     # AI analysis rationale (news -> driver mapping)
     driver_rationale: dict[
@@ -624,6 +628,18 @@ class EngineWarning(BaseModel):
         return value
 
 
+RateKind = Literal["wacc", "ke", "discount_rate"]
+
+
+class DiscountShift(BaseModel):
+    """Discount rate a scenario was valued with: Base rate plus `wacc_adj`."""
+
+    rate_kind: RateKind
+    base_rate: float
+    adj: float
+    applied_rate: float
+
+
 class ScenarioResult(BaseModel):
     total_ev: int
     net_debt: int
@@ -642,6 +658,8 @@ class ScenarioResult(BaseModel):
     adjustments: list[
         AdjustmentItem
     ] = []  # Dynamic Equity Bridge (for Excel Waterfall)
+    # None for methods that consume no discount rate (SOTP/NAV/Multiples)
+    discount_shift: Optional[DiscountShift] = None
 
 
 class ValidationError(BaseModel):

@@ -209,7 +209,7 @@ Available valuation scenario drivers by method:
 dcf_primary:
   - growth_adj_pct: EBITDA growth rate % adjustment (e.g., +20 → base growth × 1.2, -25 → × 0.75)
   - terminal_growth_adj: Terminal growth rate absolute adjustment %p (e.g., +0.3 → TGR + 0.3%p)
-  - wacc_adj: WACC %p adjustment (e.g., +0.5 → WACC + 0.5%p)
+  - wacc_adj: WACC %p adjustment (applied WACC = Base WACC + adj; Base includes any distress premium)
   - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
 
 sotp:
@@ -217,15 +217,14 @@ sotp:
   - segment_multiples: Per-segment EV/EBITDA multiple override (dict, e.g., {"SEG1": 15.0, "SEG2": 8.0})
   - segment_ebitda: Per-segment EBITDA override (dict, e.g., {"SEG1": 50000})
   - market_sentiment_pct: Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)
-  - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
 
 ddm:
   - ddm_growth: Dividend growth rate override (%, absolute. e.g., 4.0 → 4% growth)
-  - wacc_adj: Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)
+  - wacc_adj: Ke %p adjustment (applied Ke = Base Ke + adj)
 
 rim:
   - rim_roe_adj: ROE %p adjustment (e.g., -1.0 → all ROE -1%p)
-  - wacc_adj: Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)
+  - wacc_adj: Ke %p adjustment (applied Ke = Base Ke + adj)
 
 nav:
   - nav_discount: Holding company discount (%, e.g., 30 → NAV × 0.7)
@@ -234,7 +233,6 @@ nav:
 multiples:
   - ev_multiple: Applied multiple override (absolute, e.g., 8.5)
   - market_sentiment_pct: Market sentiment EV % adjustment
-  - wacc_adj: WACC %p adjustment (applied to cross-validation DCF)
 </driver_reference>"""
 
 # Structured (dict-type) driver fields — excluded from news_driver effects (scalar-only)
@@ -244,7 +242,7 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "dcf_primary": {
         "growth_adj_pct": "EBITDA growth rate % adjustment (e.g., +20 → base growth × 1.2, -25 → × 0.75)",
         "terminal_growth_adj": "Terminal growth rate absolute adjustment %p (e.g., +0.3 → TGR + 0.3%p)",
-        "wacc_adj": "WACC %p adjustment (e.g., +0.5 → WACC + 0.5%p)",
+        "wacc_adj": "WACC %p adjustment (applied WACC = Base WACC + adj; Base includes any distress premium)",
         "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 → EV × 1.05)",
     },
     "sotp": {
@@ -252,17 +250,16 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
         "segment_multiples": "Multiple override per segment for this scenario {code: value}",
         "segment_ebitda": "EBITDA override per segment for this scenario {code: value}",
         "segment_revenue": "Revenue override per segment for ev_revenue method {code: value}",
-        "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
         "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 -> EV * 1.05)",
     },
     "ddm": {
         "ddm_growth": "Dividend growth rate override (%, absolute. e.g., 4.0 -> 4% growth)",
-        "wacc_adj": "Ke %p adjustment (e.g., +0.5 -> Ke + 0.5%p)",
+        "wacc_adj": "Ke %p adjustment (applied Ke = Base Ke + adj)",
         "market_sentiment_pct": "Market sentiment EV % adjustment (e.g., +5 -> EV * 1.05)",
     },
     "rim": {
         "rim_roe_adj": "ROE %p adjustment (e.g., -1.0 → all ROE -1%p)",
-        "wacc_adj": "Ke %p adjustment (e.g., +0.5 → Ke + 0.5%p)",
+        "wacc_adj": "Ke %p adjustment (applied Ke = Base Ke + adj)",
     },
     "nav": {
         "nav_discount": "Holding company discount (%, e.g., 30 → NAV × 0.7)",
@@ -271,9 +268,39 @@ _METHOD_DRIVERS: dict[str, dict[str, str]] = {
     "multiples": {
         "ev_multiple": "Applied multiple override (absolute, e.g., 8.5)",
         "market_sentiment_pct": "Market sentiment EV % adjustment",
-        "wacc_adj": "WACC %p adjustment (applied to cross-validation DCF)",
     },
 }
+
+# Bull-case direction per scalar driver, in the order prompt examples draw from.
+# Examples name only drivers of the method at hand (SOTP/NAV/Multiples: no wacc_adj).
+_BULL_DIRECTIONS = {
+    "growth_adj_pct": "up",
+    "wacc_adj": "down",
+    "ddm_growth": "up",
+    "rim_roe_adj": "up",
+    "ev_multiple": "up",
+    "nav_discount": "down",
+    "market_sentiment_pct": "up",
+}
+_RATE_HIKE_EFFECTS = {
+    "wacc_adj": "+0.5",
+    "growth_adj_pct": "-10",
+    "market_sentiment_pct": "-5",
+}
+
+
+def _example_pairs(candidates: dict[str, str], drivers_info: dict[str, str]) -> list:
+    """First two example (driver, value) pairs that the method actually has."""
+    return [(k, v) for k, v in candidates.items() if k in drivers_info][:2]
+
+
+def _without_key(value, key: str):
+    """Copy of a JSON-like value with every dict entry named `key` removed."""
+    if isinstance(value, dict):
+        return {k: _without_key(v, key) for k, v in value.items() if k != key}
+    if isinstance(value, list):
+        return [_without_key(v, key) for v in value]
+    return value
 
 
 def _optionality_instructions(currency_unit: str = "$M") -> str:
@@ -432,7 +459,7 @@ def prompt_scenario_design(
         driver_json += f', "segment_multiples": {{{seg_mult_example}}}'
         rationale_json += ', "segment_multiples": "rationale for per-segment multiple differentiation"'
     driver_table = _driver_range_table(drivers_info)
-    signals_block = _format_market_signals(signals)
+    signals_block = _format_market_signals(signals, valuation_method)
     scenario_examples = _scenario_driver_example(valuation_method, segment_codes)
 
     if key_issues.strip():
@@ -444,6 +471,11 @@ def prompt_scenario_design(
         }
         effect_json = ", ".join(
             f'"{k}": {example_driver_defaults.get(k, 1)}' for k in scalar_effect_drivers
+        )
+        scalar_names = ", ".join(scalar_effect_drivers)
+        rate_hike_effects = ", ".join(
+            f"{k}: {v}"
+            for k, v in _example_pairs(_RATE_HIKE_EFFECTS, scalar_effect_drivers)
         )
         # SOTP: segment_multiples goes on each scenario as a direct field, not inside news_driver effects
         sotp_segment_block = ""
@@ -484,7 +516,7 @@ Bull EV must exceed Bear EV by a factor of at least 1.3.
 Design using multi-variable news drivers (multiple regression approach):
 Step 1: Extract 2-5 independent news_drivers from the key news issues (title + description)
 Step 2: Quantify the partial effect of each driver on SCALAR financial variables within the allowed ranges above
-  IMPORTANT: news_driver effects must contain ONLY scalar values (growth_adj_pct, wacc_adj, market_sentiment_pct, etc.)
+  IMPORTANT: news_driver effects must contain ONLY scalar values ({scalar_names})
   Do NOT put segment_multiples or segment_ebitda inside news_driver effects — these are per-segment dicts, not scalars.
 Step 3: For each scenario, decide which drivers to apply at what intensity (weight, 0~1)
   For SOTP: also set "segment_multiples" directly on each scenario with differentiated per-segment multiples.{sotp_seg_constraint}
@@ -513,7 +545,7 @@ Do not leave scalar drivers at 0 unless you have an explicit economic reason. Ea
 </driver_examples>
 
 <example>
-"50bp rate hike" driver → effects: {{wacc_adj: +0.5, growth_adj_pct: -10}}
+"50bp rate hike" driver → effects: {{{rate_hike_effects}}}
 "Tariff shock" driver → effects: {{growth_adj_pct: -15, market_sentiment_pct: -5}}
 Bear scenario: both drivers at weight 1.0 → combined effects applied
   probability_rationale: "P(aggressive hike)=30% × P(tariff escalation|hike)=50% × P(margin hit|tariff)=80% ≈ 12%, rounded to 15%"
@@ -626,10 +658,13 @@ Each scenario MUST include a "description" field (2-3 sentences) explaining the 
 # ── Market Signals Formatter (Phase 4) ──
 
 
-def _format_market_signals(signals: MarketSignals | None) -> str:
+def _format_market_signals(
+    signals: MarketSignals | None, valuation_method: str = "dcf_primary"
+) -> str:
     """Render MarketSignals into an XML block for prompt injection.
 
-    Returns empty string if signals is None or has no data.
+    Returns empty string if signals is None or has no data. The rate guidance
+    names wacc_adj only for methods that have it as a driver.
     """
     if signals is None or not signals.has_any():
         return ""
@@ -687,9 +722,18 @@ def _format_market_signals(signals: MarketSignals | None) -> str:
     # Calibration guidance
     guidance = []
     if signals.fed_funds_rate is not None or signals.us_10y_yield is not None:
-        guidance.append(
-            "- wacc_adj should reflect current rate environment relative to long-term average"
+        method_drivers = _METHOD_DRIVERS.get(
+            valuation_method, _METHOD_DRIVERS["dcf_primary"]
         )
+        if "wacc_adj" in method_drivers:
+            guidance.append(
+                "- wacc_adj should reflect current rate environment relative to long-term average"
+            )
+        else:
+            guidance.append(
+                "- Rate environment: reflect through multiples / market_sentiment_pct "
+                "(this method has no discount-rate driver)"
+            )
     if signals.vix is not None and signals.vix > 25:
         guidance.append(
             "- VIX is elevated — widen scenario spread (Bull-Bear gap should be larger)"
@@ -732,6 +776,9 @@ def prompt_scenario_classify(
     """
     drivers_info = _METHOD_DRIVERS.get(valuation_method, _METHOD_DRIVERS["dcf_primary"])
     driver_names = ", ".join(drivers_info.keys())
+    direction_example = ", ".join(
+        f'"{k}": "{v}"' for k, v in _example_pairs(_BULL_DIRECTIONS, drivers_info)
+    )
 
     news_block = ""
     if key_issues.strip():
@@ -742,7 +789,7 @@ def prompt_scenario_classify(
 </news_issues>
 """
 
-    signals_block = _format_market_signals(signals)
+    signals_block = _format_market_signals(signals, valuation_method)
 
     return f"""\
 <company>{company_name}</company>
@@ -786,7 +833,7 @@ For listed (상장) companies, DLOM MUST be 0.
             "prob_range": [25, 35],
             "narrative": "1-sentence scenario summary",
             "dlom": 0,
-            "driver_directions": {{"growth_adj_pct": "up", "wacc_adj": "down"}},
+            "driver_directions": {{{direction_example}}},
             "key_assumptions": ["Assumption 1", "Assumption 2"]
         }}
     ],
@@ -832,6 +879,10 @@ def prompt_scenario_refine(
     driver_table = _driver_range_table(drivers_info)
     scenario_examples = _scenario_driver_example(valuation_method, segment_codes)
 
+    # The draft is LLM output (possibly an older cached one): do not hand a
+    # driver back to a method that does not have it.
+    if "wacc_adj" not in drivers_info:
+        draft = _without_key(draft, "wacc_adj")
     draft_str = _json.dumps(draft, ensure_ascii=False, indent=2)
 
     news_block = ""
@@ -872,7 +923,7 @@ def prompt_scenario_refine(
                 f',\n            "segment_multiples": {{{seg_mult_example}}}'
             )
 
-    signals_block = _format_market_signals(signals)
+    signals_block = _format_market_signals(signals, valuation_method)
 
     return f"""\
 <company>{company_name}</company>

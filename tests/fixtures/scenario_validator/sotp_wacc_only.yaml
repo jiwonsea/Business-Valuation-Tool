@@ -1,0 +1,21 @@
+method: sotp
+scenarios:
+  Bull:
+    wacc_adj: -0.4
+    segment_multiples:
+      SEG1: 12.0
+      SEG2: 9.0
+  Base:
+    wacc_adj: 0.1
+    segment_multiples:
+      SEG1: 10.0
+      SEG2: 8.0
+  Bear:
+    wacc_adj: 0.8
+    segment_multiples:
+      SEG1: 8.0
+      SEG2: 6.5
+ev_by_scenario:
+  Bull: 180
+  Base: 130
+  Bear: 110

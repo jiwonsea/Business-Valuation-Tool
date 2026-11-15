@@ -10,6 +10,8 @@ import logging
 import math
 from copy import deepcopy
 
+from schemas.models import DISCOUNT_RATE_METHODS
+
 logger = logging.getLogger(__name__)
 
 
@@ -432,11 +434,41 @@ def _clamp(
 
 # ── Market Signal-Aware Validation (Phase 4) ──
 
+# SOTP/NAV/Multiples consume no discount rate, so wacc_adj cannot carry the
+# volatility there. 5%p is the same share of the +-30 market_sentiment_pct
+# range as 0.5%p is of the +-3.0 wacc_adj range (one sixth).
+_IV_SENTIMENT_SPREAD_MIN = 5.0
+# The multiple or discount each of those methods actually consumes
+_IV_DISPERSION_DRIVER = {
+    "sotp": "segment_multiples",
+    "multiples": "ev_multiple",
+    "nav": "nav_discount",
+}
+
+
+def _has_dispersion_without_discount_rate(
+    scenarios: list[dict], valuation_method: str
+) -> bool:
+    """True if scenarios differ in sentiment by >= 5%p or in the method's own driver."""
+
+    def driver(scenario: dict, name: str):
+        return scenario.get("drivers", {}).get(name, scenario.get(name))
+
+    sentiments = [driver(s, "market_sentiment_pct") or 0 for s in scenarios]
+    if sentiments and max(sentiments) - min(sentiments) >= _IV_SENTIMENT_SPREAD_MIN:
+        return True
+    name = _IV_DISPERSION_DRIVER.get(valuation_method)
+    if name is None:
+        return False
+    values = [driver(s, name) for s in scenarios]
+    return any(value != values[0] for value in values[1:])
+
 
 def validate_scenarios_with_signals(
     scenarios: list[dict],
     signals,
     weighted_value: int | None = None,
+    valuation_method: str | None = None,
 ) -> list[str]:
     """Cross-check AI scenarios against external market signals.
 
@@ -446,6 +478,9 @@ def validate_scenarios_with_signals(
         scenarios: List of scenario dicts (post-validate_scenarios).
         signals: MarketSignals object (or None).
         weighted_value: Probability-weighted per-share value (optional).
+        valuation_method: Method the scenarios are for. The IV check asks for
+            wacc_adj only where a discount rate is consumed; None keeps that
+            check for every method (callers that do not know the method).
     """
     if signals is None:
         return []
@@ -519,14 +554,22 @@ def validate_scenarios_with_signals(
 
     # 5. IV-proportional scenario spread check
     if signals.iv_30d_atm is not None and signals.iv_30d_atm > 40:
-        has_wide_wacc = any(
-            abs(s.get("drivers", {}).get("wacc_adj", s.get("wacc_adj", 0)) or 0) >= 0.5
-            for s in scenarios
-        )
-        if not has_wide_wacc:
+        if valuation_method is None or valuation_method in DISCOUNT_RATE_METHODS:
+            has_wide_wacc = any(
+                abs(s.get("drivers", {}).get("wacc_adj", s.get("wacc_adj", 0)) or 0)
+                >= 0.5
+                for s in scenarios
+            )
+            if not has_wide_wacc:
+                warnings.append(
+                    f"[Signal] IV 높음({signals.iv_30d_atm:.0f}%)인데 "
+                    f"wacc_adj ±0.5%p 이상 시나리오 없음 — 변동성 미반영 가능"
+                )
+        elif not _has_dispersion_without_discount_rate(scenarios, valuation_method):
             warnings.append(
                 f"[Signal] IV 높음({signals.iv_30d_atm:.0f}%)인데 "
-                f"wacc_adj ±0.5%p 이상 시나리오 없음 — 변동성 미반영 가능"
+                f"시나리오 간 market_sentiment_pct 차 {_IV_SENTIMENT_SPREAD_MIN:.0f}%p 이상 "
+                f"또는 배수·NAV 할인 차등 없음 — 변동성 미반영 가능"
             )
 
     return warnings

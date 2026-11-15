@@ -11,7 +11,6 @@ _METHOD_ALLOWED_DRIVERS = {
         "segment_ebitda",
         "segment_revenue",
         "growth_adj_pct",
-        "wacc_adj",
         "market_sentiment_pct",
         "dlom",
     },

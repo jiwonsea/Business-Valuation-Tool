@@ -145,7 +145,7 @@ def sheet_dashboard(ctx: Ctx):
             items.append(("Total Payout/주", ddm.total_payout))
         items += [
             ("배당 성장률", f"{ddm.growth:.2f}%"),
-            ("자기자본비용 (Ke)", f"{ddm.ke:.2f}%"),
+            ("자기자본비용 (Ke, Base)", f"{ddm.ke:.2f}%"),
             ("주당 내재가치 (DDM)", ddm.equity_per_share),
         ]
         for label, val in items:
@@ -168,7 +168,7 @@ def sheet_dashboard(ctx: Ctx):
         r += 1
         items = [
             ("장부가치 (BV₀)", f"{rim.bv_current:,}"),
-            ("자기자본비용 (Ke)", f"{rim.ke:.2f}%"),
+            ("자기자본비용 (Ke, Base)", f"{rim.ke:.2f}%"),
             ("PV(잔여이익)", f"{rim.pv_ri_sum:,}"),
             ("PV(Terminal)", f"{rim.pv_terminal:,}"),
             ("자기자본가치", f"{rim.equity_value:,}"),
@@ -245,7 +245,7 @@ def sheet_dashboard(ctx: Ctx):
             ("PV(FCFF)", f"{dcf.pv_fcff_sum:,}"),
             ("PV(Terminal)", f"{dcf.pv_terminal:,}"),
             ("DCF EV", f"{dcf.ev_dcf:,}"),
-            ("WACC", f"{dcf.wacc:.2f}%"),
+            ("WACC (Base)", f"{dcf.wacc:.2f}%"),
             ("Terminal Growth", f"{dcf.terminal_growth:.1f}%"),
         ]
         for label, val in items:

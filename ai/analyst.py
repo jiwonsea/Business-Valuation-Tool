@@ -425,7 +425,9 @@ class AIAnalyst:
                 if isinstance(validated, dict)
                 else []
             )
-            sig_warnings = validate_scenarios_with_signals(sc_list, signals)
+            sig_warnings = validate_scenarios_with_signals(
+                sc_list, signals, valuation_method=valuation_method
+            )
             for w in sig_warnings:
                 logger.warning("[scenarios:signals] %s: %s", company_name, w)
 
@@ -542,7 +544,9 @@ class AIAnalyst:
                 if isinstance(validated, dict)
                 else []
             )
-            sig_warnings = validate_scenarios_with_signals(sc_list, signals)
+            sig_warnings = validate_scenarios_with_signals(
+                sc_list, signals, valuation_method=valuation_method
+            )
             for w in sig_warnings:
                 logger.warning("[scenarios:2pass:signals] %s: %s", company_name, w)
 

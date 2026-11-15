@@ -76,7 +76,7 @@ def print_report(vi: ValuationInput, result: ValuationResult):
 
     # WACC
     w = result.wacc
-    print(f"\n[WACC] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
+    print(f"\n[WACC (Base)] βL={w.bl}, Ke={w.ke}%, Kd(세후)={w.kd_at}%, WACC={w.wacc}%")
 
     # Mixed SOTP determination (any non-default method: ev_revenue, pbv, pe)
     is_mixed = any(

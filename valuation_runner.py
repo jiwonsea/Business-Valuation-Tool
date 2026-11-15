@@ -10,9 +10,9 @@ import yaml
 logger = logging.getLogger(__name__)
 
 from schemas.models import (
+    DISCOUNT_RATE_METHODS,
     CompanyProfile,
     WACCParams,
-    WACCResult,
     ScenarioParams,
     DCFParams,
     DDMParams,
@@ -38,6 +38,7 @@ from schemas.models import (
     RelativeInputs,
     GapDiagnostic,
 )
+from engine.discount import effective_discount_rate
 from engine.drivers import resolve_drivers
 from engine.normalize import NetDebtResolution, resolve_net_debt
 from schemas.provenance import (
@@ -100,27 +101,6 @@ def _probability_factor(scenarios) -> float:
     if not math.isfinite(total) or total <= 0:
         raise ValueError("Scenario probability total must be finite and positive")
     return 100.0 / total
-
-
-def _adjust_wacc(base: WACCResult, wacc_adj: float, eq_w: float = 100.0) -> WACCResult:
-    """Per-scenario WACC adjustment. wacc_adj shifts Ke; WACC is recomputed from components.
-
-    Args:
-        base: Base WACC result
-        wacc_adj: Ke shift in %p (e.g., +0.5 -> Ke + 0.5%p)
-        eq_w: Equity weight (%) from WACCParams -- needed to recompute WACC correctly
-    """
-    if wacc_adj == 0:
-        return base
-    new_ke = round(base.ke + wacc_adj, 4)
-    dw = 100 - eq_w
-    new_wacc = round(new_ke * eq_w / 100 + base.kd_at * dw / 100, 4)
-    return WACCResult(
-        bl=base.bl,
-        ke=new_ke,
-        kd_at=base.kd_at,
-        wacc=new_wacc,
-    )
 
 
 def _sotp_scenarios_undifferentiated(resolved_scenarios) -> bool:
@@ -764,6 +744,29 @@ def run_valuation(vi: ValuationInput) -> ValuationResult:
                 prob_sum=math.fsum(sc.prob for sc in vi.scenarios.values()),
             )
         )
+    if result.primary_method not in DISCOUNT_RATE_METHODS:
+        # No discount rate is consumed here, so a wacc_adj (set directly or
+        # through news drivers) changed nothing: report it once per profile.
+        resolved_adj = {
+            code: resolve_drivers(sc, vi.news_drivers).wacc_adj
+            for code, sc in vi.scenarios.items()
+        }
+        ignored = {code: adj for code, adj in resolved_adj.items() if adj != 0}
+        if ignored:
+            warnings.append(
+                make_warning(
+                    "UNSUPPORTED_DRIVER",
+                    "input",
+                    f"wacc_adj는 {result.primary_method}에서 적용되지 않습니다"
+                    "(할인율 미변경) — "
+                    + ", ".join(
+                        f"{code} {adj:+.2f}%p" for code, adj in ignored.items()
+                    ),
+                    driver="wacc_adj",
+                    method=result.primary_method,
+                    scenarios=",".join(ignored),
+                )
+            )
     warnings += build_financial_routing_advisories(vi, result)
     result.engine_warnings = warnings
     result.review_required = any(w.severity == "review" for w in warnings)
@@ -1713,9 +1716,10 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_ev = total_ev  # Default: base DCF EV
 
-        # Per-scenario WACC adjustment
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
-        effective_wacc = sc_wacc.wacc
+        # Per-scenario WACC: Base WACC (distress premium included) + wacc_adj
+        effective_wacc, discount_shift = effective_discount_rate(
+            wacc_result.wacc, sc.wacc_adj, "wacc"
+        )
 
         # Per-scenario DCF driver adjustment
         sc_dcf_params = _make_scenario_dcf_params(vi.dcf_params, sc, effective_wacc)
@@ -1795,7 +1799,7 @@ def _run_dcf_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             vi.rcps_dividend_rate,
             prob_weight=sc.prob * prob_factor,
         )
-        scenario_results[code] = r
+        scenario_results[code] = r.model_copy(update={"discount_shift": discount_shift})
         total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     # DCF sensitivity
@@ -1919,8 +1923,9 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
     for code, sc in vi.scenarios.items():
         sc = resolve_drivers(sc, vi.news_drivers)
         sc_growth = sc.ddm_growth if sc.ddm_growth is not None else base_growth
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
-        sc_ke = sc_wacc.ke
+        sc_ke, discount_shift = effective_discount_rate(
+            wacc_result.ke, sc.wacc_adj, "ke"
+        )
         try:
             if sc_ke <= 0:
                 raise ValueError(f"sc_ke={sc_ke:.2f}% <= 0")
@@ -1961,7 +1966,7 @@ def _run_ddm_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             0.0,
             prob_weight=sc.prob * prob_factor,
         )
-        scenario_results[code] = r
+        scenario_results[code] = r.model_copy(update={"discount_shift": discount_shift})
         total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     # DDM base EV (for cross-validation): DDM equity + net_debt = EV
@@ -2078,8 +2083,9 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
         sc_eq = (
             rim_raw.equity_value
         )  # track equity separately to avoid leverage amplification
-        sc_wacc = _adjust_wacc(wacc_result, sc.wacc_adj, vi.wacc_params.eq_w)
-        sc_ke = sc_wacc.ke
+        sc_ke, discount_shift = effective_discount_rate(
+            wacc_result.ke, sc.wacc_adj, "ke"
+        )
         needs_recalc = (sc.rim_roe_adj != 0) or (sc.wacc_adj != 0)
         if needs_recalc:
             adj_roes = [r + sc.rim_roe_adj for r in roe_forecasts]
@@ -2118,7 +2124,7 @@ def _run_rim_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRes
             0.0,
             prob_weight=sc.prob * prob_factor,
         )
-        scenario_results[code] = r
+        scenario_results[code] = r.model_copy(update={"discount_shift": discount_shift})
         total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:
@@ -2889,7 +2895,9 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
 
     for sc_code, sc in vi.scenarios.items():
         # growth_adj_pct adjusts peak sales; wacc_adj adjusts discount rate; pos_override adjusts PoS
-        adj_discount = discount_rate + sc.wacc_adj
+        adj_discount, discount_shift = effective_discount_rate(
+            discount_rate, sc.wacc_adj, "discount_rate"
+        )
         adj_pipeline = []
         for d in pipeline_dicts:
             adj_d = dict(d)
@@ -2929,7 +2937,9 @@ def _run_rnpv_valuation(vi: ValuationInput, wacc_result, um: int) -> ValuationRe
             rcps_dividend_rate=vi.rcps_dividend_rate,
             prob_weight=sc.prob * prob_factor,
         )
-        scenario_results[sc_code] = sc_result
+        scenario_results[sc_code] = sc_result.model_copy(
+            update={"discount_shift": discount_shift}
+        )
         total_weighted = math.fsum(item.weighted for item in scenario_results.values())
 
     if not scenario_results:

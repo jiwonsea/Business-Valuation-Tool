@@ -186,6 +186,70 @@ class TestValidateScenariosWithSignals:
         warnings = validate_scenarios_with_signals(scenarios, signals)
         assert any("IV" in w for w in warnings)
 
+    def test_iv_spread_check_asks_for_wacc_adj_only_where_it_is_applied(self):
+        from ai.validators import validate_scenarios_with_signals
+
+        signals = MarketSignals(iv_30d_atm=50.0)
+        scenarios = [
+            {"code": "Bull", "prob": 30, "drivers": {"wacc_adj": 0.2}},
+            {"code": "Bear", "prob": 30, "drivers": {"wacc_adj": -0.2}},
+        ]
+        for method in (None, "dcf_primary", "ddm", "rim", "rnpv"):
+            warnings = validate_scenarios_with_signals(
+                scenarios, signals, valuation_method=method
+            )
+            assert sum("wacc_adj ±0.5%p" in w for w in warnings) == 1, method
+        for method in ("sotp", "nav", "multiples"):
+            warnings = validate_scenarios_with_signals(
+                scenarios, signals, valuation_method=method
+            )
+            assert not any("wacc_adj" in w for w in warnings), method
+            assert sum("IV 높음(50%)" in w for w in warnings) == 1, method
+
+    def test_iv_spread_check_without_a_discount_rate_reads_dispersion_drivers(self):
+        from ai.validators import validate_scenarios_with_signals
+
+        signals = MarketSignals(iv_30d_atm=50.0)
+
+        def check(bull: dict, bear: dict, method: str = "sotp") -> list[str]:
+            scenarios = [
+                {"code": "Bull", "prob": 30, **bull},
+                {"code": "Bear", "prob": 30, **bear},
+            ]
+            return validate_scenarios_with_signals(
+                scenarios, signals, valuation_method=method
+            )
+
+        narrow = check(
+            {"drivers": {"market_sentiment_pct": 2}},
+            {"drivers": {"market_sentiment_pct": -2}},
+        )
+        assert sum("IV" in w for w in narrow) == 1
+        wide = check(
+            {"drivers": {"market_sentiment_pct": 3}},
+            {"drivers": {"market_sentiment_pct": -2}},
+        )
+        assert wide == []
+        multiples = check(
+            {"segment_multiples": {"SEG1": 12.0}}, {"segment_multiples": {"SEG1": 8.0}}
+        )
+        assert multiples == []
+        nav = check(
+            {"drivers": {"nav_discount": 20}}, {"drivers": {"nav_discount": 40}}, "nav"
+        )
+        assert nav == []
+        ev_multiple = check(
+            {"drivers": {"ev_multiple": 10.0}},
+            {"drivers": {"ev_multiple": 7.0}},
+            "multiples",
+        )
+        assert ev_multiple == []
+        # a driver the method does not consume carries no dispersion
+        other_method = check(
+            {"drivers": {"nav_discount": 20}}, {"drivers": {"nav_discount": 40}}
+        )
+        assert sum("IV" in w for w in other_method) == 1
+
 
 # ── FRED fetch tests (mocked) ──
 

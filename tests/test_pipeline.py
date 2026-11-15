@@ -2,6 +2,7 @@
 
 import pytest
 
+import tests.test_no_result_failure_contract as k0c
 from pipeline.yahoo_finance import classify_exchange
 from pipeline.data_fetcher import CompanyIdentity, _is_korean, _is_likely_ticker
 from schemas.models import (
@@ -12,6 +13,9 @@ from schemas.models import (
     PeerCompany,
     ConsolidatedFinancials,
 )
+
+# The K-0C harness (every side-effecting boundary replaced) drives auto_analyze().
+from tests.test_no_result_failure_contract import env_guard, harness  # noqa: F401
 
 
 # ═══════════════════════════════════════════════════════════
@@ -491,3 +495,118 @@ def test_industry_metadata_survives_draft_yaml_and_load(
     assert vi.company.industry_code_label == label
     assert vi.company.industry_source == source
     assert vi.industry == (label or "")
+
+
+# ═══════════════════════════════════════════════════════════
+# J-4: wacc_adj is not persisted where no discount rate is consumed
+# ═══════════════════════════════════════════════════════════
+
+
+def _ai_output_with_wacc_adj() -> tuple[list[dict], list[dict]]:
+    scenarios = [
+        {
+            "code": "Bull",
+            "drivers": {"growth_adj_pct": 20, "wacc_adj": -0.4},
+            "driver_rationale": {"growth_adj_pct": "demand", "wacc_adj": "rates"},
+        },
+        {"code": "Base", "drivers": {"growth_adj_pct": 0, "wacc_adj": 0.0}},
+        {
+            "code": "Bear",
+            "active_drivers": {"rate_hike": 1.0},
+            "segment_multiples": {"SEG1": 8.0},
+        },
+    ]
+    news_drivers = [
+        {"id": "rate_hike", "effects": {"wacc_adj": 0.5, "growth_adj_pct": -10}},
+        {"id": "tariff", "effects": {"market_sentiment_pct": -5}},
+    ]
+    return scenarios, news_drivers
+
+
+@pytest.mark.parametrize("method", ["sotp", "nav", "multiples"])
+def test_strip_unsupported_drivers_removes_wacc_adj(method):
+    import copy
+
+    from pipeline.profile_generator import _strip_unsupported_drivers
+
+    scenarios, news_drivers = _ai_output_with_wacc_adj()
+    untouched = copy.deepcopy((scenarios, news_drivers))
+
+    out_scenarios, out_news, dropped = _strip_unsupported_drivers(
+        scenarios, news_drivers, method
+    )
+
+    assert out_scenarios == [
+        {
+            "code": "Bull",
+            "drivers": {"growth_adj_pct": 20},
+            "driver_rationale": {"growth_adj_pct": "demand"},
+        },
+        {"code": "Base", "drivers": {"growth_adj_pct": 0}},
+        {
+            "code": "Bear",
+            "active_drivers": {"rate_hike": 1.0},
+            "segment_multiples": {"SEG1": 8.0},
+        },
+    ]
+    assert out_news == [
+        {"id": "rate_hike", "effects": {"growth_adj_pct": -10}},
+        {"id": "tariff", "effects": {"market_sentiment_pct": -5}},
+    ]
+    assert dropped == [
+        "scenarios.Bull.drivers",
+        "scenarios.Bull.driver_rationale",
+        "scenarios.Base.drivers",
+        "news_drivers.rate_hike.effects",
+    ]
+    assert (scenarios, news_drivers) == untouched  # inputs are not mutated
+
+
+@pytest.mark.parametrize("method", ["dcf_primary", "dcf", "ddm", "rim", "rnpv"])
+def test_strip_unsupported_drivers_keeps_discount_rate_methods(method):
+    from pipeline.profile_generator import _strip_unsupported_drivers
+
+    scenarios, news_drivers = _ai_output_with_wacc_adj()
+
+    out_scenarios, out_news, dropped = _strip_unsupported_drivers(
+        scenarios, news_drivers, method
+    )
+
+    assert out_scenarios is scenarios and out_news is news_drivers
+    assert (out_scenarios, out_news) == _ai_output_with_wacc_adj()
+    assert dropped == []
+
+
+def test_auto_analyze_does_not_persist_wacc_adj_for_sotp(harness, capsys):  # noqa: F811
+    """The one call site: an LLM answer that still carries wacc_adj for SOTP."""
+    import copy
+
+    import yaml
+
+    scenarios = copy.deepcopy(k0c.SCENARIOS)
+    for sc in scenarios["scenarios"]:
+        sc["drivers"]["wacc_adj"] = {"Base": 0.0, "Bull": -0.7, "Bear": 0.7}[sc["code"]]
+        sc["driver_rationale"] = {"wacc_adj": "rate view"}
+    scenarios["news_drivers"] = [
+        {"id": "rate_hike", "name": "Rate hike", "effects": {"wacc_adj": 0.5}}
+    ]
+    harness.returns["ai.scenarios"] = scenarios
+    harness.identity["SynCo"] = k0c.kr_identity()
+
+    result = harness.pg.auto_analyze(
+        "SynCo",
+        output_dir=str(harness.out),
+        scored_data={"market": "KR", "ticker": "123456"},
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("[WARN] wacc_adj 7건 제거 — sotp는 할인율을 소비하지 않음") == 1
+    saved = (harness.root / "profiles" / "123456.yaml").read_text(encoding="utf-8")
+    assert "wacc_adj" not in saved
+    assert yaml.safe_load(saved)["news_drivers"][0]["effects"] == {}
+    assert result.result.primary_method == "sotp"
+    assert "UNSUPPORTED_DRIVER" not in {w.code for w in result.result.engine_warnings}
+    assert result.validation_report.status == "ok"
+    assert result.result.weighted_value == pytest.approx(
+        k0c.PINNED_WEIGHTED_VALUE, rel=1e-9
+    )

@@ -84,7 +84,10 @@ def test_engine_warning_excel_order_rows_and_append_only(tmp_path, monkeypatch):
                     continue
                 assert new[cell.coordinate].value == cell.value
                 assert new[cell.coordinate].number_format == cell.number_format
-    assert baseline["경고"].max_row == 1
+    # msft_frozen is SOTP and its news drivers resolve to a wacc_adj (J-4)
+    assert [
+        row[0] for row in baseline["경고"].iter_rows(min_row=2, values_only=True)
+    ] == ["UNSUPPORTED_DRIVER"]
     assert baseline.sheetnames[:2] == ["경고", "Raw Data"]
     dashboard = current["Dashboard"]
     summary = next(
@@ -802,3 +805,147 @@ def test_ddm_share_inputs_keep_raw_numbers_and_display_unit_amounts_stay_integer
         cell = ws.cell(found.row, 2)
         assert cell.value == expected
         assert cell.number_format == '#,##0.00"$"'
+
+
+# ── J-4: scenario discount rates are read from the engine result ─────────────
+
+
+def _j4_input(method: str, **updates):
+    """nexus_frozen valued by `method` with wacc_adj -0.5 / 0 / +0.5."""
+    from pathlib import Path
+
+    from schemas.models import DDMParams, RIMParams
+    from valuation_runner import load_profile
+
+    vi = load_profile(str(Path(__file__).parent / "fixtures/nexus_frozen.yaml"))
+    adjs = {"Bull": -0.5, "Base": 0.0, "Bear": 0.5}
+    return vi.model_copy(
+        update={
+            "valuation_method": method,
+            "mc_enabled": False,
+            "scenarios": {
+                code: vi.scenarios[code].model_copy(update={"wacc_adj": adj})
+                for code, adj in adjs.items()
+            },
+            "ddm_params": DDMParams(dps=1.2345, dividend_growth=2),
+            "rim_params": RIMParams(roe_forecasts=[10, 11, 12], terminal_growth=1),
+            **updates,
+        }
+    )
+
+
+def _sheet(vi, result, build, title: str):
+    from openpyxl import Workbook
+    from output.sheets._ctx import make_ctx
+
+    ctx = make_ctx(vi, result, Workbook())
+    build(ctx)
+    return ctx, ctx.wb[title]
+
+
+def _scenario_rows(vi, result) -> dict[str, dict[str, object]]:
+    """Scenario Analysis driver rows as {label: {scenario code: cell value}}."""
+    from output.sheets.scenarios import sheet_scenarios
+
+    ctx, ws = _sheet(vi, result, sheet_scenarios, "Scenario Analysis")
+    rows: dict[str, dict[str, object]] = {}
+    for row in ws.iter_rows(min_row=4):
+        label = row[0].value
+        if isinstance(label, str) and label not in rows:
+            rows[label] = {
+                code: row[i + 1].value for i, code in enumerate(ctx.sc_codes)
+            }
+    return rows
+
+
+def test_scenario_sheet_shows_the_wacc_the_engine_applied():
+    from schemas.models import WACCParams
+    from valuation_runner import run_valuation
+
+    stress = WACCParams(rf=4, erp=5, bu=1, de=500, tax=25, kd_pre=6, eq_w=60)
+    vi = _j4_input("dcf_primary", wacc_params=stress)
+
+    rows = _scenario_rows(vi, run_valuation(vi))
+
+    assert rows["WACC"] == {
+        "Bull": "14.20% (Base 14.70% -0.50%p)",
+        "Base": "14.70%",
+        "Bear": "15.20% (Base 14.70% +0.50%p)",
+    }
+
+
+def test_scenario_sheet_shows_the_ke_the_engine_applied():
+    from valuation_runner import run_valuation
+
+    ke_row = {
+        "Bull": "14.99% (Base 15.49% -0.50%p)",
+        "Base": "15.49%",
+        "Bear": "15.99% (Base 15.49% +0.50%p)",
+    }
+    ddm = _j4_input("ddm")
+    ddm = ddm.model_copy(
+        update={"company": ddm.company.model_copy(update={"currency": "USD"})}
+    )
+    rows = _scenario_rows(ddm, run_valuation(ddm))
+    assert rows["Ke (자기자본비용)"] == ke_row
+    assert rows["산식: DPS×(1+g) / (Ke-g)"] == {
+        "Bull": "9.69$",
+        "Base": "9.33$",
+        "Bear": "9.00$",
+    }
+
+    rim = _j4_input("rim")
+    rows = _scenario_rows(rim, run_valuation(rim))
+    assert rows["Ke (자기자본비용)"] == ke_row
+    assert rows["RI Spread (ROE-Ke)"] == {
+        "Bull": "-5.0%p",
+        "Base": "-5.5%p",
+        "Bear": "-6.0%p",
+    }
+
+
+def test_scenario_sheet_rate_falls_back_to_base_without_a_shift():
+    from valuation_runner import run_valuation
+
+    vi = _j4_input("ddm")
+    result = run_valuation(vi)
+    scenarios = {
+        code: sc.model_copy(update={"discount_shift": None})
+        for code, sc in result.scenarios.items()
+    }
+
+    rows = _scenario_rows(vi, result.model_copy(update={"scenarios": scenarios}))
+
+    assert set(rows["Ke (자기자본비용)"].values()) == {"15.49%"}
+
+
+def test_sotp_sheet_does_not_describe_an_unapplied_wacc_adjustment():
+    from output.sheets.warnings import sheet_warnings
+    from valuation_runner import run_valuation
+
+    vi = _j4_input("sotp")
+    result = run_valuation(vi)
+
+    rows = _scenario_rows(vi, result)
+    _, warnings = _sheet(vi, result, sheet_warnings, "경고")
+
+    assert not [label for label in rows if "WACC" in label or "Ke" in label]
+    codes = [row[0] for row in warnings.iter_rows(min_row=2, values_only=True)]
+    assert codes.count("UNSUPPORTED_DRIVER") == 1
+
+
+def test_assumptions_label_the_base_rate():
+    from output.sheets.assumptions import sheet_assumptions
+    from valuation_runner import run_valuation
+
+    def labels(method: str) -> list:
+        vi = _j4_input(method)
+        _, ws = _sheet(vi, run_valuation(vi), sheet_assumptions, "Assumptions")
+        return [row[0].value for row in ws.iter_rows()]
+
+    dcf = labels("dcf_primary")
+    assert dcf.count("WACC (Base)") == 1 and "WACC" not in dcf
+    for method in ("ddm", "rim"):
+        found = labels(method)
+        assert found.count("자기자본비용 (Ke, Base)") == 1
+        assert "WACC (Base)" not in found

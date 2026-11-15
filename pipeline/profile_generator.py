@@ -331,6 +331,40 @@ def _write_enrichment_checkpoint(path: str, raw: dict) -> None:
     _atomic_write_yaml(path, checkpoint)
 
 
+def _strip_unsupported_drivers(
+    ai_scenarios: list[dict], ai_news_drivers: list[dict], method: str
+) -> tuple[list[dict], list[dict], list[str]]:
+    """Drop `wacc_adj` from AI output for methods that consume no discount rate.
+
+    Pure: returns new lists plus the places `wacc_adj` was dropped from. For a
+    method in DISCOUNT_RATE_METHODS the inputs come back as they are.
+    """
+    from schemas.models import DISCOUNT_RATE_METHODS
+
+    if method in DISCOUNT_RATE_METHODS:
+        return ai_scenarios, ai_news_drivers, []
+
+    dropped: list[str] = []
+    scenarios = []
+    for sc in ai_scenarios:
+        sc = dict(sc)
+        for field in ("drivers", "driver_rationale"):
+            values = sc.get(field)
+            if isinstance(values, dict) and "wacc_adj" in values:
+                sc[field] = {k: v for k, v in values.items() if k != "wacc_adj"}
+                dropped.append(f"scenarios.{sc.get('code', '?')}.{field}")
+        scenarios.append(sc)
+    news_drivers = []
+    for nd in ai_news_drivers:
+        nd = dict(nd)
+        effects = nd.get("effects")
+        if isinstance(effects, dict) and "wacc_adj" in effects:
+            nd["effects"] = {k: v for k, v in effects.items() if k != "wacc_adj"}
+            dropped.append(f"news_drivers.{nd.get('id', '?')}.effects")
+        news_drivers.append(nd)
+    return scenarios, news_drivers, dropped
+
+
 def _repair_scenarios_safely(
     analyst,
     raw: dict,
@@ -1676,6 +1710,15 @@ def _auto_analyze(
                     for k, v in nd["effects"].items()
                     if k not in _STRUCTURED_EFFECT_KEYS
                 }
+        # SOTP/NAV/Multiples consume no discount rate: wacc_adj is not persisted
+        ai_scenarios, ai_news_drivers, dropped = _strip_unsupported_drivers(
+            ai_scenarios, ai_news_drivers, val_method
+        )
+        if dropped:
+            print(
+                f"  [WARN] wacc_adj {len(dropped)}건 제거 — "
+                f"{val_method}는 할인율을 소비하지 않음"
+            )
         if ai_news_drivers:
             raw["news_drivers"] = ai_news_drivers
 

@@ -105,7 +105,7 @@ def sheet_assumptions(ctx: Ctx):
                 f"{w.bl:.3f}",
                 "Equity Beta" if wp.is_financial else "Hamada 조정",
             ),
-            ("자기자본비용 (Ke)", f"{w.ke:.2f}%", "Rf + βL × ERP"),
+            ("자기자본비용 (Ke, Base)", f"{w.ke:.2f}%", "Rf + βL × ERP"),
         ]
         for label, val, note in ke_params:
             write_cell(ws, r, 1, label)
@@ -155,7 +155,7 @@ def sheet_assumptions(ctx: Ctx):
             ("세전 타인자본비용 (Kd)", f"{wp.kd_pre:.2f}%", "입력 가정"),
             ("세후 타인자본비용", f"{w.kd_at:.2f}%", "Kd × (1-t)"),
             ("자기자본 비중", f"{wp.eq_w:.1f}%", "최근 보고 기준"),
-            ("WACC", f"{w.wacc:.2f}%", "Ke×E% + Kd(세후)×D%"),
+            ("WACC (Base)", f"{w.wacc:.2f}%", "Ke×E% + Kd(세후)×D%"),
         ]
         # Insert size premium row after Ke if applicable
         if wp.size_premium > 0:

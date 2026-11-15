@@ -60,6 +60,7 @@ def test_dcf_wacc_only_fallback_records_base_ev():
     assert warning.fields["used_base_ev"] is True
     assert warning.fields["terminal_growth"] == vi.dcf_params.terminal_growth
     assert warning.fields["applied_wacc"] <= warning.fields["terminal_growth"]
+    assert warning.fields["applied_wacc"] == result.wacc.wacc - 20  # Base WACC + adj
     assert result.scenarios["Base"].total_ev == result.total_ev
 
 
@@ -262,13 +263,40 @@ def test_console_once_sorted_and_zero(capsys):
             text.index(f"{symbol} [{warning.code}] {warning.scope} — {warning.message}")
         )
     assert positions == sorted(positions)
-    assert positions[-1] < text.index("[WACC]")
+    assert positions[-1] < text.index("[WACC (Base)]")
     vi = _input()
     result = run_valuation(vi)
     assert result.engine_warnings == []
     assert result.review_required is False
     print_report(vi, result)
     assert "[경고 " not in capsys.readouterr().out
+
+
+def test_legacy_sotp_wacc_adj_is_reported_once_as_unsupported(capsys):
+    """msft_frozen is valued by SOTP; its news drivers resolve to a wacc_adj."""
+    vi = load_profile(str(FIXTURES / "msft_frozen.yaml"))
+    vi = vi.model_copy(update={"mc_enabled": False})
+    result = run_valuation(vi)
+
+    assert result.primary_method == "sotp"
+    warnings = [w for w in result.engine_warnings if w.code == "UNSUPPORTED_DRIVER"]
+    assert len(warnings) == 1
+    assert (warnings[0].severity, warnings[0].scope) == ("warning", "input")
+    assert warnings[0].message == (
+        "wacc_adj는 sotp에서 적용되지 않습니다(할인율 미변경) — "
+        "Base +0.01%p, Bull -0.13%p, Bear +0.32%p"
+    )
+    assert warnings[0].fields == {
+        "driver": "wacc_adj",
+        "method": "sotp",
+        "scenarios": "Base,Bull,Bear",
+    }
+    assert result.review_required is False
+    assert [sc.discount_shift for sc in result.scenarios.values()] == [None] * 3
+    print_report(vi, result)
+    text = capsys.readouterr().out
+    assert text.count("[UNSUPPORTED_DRIVER]") == 1
+    assert text.count("[WACC (Base)]") == 1
 
 
 @pytest.mark.parametrize(

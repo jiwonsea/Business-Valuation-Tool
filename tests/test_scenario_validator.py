@@ -38,6 +38,13 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures" / "scenario_validator"
             {"asymmetry_major"},
             False,
         ),
+        # SOTP consumes no discount rate: wacc_adj does not count as a driver
+        (
+            "sotp_wacc_only.yaml",
+            "fail",
+            {"driver_diversity_low"},
+            True,
+        ),
     ],
 )
 def test_validate_scenario_differentiation_fixture(

@@ -329,7 +329,7 @@ def render_charts(
             for offset, (prefix, label, color) in enumerate((("is.revenue.", spec.series_labels[0], COLORS["primary"]), ("is.operating_income.", spec.series_labels[1], COLORS["blue_mid"]), ("is.net_income.", spec.series_labels[2], COLORS["warning"]))):
                 mapping = {}
                 for point, value in _series(spec, values, prefix):
-                    key = "FY26E PREREG_A" if "FY2026E.PREREG_A" in point.fact_id else "FY26A A-8K" if "FY2026A.A-8K" in point.fact_id else "FY27E" if "FY2027E.base" in point.fact_id else "FY28E" if "FY2028E.base" in point.fact_id else f"FY{re.search(r'FY(\d{4})', point.fact_id).group(1)[2:]}A"
+                    key = "FY26E PREREG_A" if "FY2026E.PREREG_A" in point.fact_id else "FY26A A-8K" if "FY2026A.A-8K" in point.fact_id else "FY27E" if "FY2027E.base" in point.fact_id else "FY28E" if "FY2028E.base" in point.fact_id else "FY" + re.search(r"FY(\d{4})", point.fact_id).group(1)[2:] + "A"
                     mapping[key] = value
                 series = [mapping.get(key, 0) for key in periods]
                 axis.bar([index + (offset - 1) * width for index in range(len(periods))], series, width=width, label=label, color=color)

@@ -11,6 +11,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from forecast.tests.mu_report_guards import require_local_evidence, require_report_dependencies
+
+require_report_dependencies()
+
 from forecast.scripts.mu_report import build
 from forecast.scripts.mu_report.charts import chart_data_contract, e2b_specs
 from forecast.scripts.mu_report.gates import (
@@ -23,6 +27,7 @@ from forecast.scripts.mu_report.revision import RANGE_J, draw_revision_chart
 
 @pytest.fixture(scope="session")
 def prepared():
+    require_local_evidence()
     return build._run_e2b_preflight()
 
 

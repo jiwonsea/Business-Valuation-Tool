@@ -9,6 +9,11 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+
+from forecast.tests.mu_report_guards import require_local_evidence, require_report_dependencies
+
+require_report_dependencies()
+
 from pypdf import PdfReader
 
 from forecast.engine.generic_forecast import run_generic_forecast
@@ -91,6 +96,7 @@ def rendered_bundle(tmp_path_factory):
 
 
 def test_g1_input_pins_pass_and_violation():
+    require_local_evidence()
     gate_g1_inputs(EvidenceReader("E2-A"))
     pins = copy.deepcopy(load_pins())
     pins["E2-A"][0]["sha256"] = "f" * 64
@@ -483,6 +489,7 @@ def test_r13_actual_yaml_reproduces_r12_and_cash_flow_values():
 
 
 def _e2b_narrative_inputs():
+    require_local_evidence()
     narrative_text = Path("forecast/inputs/mu_fy2026q4_narrative_ed1.yaml").read_text(encoding="utf-8")
     assumptions_text = Path("forecast/inputs/mu_fy2026q4_report_assumptions.yaml").read_text(encoding="utf-8")
     ex991_text = Path("logs/mu/fy2026q4/postprint/ex991.htm").read_text(encoding="utf-8")
@@ -953,6 +960,7 @@ def test_r5_dryrun_placeholder_value_injections():
 
 
 def test_r5_dryrun_boundary_and_fixture_injection(tmp_path):
+    require_local_evidence()
     manifest = dryrun_manifest_from_extracts("forecast/scripts/mu_report/sources")
     output = Path("logs/_mu_report_runs/dryrun_test").resolve()
     reader = EvidenceReader("E2-A")
@@ -1020,6 +1028,7 @@ def test_r6_g13c_rejects_mixed_period_units_reverse_order_and_omission(tmp_path)
 
 
 def test_r6_prepared_remarks_categories_are_exact_source_substrings():
+    require_local_evidence()
     remarks = json.loads(Path("forecast/scripts/mu_report/sources/prepared_remarks.json").read_text(encoding="utf-8"))
     reader = EvidenceReader("E2-A")
     pdf = PdfReader(BytesIO(reader.read_bytes(remarks["source"]["path"])))

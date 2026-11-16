@@ -4,6 +4,10 @@ from unittest.mock import patch
 
 import pytest
 
+from forecast.tests.mu_report_guards import require_local_evidence, require_report_dependencies
+
+require_report_dependencies()
+
 from forecast.scripts.mu_report.gates import GateError, gate_pdf_bold_runs
 from forecast.scripts.mu_report.render import _html_from_markdown
 
@@ -69,6 +73,7 @@ def test_header_gate_rejects_nowrap_overflow():
 
 @pytest.fixture(scope="module")
 def prepared_r23():
+    require_local_evidence()
     from forecast.scripts.mu_report import build
     return build._run_e2b_preflight()
 

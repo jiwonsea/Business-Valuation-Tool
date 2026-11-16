@@ -7,6 +7,10 @@ import pytest
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
+from forecast.tests.mu_report_guards import require_local_evidence, require_report_dependencies
+
+require_report_dependencies()
+
 from forecast.scripts.mu_report import build
 from forecast.scripts.mu_report.gates import GateError, gate_g15b_localized_ui
 from forecast.scripts.mu_report.render import _html_from_markdown, _write_ed1_xlsx_summary
@@ -15,6 +19,7 @@ from forecast.tests.test_mu_report_r22 import rendered_text
 
 @pytest.fixture(scope="module")
 def prepared_r24():
+    require_local_evidence()
     return build._run_e2b_preflight()
 
 

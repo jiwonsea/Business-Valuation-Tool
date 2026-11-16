@@ -5,6 +5,10 @@ import re
 
 import pytest
 
+from forecast.tests.mu_report_guards import require_local_evidence, require_report_dependencies
+
+require_report_dependencies()
+
 from forecast.scripts.mu_report import build
 from forecast.scripts.mu_report.charts import chart_data_contract, e2b_specs
 from forecast.scripts.mu_report.render import _html_from_markdown, _locale, render_markdown
@@ -13,6 +17,7 @@ from forecast.scripts.mu_report.gates import GateError, gate_missing_glyphs, gat
 
 @pytest.fixture(scope="session")
 def prepared_r22():
+    require_local_evidence()
     return build._run_e2b_preflight()
 
 

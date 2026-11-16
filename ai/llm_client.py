@@ -7,10 +7,15 @@ Priority:
 """
 
 import atexit
+import functools
 import logging
 import os
 import threading
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
+from typing import Iterator
 
 import httpx
 
@@ -128,6 +133,97 @@ def _blocked_outcome(exc: ApiGuardError) -> str:
     return "unknown"
 
 
+# Stop reason each provider reports when the output hit the max_tokens cap:
+# Anthropic Messages API stop_reason "max_tokens", OpenRouter chat completions
+# normalized finish_reason "length" (provider docs, checked 2026-11-16).
+_TRUNCATION_STOP_REASONS = {"anthropic": "max_tokens", "openrouter": "length"}
+
+
+@dataclass(frozen=True)
+class ResponseMeta:
+    """What the provider that actually answered reported about one response."""
+
+    provider: str
+    model: str
+    stop_reason: str | None
+    max_tokens: int
+    output_tokens: int | None
+
+    @property
+    def truncated(self) -> bool:
+        """True when the provider says the output was cut off at max_tokens."""
+        marker = _TRUNCATION_STOP_REASONS.get(self.provider)
+        return marker is not None and self.stop_reason == marker
+
+
+class TruncatedResponseError(ValueError):
+    """An LLM response was cut off at max_tokens and could not be recovered."""
+
+
+class ResponseMetaCapture:
+    """Holds the ResponseMeta published inside one capture_response_meta() block."""
+
+    def __init__(self) -> None:
+        self.meta: ResponseMeta | None = None
+
+
+_meta_capture: ContextVar[ResponseMetaCapture | None] = ContextVar(
+    "llm_response_meta_capture", default=None
+)
+
+
+@contextmanager
+def capture_response_meta() -> Iterator[ResponseMetaCapture]:
+    """Collect the metadata of the LLM response produced inside the block.
+
+    ask() and ask_structured() keep returning a plain str; a caller that needs
+    the stop reason wraps the call::
+
+        with capture_response_meta() as captured:
+            text = ask_structured(prompt, ...)
+        captured.meta  # ResponseMeta, or None when no provider answered
+
+    captured.meta describes the response returned by the last
+    ask()/ask_structured() call made while this capture was the current one;
+    it is None if that call raised or no such call was made. Calls made inside
+    a nested block belong to the nested capture and leave this one as it was.
+    Open the block in the thread that makes the call, and do not yield out of
+    it from a generator. The value is independent of BVT_TELEMETRY.
+    """
+    capture = ResponseMetaCapture()
+    token = _meta_capture.set(capture)
+    try:
+        yield capture
+    finally:
+        _meta_capture.reset(token)
+
+
+def _publish_response_meta(meta: ResponseMeta | None) -> None:
+    capture = _meta_capture.get()
+    if capture is not None:
+        capture.meta = meta
+
+
+def _one_response_per_call(func):
+    """Tie a capture to one ask()/ask_structured() call.
+
+    The call starts with no metadata, and a call that raises leaves none
+    behind, even when a provider had answered before the failure (for
+    example an answer that was discarded on the way to the fallback).
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        _publish_response_meta(None)
+        try:
+            return func(*args, **kwargs)
+        except BaseException:
+            _publish_response_meta(None)
+            raise
+
+    return wrapper
+
+
 @api_guard("anthropic")
 def _ask_anthropic(
     prompt: str,
@@ -216,7 +312,17 @@ def _ask_anthropic(
         stop_reason=getattr(response, "stop_reason", None),
     )
 
-    return response.content[0].text
+    text = response.content[0].text
+    _publish_response_meta(
+        ResponseMeta(
+            provider="anthropic",
+            model=model,
+            stop_reason=getattr(response, "stop_reason", None),
+            max_tokens=max_tokens,
+            output_tokens=usage.output_tokens,
+        )
+    )
+    return text
 
 
 @api_guard("openrouter")
@@ -371,9 +477,20 @@ def _ask_openrouter(
         completion_tokens=usage.get("completion_tokens"),
         stop_reason=choices[0].get("finish_reason"),
     )
-    return choices[0]["message"]["content"]
+    text = choices[0]["message"]["content"]
+    _publish_response_meta(
+        ResponseMeta(
+            provider="openrouter",
+            model=model,
+            stop_reason=choices[0].get("finish_reason"),
+            max_tokens=max_tokens,
+            output_tokens=usage.get("completion_tokens"),
+        )
+    )
+    return text
 
 
+@_one_response_per_call
 def ask(
     prompt: str,
     system: str = "",
@@ -438,6 +555,7 @@ def ask(
             raise
 
 
+@_one_response_per_call
 def ask_structured(
     prompt: str,
     system: str = "",

@@ -17,7 +17,14 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from .llm_client import ask, ask_structured, MODEL_LIGHT, MODEL_HEAVY
+from .llm_client import (
+    ask,
+    ask_structured,
+    capture_response_meta,
+    MODEL_LIGHT,
+    MODEL_HEAVY,
+    TruncatedResponseError,
+)
 from .prompts import (
     SYSTEM_ANALYST,
     SYSTEM_ANALYST_DRIVERS,
@@ -149,6 +156,54 @@ def _parse_json(text: str) -> dict:
     raise ValueError(f"JSON 파싱 실패: {text[:200]}")
 
 
+# K-0D: a response cut off at max_tokens is retried once with a raised cap.
+_TRUNCATION_RETRY_FACTOR = 2
+_TRUNCATION_RETRY_CEILING = 8192
+_NOT_JSON = object()
+
+
+def _whole_text_json(text):
+    """Parse a truncated response only if the whole text is one JSON container.
+
+    An object or array does not parse until it is closed, so a cut-off response
+    that json.loads() reads as a whole object or array is syntactically
+    complete. A top-level number is refused: "123" cut to "1" still parses.
+    The code-block and brace extraction of _parse_json() could return an
+    earlier fragment of the cut-off text, so they are not used here.
+    This is a syntax check only; fields and schema are not validated.
+    """
+    if not isinstance(text, str):
+        return _NOT_JSON
+    try:
+        value = json.loads(text.strip())
+    except (ValueError, RecursionError):
+        # ValueError: JSONDecodeError, or an integer beyond the digit limit.
+        # RecursionError: nesting too deep to parse.
+        return _NOT_JSON
+    return value if isinstance(value, (dict, list)) else _NOT_JSON
+
+
+def _describe_meta(meta) -> str:
+    """Diagnostic text for logs and errors: metadata only, never response text."""
+    return (
+        f"provider={meta.provider}, model={meta.model}, "
+        f"stop_reason={meta.stop_reason}, max_tokens={meta.max_tokens}, "
+        f"output_tokens={meta.output_tokens}"
+    )
+
+
+def _parse_retry_response(text, meta) -> dict:
+    """Parse the answer to the second request; there is no third request."""
+    if meta is None or not meta.truncated:
+        return _parse_json(text)
+    value = _whole_text_json(text)
+    if value is _NOT_JSON:
+        raise TruncatedResponseError(
+            f"LLM 응답이 재시도에서도 출력 상한에서 잘렸습니다 ({_describe_meta(meta)})"
+        )
+    return value
+
+
 def _save_analysis(company_name: str, step: str, result_data: dict, model: str):
     """Save AI analysis result to Supabase (silently ignore on failure)."""
     try:
@@ -172,16 +227,25 @@ class AIAnalyst:
     def _ask_json(
         self, prompt: str, system: str, max_tokens: int, model: str = ""
     ) -> dict:
-        """Request structured JSON response + retry once on parse failure."""
+        """Request structured JSON response + one retry at most.
+
+        Malformed JSON is retried with a repair instruction at the same cap.
+        A response cut off at max_tokens is retried with the same prompt and a
+        raised cap instead. The two retries are never chained.
+        """
         use_model = model or self.model
         from .telemetry import operation
 
-        with operation("primary"):
+        with operation("primary"), capture_response_meta() as captured:
             response = ask_structured(
                 prompt,
                 system=system,
                 model=use_model,
                 max_tokens=max_tokens,
+            )
+        if captured.meta is not None and captured.meta.truncated:
+            return self._after_truncation(
+                prompt, system, use_model, max_tokens, response, captured.meta
             )
         try:
             return _parse_json(response)
@@ -191,14 +255,51 @@ class AIAnalyst:
                 prompt
                 + "\n\n순수 JSON 객체만 출력하세요. 설명 텍스트 없이 JSON만 응답하세요."
             )
-            with operation("parse_repair"):
+            with operation("parse_repair"), capture_response_meta() as captured:
                 response = ask_structured(
                     retry_prompt,
                     system=system,
                     model=use_model,
                     max_tokens=max_tokens,
                 )
-            return _parse_json(response)
+            return _parse_retry_response(response, captured.meta)
+
+    def _after_truncation(
+        self, prompt: str, system: str, use_model: str, max_tokens: int, response, first
+    ) -> dict:
+        """Handle a first response that was cut off at max_tokens."""
+        from .telemetry import operation
+
+        value = _whole_text_json(response)
+        if value is not _NOT_JSON:
+            return value
+        retry_max = min(
+            max_tokens * _TRUNCATION_RETRY_FACTOR, _TRUNCATION_RETRY_CEILING
+        )
+        if retry_max <= max_tokens:
+            raise TruncatedResponseError(
+                "LLM 응답이 출력 상한에서 잘렸고 상한을 더 올릴 수 없습니다 "
+                f"({_describe_meta(first)}, 천장={_TRUNCATION_RETRY_CEILING})"
+            )
+        logger.warning(
+            "LLM 응답 잘림 (%s) — 상한 %d로 재시도", _describe_meta(first), retry_max
+        )
+        try:
+            with operation("truncation_retry"), capture_response_meta() as captured:
+                # Same prompt: the format was fine, the room was not.
+                response = ask_structured(
+                    prompt,
+                    system=system,
+                    model=use_model,
+                    max_tokens=retry_max,
+                )
+        except BaseException as exc:  # an interrupt keeps the diagnosis too
+            exc.add_note(
+                "첫 응답이 출력 상한에서 잘린 뒤의 재시도였습니다 "
+                f"({_describe_meta(first)})"
+            )
+            raise
+        return _parse_retry_response(response, captured.meta)
 
     def _cached_json_step(
         self,

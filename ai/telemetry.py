@@ -16,7 +16,7 @@ from uuid import uuid4
 import portalocker
 
 
-Operation = Literal["primary", "parse_repair", "validator_repair"]
+Operation = Literal["primary", "parse_repair", "validator_repair", "truncation_retry"]
 
 
 @dataclass(frozen=True)

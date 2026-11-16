@@ -7,6 +7,7 @@ Environment variable: DART_API_KEY
 import io
 import logging
 import os
+import re
 import time
 import zipfile
 from pathlib import Path
@@ -74,13 +75,114 @@ def get_corp_code(company_name: str) -> str | None:
     return result["corp_code"] if result else None
 
 
-def get_corp_info(company_name: str) -> dict | None:
+# Words that only state the legal form of a company.
+_LEGAL_FORM_WORDS = frozenset(
+    {"co", "ltd", "inc", "corp", "corporation", "company", "limited", "주식회사", "주"}
+)
+_NAME_WORD = re.compile(r"[0-9a-z가-힣]+")
+
+
+def _name_as_written(name: str) -> str:
+    """A company name with case and spacing set aside, nothing else."""
+    return " ".join(name.split()).casefold()
+
+
+def _name_letters(name: str) -> str:
+    """A company name with punctuation set aside as well; every word is kept.
+
+    "JS Corporation." == "JS Corporation", "KT & G" == "KT&G".
+    """
+    return "".join(_NAME_WORD.findall(name.casefold().replace("&", " and ")))
+
+
+def _registered_name_key(name: str) -> str:
+    """A company name with its legal-form words dropped too.
+
+    "SK Hynix" == "SK hynix Inc.", "LS Corporation" == "LS Corp.". Words that
+    tell companies apart stay: "OCI" != "OCI Holdings Company Ltd.".
+    """
+    words = _NAME_WORD.findall(name.casefold().replace("&", " and "))
+    return "".join(word for word in words if word not in _LEGAL_FORM_WORDS)
+
+
+# Strictest first. A looser comparison merges distinct listed companies
+# ("JS Corporation" / "JS Company Limited" share a key), so it is used only
+# when no stricter one finds a row. The letters and the key can also point at
+# different companies, because a legal-form word is dropped only where it
+# stands alone: "Sewon Corporation" has the letters of "SewonCorporation" and
+# the key of "Sewon Co.,Ltd". The letters are asked first.
+_NAME_FORMS = (_name_as_written, _name_letters, _registered_name_key)
+
+
+def _find_selected_listing(
+    root: ET_Element, company_name: str, stock_code: str
+) -> dict | None:
+    """Registry row for a listing a caller selected by name and stock code.
+
+    Only rows that carry a stock code are looked at, and among them only the
+    rows registered under the selected name, Korean or English. The row that
+    carries ``stock_code`` is the company. When none of them carries it, name
+    and code disagree: the company the name states is returned with its own
+    stock code, and the caller that selected ``stock_code`` rejects it.
+
+    None when no row is registered under the selected name. The stock code
+    alone identifies nothing: a selected code may be another company's, and
+    the name is the only evidence against it. Among several rows the most
+    recently modified one wins, then registry order.
+    """
+    listed = [
+        corp
+        for corp in root.findall(".//list")
+        if (corp.findtext("stock_code") or "").strip()
+    ]
+    for form in _NAME_FORMS:
+        wanted = form(company_name)
+        if not wanted:
+            continue
+        named = [
+            corp
+            for corp in listed
+            if wanted
+            in (
+                form(corp.findtext("corp_name") or ""),
+                form(corp.findtext("corp_eng_name") or ""),
+            )
+        ]
+        if named:
+            with_code = [
+                corp
+                for corp in named
+                if (corp.findtext("stock_code") or "").strip() == stock_code
+            ]
+            best = max(
+                with_code or named, key=lambda corp: corp.findtext("modify_date") or ""
+            )
+            return {
+                "corp_code": best.findtext("corp_code", ""),
+                "stock_code": (best.findtext("stock_code") or "").strip(),
+                "is_listed": True,
+            }
+    return None
+
+
+def get_corp_info(company_name: str, stock_code: str | None = None) -> dict | None:
     """Look up DART corp_code + listing status by company name.
+
+    Args:
+        stock_code: stock code the caller selected for this company, if any.
+            The rows registered under ``company_name`` are then tried first,
+            see _find_selected_listing(). Without one, or when no row is
+            registered under that name, the lookup is the name lookup below.
 
     Returns:
         {"corp_code": str, "stock_code": str|None, "is_listed": bool} or None
     """
     root = _load_corp_code_xml()
+
+    if stock_code:
+        selected = _find_selected_listing(root, company_name, stock_code)
+        if selected is not None:
+            return selected
 
     # Collect all matching candidates, then sort by listed first + exact match first
     candidates = []

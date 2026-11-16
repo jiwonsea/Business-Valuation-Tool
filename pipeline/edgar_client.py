@@ -26,9 +26,47 @@ atexit.register(_client.close)
 from .api_guard import api_guard
 
 
+_KR_TICKER = re.compile(r"(\d{6})(?:\.(?:KS|KQ))?")
+_JP_TICKER = re.compile(r"(\d{4})(?:\.T)?")
+_CLASS_TICKER = re.compile(r"([A-Z]{1,5})[.\-]([A-Z])")
+
+
+def _ticker_key(ticker: str) -> str | None:
+    """Normal form in which two notations of one ticker are equal.
+
+    The folding of the selection check (_comparable_ticker in
+    pipeline/profile_generator.py), repeated here so that this client does not
+    import that module; tests/test_ticker_identification.py compares the two.
+    005930.KS = 005930, 7203.T = 7203, BRK-B = BRK.B. A dot is a hyphen only
+    in that share-class notation: AB.CD is not AB-CD. None for a blank string:
+    no ticker.
+    """
+    text = "".join(ticker.split()).upper()
+    if not text:
+        return None
+    for pattern, form in (
+        (_KR_TICKER, r"\1"),
+        (_JP_TICKER, r"\1"),
+        (_CLASS_TICKER, r"\1.\2"),
+    ):
+        match = pattern.fullmatch(text)
+        if match:
+            return match.expand(form)
+    return text
+
+
 @api_guard("edgar")
-def search_company(query: str) -> list[dict]:
+def search_company(query: str, ticker: str | None = None) -> list[dict]:
     """Search SEC-registered companies by name or ticker.
+
+    Args:
+        ticker: ticker the caller selected for this company, if any. When the
+            result would not start with it, its row is moved to the front: a
+            short ticker ("ON") is otherwise preceded, and past ten rows cut
+            off, by companies whose name merely contains the query. The row
+            spelled like the selection is preferred over one in another
+            notation of the same ticker ("BRK.B" finds "BRK-B"). A result
+            that already starts with the selected ticker is left as it is.
 
     Returns:
         [{"cik": "320193", "ticker": "AAPL", "name": "Apple Inc."}]
@@ -37,19 +75,46 @@ def search_company(query: str) -> list[dict]:
     resp.raise_for_status()
     data = resp.json()
 
+    selected = ticker.strip() if isinstance(ticker, str) else ""
+    wanted = _ticker_key(selected)
+    spelled = None  # first row whose ticker is the selected one as spelled
+    folded = None  # first row whose ticker is another notation of it
+
     results = []
     query_lower = query.lower()
     for _, entry in data.items():
         name = entry.get("title", "")
-        ticker = entry.get("ticker", "")
-        if query_lower in name.lower() or query_lower == ticker.lower():
-            results.append(
-                {
-                    "cik": str(entry["cik_str"]),
-                    "ticker": ticker,
-                    "name": name,
-                }
+        entry_ticker = entry.get("ticker", "")
+        matches = query_lower in name.lower() or query_lower == entry_ticker.lower()
+        is_spelled = is_folded = False
+        if wanted is not None and entry_ticker:
+            is_spelled = spelled is None and entry_ticker.upper() == selected.upper()
+            is_folded = (
+                not is_spelled
+                and folded is None
+                and _ticker_key(entry_ticker) == wanted
             )
+        if not (matches or is_spelled or is_folded):
+            continue
+        row = {
+            "cik": str(entry["cik_str"]),
+            "ticker": entry_ticker,
+            "name": name,
+        }
+        if matches:
+            results.append(row)
+        if is_spelled:
+            spelled = row
+        elif is_folded:
+            folded = row
+
+    first = spelled or folded
+    if first is not None and not (
+        results and _ticker_key(results[0]["ticker"]) == wanted
+    ):
+        # only the row moved up leaves its old place; other rows with the
+        # same ticker or the same CIK stay
+        results = [first] + [row for row in results if row is not first]
     return results[:10]
 
 

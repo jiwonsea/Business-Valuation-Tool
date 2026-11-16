@@ -93,6 +93,29 @@ def _is_jp_ticker(text: str) -> bool:
     return bool(re.match(r"^\d{4}(\.T)?$", raw))
 
 
+# A KRX stock code as a selection states it: 005930, 005930.KS, 0126Z0.
+# The suffix is taken off a six-digit code only, as the selection check in
+# pipeline/profile_generator.py does: "0126Z0.KS" would find its company here
+# and then be rejected there as a ticker other than "0126Z0".
+# [0-9], not \d: the registry writes its codes in ASCII, and \d would take
+# full-width and other digits for a code no row can carry.
+_KR_STOCK_CODE = re.compile(r"([0-9]{6})(?:\.(?:KS|KQ))?|([0-9][0-9A-Z]{5})")
+
+
+def _selected_ticker(ticker: object) -> str:
+    """The ticker a caller selected, "" when there is none to look up.
+
+    Anything that is not a string is "none"; it is not converted to one.
+    """
+    return ticker.strip() if isinstance(ticker, str) else ""
+
+
+def _kr_stock_code(ticker: str) -> str | None:
+    """The six characters of a KRX stock code, None for any other shape."""
+    match = _KR_STOCK_CODE.fullmatch("".join(ticker.split()).upper())
+    return (match.group(1) or match.group(2)) if match else None
+
+
 class DataFetcher:
     """Unified data fetcher."""
 
@@ -133,7 +156,7 @@ class DataFetcher:
         return price
 
     def identify(
-        self, query: str, market_hint: str | None = None
+        self, query: str, market_hint: str | None = None, *, ticker: str | None = None
     ) -> CompanyIdentity | None:
         """Company name/ticker -> auto-detect market + identify.
 
@@ -141,6 +164,16 @@ class DataFetcher:
             market_hint: "KR" or "US" — skips heuristic detection and goes directly
                 to the correct registry. Prevents Korean-named US companies (e.g. "테슬라")
                 from triggering DART lookups.
+            ticker: ticker the caller selected for this company, if any. KR: the
+                registry rows registered under the name are tried first and the
+                one carrying that stock code is taken. US: the row with that
+                ticker comes before names that merely contain the query.
+                It is a hint, not a guarantee: the company returned may carry
+                another ticker (the name is another listed company's, or
+                nothing matched and the name lookup answered). A caller that
+                selected the ticker has to check it, as auto_fetch() does.
+                Anything but a non-empty string means "no ticker" and changes
+                nothing.
 
         Detection logic (when market_hint is None):
         1. Contains Korean -> KR first (DART search)
@@ -148,34 +181,48 @@ class DataFetcher:
         3. General English -> US first, fallback to DART
         """
         query = query.strip()
+        ticker = _selected_ticker(ticker)
 
+        # A lookup with a selected ticker is neither read from the cache nor
+        # written to it: the name-only lookups keep their keys and answers.
         cache_key = f"id:{market_hint or ''}:{query}"
-        if cache_key in self._cache:
+        if not ticker and cache_key in self._cache:
             return self._cache[cache_key]
 
         if market_hint == "KR":
-            result = self._identify_kr(query)
+            result = self._identify_kr(query, ticker)
         elif market_hint == "US":
-            result = self._identify_us(query)
+            result = self._identify_us(query, ticker)
         elif market_hint == "JP":
             result = self._identify_jp(query)
         elif _is_korean(query):
-            result = self._identify_kr(query)
+            result = self._identify_kr(query, ticker)
         elif _is_jp_ticker(query):
             result = self._identify_jp(query)
         elif _is_likely_ticker(query):
-            result = self._identify_us(query) or self._identify_kr(query)
+            result = self._identify_us(query, ticker) or self._identify_kr(
+                query, ticker
+            )
         else:
-            result = self._identify_us(query) or self._identify_kr(query)
+            result = self._identify_us(query, ticker) or self._identify_kr(
+                query, ticker
+            )
 
-        if result is not None:
+        if result is not None and not ticker:
             self._cache[cache_key] = result
         return result
 
-    def _identify_kr(self, query: str) -> CompanyIdentity | None:
-        """Search Korean company via DART + determine listing status."""
+    def _identify_kr(self, query: str, ticker: str = "") -> CompanyIdentity | None:
+        """Search Korean company via DART + determine listing status.
+
+        ``ticker`` is the stock code the caller selected, "" for none.
+        """
+        selected_code = _kr_stock_code(ticker)
         try:
-            info = dart_client.get_corp_info(query)
+            if selected_code:
+                info = dart_client.get_corp_info(query, stock_code=selected_code)
+            else:
+                info = dart_client.get_corp_info(query)
         except Exception as e:
             logger.debug("DART 검색 실패 (%s): %s", query, e)
             return None
@@ -204,10 +251,16 @@ class DataFetcher:
             exchange_segment=exchange_segment,
         )
 
-    def _identify_us(self, query: str) -> CompanyIdentity | None:
-        """Search US company via SEC EDGAR + classify listed/OTC via Yahoo Finance."""
+    def _identify_us(self, query: str, ticker: str = "") -> CompanyIdentity | None:
+        """Search US company via SEC EDGAR + classify listed/OTC via Yahoo Finance.
+
+        ``ticker`` is the ticker the caller selected, "" for none.
+        """
         try:
-            results = edgar_client.search_company(query)
+            if ticker:
+                results = edgar_client.search_company(query, ticker=ticker)
+            else:
+                results = edgar_client.search_company(query)
         except Exception as e:
             logger.debug("SEC EDGAR 검색 실패 (%s): %s", query, e)
             return None

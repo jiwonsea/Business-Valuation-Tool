@@ -466,7 +466,7 @@ def harness(env_guard, monkeypatch, tmp_path):
 
     h.real_identify = DataFetcher.identify
 
-    def identify(self, query, market_hint=None):
+    def identify(self, query, market_hint=None, ticker=None):
         h.reach("identify", query)
         time.sleep(h.delay.get(query, 0))
         value = h.identity.get(query, _MISSING)
@@ -1351,36 +1351,139 @@ def test_required_failures_have_distinct_codes(harness):
 # ── 3. the registry lookup that produced the 13 weeks of no_result ───────────
 
 
-def _registry(*rows: tuple[str, str]) -> ElementTree.Element:
+def _registry(*rows: tuple[str, ...]) -> ElementTree.Element:
+    """Rows are (corp_name, stock_code) or (corp_name, stock_code, corp_eng_name)."""
     root = ElementTree.Element("result")
-    for index, (name, stock_code) in enumerate(rows):
+    for index, (name, stock_code, *english) in enumerate(rows):
         item = ElementTree.SubElement(root, "list")
         ElementTree.SubElement(item, "corp_code").text = f"{index:08d}"
         ElementTree.SubElement(item, "corp_name").text = name
         ElementTree.SubElement(item, "stock_code").text = stock_code
+        if english:
+            ElementTree.SubElement(item, "corp_eng_name").text = english[0]
     return root
 
 
-def test_registry_lookup_by_english_name(harness, monkeypatch):
+# Korean and English names as the real registry carries them. The lookup used
+# to read the Korean ones only.
+REGISTRY_ROWS = (
+    ("삼성전자", "005930", "SAMSUNG ELECTRONICS CO,.LTD"),
+    ("SK", "003600", "SK Inc."),
+    ("SK하이닉스", "000660", "SK hynix Inc."),
+    ("LG", "003550", "LG Corp."),
+    ("LG전자", "066570", "LG ELECTRONICS INC."),
+    ("현대차", "005380", "HYUNDAI MOTOR CO"),
+)
+
+
+def _use_registry(harness, monkeypatch, rows=REGISTRY_ROWS) -> None:
+    """Real DataFetcher.identify() over a synthetic registry."""
     from pipeline.data_fetcher import DataFetcher
 
     monkeypatch.setattr(DataFetcher, "identify", harness.real_identify)
-    harness.returns["dart._load_corp_code_xml"] = lambda: _registry(
-        ("삼성전자", "005930"),
-        ("SK", "003600"),
-        ("SK하이닉스", "000660"),
-        ("LG", "003550"),
-        ("LG전자", "066570"),
-        ("현대차", "005380"),
-    )
+    harness.returns["dart._load_corp_code_xml"] = lambda: _registry(*rows)
     harness.returns["yf.resolve_kr_ticker"] = lambda code: f"{code}.KS"
     harness.returns["yf.get_exchange_segment"] = lambda code: "KOSPI"
+
+
+def test_registry_lookup_by_english_name(harness, monkeypatch):
+    _use_registry(harness, monkeypatch)
     harness.discovered["KR"] = [
         co("Samsung Electronics", "005930"),
         co("SK Hynix", "000660"),
         co("LG Electronics", "066570"),
         co("현대차", "005380"),
-        co("삼성전자", "005930"),
+        # neither this name nor this stock code is in the registry (and not a
+        # second 005930: two valuations of one code would write one profile)
+        co("Kakao", "035720"),
+    ]
+
+    saved = harness.run()
+
+    # The English name is the registered one and its row carries the selected
+    # stock code. By the Korean names alone "Samsung Electronics" matched
+    # nothing and the other two landed on SK and LG.
+    assert {
+        v["company"]: (v["status"], v["reason_code"]) for v in saved["valuations"]
+    } == {
+        "Samsung Electronics": ("success", None),
+        "SK Hynix": ("success", None),
+        "LG Electronics": ("success", None),
+        "현대차": ("success", None),
+        "Kakao": ("no_result", "IDENTITY_NOT_FOUND"),
+    }
+    kakao = entry(saved, "Kakao")["reason_detail"]
+    assert (kakao["query"], kakao["expected_ticker"]) == ("Kakao", "035720")
+    assert harness.profiles() == [
+        "000660.yaml",
+        "005380.yaml",
+        "005930.yaml",
+        "066570.yaml",
+    ]
+    # each valued as its own registry row: 삼성전자, SK하이닉스, LG전자, 현대차
+    assert sorted(harness.called("industry")) == [
+        "00000000",
+        "00000002",
+        "00000004",
+        "00000005",
+    ]
+
+
+def test_registry_lookup_still_blocks_a_wrong_code(harness, monkeypatch):
+    """Passes before and after: what was blocked for a wrong code still is."""
+    _use_registry(harness, monkeypatch)
+    harness.discovered["KR"] = [
+        # the registered name of one listing with the stock code of another
+        co("삼성전자", "000660"),
+        # a preferred share: its code is not in the registry
+        co("삼성전자우", "005935"),
+        # the code is in the registry, the name is nobody's registered name:
+        # the code alone identifies nothing, the name lookup lands on SK
+        co("SK Hynix Semiconductor", "000660"),
+        co("Nowhere Corp", "999999"),
+    ]
+
+    saved = harness.run()
+
+    assert {
+        v["company"]: (v["status"], v["reason_code"]) for v in saved["valuations"]
+    } == {
+        "삼성전자": ("no_result", "IDENTITY_MISMATCH"),
+        "삼성전자우": ("no_result", "IDENTITY_MISMATCH"),
+        "SK Hynix Semiconductor": ("no_result", "IDENTITY_MISMATCH"),
+        "Nowhere Corp": ("no_result", "IDENTITY_NOT_FOUND"),
+    }
+    resolved = {
+        v["company"]: (
+            v["reason_detail"].get("kind"),
+            v["reason_detail"].get("expected_ticker"),
+            v["reason_detail"].get("resolved_ticker"),
+        )
+        for v in saved["valuations"]
+    }
+    assert resolved == {
+        "삼성전자": ("ticker_differs", "000660", "005930"),
+        "삼성전자우": ("ticker_differs", "005935", "005930"),
+        "SK Hynix Semiconductor": ("ticker_differs", "000660", "003600"),
+        "Nowhere Corp": (None, "999999", None),
+    }
+    for boundary in FETCH_AND_LATER:
+        assert harness.called(boundary) == []
+    assert harness.profiles() == [] and harness.workbooks() == []
+
+
+def test_registry_without_the_selected_company_leaves_a_reason(harness, monkeypatch):
+    """Passes before and after: the three selections when their rows are missing."""
+    rows = tuple(
+        row
+        for row in REGISTRY_ROWS
+        if row[0] not in ("삼성전자", "SK하이닉스", "LG전자")
+    )
+    _use_registry(harness, monkeypatch, rows)
+    harness.discovered["KR"] = [
+        co("Samsung Electronics", "005930"),
+        co("SK Hynix", "000660"),
+        co("LG Electronics", "066570"),
     ]
 
     saved = harness.run()
@@ -1391,15 +1494,49 @@ def test_registry_lookup_by_english_name(harness, monkeypatch):
         "Samsung Electronics": ("no_result", "IDENTITY_NOT_FOUND"),
         "SK Hynix": ("no_result", "IDENTITY_MISMATCH"),
         "LG Electronics": ("no_result", "IDENTITY_MISMATCH"),
-        "현대차": ("success", None),
-        "삼성전자": ("success", None),
     }
     sk = entry(saved, "SK Hynix")["reason_detail"]
     assert (sk["expected_ticker"], sk["resolved_ticker"]) == ("000660", "003600")
     lg = entry(saved, "LG Electronics")["reason_detail"]
     assert (lg["expected_ticker"], lg["resolved_ticker"]) == ("066570", "003550")
-    # nothing was written for the three that did not resolve to their ticker
-    assert harness.profiles() == ["005380.yaml", "005930.yaml"]
+    for boundary in FETCH_AND_LATER:
+        assert harness.called(boundary) == []
+    assert harness.profiles() == []
+
+
+def test_cli_company_name_is_looked_up_as_before(harness, monkeypatch):
+    """Passes before and after: ``cli.py --company`` selects no ticker."""
+    import cli
+
+    _use_registry(harness, monkeypatch)
+    # an English name carries no market hint: EDGAR is asked first, then DART
+    harness.returns["edgar.search_company"] = lambda query: []
+
+    monkeypatch.setattr(sys, "argv", ["cli.py", "--company", "현대차"])
+    fetched = cli.main()
+
+    identity = fetched["identity"]
+    assert (identity.name, identity.ticker, identity.corp_code) == (
+        "현대차",
+        "005380",
+        "00000005",
+    )
+    assert harness.called("edgar.search_company") == []
+
+    # Without a selected ticker the English name is still compared with the
+    # Korean names only: "SK" is inside "SK Hynix".
+    monkeypatch.setattr(sys, "argv", ["cli.py", "--company", "SK Hynix"])
+    fetched = cli.main()
+
+    identity = fetched["identity"]
+    assert (identity.name, identity.ticker, identity.corp_code) == (
+        "SK Hynix",
+        "003600",
+        "00000001",
+    )
+    assert harness.called("edgar.search_company") == ["SK Hynix"]
+    assert harness.called("identify") == []  # the real identify() ran both times
+    assert harness.profiles() == ["003600.yaml", "005380.yaml"]
 
 
 # ── 4. exceptions ────────────────────────────────────────────────────────────

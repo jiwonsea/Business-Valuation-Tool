@@ -576,10 +576,14 @@ def auto_fetch(
         market_hint: "KR" or "US" — bypasses heuristic detection. Pass when the caller
             already knows the market (e.g. weekly discovery pipeline) to avoid
             Korean-named US companies (e.g. "테슬라") triggering DART lookups.
-        expected_ticker: ticker the caller selected. When given, a company that
-            resolves to a different ticker (or to none) is rejected before any
-            financials are fetched: the name lookup can land on another listed
-            company ("SK Hynix" -> "SK", "LG Electronics" -> "LG"). None = no check.
+        expected_ticker: ticker the caller selected. It is handed to the lookup
+            (KR: the registry row registered under the name and carrying that
+            stock code; US: the row with that ticker first). A company that
+            still resolves to a different ticker (or to none) is rejected
+            before any financials are fetched: the name may be another listed
+            company's, or the name lookup may have landed on one
+            ("LG Electronics" with LG's code, "현대차" -> "현대차증권").
+            None = no hint and no check.
 
     Returns {} on failure, as before. The reason goes to the diagnostics a
     caller of auto_analyze() passed, if any (K-0C).
@@ -591,7 +595,9 @@ def auto_fetch(
 
     # Step 1: Company identification
     print(f"\n[1/3] 기업 식별 중: '{company_query}'")
-    identity = fetcher.identify(company_query, market_hint=market_hint)
+    identity = fetcher.identify(
+        company_query, market_hint=market_hint, ticker=expected_ticker
+    )
     if not identity:
         print(f"  [ERROR] 기업을 찾을 수 없습니다: {company_query}")
         _diag_reason(

@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["GO", "CONDITIONAL_GO", "NO_GO"]
+    },
+    "input_hash": {
+      "type": "string"
+    },
+    "required": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "recommended": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "reproduced": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "check": {"type": "string"},
+          "command": {"type": "string"},
+          "result": {"type": "string"}
+        },
+        "required": ["check", "command", "result"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["verdict", "input_hash", "required", "recommended", "reproduced"],
+  "additionalProperties": false
+}

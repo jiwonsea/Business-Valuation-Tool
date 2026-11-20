@@ -33,6 +33,7 @@ try:
 except ImportError:
     pass
 
+from . import run_state
 from .scoring import score_companies
 from discovery.cjk_aliases import get_aliases
 
@@ -84,7 +85,11 @@ _RESULTS_BASE = Path(
 )
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
-_LOG_DIR.mkdir(exist_ok=True)
+
+# Run-state database (K-0F). Only run_weekly_recorded() opens it, so importing
+# this module or calling run_weekly() directly creates nothing. Tests point
+# this at a temporary folder.
+_RUN_STATE_DB = run_state.DEFAULT_DB_PATH
 
 WEEKLY_LLM_BUDGET = int(os.getenv("WEEKLY_LLM_BUDGET", "80"))
 
@@ -101,6 +106,9 @@ def _setup_logging() -> None:
     """
     if logging.getLogger().handlers:
         return
+    # Created here, not at import time: importing this module (every test
+    # that imports it) must leave the repository as it was.
+    _LOG_DIR.mkdir(exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -113,6 +121,10 @@ def _setup_logging() -> None:
             ),
         ],
     )
+    # httpx logs every request URL at INFO and DART carries its API key in the
+    # query string: keep those lines out of the weekly log (plan 11.10).
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 logger = logging.getLogger(__name__)
@@ -714,6 +726,8 @@ def run_weekly(
     markets: list[str] | None = None,
     max_per_market: int = 5,
     dry_run: bool = False,
+    *,
+    recorder=None,
 ) -> dict:
     """Execute weekly Discovery + valuation pipeline.
 
@@ -739,6 +753,12 @@ def run_weekly(
     failed entry always has a reason code; errors[] gets at most one entry per
     valuation (its terminal reason, else ENRICHMENT_DEGRADED when optional
     steps fell back). summary["valuation_status"] is the roll-up.
+
+    Run state (K-0F): ``recorder`` is the run-state recorder an entry point
+    opened (run_weekly_recorded()). Without one nothing is recorded, no file
+    or folder is created and the summary is what it was before K-0F. With
+    one, summary["local_run_id"] names the run in runs/state.db, and once a
+    run-state write has failed no further delivery is started.
     """
     from discovery.discovery_engine import (
         DISCOVERY_EXCEPTION,
@@ -764,6 +784,10 @@ def run_weekly(
         "valuations": [],
         "errors": [],
     }
+    rec = recorder if recorder is not None else run_state.NO_RECORD
+    if rec.run_id is not None:
+        # The run in runs/state.db; not the Supabase run id below.
+        summary["local_run_id"] = rec.run_id
 
     # Create run record in DB
     run_id = _save_run_start(markets)
@@ -781,16 +805,17 @@ def run_weekly(
 
     def _discover_market(
         market: str,
-    ) -> tuple[str, dict | None, Exception | None]:
+    ) -> tuple[str, dict | None, Exception | None, object]:
+        step = rec.start("discovery", market)
         try:
-            return market, engine.discover(market=market), None
+            return market, engine.discover(market=market), None, step
         except Exception as e:
-            return market, None, e
+            return market, None, e, step
 
     with ThreadPoolExecutor(max_workers=len(markets)) as pool:
         futures = {pool.submit(_discover_market, m): m for m in markets}
         for fut in as_completed(futures):
-            market, result, exc = fut.result()
+            market, result, exc, step = fut.result()
             # `is not None`, not truthiness of str(exc): an exception with an
             # empty message used to fall through to result.get() and crash.
             if exc is not None:
@@ -813,6 +838,13 @@ def run_weekly(
                         "severity": row["severity"],
                         "error_type": type(exc).__name__,
                     }
+                )
+                rec.end(
+                    step,
+                    "failed",
+                    reason_code=DISCOVERY_EXCEPTION,
+                    severity=row["severity"],
+                    error_type=type(exc).__name__,
                 )
                 continue
             news_count = result.get("news_count", 0)
@@ -876,6 +908,15 @@ def run_weekly(
                     "[%s] discovery returned 0 companies: %s", market, reason_code
                 )
             status_rows[market] = row
+            rec.end(
+                step,
+                _discovery_outcome(row),
+                reason_code=row["reason_code"],
+                severity=row["severity"],
+                news_count=news_count,
+                discovered=row["discovered"],
+                path=row["path"],
+            )
             summary["discoveries"].append(
                 {
                     "market": market,
@@ -1007,7 +1048,8 @@ def run_weekly(
         logger.info("Dry run — skipping valuation.")
         if not targets:
             logger.warning(_zero_selection_message(discovery_status))
-        _save_json_summary(summary, week_dir)
+        _save_summary_recorded(summary, week_dir, rec)
+        _note_recording_failure(summary, rec)
         _finalize_run(run_id, summary, time.time() - start, total_news, scored)
         return summary
 
@@ -1183,15 +1225,26 @@ def run_weekly(
                 ),
             }
 
+    def _recorded_valuation(co: dict) -> tuple[dict, object]:
+        # The start is recorded here, in the pool thread. _run_valuation() is
+        # the K-0C body and stays as it is.
+        step = rec.start(
+            "valuation",
+            co.get("name", ""),
+            ticker=co.get("ticker"),
+            market=co.get("market") or None,
+        )
+        return _run_valuation(co), step
+
     if not targets:
         msg = _zero_selection_message(discovery_status)
         logger.warning(msg)
         _alert("Valuation", msg)
     _summary_lock = threading.Lock()
     with ThreadPoolExecutor(max_workers=max(min(len(targets), 3), 1)) as pool:
-        futures = {pool.submit(_run_valuation, co): co for co in targets}
+        futures = {pool.submit(_recorded_valuation, co): co for co in targets}
         for fut in as_completed(futures):
-            entry = fut.result()
+            entry, step = fut.result()
             try:
                 error_entry = _valuation_error(entry)
             except Exception:
@@ -1219,12 +1272,41 @@ def run_weekly(
                 summary["valuations"].append(entry)
                 if error_entry is not None:
                     summary["errors"].append(error_entry)
+            detail = entry.get("reason_detail") or {}
+            rec.end(
+                step,
+                entry.get("status"),
+                reason_code=entry.get("reason_code"),
+                severity=entry.get("severity"),
+                degraded=entry.get("degraded"),
+                error_type=detail.get("error_type"),
+                stage=detail.get("stage"),
+            )
 
     # ── Phase 3.5: Upload Excel to Supabase Storage ──
-    _upload_excels_to_storage(summary, _storage_folder(week_folder_name))
+    # K-0F: a delivery starts only when its start is on record. rec.start()
+    # returns None once a run-state write has failed (never for an unrecorded
+    # run), and then the delivery is not attempted.
+    step = rec.start("delivery", "excel_upload")
+    if step is None:
+        logger.warning(_DELIVERY_NOT_STARTED, "Excel upload")
+    else:
+        _upload_excels_to_storage(summary, _storage_folder(week_folder_name))
+        eligible = sum(
+            1
+            for v in summary["valuations"]
+            if v["status"] == "success" and v.get("excel_path")
+        )
+        uploaded = sum(1 for v in summary["valuations"] if v.get("download_url"))
+        rec.end(
+            step,
+            _upload_outcome(eligible, uploaded),
+            eligible=eligible,
+            uploaded=uploaded,
+        )
 
     # ── Phase 3.6: Save JSON summary for delivery agent ──
-    _save_json_summary(summary, week_dir)
+    _save_summary_recorded(summary, week_dir, rec)
 
     all_draft_blocked, draft_block_message = _draft_publish_state(summary)
     if all_draft_blocked:
@@ -1233,36 +1315,54 @@ def run_weekly(
 
     # ── Phase 5: Send email notification (best-effort) ──
     if not all_draft_blocked:
-        try:
-            from .email_sender import send_weekly_email
+        step = rec.start("delivery", "email")
+        if step is None:
+            logger.warning(_DELIVERY_NOT_STARTED, "Email")
+        else:
+            try:
+                from .email_sender import send_weekly_email
 
-            send_weekly_email(summary)
-        except Exception as e:
-            logger.warning("Email notification failed: %s", e)
+                sent = send_weekly_email(summary)
+                rec.end(step, "ok" if sent else "no_result")
+            except Exception as e:
+                rec.end(step, "raised", error_type=type(e).__name__)
+                logger.warning("Email notification failed: %s", e)
 
     # ── Phase 6a: WordPress posting (US only, best-effort) ──
     if not all_draft_blocked:
-        try:
-            from .wp_poster import post_to_wordpress
+        step = rec.start("delivery", "wordpress")
+        if step is None:
+            logger.warning(_DELIVERY_NOT_STARTED, "WordPress posting")
+        else:
+            try:
+                from .wp_poster import post_to_wordpress
 
-            wp_url = post_to_wordpress(summary)
-            if wp_url:
-                summary["wp_url"] = wp_url
-        except Exception as e:
-            logger.warning("WordPress posting failed: %s", e)
-            _alert("WordPress", str(e))
+                wp_url = post_to_wordpress(summary)
+                if wp_url:
+                    summary["wp_url"] = wp_url
+                rec.end(step, "ok" if wp_url else "no_result")
+            except Exception as e:
+                rec.end(step, "raised", error_type=type(e).__name__)
+                logger.warning("WordPress posting failed: %s", e)
+                _alert("WordPress", str(e))
 
     # ── Phase 6b: Naver Blog posting (KR+US, best-effort) ──
     if not all_draft_blocked:
-        try:
-            from .naver_poster import post_to_naver
+        step = rec.start("delivery", "naver")
+        if step is None:
+            logger.warning(_DELIVERY_NOT_STARTED, "Naver Blog posting")
+        else:
+            try:
+                from .naver_poster import post_to_naver
 
-            naver_url = post_to_naver(summary)
-            if naver_url:
-                summary["naver_url"] = naver_url
-        except Exception as e:
-            logger.warning("Naver Blog posting failed: %s", e)
-            _alert("Naver Blog", str(e))
+                naver_url = post_to_naver(summary)
+                if naver_url:
+                    summary["naver_url"] = naver_url
+                rec.end(step, "ok" if naver_url else "no_result")
+            except Exception as e:
+                rec.end(step, "raised", error_type=type(e).__name__)
+                logger.warning("Naver Blog posting failed: %s", e)
+                _alert("Naver Blog", str(e))
 
     # ── Phase 7: YouTube video creation + upload (disabled) ──
     # TODO: Re-enable when YouTube pipeline is ready
@@ -1280,6 +1380,7 @@ def run_weekly(
 
     # ── Phase 8: Completion ──
     duration = time.time() - start
+    _note_recording_failure(summary, rec)
     _finalize_run(run_id, summary, duration, total_news, scored)
     _print_completion(summary, duration, week_dir)
 
@@ -1405,8 +1506,11 @@ def _upload_excels_to_storage(summary: dict, week_folder_name: str) -> None:
                 logger.warning("Storage upload failed [%s]: %s", entry["company"], e)
 
 
-def _save_json_summary(summary: dict, week_dir: Path) -> None:
-    """Save JSON summary file for the delivery agent to read."""
+def _save_json_summary(summary: dict, week_dir: Path) -> bool:
+    """Save JSON summary file for the delivery agent to read.
+
+    Returns whether the file was written (the write is best-effort).
+    """
     success_count = sum(1 for v in summary["valuations"] if v["status"] == "success")
     failed_count = sum(1 for v in summary["valuations"] if v["status"] == "failed")
     blocked_count = sum(
@@ -1486,8 +1590,10 @@ def _save_json_summary(summary: dict, week_dir: Path) -> None:
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(summary_json, f, ensure_ascii=False, indent=2, default=str)
         logger.info("JSON summary saved: %s", summary_path)
+        return True
     except Exception as e:
         logger.warning("Failed to save JSON summary: %s", e)
+        return False
 
 
 def _print_summary_header(
@@ -1578,6 +1684,162 @@ def _finalize_run(
         logger.debug("DB 기록 실패 (완료): %s", e)
 
 
+# ── Run state (K-0F) ─────────────────────────────────────────────────────────
+# runs/state.db is the local record of what started and how it ended. The
+# recorder never raises into the pipeline; what a failed write changes is that
+# no later delivery starts (a delivery nobody recorded cannot be told from one
+# that never happened).
+
+_DELIVERY_NOT_STARTED = "%s not started: the run-state record is broken."
+
+
+def _discovery_outcome(row: dict) -> str:
+    """Run-state outcome of one market's discovery, from its K-0B status row."""
+    if row["reason_code"] is None:
+        return "ok"
+    return "empty" if row["severity"] == "empty" else "failed"
+
+
+def _upload_outcome(eligible: int, uploaded: int) -> str:
+    """ok: every eligible workbook got a URL. partial: some. no_result: none."""
+    if uploaded and uploaded >= eligible:
+        return "ok"
+    return "partial" if uploaded else "no_result"
+
+
+def _note_recording_failure(summary: dict, rec) -> None:
+    """Say in errors[] (once) that the run-state record broke.
+
+    A week whose deliveries were held back must not end with errors: [].
+    """
+    if not rec.broken:
+        return
+    code = run_state.RUN_STATE_WRITE_FAILED
+    if any(entry.get("reason_code") == code for entry in summary["errors"]):
+        return
+    summary["errors"].append(
+        {
+            "phase": "run_state",
+            "reason_code": code,
+            "severity": "failure",
+            "error": "run state recording failed; later deliveries were not started",
+        }
+    )
+
+
+def _save_summary_recorded(summary: dict, week_dir: Path, rec) -> None:
+    """_save_json_summary() as a recorded step.
+
+    The file is local, so it is written whatever happened to the record.
+    """
+    step = rec.start("artifact", "summary_file")
+    _note_recording_failure(summary, rec)
+    saved = _save_json_summary(summary, week_dir)
+    rec.end(step, "ok" if saved else "failed")
+
+
+def _run_end_facts(summary: dict) -> dict:
+    """What the run-state record keeps of a finished run: counts and codes."""
+    status = summary.get("discovery_status") or {}
+    valuations = summary.get("valuations") or []
+    by_status: dict = {}
+    for entry in valuations:
+        key = entry.get("status")
+        by_status[key] = by_status.get(key, 0) + 1
+    row_keys = (
+        "market",
+        "reason_code",
+        "severity",
+        "news_count",
+        "discovered",
+        "selected",
+        "selected_after_budget_trim",
+    )
+    return {
+        "errors": len(summary.get("errors") or []),
+        "targets_selected": status.get("targets_selected"),
+        "targets_after_budget_trim": status.get("targets_after_budget_trim"),
+        "zero_selection": status.get("zero_selection"),
+        "valuations_total": len(valuations),
+        "valuations_by_status": by_status,
+        "summary_folder": summary.get("folder_name"),
+        "markets": [
+            {key: row.get(key) for key in row_keys}
+            for row in status.get("markets") or []
+        ],
+    }
+
+
+def run_weekly_recorded(
+    markets: list[str] | None = None,
+    max_per_market: int = 5,
+    dry_run: bool = False,
+) -> dict:
+    """run_weekly() for entry points: the run is recorded in runs/state.db.
+
+    The writer seat is taken first. If it cannot be (another writer is alive,
+    the file is damaged or is not a run-state database) nothing runs: no
+    discovery, no LLM call, no mail (run_state.RunStateUnavailable). If a
+    run-state write fails during the run, the deliveries after it are not
+    started and run_state.RunStateRecordingFailed is raised once the run is
+    over; an exception from run_weekly() itself always wins. Exporting the
+    events and giving the seat back are cleanup: they never change what this
+    function returns or raises.
+    """
+    _setup_logging()
+    try:
+        writer = run_state.open_writer(_RUN_STATE_DB)
+    except run_state.RunStateError as exc:
+        logger.error("Weekly run not started (run state): %s", exc)
+        raise
+    try:
+        if writer.recovered:
+            logger.warning(
+                "Run state: %d earlier run(s) had no recorded end and were "
+                "closed as interrupted.",
+                len(writer.recovered),
+            )
+        try:
+            recorder = writer.start_run(
+                markets=list(markets or ["KR", "US"]),
+                max_per_market=max_per_market,
+                dry_run=dry_run,
+            )
+        except run_state.RunStateError as exc:
+            logger.error("Weekly run not started (run state): %s", exc)
+            raise
+        try:
+            summary = run_weekly(
+                markets=markets,
+                max_per_market=max_per_market,
+                dry_run=dry_run,
+                recorder=recorder,
+            )
+        except BaseException as exc:
+            recorder.end_run(
+                "FAILED",
+                reason_code=run_state.RUN_EXCEPTION,
+                error_type=type(exc).__name__,
+            )
+            raise  # the failure of the run itself always wins
+        try:
+            facts = _run_end_facts(summary)
+        except Exception as exc:
+            logger.error("Run state: end facts unavailable (%s).", type(exc).__name__)
+            facts = {}
+        # the same rule as _finalize_run()
+        recorder.end_run(
+            "COMPLETED" if not summary["errors"] else "COMPLETED_WITH_ERRORS", **facts
+        )
+    finally:
+        writer.close()  # cleanup: never raises
+    if recorder.broken:
+        failure = run_state.RunStateRecordingFailed("RECORDING_FAILED")
+        logger.error("Weekly run finished without a complete record: %s", failure)
+        raise failure
+    return summary
+
+
 _LOCK_PATH = Path(__file__).resolve().parent.parent / "logs" / ".weekly_run.lock"
 _LOCK_MIN_INTERVAL_SECONDS = 3600  # 1 hour
 
@@ -1647,14 +1909,19 @@ def main() -> None:
 
     if not _acquire_lock(force=args.force):
         return
+    stopped: run_state.RunStateError | None = None
     try:
-        run_weekly(
+        run_weekly_recorded(
             markets=args.markets.split(","),
             max_per_market=max_val,
             dry_run=args.dry_run,
         )
+    except run_state.RunStateError as exc:
+        stopped = exc  # logged where it happened; the exit code says which
     finally:
         _release_lock()
+    if stopped is not None:
+        raise SystemExit(stopped.exit_code)
 
 
 if __name__ == "__main__":

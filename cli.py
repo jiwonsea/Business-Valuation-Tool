@@ -281,12 +281,12 @@ def main():
 
     # Weekly auto-analysis mode
     if args.weekly:
-        from scheduler.weekly_run import run_weekly
+        from scheduler.weekly_run import run_weekly_recorded
 
         max_val = args.max_per_market
         if args.max_companies is not None:
             max_val = args.max_companies
-        return run_weekly(
+        return run_weekly_recorded(
             markets=args.markets.split(","),
             max_per_market=max_val,
             dry_run=args.dry_run,

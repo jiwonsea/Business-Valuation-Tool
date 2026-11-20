@@ -27,6 +27,9 @@ venv/
 # Logs (may contain API keys in URLs)
 logs/
 
+# Run state: SQLite source of truth and the event files exported from it (host-local)
+/runs/
+
 # OS
 .DS_Store
 Thumbs.db

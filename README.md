@@ -115,7 +115,7 @@ backtest/        7 Python files — calibration infrastructure
 └── __init__.py
 
 discovery/       News-driven company recommendation pipeline
-scheduler/       Weekly automation (news → scoring → valuation → delivery)
+scheduler/       Weekly automation (news → scoring → valuation → delivery) + local run state (runs/state.db)
 output/          Excel builder (7-sheet workbook with charts)
 db/              Supabase persistence (valuations, snapshots, outcomes)
 ```
@@ -159,7 +159,7 @@ python cli.py --company "MSFT" --auto
 # News-based discovery
 python cli.py --discover --market KR
 
-# Weekly automation
+# Weekly automation (recorded in runs/state.db; see "Weekly Run State")
 python cli.py --weekly --markets KR,US --max-per-market 5
 
 # Backtesting calibration report
@@ -171,6 +171,22 @@ streamlit run app.py
 # Tests
 python -m pytest  # BVT + forecast + calibration; network tests excluded by default
 ```
+
+## Weekly Run State
+
+Every weekly run started with `python cli.py --weekly` or `python -m scheduler.weekly_run` is recorded in one local SQLite file, `runs/state.db` ([scheduler/run_state.py](scheduler/run_state.py)): when the run, each market's discovery, each valuation and each delivery step started, and how it ended. `runs/<run id>/events.jsonl` is exported from the database; when the two differ, the database is right. `runs/` is host-local and not tracked.
+
+- **One writer.** A second run is refused while one is alive; it does not wait.
+- **Every start gets an end.** A start left open by a killed process is closed as interrupted by the next run. An unfinished delivery is marked `UNKNOWN_DELIVERY` and is not sent again.
+- **Fail closed.** A damaged or foreign file is refused and left untouched, and the run does not start.
+- **No free text.** Only codes, counts, flags and shape-checked identifiers are stored — no messages, URLs or paths.
+
+| Situation | `python -m scheduler.weekly_run` | `python cli.py --weekly` |
+|-----------|----------------------------------|--------------------------|
+| The state file cannot be opened, or another run holds it: nothing runs | exit code 3 | traceback, exit code 1 |
+| A state write failed during the run: later deliveries were not started | exit code 4 | traceback, exit code 1 |
+
+`run_weekly()` called directly from Python records nothing and behaves as it did before.
 
 ## Environment Variables
 
@@ -209,6 +225,6 @@ These are `test_` function definitions, including class methods, rather than par
 
 ## Data Sources & Disclaimer
 
-Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Weekly reports, run logs, and calibration outputs are generated locally and are **not** included in this repository. Company profiles under `profiles/` are partially tracked: only profiles serving as validation, research, or release baselines are committed (snapshotted deliberately, e.g. `fd902b1`); the weekly pipeline regenerates them, so tracked copies are point-in-time snapshots, not live data.
+Built on public data from DART OpenAPI (Korea), SEC EDGAR XBRL (US), Yahoo Finance, FRED (Federal Reserve Economic Data), and Naver/Google News RSS. Weekly reports, run logs, the weekly run-state database (`runs/`), and calibration outputs are generated locally and are **not** included in this repository. Company profiles under `profiles/` are partially tracked: only profiles serving as validation, research, or release baselines are committed (snapshotted deliberately, e.g. `fd902b1`); the weekly pipeline regenerates them, so tracked copies are point-in-time snapshots, not live data.
 
 This project is for **research and educational purposes only**. It does not constitute investment advice, and the author is not registered as an investment adviser under any jurisdiction. Past valuations or backtested results do not guarantee future returns. Use at your own discretion.

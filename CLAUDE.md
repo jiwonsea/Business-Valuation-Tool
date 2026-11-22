@@ -9,7 +9,7 @@ KR/US company valuation platform. Pure-function engine + Pydantic schemas + YAML
 ## Fast Navigation
 
 - Start with `README.md` for the module map, then read only the path relevant to the task.
-- Ignore generated outputs by default: root `*.xlsx`, `logs/`, `valuation-results/`, `test_output/`, `output/calibration/`, `.cache/`, `.claude-octopus/`.
+- Ignore generated outputs by default: root `*.xlsx`, `logs/`, `runs/`, `valuation-results/`, `test_output/`, `output/calibration/`, `.cache/`, `.claude-octopus/`.
 - For valuation math, stay inside `engine/` + `schemas/models.py`.
 - For data collection/API issues, stay inside `pipeline/` and avoid `app.py` unless the bug is UI-specific.
 - For LLM behavior, stay inside `ai/`, `pipeline/profile_generator.py`, and the prompt/validator pair.
@@ -29,7 +29,7 @@ Module-specific gotchas and methodology live in `.claude/rules/*.md`, each scope
 - `ai.md` — `ai/**`: circuit breaker/fallback, prompt cache invalidation, LLM quota (≤4 calls/company).
 - `output.md` — `output/**`: console report sync, Excel filename local-vs-remote convention.
 - `db-backtest.md` — `db/**`, `backtest/**`, `calibration/**`: Supabase drift, persistence asymmetry, buckets, calibration.
-- `scheduler.md` — `scheduler/**`: weekly discovery/scoring, news matching, Naver poster.
+- `scheduler.md` — `scheduler/**`: weekly discovery/scoring, news matching, run state (`runs/state.db`, exit codes 3/4), Naver poster.
 
 ## Architecture
 
@@ -43,7 +43,7 @@ ValuationInput (YAML) → run_valuation() → ValuationResult → print_report()
 - `ai/` — LLM-based segment classification, peer recommendation, scenario design (Claude Sonnet 4).
 - `db/` — Supabase integration. `client.py` (singleton), `repository.py` (CRUD), `migrations.sql` (DDL).
 - `output/` — Excel 7-sheet (assumptions, D&A, SOTP, scenarios, DCF, sensitivity, cross-validation).
-- `scheduler/` — Weekly auto news collection + valuation. `weekly_run.py` (pipeline), `scoring.py` (importance).
+- `scheduler/` — Weekly auto news collection + valuation. `weekly_run.py` (pipeline), `scoring.py` (importance), `run_state.py` (local run record: `runs/state.db`, one writer).
 - `cli.py` — CLI entry point + `run_valuation()` (SOTP/DCF branching).
 - `orchestrator.py` — Profile → valuation → Excel pipeline wrapper.
 - `app.py` — Streamlit web UI.
@@ -61,7 +61,7 @@ python cli.py --weekly                                    # weekly auto-analysis
 python cli.py --weekly --markets KR --max-companies 5     # specify market/count
 python cli.py --weekly --dry-run                          # discovery only, skip valuation
 python cli.py --backtest --backtest-min-age 90            # calibration backtesting report
-python -m scheduler.weekly_run                            # direct module execution
+python -m scheduler.weekly_run                            # direct module execution (exit 3: run state unavailable, 4: record incomplete)
 
 streamlit run app.py                                      # web UI
 pytest tests/                                             # tests
@@ -83,6 +83,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - IO contract: `ValuationInput` → `ValuationResult` (`schemas/models.py`).
 - New YAML profile fields must be Optional with defaults (backward compatibility).
 - Pydantic models are immutable inputs: never assign fields directly (`obj.field = x`). Use `obj.model_copy(update={...})` to create modified copies.
+- Weekly entry points call `run_weekly_recorded()`, which records the run in `runs/state.db`; `run_weekly()` called directly records nothing. Tests never write the repository's `runs/` (databases go under `tmp_path`).
 - Env vars: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `DART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_KEY`.
 - Windows `python -c` one-liners that emit Korean fail with `UnicodeEncodeError: 'cp949'`. Prefix shell call with `PYTHONIOENCODING=utf-8` AND rewrap stdout: `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')`. Running as a saved `.py` script usually avoids this; inline `-c` invocation does not.
 

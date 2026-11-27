@@ -1,5 +1,5 @@
 ---
-paths: ["scheduler/**/*.py"]
+paths: ["scheduler/**/*.py", "references/universe.yaml"]
 ---
 
 # Scheduler Gotchas
@@ -22,6 +22,17 @@ paths: ["scheduler/**/*.py"]
 - Read with `read_runs()` / `read_run()` / `read_events()` (read-only connections). Do not open a second writer or a plain `sqlite3.connect()` to look: a writable connection rolls back a hot journal even when it only reads.
 - Importing `scheduler.weekly_run` creates neither `logs/` nor `runs/`; `_setup_logging()` creates `logs/`, and only when the root logger has no handlers. Tests keep every database under `tmp_path` (point `weekly_run._RUN_STATE_DB` there), never the repository's `runs/`.
 - `_setup_logging()` holds `httpx` / `httpcore` at WARNING because their INFO request lines carry the DART API key in the URL. Do not lower them to INFO for the weekly log.
+
+## Selection Universe (universe.py, K-1B)
+
+- `references/universe.yaml` is the list the target selection (S1) will pick from; `scheduler/universe.py` is its only reader. Nothing calls `load_universe()` yet — wiring it into a run is K-1D. The file says `coverage: pilot` (30 companies): a market-cap rank taken inside it is not an operating value, and `basis` (index membership) is empty because membership was not checked.
+- Whole or nothing: `load_universe()` / `parse_universe()` return a frozen `Universe` or raise `UniverseError` with every problem found (12 codes, `PROBLEM_CODES`); no other exception leaves them. Do not add a lenient mode, a partial result or a catch-and-continue around them. A new problem code goes into `PROBLEM_CODES` first.
+- Quote `ticker` and `dart_corp_code` in the YAML. Unquoted `000660` is the integer 432 to PyYAML, `00401731` is 132057 and `ON` is a boolean; those are refused (`SCHEMA`), never turned back into text. Do not relax the strict text fields: pydantic would also decode `!!binary` bytes into text and take a YAML `!!set` for a list (an empty set would be an empty universe).
+- `sector` (11 fixed names), `is_financial` and `semis_equipment` are written by a person. Do not derive them from `industry_code`: that is the raw KSIC / SIC code kept as a record, and it cannot stand in for them (UNH: `SIC:6324` is financial to `engine.industry_codes.is_financial_code()` and `is_financial: false` here; Samsung Electronics and LG Electronics share `KSIC:264`).
+- `Universe.content_hash()` is the sha256 of the validated content, not of the file bytes. Do not replace it with a file hash: the same commit is CRLF on Windows and LF on Linux, and a comment would change it. It names the universe only — the market caps, coverage history and earnings dates of a selection day are not in it.
+- A new field is optional with a default; the hash leaves out fields at their default, so files that do not use the new field keep their hash. Aliases, merge keys and repeated keys are refused on purpose: the keys of an entry are exactly the keys written in it.
+- Tests build their broken files from `tests/fixtures/universe_valid.yaml`. The test of the tracked data file checks that it is valid, not what it holds (the list changes every quarter). The pinned fixture hash was computed from the plain YAML data, not by calling `content_hash()`; when the fixture changes, recompute it independently the same way.
+- What a dependency imports differs by Python version: on 3.11 `import pydantic` pulls in `asyncio` and `ssl`, on 3.14 it does not. The side-effect test imports `ssl`, `yaml` and `pydantic` before it replaces `socket.socket`; keep that order (the first CI run of PR 37 failed without it, and this PC has no Python 3.11 to show it locally).
 
 ## Discovery & News Pipeline (weekly_run.py)
 

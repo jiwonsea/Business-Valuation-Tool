@@ -115,7 +115,8 @@ backtest/        7 Python files — calibration infrastructure
 └── __init__.py
 
 discovery/       News-driven company recommendation pipeline
-scheduler/       Weekly automation (news → scoring → valuation → delivery) + local run state (runs/state.db)
+scheduler/       Weekly automation (news → scoring → valuation → delivery) + local run state (runs/state.db) + selection universe reader (universe.py)
+references/      Dated assumption files + the selection universe (universe.yaml)
 output/          Excel builder (7-sheet workbook with charts)
 db/              Supabase persistence (valuations, snapshots, outcomes)
 ```
@@ -187,6 +188,10 @@ Every weekly run started with `python cli.py --weekly` or `python -m scheduler.w
 | A state write failed during the run: later deliveries were not started | exit code 4 | traceback, exit code 1 |
 
 `run_weekly()` called directly from Python records nothing and behaves as it did before.
+
+## Selection Universe
+
+[references/universe.yaml](references/universe.yaml) lists the companies the planned target selection will pick from, and [scheduler/universe.py](scheduler/universe.py) is its reader: `load_universe()` returns the whole validated list or raises `UniverseError` with every problem it found (an unquoted ticker that YAML read as a number, a sector outside the fixed list, a repeated ticker, and so on). The file currently holds **30 pilot companies** (15 Korea, 15 US) and says so itself (`coverage: pilot`). It is not the full KOSPI200 + S&P500 universe, and nothing in the weekly run reads it yet. The sector, the financial flag and the semiconductor flag are this repository's own hand classification, not an official one; the industry code is the raw KSIC or SIC code, kept as a record.
 
 ## Environment Variables
 

@@ -29,7 +29,7 @@ Module-specific gotchas and methodology live in `.claude/rules/*.md`, each scope
 - `ai.md` — `ai/**`: circuit breaker/fallback, prompt cache invalidation, LLM quota (≤4 calls/company).
 - `output.md` — `output/**`: console report sync, Excel filename local-vs-remote convention.
 - `db-backtest.md` — `db/**`, `backtest/**`, `calibration/**`: Supabase drift, persistence asymmetry, buckets, calibration.
-- `scheduler.md` — `scheduler/**`: weekly discovery/scoring, news matching, run state (`runs/state.db`, exit codes 3/4), Naver poster.
+- `scheduler.md` — `scheduler/**`, `references/universe.yaml`: weekly discovery/scoring, news matching, run state (`runs/state.db`, exit codes 3/4), selection universe (whole-or-refused reader, content hash), Naver poster.
 
 ## Architecture
 
@@ -43,7 +43,7 @@ ValuationInput (YAML) → run_valuation() → ValuationResult → print_report()
 - `ai/` — LLM-based segment classification, peer recommendation, scenario design (Claude Sonnet 4).
 - `db/` — Supabase integration. `client.py` (singleton), `repository.py` (CRUD), `migrations.sql` (DDL).
 - `output/` — Excel 7-sheet (assumptions, D&A, SOTP, scenarios, DCF, sensitivity, cross-validation).
-- `scheduler/` — Weekly auto news collection + valuation. `weekly_run.py` (pipeline), `scoring.py` (importance), `run_state.py` (local run record: `runs/state.db`, one writer).
+- `scheduler/` — Weekly auto news collection + valuation. `weekly_run.py` (pipeline), `scoring.py` (importance), `run_state.py` (local run record: `runs/state.db`, one writer), `universe.py` (reader of `references/universe.yaml`, the list the target selection will pick from; not wired into a run yet).
 - `cli.py` — CLI entry point + `run_valuation()` (SOTP/DCF branching).
 - `orchestrator.py` — Profile → valuation → Excel pipeline wrapper.
 - `app.py` — Streamlit web UI.
@@ -84,6 +84,7 @@ pip install -e ".[dev,pipeline,ai,ui,db]"                  # install dependencie
 - New YAML profile fields must be Optional with defaults (backward compatibility).
 - Pydantic models are immutable inputs: never assign fields directly (`obj.field = x`). Use `obj.model_copy(update={...})` to create modified copies.
 - Weekly entry points call `run_weekly_recorded()`, which records the run in `runs/state.db`; `run_weekly()` called directly records nothing. Tests never write the repository's `runs/` (databases go under `tmp_path`).
+- `references/universe.yaml` is read only through `scheduler.universe.load_universe()` (the whole file or a `UniverseError`). Quote `ticker` and `dart_corp_code` (unquoted `000660` is the integer 432 to YAML); `sector` and `is_financial` are written by hand, never derived from `industry_code`.
 - Env vars: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `DART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_KEY`.
 - Windows `python -c` one-liners that emit Korean fail with `UnicodeEncodeError: 'cp949'`. Prefix shell call with `PYTHONIOENCODING=utf-8` AND rewrap stdout: `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')`. Running as a saved `.py` script usually avoids this; inline `-c` invocation does not.
 

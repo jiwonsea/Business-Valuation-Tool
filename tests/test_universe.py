@@ -1097,6 +1097,8 @@ class TestNoSideEffects:
         # only references/ is fenced.)
         code = (
             "import builtins, io, os, pathlib, socket, sys\n"
+            "import ssl, yaml, pydantic  # dependencies load before the guards:\n"
+            "# ssl subclasses socket.socket, which is a plain function below\n"
             f"sys.path.insert(0, {str(REPO_ROOT)!r})\n"
             f"root = os.path.normcase({str(REPO_ROOT / 'references')!r}) + os.sep\n"
             "def refuse(*args, **kwargs):\n"

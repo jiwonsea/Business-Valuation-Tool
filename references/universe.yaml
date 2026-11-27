@@ -1,0 +1,249 @@
+# Selection universe for the weekly target selection (S1). Read by scheduler/universe.py.
+#
+# coverage: pilot - 30 companies only (K-1B). This is not the whole KOSPI200 + S&P500
+# universe: a market-cap rank taken inside this file is not an operating value.
+#
+# sector, is_financial and semis_equipment are this repository's own classification,
+# written by hand. industry_code is the raw KSIC (DART) or SIC (SEC) code, kept as a
+# record; is_financial is not derived from it, and the two can disagree (UNH: SIC 6324
+# lies in the SIC range read as financial, and a health insurer is not financial here).
+# basis is left out: index membership was not checked.
+#
+# Quote ticker and dart_corp_code: unquoted 000660 is the integer 432 to YAML.
+schema_version: 1
+as_of: 2026-11-27
+coverage: pilot
+sources:
+  - "KR: DART company.json (stock_name, corp_cls, induty_code), retrieved 2026-11-27"
+  - "US: SEC EDGAR company_tickers.json and submissions (name, exchanges, sic), retrieved 2026-11-27"
+  - "sector, is_financial, semis_equipment: classified by hand for K-1B, 2026-11-27"
+entries:
+  - ticker: "005930"
+    market: KR
+    name: "삼성전자"
+    sector: information_technology
+    is_financial: false
+    semis_equipment: true
+    exchange: KOSPI
+    dart_corp_code: "00126380"
+    industry_code: "KSIC:264"
+  - ticker: "000660"
+    market: KR
+    name: "SK하이닉스"
+    sector: information_technology
+    is_financial: false
+    semis_equipment: true
+    exchange: KOSPI
+    dart_corp_code: "00164779"
+    industry_code: "KSIC:2612"
+  - ticker: "373220"
+    market: KR
+    name: "LG에너지솔루션"
+    sector: industrials
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "01515323"
+    industry_code: "KSIC:28202"
+  - ticker: "005380"
+    market: KR
+    name: "현대자동차"
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00164742"
+    industry_code: "KSIC:30121"
+  - ticker: "035420"
+    market: KR
+    name: "NAVER"
+    sector: communication_services
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00266961"
+    industry_code: "KSIC:63120"
+  - ticker: "068270"
+    market: KR
+    name: "셀트리온"
+    sector: health_care
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00413046"
+    industry_code: "KSIC:21100"
+  - ticker: "005490"
+    market: KR
+    name: "POSCO홀딩스"
+    sector: materials
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00155319"
+    industry_code: "KSIC:2411"
+  - ticker: "051910"
+    market: KR
+    name: "LG화학"
+    sector: materials
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00356361"
+    industry_code: "KSIC:20111"
+  - ticker: "066570"
+    market: KR
+    name: "LG전자"
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00401731"
+    industry_code: "KSIC:264"
+  - ticker: "105560"
+    market: KR
+    name: "KB금융"
+    sector: financials
+    is_financial: true
+    exchange: KOSPI
+    dart_corp_code: "00688996"
+    industry_code: "KSIC:64992"
+  - ticker: "055550"
+    market: KR
+    name: "신한지주"
+    sector: financials
+    is_financial: true
+    exchange: KOSPI
+    dart_corp_code: "00382199"
+    industry_code: "KSIC:64992"
+  - ticker: "069960"
+    market: KR
+    name: "현대백화점"
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00428251"
+    industry_code: "KSIC:47111"
+  - ticker: "001680"
+    market: KR
+    name: "대상"
+    sector: consumer_staples
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00121941"
+    industry_code: "KSIC:108"
+  - ticker: "006280"
+    market: KR
+    name: "녹십자"
+    sector: health_care
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00129679"
+    industry_code: "KSIC:212"
+  - ticker: "000120"
+    market: KR
+    name: "CJ대한통운"
+    sector: industrials
+    is_financial: false
+    exchange: KOSPI
+    dart_corp_code: "00113410"
+    industry_code: "KSIC:493"
+  - ticker: "AAPL"
+    market: US
+    name: "Apple Inc."
+    sector: information_technology
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:3571"
+  - ticker: "MSFT"
+    market: US
+    name: "MICROSOFT CORP"
+    sector: information_technology
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:7372"
+  - ticker: "NVDA"
+    market: US
+    name: "NVIDIA CORP"
+    sector: information_technology
+    is_financial: false
+    semis_equipment: true
+    exchange: NASDAQ
+    industry_code: "SIC:3674"
+  - ticker: "AVGO"
+    market: US
+    name: "Broadcom Inc."
+    sector: information_technology
+    is_financial: false
+    semis_equipment: true
+    exchange: NASDAQ
+    industry_code: "SIC:3674"
+  - ticker: "AMZN"
+    market: US
+    name: "AMAZON COM INC"
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:5961"
+  - ticker: "TSLA"
+    market: US
+    name: "Tesla, Inc."
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:3711"
+  - ticker: "GM"
+    market: US
+    name: "General Motors Co"
+    sector: consumer_discretionary
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:3711"
+  - ticker: "GOOGL"
+    market: US
+    name: "Alphabet Inc."
+    sector: communication_services
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:7370"
+  - ticker: "META"
+    market: US
+    name: "Meta Platforms, Inc."
+    sector: communication_services
+    is_financial: false
+    exchange: NASDAQ
+    industry_code: "SIC:7370"
+  - ticker: "JNJ"
+    market: US
+    name: "JOHNSON & JOHNSON"
+    sector: health_care
+    is_financial: false
+    exchange: NYSE
+    industry_code: "SIC:2834"
+  - ticker: "UNH"
+    market: US
+    name: "UNITEDHEALTH GROUP INC"
+    sector: health_care
+    is_financial: false
+    exchange: NYSE
+    industry_code: "SIC:6324"
+  - ticker: "CVX"
+    market: US
+    name: "CHEVRON CORP"
+    sector: energy
+    is_financial: false
+    exchange: NYSE
+    industry_code: "SIC:2911"
+  - ticker: "JPM"
+    market: US
+    name: "JPMORGAN CHASE & CO"
+    sector: financials
+    is_financial: true
+    exchange: NYSE
+    industry_code: "SIC:6021"
+  - ticker: "VST"
+    market: US
+    name: "Vistra Corp."
+    sector: utilities
+    is_financial: false
+    exchange: NYSE
+    industry_code: "SIC:4911"
+  - ticker: "GEV"
+    market: US
+    name: "GE Vernova Inc."
+    sector: industrials
+    is_financial: false
+    exchange: NYSE
+    industry_code: "SIC:3600"

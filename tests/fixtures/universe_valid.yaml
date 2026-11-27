@@ -1,0 +1,55 @@
+# Test fixture for scheduler/universe.py (tests/test_universe.py).
+# Not the real universe: six hand-written entries that use every field.
+schema_version: 1
+as_of: 2026-10-01
+coverage: full
+sources:
+  - "test fixture, hand-written"
+entries:
+  - ticker: "005930"
+    market: KR
+    name: "삼성전자"
+    sector: information_technology
+    is_financial: false
+    semis_equipment: true
+    exchange: KOSPI
+    basis: kospi200
+    dart_corp_code: "00126380"
+    industry_code: "KSIC:264"
+  - ticker: "105560"
+    market: KR
+    name: "KB금융"
+    sector: financials
+    is_financial: true
+    exchange: KOSPI
+    basis: kospi200
+    dart_corp_code: "00688996"
+    industry_code: "KSIC:64992"
+  - ticker: "247540"
+    market: KR
+    name: "에코프로비엠"
+    sector: industrials
+    is_financial: false
+    basis: watchlist
+  - ticker: "AAPL"
+    market: US
+    name: "Apple Inc."
+    sector: information_technology
+    is_financial: false
+    exchange: NASDAQ
+    basis: sp500
+    industry_code: "SIC:3571"
+  - ticker: "JPM"
+    market: US
+    name: "JPMORGAN CHASE & CO"
+    sector: financials
+    is_financial: true
+    exchange: NYSE
+    basis: sp500
+    industry_code: "SIC:6021"
+  - ticker: "BRK-B"
+    market: US
+    name: "BERKSHIRE HATHAWAY INC"
+    sector: financials
+    is_financial: true
+    basis: sp500

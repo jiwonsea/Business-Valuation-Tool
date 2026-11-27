@@ -335,6 +335,22 @@ _MEDIA_BLOCKLIST: frozenset[str] = frozenset(
 )
 
 
+def _is_media_name(name_lower: str) -> bool:
+    """Return True if a lowercased name contains a blocklisted outlet name.
+
+    Latin-script terms match whole words only: "ft" is a substring of
+    "microsoft". Hangul terms match anywhere, because Korean joins an outlet
+    name to its suffix without a space ("블룸버그통신").
+    """
+    for term in _MEDIA_BLOCKLIST:
+        if not term.isascii():
+            if term in name_lower:
+                return True
+        elif re.search(rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])", name_lower):
+            return True
+    return False
+
+
 def _contains_korean(text: str) -> bool:
     """Return True if text contains any Hangul syllable."""
     return any("\uac00" <= ch <= "\ud7a3" for ch in text)
@@ -357,7 +373,7 @@ def _filter_companies(companies: list[dict], market: str) -> list[dict]:
         name_lower = name.lower().strip()
 
         # Filter 1: media/data-provider blocklist
-        if any(blocked in name_lower for blocked in _MEDIA_BLOCKLIST):
+        if _is_media_name(name_lower):
             logger.info("Discovery filter: rejected media/non-company %r", name)
             continue
 
